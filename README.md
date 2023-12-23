@@ -43,7 +43,7 @@ We have provided several examples in the `examples/` directory to help you get s
 We welcome contributions! Please see `CONTRIBUTING.md` for details on how to contribute.
 
 ### Versioning
-We use `Semantic versioning <http://semver.org/>`_ for this project.
+We use [Semantic versioning](http://semver.org/) for this project.
 
 ### License
 
