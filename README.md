@@ -52,3 +52,7 @@ This project is licensed under the MIT License. See `LICENSE.md` for more detail
 ### Contact
 
 If you have any questions or feedback, please feel free to open an issue or submit a pull request.
+
+### Acknowledgements
+
+The present work has received funding from the European Union’s Horizon 2020 Marie Skłodowska Curie Innovative Training Network Greenedge (GA. No. 953775).
