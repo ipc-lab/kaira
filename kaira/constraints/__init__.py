@@ -1,5 +1,5 @@
 import torch
-from kaira.core.base_constraint import BaseConstraint
+from kaira.core import BaseConstraint
 
 __all__ = [
     "TotalPowerConstraint",

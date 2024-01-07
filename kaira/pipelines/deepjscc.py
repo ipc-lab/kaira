@@ -1,4 +1,4 @@
-from kaira.core.base_pipeline import BasePipeline
+from kaira.core import BasePipeline
 
 
 class DeepJSCCPipeline(BasePipeline):

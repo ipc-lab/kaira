@@ -1,4 +1,5 @@
 import torch
+from . import losses
 
 def snr_linear_to_db(snr_linear):
     '''The function converts a signal-to-noise ratio from linear scale to decibel scale.
@@ -81,3 +82,5 @@ def calculate_num_filters_image(num_strided_layers, bw_ratio):
     assert res.is_integer()
     
     return res
+
+__all__ = ['snr_linear_to_db', 'snr_db_to_linear', 'to_tensor', 'calculate_num_filters_image', "losses"]

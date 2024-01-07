@@ -1,7 +1,7 @@
 from torch import nn
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 from torchmetrics.image import StructuralSimilarityIndexMeasure
-from torchmetrics.image import MultiScaleSSIM
+from torchmetrics.image import MultiScaleStructuralSimilarityIndexMeasure as MultiScaleSSIM
 
 class MSELoss(nn.Module):
     def __init__(self, **kwargs) -> None:
@@ -75,3 +75,5 @@ class MSSSIMLoss(nn.Module):
     def forward(self, preds, targets):
         loss = 1 - self.loss(preds, targets).mean()
         return loss
+
+__all__ = ["MSELoss", "CombinedLoss", "MSELPIPSLoss", "LPIPSLoss", "SSIMLoss", "MSSSIMLoss"]

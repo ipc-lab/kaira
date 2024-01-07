@@ -1,5 +1,5 @@
 import torch
-from kaira.core.base_channel import BaseChannel
+from kaira.core import BaseChannel
 from kaira.utils import to_tensor
 
 __all__ = [
