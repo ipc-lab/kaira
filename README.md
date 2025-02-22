@@ -20,7 +20,7 @@ Deep joint source-channel coding (DeepJSCC) is a wireless data transmission meth
 
 ### Installation
 
-To install the latest version of kaira, please run the following command:
+To install the latest version of Kaira, please run the following command:
 
 ```bash
 pip install kaira
@@ -38,6 +38,34 @@ import kaira
 
 We have provided several examples in the `examples/` directory to help you get started.
 
+### Running Documentation
+
+To build and view the project documentation using Sphinx, follow these steps:
+
+1. **Open a Terminal**  
+   In Visual Studio Code, open the integrated terminal.
+
+2. **Change Directory to Docs**  
+   Navigate to the documentation folder by running:
+   ```bash
+   cd docs
+   ```
+
+3. **Build the Documentation**  
+   - On Linux/macOS, run:
+     ```bash
+     make html
+     ```
+   - On Windows, run:
+     ```bat
+     make.bat html
+     ```
+
+4. **View the Output**  
+   After the build completes, open the generated HTML files located in the `_build/html` directory. For example, view the main page by opening:
+   ```plaintext
+   index.html
+   ```
 ### Contributing
 
 We welcome contributions! Please see `CONTRIBUTING.md` for details on how to contribute.
