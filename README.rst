@@ -1,4 +1,4 @@
-.. image:: docs/logo.png
+.. image:: docs/_static/logo.png
     :align: center
 
 Kaira — Wireless Communication Simulation Toolbox for PyTorch
