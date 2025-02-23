@@ -50,28 +50,6 @@ import kaira
 
 We have provided several examples in the `examples/` directory to help you get started.
 
-## Running Documentation
-
-To build and view the project documentation using Sphinx, follow these steps:
-
-1. **Open a Terminal**  
-   In Visual Studio Code, open the integrated terminal.
-
-2. **Change Directory to Docs**  
-   Navigate to the documentation folder by running:
-   ```bash
-   cd docs
-   ```
-
-3. **Build the Documentation**  
-   - On Linux/macOS, run:
-     ```bash
-     make html
-     ```
-   - On Windows, run:
-     ```bat
-     make.bat html
-     ```
 
 4. **View the Output**  
    After the build completes, open the generated HTML files located in the `_build/html` directory. For example, view the main page by opening:
@@ -92,7 +70,7 @@ This project is licensed under the MIT License. See `LICENSE.md` for more detail
 
 ## Contact
 
-If you have any questions or feedback, please feel free to open an issue or submit a pull request.
+If you have any questions or feedback, please feel free to open an issue or submit a pull request, or email to [yilmazselimfirat@gmail.com].
 
 ## Acknowledgements
 

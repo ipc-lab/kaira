@@ -5,6 +5,9 @@
 
 import os
 import sys
+import datetime
+
+# Add the project root to sys.path
 sys.path.insert(0, os.path.abspath('../kaira'))
 
 print(os.path.abspath('../kaira'))
@@ -12,8 +15,9 @@ print(os.path.abspath('../kaira'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Kaira'
-copyright = '2023, Selim F. Yilmaz'
-author = 'Selim F. Yilmaz'
+author = "Selim F. Yilmaz, Imperial IPC Lab"
+
+copyright = f"{datetime.datetime.now().year}, {author}"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -71,7 +75,28 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-#html_theme = 'alabaster'
-html_theme = "pydata_sphinx_theme"
+# Switch to ReadTheDocs theme
+html_theme = "sphinx_rtd_theme"
 
 html_static_path = ['_static']
+
+html_css_files = [
+    #'custom.css',
+]
+
+html_logo = "_static/logo.png"
+html_favicon = "_static/favicon.ico"
+html_show_sourcelink = True
+html_show_sphinx = True
+html_show_copyright = True
+
+# -- Options for source files ------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-source-files
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+# Include README.md in the documentation
+master_doc = 'index'

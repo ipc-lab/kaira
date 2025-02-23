@@ -1,0 +1,115 @@
+/* Improve code block styling for better readability */
+.highlight {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+/* Base styles and typography */
+body {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    background-color: #ffffff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Sticky navigation bar */
+.navbar {
+    background-color: #005f73;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 1rem 0;
+}
+.navbar .logo img {
+    height: 40px;
+}
+.nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.nav-links li {
+    margin: 0 1rem;
+}
+.nav-links a {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+.nav-links a:hover {
+    color: #0a9396;
+}
+
+/* Breadcrumb styling */
+.breadcrumb {
+    background: #f1f1f1;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+/* Main content layout using CSS Grid */
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 2rem 0;
+}
+
+/* Code blocks styling */
+div.highlight pre {
+    background: #011627;
+    color: #d6deeb;
+    border-radius: 5px;
+    padding: 1em;
+}
+
+/* Sidebar styling */
+aside {
+    background: #f8f8f8;
+    padding: 1rem;
+    border-left: 3px solid #005f73;
+}
+
+/* Footer styling */
+footer {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+/* Layout tweaks */
+.section, .document {
+    margin: 2em auto;
+    max-width: 800px;
+    padding: 0 1em;
+}
+
+/* Responsive design adjustments */
+@media (max-width: 768px) {
+    .navbar {
+        text-align: center;
+    }
+}
+@media (min-width: 768px) {
+    main {
+        grid-template-columns: 3fr 1fr;
+    }
+}
+
+/* Example: Adjust code block font size */
+.rtd-content pre {
+    font-size: 0.9em;
+}

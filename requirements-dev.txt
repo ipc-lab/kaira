@@ -2,3 +2,4 @@ sphinx
 myst-parser
 sphinxcontrib-bibtex
 pydata-sphinx-theme
+markdown-it-linkify

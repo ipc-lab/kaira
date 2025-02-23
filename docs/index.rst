@@ -1,20 +1,25 @@
-.. Kaira documentation master file, created by
-   sphinx-quickstart on Sat Dec 23 15:22:01 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Kaira Documentation
+===================
 
-Welcome to Kaira's documentation!
-=================================
+Welcome to the Kaira library documentation.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Getting Started
 
+   installation
+   usage
+   api_reference
+   modules
+   tutorials
+   examples
 
+Introduction
+------------
+Kaira is an open-source framework for wireless communication research and development. It integrates core processing, advanced models, and robust pipelines to support cutting-edge experiments and real-world applications.
 
-Indices and tables
-==================
+Overview & Introduction
+-----------------------
+Kaira is an open-source framework for wireless communication research and development. It provides a robust set of features including core processing, advanced models, and pipelines for cutting-edge experiments.
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Installation, usage, and API details are documented in the sections below.

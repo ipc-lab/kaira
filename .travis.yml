@@ -1,0 +1,33 @@
+language: python
+dist: xenial
+
+env:
+  global:
+    PIP_PREFER_BINARY=true
+
+python:
+  - "3.8"
+  - "3.9"
+  - "3.10"
+  - "3.11"
+  - "3.12"
+  - "3.13"
+
+install:
+  - pip install --upgrade pip
+#  - pip install -r requirements-ci.txt
+  - pip install -r requirements-dev.txt
+
+# command to run tests
+script:
+   pytest --cov=pysad --cov-config=.coveragerc
+
+after_success:
+  - coveralls
+
+notifications:
+  email:
+    recipients:
+      - yilmazselimfirat@gmail.com
+  on_success: never # default: change
+  on_failure: always # default: always
