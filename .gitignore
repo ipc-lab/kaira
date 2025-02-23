@@ -34,7 +34,7 @@ downloads/
 eggs/
 .eggs/
 lib/
-.pysad.egg-info/
+.kaira.egg-info/
 lib64/
 parts/
 sdist/

@@ -20,7 +20,7 @@ install:
 
 # command to run tests
 script:
-   pytest --cov=pysad --cov-config=.coveragerc
+   pytest --cov=kaira --cov-config=.coveragerc
 
 after_success:
   - coveralls

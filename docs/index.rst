@@ -9,9 +9,21 @@ Welcome to the Kaira library documentation.
 
    installation
    usage
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
    api_reference
    modules
-   tutorials
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples & Tutorials
+
+tutorials
+tutorials
+tutorials
    examples
 
 Introduction

@@ -1,14 +1,32 @@
-res = ""
-with open("README_template.rst", "r") as f:
-    for line in f.readlines():
-        line = line.strip("\n").replace(".. include:: ", "")
-        if line.endswith(".rst"):
-            tf = open(line, "r").read()
-            res += tf.replace(".. literalinclude:: ../LICENSE", "").replace("<../LICENSE>", "<LICENSE>").replace(":class:", " ")
-        else:
-            res += line + "\n"
+import os
+import sys
 
-    print(res)
+output_text = ""
+template_file_path = "README_template.rst"
 
-with open("README.rst", "w+") as f:
-    f.write(res)
+try:
+    with open(template_file_path, "r") as template_file:
+        for line in template_file:
+            line = line.strip("\n").replace(".. include:: ", "")
+            if line.endswith(".rst"):
+                include_file_path = line  # os.path.join(".", line) if you need relative path
+                try:
+                    with open(include_file_path, "r") as included_file:
+                        included_text = included_file.read()
+                        output_text += included_text.replace(".. literalinclude:: ../LICENSE", "").replace("<../LICENSE>", "<LICENSE>").replace(":class:", " ")
+                except FileNotFoundError:
+                    print(f"Error: Included file '{include_file_path}' not found.")
+                except Exception as e:
+                    print(f"Error processing included file '{include_file_path}': {e}")
+            else:
+                output_text += line + "\n"
+
+    print(output_text)
+
+    with open("README.rst", "w+") as readme_file:
+        readme_file.write(output_text)
+
+except FileNotFoundError:
+    print(f"Error: Template file '{template_file_path}' not found.")
+except Exception as e:
+    print(f"An error occurred: {e}")

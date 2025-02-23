@@ -29,9 +29,9 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     setup_requires=['setuptools>=38.6.0'],
-    download_url="https://github.com/ipc-lab/kaira/archive/master.zip",
+    keywords=['wireless communication', 'simulation', 'toolbox', 'channel modeling', 'signal processing'],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Education',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
@@ -40,7 +40,9 @@ setup(
         'Operating System :: MacOS',
         'Operating System :: Microsoft :: Windows',
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Scientific/Engineering :: Telecommunications",
         "Topic :: Software Development :: Libraries",
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -48,5 +50,10 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
-    python_requires=">=3.8"
+    python_requires=">=3.8",
+    project_urls={
+        'Documentation': 'https://kaira.readthedocs.io',
+        'Source': 'https://github.com/ipc-lab/kaira',
+        'Tracker': 'https://github.com/ipc-lab/kaira/issues',
+    },
 )
