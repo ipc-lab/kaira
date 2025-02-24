@@ -13,7 +13,7 @@ ver_file = os.path.join(this_directory, 'kaira', 'version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-VERSION = __version__
+VERSION = __version__  # noqa: F821
 
 setup(
     name='kaira',
