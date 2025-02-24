@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 import torch
 import torchmetrics
@@ -7,7 +7,6 @@ from torch import Tensor
 from torchmetrics import MeanMetric
 from torchmetrics.functional.image.lpips import _lpips_compute, _lpips_update
 from torchmetrics.image.inception import InceptionScore, Tuple
-from typing import Literal
 
 
 # A metric class that computes the multi-scale structural similarity index measure (SSIM) between two images.
