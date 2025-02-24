@@ -1,12 +1,15 @@
 # tests/test_core.py
 import pytest
 import torch
-from kaira.core import BaseChannel, BaseConstraint, BaseMetric, BaseModel, BasePipeline
 from torch import nn
+
+from kaira.core import BaseChannel, BaseConstraint, BaseMetric, BaseModel, BasePipeline
+
 
 class DummyModule(nn.Module):
     def forward(self, x):
         return x
+
 
 def test_base_channel_abstract_methods():
     """Test that BaseChannel is an abstract class and has abstract methods."""
@@ -22,6 +25,7 @@ def test_base_channel_abstract_methods():
     output = channel(x)
     assert torch.equal(output, x)
 
+
 def test_base_constraint_abstract_methods():
     """Test that BaseConstraint is an abstract class and has abstract methods."""
     with pytest.raises(TypeError):
@@ -36,6 +40,7 @@ def test_base_constraint_abstract_methods():
     output = constraint(x)
     assert torch.equal(output, x)
 
+
 def test_base_metric_abstract_methods():
     """Test that BaseMetric is an abstract class and has abstract methods."""
     with pytest.raises(TypeError):
@@ -49,6 +54,7 @@ def test_base_metric_abstract_methods():
     x = torch.randn(1, 3, 32, 32)
     output = metric(x)
     assert torch.equal(output, x)
+
 
 def test_base_model_abstract_methods():
     """Test that BaseModel is an abstract class and has abstract methods."""
@@ -68,6 +74,7 @@ def test_base_model_abstract_methods():
     output = model(x)
     assert torch.equal(output, x)
     assert model.bandwidth_ratio == 1.0
+
 
 def test_base_pipeline_abstract_methods():
     """Test that BasePipeline is an abstract class and has abstract methods."""

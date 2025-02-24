@@ -1,43 +1,45 @@
 from typing import Any, Union
-import torch
+
 import numpy as np
+import torch
+
 from . import losses
 
+
 def snr_linear_to_db(snr_linear):
-    '''The function converts a signal-to-noise ratio from linear scale to decibel scale.
-    
+    """The function converts a signal-to-noise ratio from linear scale to decibel scale.
+
     Parameters
     ----------
     snr_linear
         The parameter `snr_linear` represents the signal-to-noise ratio (SNR) in linear scale.
-    
+
     Returns
     -------
         the SNR (Signal-to-Noise Ratio) in decibels (dB) given the SNR in linear scale.
-    
-    '''
+    """
 
     return 10 * torch.log10(torch.tensor(snr_linear))
 
+
 def snr_db_to_linear(snr_db):
-    '''The function converts a signal-to-noise ratio value from decibels to linear scale.
-    
+    """The function converts a signal-to-noise ratio value from decibels to linear scale.
+
     Parameters
     ----------
     snr_db
         The parameter "snr_db" represents the signal-to-noise ratio in decibels.
-    
+
     Returns
     -------
         the linear value of the signal-to-noise ratio (SNR) in decibels.
-    
-    '''
+    """
 
     return 10 ** (snr_db / 10)
 
+
 def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Tensor:
-    """
-    Convert an input data into a torch.Tensor, with an option to move it to a specific device.
+    """Convert an input data into a torch.Tensor, with an option to move it to a specific device.
 
     Parameters
     ----------
@@ -68,10 +70,11 @@ def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Te
     else:
         raise TypeError(f"Unsupported type: {type(x)}")
 
+
 def calculate_num_filters_image(num_strided_layers, bw_ratio):
-    '''The function calculates the number of filters in an image based on the number of strided layers and
-    a black and white ratio.
-    
+    """The function calculates the number of filters in an image based on the number of strided
+    layers and a black and white ratio.
+
     Parameters
     ----------
     num_strided_layers
@@ -80,16 +83,22 @@ def calculate_num_filters_image(num_strided_layers, bw_ratio):
     bw_ratio
         The `bw_ratio` parameter represents the bandwidth ratio, which is the ratio of the number of
     filters in the current layer to the number of filters in the previous layer.
-    
+
     Returns
     -------
         the calculated number of filters in an image.
-    
-    '''
+    """
     res = 2 * 3 * (2 ** (2 * num_strided_layers)) * bw_ratio
-    
+
     assert res.is_integer()
-    
+
     return res
 
-__all__ = ['snr_linear_to_db', 'snr_db_to_linear', 'to_tensor', 'calculate_num_filters_image', "losses"]
+
+__all__ = [
+    "snr_linear_to_db",
+    "snr_db_to_linear",
+    "to_tensor",
+    "calculate_num_filters_image",
+    "losses",
+]

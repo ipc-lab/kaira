@@ -2,10 +2,9 @@ from kaira.core import BasePipeline
 
 
 class DeepJSCCPipeline(BasePipeline):
-    
     def __init__(self, encoder, decoder, constraint, channel) -> None:
-        '''The function initializes an object with an encoder, decoder, constraint, and channel.
-        
+        """The function initializes an object with an encoder, decoder, constraint, and channel.
+
         Parameters
         ----------
         encoder
@@ -25,33 +24,31 @@ class DeepJSCCPipeline(BasePipeline):
         will be transmitted. It could be a physical channel, such as a network connection or a wireless
         medium, or it could be a logical channel, such as a file or a message queue. The specific
         implementation of the channel will depend
-        
-        '''
+        """
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.constraint = constraint
         self.channel = channel
-    
+
     def forward(self, x):
-        '''The forward function takes an input x, passes it through an encoder, applies a constraint,
-        performs channel operations, and finally passes it through a decoder before returning the
-        result.
-        
+        """The forward function takes an input x, passes it through an encoder, applies a
+        constraint, performs channel operations, and finally passes it through a decoder before
+        returning the result.
+
         Parameters
         ----------
         x
             The parameter `x` represents the input data that is passed through the neural network. It is
         typically a tensor or a batch of tensors.
-        
+
         Returns
         -------
             The output of the decoder.
-        
-        '''
+        """
         x = self.encoder(x)
         x = self.constraint(x)
         x = self.channel(x)
         x = self.decoder(x)
-        
+
         return x

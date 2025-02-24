@@ -86,13 +86,13 @@ Installation Steps:
 1. Clone the repository.
 2. Create and activate a virtual environment.
 3. Install the dependencies:
-   
+
    .. code-block:: bash
 
       pip install -r requirements.txt
 
 4. (Optional) Install additional development tools:
-   
+
    .. code-block:: bash
 
       pip install -r dev-requirements.txt

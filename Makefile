@@ -25,4 +25,3 @@ test: ## Run not slow tests
 
 test-full: ## Run all tests
 	pytest
-

@@ -5,15 +5,19 @@ output_text = ""
 template_file_path = "README_template.rst"
 
 try:
-    with open(template_file_path, "r") as template_file:
+    with open(template_file_path) as template_file:
         for line in template_file:
             line = line.strip("\n").replace(".. include:: ", "")
             if line.endswith(".rst"):
                 include_file_path = line  # os.path.join(".", line) if you need relative path
                 try:
-                    with open(include_file_path, "r") as included_file:
+                    with open(include_file_path) as included_file:
                         included_text = included_file.read()
-                        output_text += included_text.replace(".. literalinclude:: ../LICENSE", "").replace("<../LICENSE>", "<LICENSE>").replace(":class:", " ")
+                        output_text += (
+                            included_text.replace(".. literalinclude:: ../LICENSE", "")
+                            .replace("<../LICENSE>", "<LICENSE>")
+                            .replace(":class:", " ")
+                        )
                 except FileNotFoundError:
                     print(f"Error: Included file '{include_file_path}' not found.")
                 except Exception as e:

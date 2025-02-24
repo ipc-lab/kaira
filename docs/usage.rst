@@ -16,7 +16,7 @@ Basic Usage Example:
 Additional Examples:
 --------------------
 - Example 1: Using feature X:
-  
+
   .. code-block:: python
 
      # Demonstration of feature X

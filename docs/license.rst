@@ -8,4 +8,3 @@ The full text of the license is shown below:
 .. literalinclude:: ../LICENSE
    :language: text
    :linenos:
-

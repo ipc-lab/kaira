@@ -2,9 +2,9 @@
 Kaira: A Toolbox for Simulating Wireless Communication Systems
 ================================================================
 
-Kaira focuses on wireless data transmission using deep joint 
-source-channel coding (DeepJSCC), providing simulation tools for 
-advanced wireless transmission algorithms that integrate with modern 
+Kaira focuses on wireless data transmission using deep joint
+source-channel coding (DeepJSCC), providing simulation tools for
+advanced wireless transmission algorithms that integrate with modern
 deep learning frameworks.
 
 License: MIT
@@ -30,7 +30,7 @@ For example:
 """
 
 __version_info__ = (0, 1, 0)
-__version__ = '.'.join(map(str, __version_info__))
+__version__ = ".".join(map(str, __version_info__))
 
 if __name__ == "__main__":
     print("Kaira version:", __version__)

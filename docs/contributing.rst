@@ -42,17 +42,17 @@ Running Documentation
 ---------------------
 Follow these steps to build and view the project documentation using Sphinx:
 
-1. **Open a Terminal:**  
+1. **Open a Terminal:**
    Launch the integrated terminal in Visual Studio Code.
 
-2. **Navigate to the Docs Directory:**  
+2. **Navigate to the Docs Directory:**
    Change to the documentation folder:
 
    .. code-block:: bash
 
        cd docs
 
-3. **Build the Documentation:**  
+3. **Build the Documentation:**
    - On Linux/macOS:
 
      .. code-block:: bash
