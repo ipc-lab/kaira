@@ -1,4 +1,6 @@
+from typing import Any, Union
 import torch
+import numpy as np
 from . import losses
 
 def snr_linear_to_db(snr_linear):
@@ -33,31 +35,38 @@ def snr_db_to_linear(snr_db):
 
     return 10 ** (snr_db / 10)
 
-def to_tensor(x, device=None):
-    '''The function `to_tensor` converts a given input `x` to a PyTorch tensor, and optionally assigns it
-    to a specified device.
-    
+def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Tensor:
+    """
+    Convert an input data into a torch.Tensor, with an option to move it to a specific device.
+
     Parameters
     ----------
-    x
-        The parameter `x` can be any input value that you want to convert to a PyTorch tensor. It can be a
-    scalar value, a list, a numpy array, or any other supported data type.
-    device
-        The `device` parameter is an optional argument that specifies the device (e.g., CPU or GPU) on
-    which the tensor should be created. If `device` is not provided, the tensor will be created on the
-    default device.
-    
+    x : Any
+        The data to be converted. Acceptable types are:
+            - torch.Tensor: Returned as is (optionally moved to the specified device).
+            - int or float: Converted to a scalar tensor.
+            - list or numpy.ndarray: Converted to a tensor.
+    device : Union[str, torch.device, None], optional
+        The target device for the tensor (for example, 'cpu' or 'cuda'). Default is None.
+
     Returns
     -------
-        The function `to_tensor` returns a torch.Tensor object.
-    
-    '''
+    torch.Tensor
+        The input data converted to a tensor on the specified device if provided.
+
+    Raises
+    ------
+    TypeError
+        If the input type is not supported for conversion.
+    """
     if isinstance(x, torch.Tensor):
-        return x
-    elif isinstance(x, float):
+        return x.to(device) if device is not None else x
+    elif isinstance(x, (int, float)):
+        return torch.tensor(x, device=device)
+    elif isinstance(x, (list, np.ndarray)):
         return torch.tensor(x, device=device)
     else:
-        raise TypeError("Unsupported type: {}".format(type(x)))
+        raise TypeError(f"Unsupported type: {type(x)}")
 
 def calculate_num_filters_image(num_strided_layers, bw_ratio):
     '''The function calculates the number of filters in an image based on the number of strided layers and
