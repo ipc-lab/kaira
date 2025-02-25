@@ -68,5 +68,6 @@
    code_of_conduct
    makefile
    development
+   test_coverage
    build_documentation
    versioning

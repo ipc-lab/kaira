@@ -3,3 +3,6 @@ myst-parser
 sphinxcontrib-bibtex
 pydata-sphinx-theme
 markdown-it-linkify
+pytest>=7.0.0
+pytest-cov>=4.0.0
+coverage>=7.0.0
