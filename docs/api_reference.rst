@@ -9,7 +9,7 @@ Each component is documented with its parameters, methods, and usage examples.
    :local:
 
 Core Components
---------------
+---------------
 
 Core components provide the fundamental abstractions for building communication systems in Kaira.
 These base classes define interfaces that all derived implementations must adhere to.
@@ -42,6 +42,7 @@ They simulate various channel conditions and noise models.
 
    PerfectChannel
    AWGNChannel
+   ComplexAWGNChannel
 
 .. seealso::
    See :class:`~kaira.core.BaseChannel` for the interface all channels must implement.
@@ -132,8 +133,12 @@ Metrics evaluate the quality of transmitted and reconstructed signals.
    :template: class.rst
    :nosignatures:
 
-   PSNRMetric
-   SSIMMetric
+   PeakSignalNoiseRatio
+   PSNR
+   StructuralSimilarityIndexMeasure
+   SSIM
+   MultiScaleSSIM
+   LearnedPerceptualImagePatchSimilarity
 
 .. seealso::
    See :class:`~kaira.core.BaseMetric` for the interface all metrics must implement.

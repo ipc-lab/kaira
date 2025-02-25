@@ -6,17 +6,17 @@ Overview
 This guide provides comprehensive instructions for installing Kaira on your system. Kaira is designed to work across multiple platforms with minimal setup required.
 
 Prerequisites
-------------
+-------------
 - Python 3.8 or higher
 - pip (Python package installer)
 - 2GB+ of free disk space
 - (Optional) CUDA-compatible GPU for accelerated processing
 
 Installation Methods
--------------------
+--------------------
 
 Quick Installation
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 The fastest way to install Kaira is directly from PyPI:
 
 .. code-block:: bash
@@ -24,7 +24,7 @@ The fastest way to install Kaira is directly from PyPI:
    pip install kaira
 
 From Source
-~~~~~~~~~~
+~~~~~~~~~~~
 For the latest features or contributions, install from source:
 
 1. Clone the repository:
@@ -41,7 +41,7 @@ For the latest features or contributions, install from source:
       pip install .
 
 Using Virtual Environment (Recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 For a cleaner installation that won't interfere with other Python packages:
 
 .. code-block:: bash
@@ -60,7 +60,7 @@ For a cleaner installation that won't interfere with other Python packages:
    pip install kaira
 
 System-Specific Notes
---------------------
+---------------------
 
 Windows
 ~~~~~~~
@@ -77,7 +77,7 @@ Linux
 - Ensure you have the required build tools: ``sudo apt-get install build-essential python3-dev`` (Ubuntu/Debian)
 
 GPU Acceleration
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 Kaira automatically detects and utilizes available CUDA-compatible GPUs. For GPU support, you need:
 
 1. Installed the appropriate NVIDIA drivers for your GPU
@@ -101,7 +101,7 @@ For more details on PyTorch GPU configuration, please refer to the `PyTorch docu
 No additional Kaira-specific installation commands are required for GPU support as it's included in the main package.
 
 Verifying Installation
----------------------
+----------------------
 Confirm your installation is working correctly:
 
 .. code-block:: bash
@@ -111,7 +111,7 @@ Confirm your installation is working correctly:
 This should display your installed version without any errors.
 
 Troubleshooting
---------------
+---------------
 Common Issues:
 
 - **"ImportError: No module named kaira"**: Make sure your virtual environment is activated or reinstall using ``pip install --force-reinstall kaira``
@@ -122,7 +122,7 @@ Common Issues:
 For more help, see our :doc:`faq` or join our `community forum <https://github.com/ipc-lab/kaira/discussions>`_.
 
 Uninstallation
--------------
+--------------
 If you need to remove Kaira:
 
 .. code-block:: bash

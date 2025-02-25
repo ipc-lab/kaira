@@ -37,14 +37,14 @@ extensions = [
     "sphinx.ext.coverage",  # Check documentation coverage
     'sphinx.ext.mathjax',
     'sphinx_rtd_theme',
+    'sphinx_gallery.gen_gallery',  # Add sphinx-gallery for plot directive
+    'matplotlib.sphinxext.plot_directive'
 ]
 
-# Add nitpicky to catch reference errors
-nitpicky = True
-nitpick_ignore = [
-    # Add any references that should be ignored here
-    # ('py:class', 'non.existent.class'),
-]
+sphinx_gallery_conf = {
+     'examples_dirs': '../examples',   # path to your example scripts
+     'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+}
 
 # Configure autodoc
 autodoc_default_options = {
@@ -52,12 +52,19 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'special-members': '__init__',
     'undoc-members': True,
-    'exclude-members': '__weakref__'
+    'exclude-members': '__weakref__, __eq__, __format__, __ge__, __getattribute__, __gt__, __hash__, __lt__, __le__, __ne__, __reduce__, __reduce_ex__, __sizeof__, __str__', # , __module__, __dict__, __dir__',
+    'show-inheritance': True,
+    'inherited-members': True,
+    'private-members': False,
 }
+
+# Add settings to completely ignore inherited members from Python SDK
+autodoc_member_order = 'bysource'
+autodoc_inherit_docstrings = False
 
 # Automatically generate autosummary pages
 autosummary_generate = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 autosummary_template_mapping = {
     'class': 'class.rst',
     'function': 'function.rst',
@@ -71,7 +78,7 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
+napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
@@ -138,6 +145,14 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable', None),
     'torch': ('https://pytorch.org/docs/stable', None),
+    'torchmetrics': ('https://torchmetrics.readthedocs.io/en/stable/', None),
+}
+
+# Add sphinx-gallery configuration
+sphinx_gallery_conf = {
+    'examples_dirs': [],  # path to your example scripts
+    'gallery_dirs': [],  # path to where to save gallery generated output
+    'matplotlib_animations': True,
 }
 
 def skip_member(app, what, name, obj, skip, options):
@@ -155,19 +170,34 @@ def skip_member(app, what, name, obj, skip, options):
         options: Options passed to the directive.
 
     Returns:
-        bool: True if the member should be skipped, False otherwise.
+        bool: True if the member should be skipped, False otherwise.or name == "training" or name == "dump_patches" :
     """
+    # Exclude common dunder methods that aren't helpful in documentation
+    if name not in ['__init__', '__call__', '__enter__', '__exit__']:
+        if name.startswith('__') and name.endswith('__'):
+            return True
+    
+        if name.startswith("_"):
+            return True
+    
+    if name in ["training", "dump_patches", "call_super_init"]:
+        return True
+    
     module = getattr(obj, "__module__", None)
     if module and (
         module.startswith("numpy.")
         or module.startswith("torch.")
         or module == "torch"
         or module == "numpy"
+        or module == "torchmetrics"
     ):
         return True
 
+    # Skip specific problematic methods
+    if what == 'method' and name == 'plot' and hasattr(obj, '__module__') and 'torchmetrics.image.ssim' in getattr(obj, '__module__', ''):
+        return True
+        
     return False
-
 
 def setup(app):
     """Set up the Sphinx application.
@@ -179,4 +209,3 @@ def setup(app):
         app: The Sphinx application object.
     """
     app.connect("autodoc-skip-member", skip_member)
-    

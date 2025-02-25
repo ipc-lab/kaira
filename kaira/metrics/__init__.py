@@ -139,3 +139,4 @@ class StructuralSimilarityIndexMeasure(torchmetrics.image.StructuralSimilarityIn
 # Add aliases for documentation
 PSNR = PeakSignalNoiseRatio
 SSIM = StructuralSimilarityIndexMeasure
+LPIPS = LearnedPerceptualImagePatchSimilarity
