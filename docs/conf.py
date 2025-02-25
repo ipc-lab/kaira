@@ -15,7 +15,9 @@ print(os.path.abspath("../kaira"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Kaira"
-author = "Selim F. Yilmaz, Imperial IPC Lab"
+author = "Kaira Team"
+version = '0.1.0'
+release = '0.1.0'
 
 copyright = f"{datetime.datetime.now().year}, {author}"
 
@@ -33,10 +35,34 @@ extensions = [
     "sphinx.ext.viewcode",  # Add source links
     "sphinx.ext.intersphinx",  # Link to other projects
     "sphinx.ext.coverage",  # Check documentation coverage
+    'sphinx.ext.mathjax',
+    'sphinx_rtd_theme',
 ]
 
+# Add nitpicky to catch reference errors
+nitpicky = True
+nitpick_ignore = [
+    # Add any references that should be ignored here
+    # ('py:class', 'non.existent.class'),
+]
+
+# Configure autodoc
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': True,
+    'exclude-members': '__weakref__'
+}
+
 # Automatically generate autosummary pages
-# autosummary_generate = True
+autosummary_generate = True
+autosummary_imported_members = True
+autosummary_template_mapping = {
+    'class': 'class.rst',
+    'function': 'function.rst',
+    'module': 'module.rst',
+}
 
 bibtex_bibfiles = ["refs.bib"]
 
@@ -73,7 +99,9 @@ myst_enable_extensions = [
     "tasklist",
 ]
 
+# Add autosummary templates directory
 templates_path = ["_templates"]
+
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
@@ -92,6 +120,7 @@ html_favicon = "_static/favicon.ico"
 html_show_sourcelink = True
 html_show_sphinx = True
 html_show_copyright = True
+html_title = 'Kaira Documentation'
 
 # -- Options for source files ------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-source-files
@@ -104,6 +133,12 @@ source_suffix = {
 # Include README.md in the documentation
 master_doc = "index"
 
+# -- Options for intersphinx extension ---------------------------------------
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'torch': ('https://pytorch.org/docs/stable', None),
+}
 
 def skip_member(app, what, name, obj, skip, options):
     """Determine whether to skip a member during documentation generation.
@@ -144,3 +179,4 @@ def setup(app):
         app: The Sphinx application object.
     """
     app.connect("autodoc-skip-member", skip_member)
+    

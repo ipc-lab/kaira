@@ -1,10 +1,10 @@
 Test Coverage
-============
+=============
 
 This document explains how to measure and interpret test coverage in the Kaira project.
 
 Running Coverage Analysis
-------------------------
+-------------------------
 
 To run tests with coverage analysis:
 
@@ -23,7 +23,7 @@ Or manually with pytest:
     pytest --cov=kaira --cov-report=html tests/
 
 Interpreting Coverage Reports
-----------------------------
+-----------------------------
 
 After running the tests with coverage, you'll find:
 
@@ -45,7 +45,7 @@ Open the HTML report in your browser to see detailed line-by-line coverage:
     start coverage_html/index.html
 
 Coverage Goals
--------------
+--------------
 
 - Aim for at least 80% overall code coverage
 - Focus on covering critical paths and edge cases

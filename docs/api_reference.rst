@@ -1,26 +1,26 @@
 Kaira API Reference
 ===================
 
+This documentation provides a comprehensive reference of Kaira's components organized by functional category.
+Each component is documented with its parameters, methods, and usage examples.
+
 .. contents:: Table of Contents
    :depth: 2
    :local:
 
-Overview
---------
-This documentation provides a comprehensive API reference for Kaira. Each section below is generated from the source code.
+Core Components
+--------------
 
-Core
-----
-.. automodule:: kaira.core
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
+Core components provide the fundamental abstractions for building communication systems in Kaira.
+These base classes define interfaces that all derived implementations must adhere to.
 
 .. currentmodule:: kaira.core
 
 .. autosummary::
    :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    BaseChannel
    BaseConstraint
    BaseMetric
@@ -29,76 +29,127 @@ Core
 
 Channels
 --------
-.. automodule:: kaira.channels
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
+
+Channel implementations model the transmission medium between sender and receiver.
+They simulate various channel conditions and noise models.
 
 .. currentmodule:: kaira.channels
 
 .. autosummary::
    :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    PerfectChannel
+   AWGNChannel
+
+.. seealso::
+   See :class:`~kaira.core.BaseChannel` for the interface all channels must implement.
 
 Constraints
 -----------
-.. automodule:: kaira.constraints
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
+
+Constraints enforce signal power limitations and other physical constraints on transmitted signals.
 
 .. currentmodule:: kaira.constraints
 
 .. autosummary::
    :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    AveragePowerConstraint
    ComplexAveragePowerConstraint
    ComplexTotalPowerConstraint
    TotalPowerConstraint
 
+.. seealso::
+   See :class:`~kaira.core.BaseConstraint` for the interface all constraints must implement.
+
 Pipelines
 ---------
-.. automodule:: kaira.pipelines
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
+
+Pipelines integrate encoders, decoders, and channels into end-to-end communication systems.
 
 .. currentmodule:: kaira.pipelines
 
 .. autosummary::
    :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    DeepJSCCPipeline
+
+.. seealso::
+   See :class:`~kaira.core.BasePipeline` for the interface all pipelines must implement.
 
 Models
 ------
-.. automodule:: kaira.models
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
 
-.. currentmodule:: kaira.models
+Models implement the neural network architectures for encoders, decoders, and other learnable components.
+
+Components
+^^^^^^^^^^
+
+Common components that can be reused across different model architectures.
+
+.. currentmodule:: kaira.models.components
 
 .. autosummary::
    :toctree: generated
-   components.∏
+   :template: class.rst
+   :nosignatures:
+
+   AFModule
+
+Image Models
+^^^^^^^^^^^^^^^^^^^
+
+Specialized models for image transmission tasks.
+
+.. currentmodule:: kaira.models.image
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   DeepJSCCQ2Encoder
+   DeepJSCCQ2Decoder
+
+.. seealso::
+   These models can be used with :class:`~kaira.pipelines.DeepJSCCPipeline` for end-to-end image transmission.
+
+Metrics
+-------
+
+Metrics evaluate the quality of transmitted and reconstructed signals.
+
+.. currentmodule:: kaira.metrics
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   PSNRMetric
+   SSIMMetric
+
+.. seealso::
+   See :class:`~kaira.core.BaseMetric` for the interface all metrics must implement.
 
 Utilities
 ---------
-.. automodule:: kaira.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
+
+Utility functions to assist with common tasks across the library.
 
 .. currentmodule:: kaira.utils
 
 .. autosummary::
    :toctree: generated
-   :no-index:
+   :template: function.rst
+   :nosignatures:
+
    snr_db_to_linear
    snr_linear_to_db
    to_tensor
