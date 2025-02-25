@@ -3,7 +3,7 @@ Building Documentation
 
 To build the Kaira documentation, you need to use Sphinx, a powerful tool for creating and managing project documentation. Sphinx processes reStructuredText files to generate HTML, PDF, and other output formats.
 
-Follow these steps to build and review the Kaira documentation using Sphinx: 
+Follow these steps to build and review the Kaira documentation using Sphinx:
 
 1. **Open a Terminal:**
    Launch the integrated terminal in Visual Studio Code.
@@ -17,14 +17,14 @@ Follow these steps to build and review the Kaira documentation using Sphinx:
 
 3. **Build the HTML Documentation:**
 
-   - **On Linux/macOS:**  
+   - **On Linux/macOS:**
      Run the following command:
 
      .. code-block:: bash
 
         make html
 
-   - **On Windows:**  
+   - **On Windows:**
      Run the following command:
 
      .. code-block:: bat
