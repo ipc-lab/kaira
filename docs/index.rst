@@ -47,7 +47,6 @@ Indices and tables
 
    introduction
    installation
-   usage
    tutorials
    examples
 
