@@ -25,3 +25,25 @@
       {{ function }}
    {%- endfor %}
    {% endif %}
+   
+   {% if attributes %}
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :nosignatures:
+      :toctree:
+   {% for attribute in attributes %}
+      {{ attribute }}
+   {%- endfor %}
+   {% endif %}
+   
+   {% if methods %}
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+      :toctree:
+   {% for method in methods %}
+      {{ method }}
+   {%- endfor %}
+   {% endif %}

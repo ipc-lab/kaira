@@ -8,17 +8,35 @@
 
 /* Base styles and typography */
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: "Roboto", sans-serif;
     line-height: 1.6;
     background-color: #ffffff;
-    color: #333;
+    color: #444;
     margin: 0;
     padding: 0;
+    font-size: 16px;
 }
 .container {
     width: 90%;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #2c3e50;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: #2980b9;
+    text-decoration: none;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 /* Sticky navigation bar */
@@ -29,6 +47,7 @@ body {
     width: 100%;
     z-index: 1000;
     padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .navbar .logo img {
     height: 40px;
@@ -46,9 +65,12 @@ body {
     color: #ffffff;
     text-decoration: none;
     transition: color 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
 }
 .nav-links a:hover {
     color: #0a9396;
+    background-color: #0a9396;
 }
 
 /* Breadcrumb styling */
@@ -57,6 +79,7 @@ body {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
     color: #555;
+    border-radius: 4px;
 }
 
 /* Main content layout using CSS Grid */
@@ -64,7 +87,7 @@ main {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
-    padding: 2rem 0;
+    padding: 2rem 1.5rem;
 }
 
 /* Code blocks styling */
@@ -73,6 +96,7 @@ div.highlight pre {
     color: #d6deeb;
     border-radius: 5px;
     padding: 1em;
+    font-size: 1em;
 }
 
 /* Sidebar styling */
@@ -80,14 +104,48 @@ aside {
     background: #f8f8f8;
     padding: 1rem;
     border-left: 3px solid #005f73;
+    border-radius: 4px;
 }
 
 /* Footer styling */
 footer {
-    background-color: #333;
-    color: #fff;
-    padding: 1rem 0;
+    /*background-color: #0a9396;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    color: #ffffff;*/
+    padding: 2rem 0;
     text-align: center;
+    font-size: 0.9em;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    }
+
+footer a {
+    color: #94d2bd;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: #e9d8a6;
+    text-decoration: underline;
+}
+
+footer .footer-links {
+    margin-top: 1rem;
+}
+
+footer .footer-links a {
+    margin: 0 1rem;
+    font-size: 1em;
+}
+
+footer .footer-logo {
+    margin-bottom: 1rem;
+}
+
+footer .footer-logo img {
+    height: 50px;
 }
 
 /* Layout tweaks */
@@ -95,21 +153,64 @@ footer {
     margin: 2em auto;
     max-width: 800px;
     padding: 0 1em;
+    line-height: 1.8;
 }
 
 /* Responsive design adjustments */
 @media (max-width: 768px) {
     .navbar {
         text-align: center;
+        padding: 1rem;
+    }
+    .nav-links {
+        flex-direction: column;
+    }
+    .nav-links li {
+        margin: 0.5rem 0;
+    }
+    main {
+        padding: 1.5rem 1rem;
     }
 }
 @media (min-width: 768px) {
     main {
         grid-template-columns: 3fr 1fr;
+        padding: 2rem 1.5rem;
     }
 }
 
 /* Example: Adjust code block font size */
 .rtd-content pre {
     font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.rubric {
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.list-table th {
+    background-color: #ecf0f1;
+    font-weight: bold;
+}
+
+.list-table td {
+    border: 1px solid #bdc3c7;
+    padding: 8px;
+}
+
+/* Additional improvements */
+code {
+    background-color: #f4f4f4;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+blockquote {
+    border-left: 4px solid #ddd;
+    padding: 0.5rem 1rem;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 4px;
 }

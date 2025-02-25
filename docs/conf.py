@@ -38,12 +38,17 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_rtd_theme',
     'sphinx_gallery.gen_gallery',  # Add sphinx-gallery for plot directive
-    'matplotlib.sphinxext.plot_directive'
+    'matplotlib.sphinxext.plot_directive',
+    'sphinx.ext.todo',  # Add support for TODOs
+    'sphinx.ext.ifconfig',  # Add support for conditional content
+    'sphinx_design',  # Add sphinx-design for better UI components
+'sphinx_hoverxref',
 ]
 
 sphinx_gallery_conf = {
      'examples_dirs': '../examples',   # path to your example scripts
      'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+    'matplotlib_animations': True,
 }
 
 # Configure autodoc
@@ -69,6 +74,8 @@ autosummary_template_mapping = {
     'class': 'class.rst',
     'function': 'function.rst',
     'module': 'module.rst',
+    'attribute': 'attribute.rst',
+    'method': 'method.rst',
 }
 
 bibtex_bibfiles = ["refs.bib"]
@@ -120,7 +127,7 @@ html_theme = "sphinx_rtd_theme"
 
 html_static_path = ["_static"]
 
-html_css_files = []
+html_css_files = ["custom.css"]
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
@@ -129,12 +136,34 @@ html_show_sphinx = True
 html_show_copyright = True
 html_title = 'Kaira Documentation'
 
+
 # -- Options for source files ------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-source-files
 
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
+}
+
+
+html_theme_options = {
+    'navigation_depth': 4,
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'titles_only': False,
+    # 'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': True,
+    'style_nav_header_background': '#005f73'
+}
+
+html_context = {
+    'display_github': True,
+    'github_user': 'ipc-lab',
+    'github_repo': 'kaira',
+    'github_version': 'main/docs/',
+    'conf_py_path': '/docs/',
+    'source_suffix': source_suffix
 }
 
 # Include README.md in the documentation
@@ -148,11 +177,16 @@ intersphinx_mapping = {
     'torchmetrics': ('https://torchmetrics.readthedocs.io/en/stable/', None),
 }
 
-# Add sphinx-gallery configuration
-sphinx_gallery_conf = {
-    'examples_dirs': [],  # path to your example scripts
-    'gallery_dirs': [],  # path to where to save gallery generated output
-    'matplotlib_animations': True,
+todo_include_todos = True
+
+hoverxref_auto_ref = True
+hoverxref_role_types = {
+    'hoverxref': 'tooltip',
+    'ref': 'tooltip',
+    'confval': 'tooltip',
+    'mod': 'tooltip',
+    'class': 'tooltip',
+    'term': 'tooltip',
 }
 
 def skip_member(app, what, name, obj, skip, options):

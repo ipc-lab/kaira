@@ -13,8 +13,8 @@ Kaira — Wireless Communication Simulation Toolbox for PyTorch
    :target: https://kaira.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://badges.gitter.im/ipc-lab/kaira/community.svg
-   :target: https://gitter.im/ipc-lab/kaira/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link
+.. image:: https://badges.gitter.im//community.svg
+   :target: https://gitter.im/kaira/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link
    :alt: Gitter Chat
 
 .. image:: https://dev.azure.com/ipc-lab/kaira/_apis/build/status/ipc-lab.kaira?branchName=master
