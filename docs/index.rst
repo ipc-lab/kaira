@@ -66,13 +66,13 @@ Indices and tables
    support
    references
    license
+   changelog
    citing
 
 .. toctree::
    :maxdepth: 2
    :caption: Build & Maintenance
 
-   changelog
    contributing
    code_of_conduct
    makefile
