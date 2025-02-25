@@ -1,8 +1,8 @@
 Introduction
 ============
 
-Kaira is a library for developing and evaluating deep learning-based communication systems. 
-It provides a comprehensive toolkit for researchers and engineers working on next-generation 
+Kaira is a library for developing and evaluating deep learning-based communication systems.
+It provides a comprehensive toolkit for researchers and engineers working on next-generation
 wireless communication technologies.
 
 Key Features
@@ -22,7 +22,5 @@ To start using Kaira, install it via pip:
 
     pip install kaira
 
-For comprehensive installation options, dependencies, and platform-specific instructions, 
+For comprehensive installation options, dependencies, and platform-specific instructions,
 please refer to our :doc:`installation guide </installation>`.
-
-

@@ -48,14 +48,14 @@ For a cleaner installation that won't interfere with other Python packages:
 
    # Create a virtual environment
    python -m venv kaira-env
-   
+
    # Activate the environment
    # On Linux/macOS:
    source kaira-env/bin/activate
-   
+
    # On Windows:
    kaira-env\Scripts\activate
-   
+
    # Install Kaira
    pip install kaira
 

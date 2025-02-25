@@ -136,6 +136,7 @@ class StructuralSimilarityIndexMeasure(torchmetrics.image.StructuralSimilarityIn
 
         return res_per_sample.mean(), res_per_sample.std()
 
+
 # Add aliases for documentation
 PSNR = PeakSignalNoiseRatio
 SSIM = StructuralSimilarityIndexMeasure

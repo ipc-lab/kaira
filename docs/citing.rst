@@ -10,5 +10,5 @@ For academic publications or any research work that makes use of Kaira, please a
         title        = {Kaira},
         year         = {2025},
         howpublished = {\url{https://github.com/ipc-lab/kaira}},
-        note         = {Accessed: 23 February 2025 (TODO: UPDATE)},
+        note         = {Accessed: 1 March 2025 (TODO: UPDATE)},
     }

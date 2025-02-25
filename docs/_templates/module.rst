@@ -3,7 +3,7 @@
 .. automodule:: {{ fullname }}
    :members:
    :show-inheritance:
-   
+
    {% if classes %}
    .. rubric:: Classes
 
@@ -14,7 +14,7 @@
       {{ class }}
    {%- endfor %}
    {% endif %}
-   
+
    {% if functions %}
    .. rubric:: Functions
 
@@ -25,7 +25,7 @@
       {{ function }}
    {%- endfor %}
    {% endif %}
-   
+
    {% if attributes %}
    .. rubric:: Attributes
 
@@ -36,7 +36,7 @@
       {{ attribute }}
    {%- endfor %}
    {% endif %}
-   
+
    {% if methods %}
    .. rubric:: Methods
 

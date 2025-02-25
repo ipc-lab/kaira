@@ -31,9 +31,9 @@
    {%- endfor %}
    {% endif %}
    {% endblock %}
-   
+
    {% if examples %}
    .. rubric:: {{ _('Examples') }}
-   
+
    {{ examples }}
    {% endif %}

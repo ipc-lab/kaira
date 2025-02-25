@@ -15,7 +15,7 @@
      - *No description available*
    {% endif %}
    {% endfor %}
-   
+
    {% if attributes %}
    .. rubric:: Attributes
 
@@ -35,7 +35,7 @@
       {% endif %}
       {% endfor %}
    {% endif %}
-   
+
    {% if methods %}
    .. rubric:: Methods
 

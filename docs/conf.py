@@ -16,8 +16,8 @@ print(os.path.abspath("../kaira"))
 
 project = "Kaira"
 author = "Kaira Team"
-version = '0.1.0'
-release = '0.1.0'
+version = "0.1.0"
+release = "0.1.0"
 
 copyright = f"{datetime.datetime.now().year}, {author}"
 
@@ -35,47 +35,48 @@ extensions = [
     "sphinx.ext.viewcode",  # Add source links
     "sphinx.ext.intersphinx",  # Link to other projects
     "sphinx.ext.coverage",  # Check documentation coverage
-    'sphinx.ext.mathjax',
-    'sphinx_rtd_theme',
-    'sphinx_gallery.gen_gallery',  # Add sphinx-gallery for plot directive
-    'matplotlib.sphinxext.plot_directive',
-    'sphinx.ext.todo',  # Add support for TODOs
-    'sphinx.ext.ifconfig',  # Add support for conditional content
-    'sphinx_design',  # Add sphinx-design for better UI components
-'sphinx_hoverxref',
+    "sphinx.ext.mathjax",
+    "sphinx_rtd_theme",
+    "sphinx_gallery.gen_gallery",  # Add sphinx-gallery for plot directive
+    "matplotlib.sphinxext.plot_directive",
+    "sphinx.ext.todo",  # Add support for TODOs
+    "sphinx.ext.ifconfig",  # Add support for conditional content
+    "sphinx_design",  # Add sphinx-design for better UI components
+    "hoverxref.extension",
+    "sphinx_copybutton",
 ]
 
 sphinx_gallery_conf = {
-     'examples_dirs': '../examples',   # path to your example scripts
-     'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
-    'matplotlib_animations': True,
+    "examples_dirs": "../examples",  # path to your example scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    "matplotlib_animations": True,
 }
 
 # Configure autodoc
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__, __eq__, __format__, __ge__, __getattribute__, __gt__, __hash__, __lt__, __le__, __ne__, __reduce__, __reduce_ex__, __sizeof__, __str__', # , __module__, __dict__, __dir__',
-    'show-inheritance': True,
-    'inherited-members': True,
-    'private-members': False,
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__, __eq__, __format__, __ge__, __getattribute__, __gt__, __hash__, __lt__, __le__, __ne__, __reduce__, __reduce_ex__, __sizeof__, __str__",  # , __module__, __dict__, __dir__',
+    "show-inheritance": True,
+    "inherited-members": True,
+    "private-members": False,
 }
 
 # Add settings to completely ignore inherited members from Python SDK
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 autodoc_inherit_docstrings = False
 
 # Automatically generate autosummary pages
 autosummary_generate = True
 autosummary_imported_members = False
 autosummary_template_mapping = {
-    'class': 'class.rst',
-    'function': 'function.rst',
-    'module': 'module.rst',
-    'attribute': 'attribute.rst',
-    'method': 'method.rst',
+    "class": "class.rst",
+    "function": "function.rst",
+    "module": "module.rst",
+    "attribute": "attribute.rst",
+    "method": "method.rst",
 }
 
 bibtex_bibfiles = ["refs.bib"]
@@ -134,7 +135,7 @@ html_favicon = "_static/favicon.ico"
 html_show_sourcelink = True
 html_show_sphinx = True
 html_show_copyright = True
-html_title = 'Kaira Documentation'
+html_title = "Kaira Documentation"
 
 
 # -- Options for source files ------------------------------------------------
@@ -147,23 +148,23 @@ source_suffix = {
 
 
 html_theme_options = {
-    'navigation_depth': 4,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'titles_only': False,
+    "navigation_depth": 4,
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "titles_only": False,
     # 'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': True,
-    'style_nav_header_background': '#005f73'
+    "prev_next_buttons_location": "bottom",
+    "style_external_links": True,
+    "style_nav_header_background": "#005f73",
 }
 
 html_context = {
-    'display_github': True,
-    'github_user': 'ipc-lab',
-    'github_repo': 'kaira',
-    'github_version': 'main/docs/',
-    'conf_py_path': '/docs/',
-    'source_suffix': source_suffix
+    "display_github": True,
+    "github_user": "ipc-lab",
+    "github_repo": "kaira",
+    "github_version": "main/docs/",
+    "conf_py_path": "/docs/",
+    "source_suffix": source_suffix,
 }
 
 # Include README.md in the documentation
@@ -171,23 +172,24 @@ master_doc = "index"
 
 # -- Options for intersphinx extension ---------------------------------------
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable', None),
-    'torch': ('https://pytorch.org/docs/stable', None),
-    'torchmetrics': ('https://torchmetrics.readthedocs.io/en/stable/', None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "torch": ("https://pytorch.org/docs/stable", None),
+    "torchmetrics": ("https://torchmetrics.readthedocs.io/en/stable/", None),
 }
 
 todo_include_todos = True
 
 hoverxref_auto_ref = True
 hoverxref_role_types = {
-    'hoverxref': 'tooltip',
-    'ref': 'tooltip',
-    'confval': 'tooltip',
-    'mod': 'tooltip',
-    'class': 'tooltip',
-    'term': 'tooltip',
+    "hoverxref": "tooltip",
+    "ref": "tooltip",
+    "confval": "tooltip",
+    "mod": "tooltip",
+    "class": "tooltip",
+    "term": "tooltip",
 }
+
 
 def skip_member(app, what, name, obj, skip, options):
     """Determine whether to skip a member during documentation generation.
@@ -207,16 +209,16 @@ def skip_member(app, what, name, obj, skip, options):
         bool: True if the member should be skipped, False otherwise.or name == "training" or name == "dump_patches" :
     """
     # Exclude common dunder methods that aren't helpful in documentation
-    if name not in ['__init__', '__call__', '__enter__', '__exit__']:
-        if name.startswith('__') and name.endswith('__'):
+    if name not in ["__init__", "__call__", "__enter__", "__exit__"]:
+        if name.startswith("__") and name.endswith("__"):
             return True
-    
+
         if name.startswith("_"):
             return True
-    
+
     if name in ["training", "dump_patches", "call_super_init"]:
         return True
-    
+
     module = getattr(obj, "__module__", None)
     if module and (
         module.startswith("numpy.")
@@ -228,10 +230,21 @@ def skip_member(app, what, name, obj, skip, options):
         return True
 
     # Skip specific problematic methods
-    if what == 'method' and name == 'plot' and hasattr(obj, '__module__') and 'torchmetrics.image.ssim' in getattr(obj, '__module__', ''):
+    if (
+        what == "method"
+        and name == "plot"
+        and hasattr(obj, "__module__")
+        and "torchmetrics.image.ssim" in getattr(obj, "__module__", "")
+    ):
         return True
-        
+
     return False
+
+
+def get_current_date():
+    """Return the current date in the format 'DD Month YYYY'."""
+    return datetime.datetime.now().strftime("%d %B %Y")
+
 
 def setup(app):
     """Set up the Sphinx application.
@@ -243,3 +256,4 @@ def setup(app):
         app: The Sphinx application object.
     """
     app.connect("autodoc-skip-member", skip_member)
+    app.add_config_value("current_date", get_current_date(), "env")

@@ -1,6 +1,6 @@
 [run]
 source = kaira
-omit = 
+omit =
     */tests/*
     */site-packages/*
 

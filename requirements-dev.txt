@@ -9,3 +9,4 @@ coverage>=7.0.0
 sphinx-gallery
 pre-commit
 sphinx-hoverxref
+sphinx-copybutton
