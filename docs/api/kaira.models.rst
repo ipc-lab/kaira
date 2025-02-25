@@ -1,5 +1,5 @@
-models package
-==============
+kaira.models package
+====================
 
 Subpackages
 -----------
@@ -7,13 +7,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   models.components
-   models.image
+   kaira.models.components
+   kaira.models.image
 
 Module contents
 ---------------
 
-.. automodule:: models
+.. automodule:: kaira.models
    :members:
    :undoc-members:
    :show-inheritance:

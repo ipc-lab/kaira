@@ -1,37 +1,72 @@
-Kaira Documentation
-===================
+.. image:: _static/logo.png
+    :align: center
 
-Welcome to the Kaira library documentation.
+===============================
+
+.. include:: badges.rst
+
+===============================
+
+.. include:: features.rst
+
+===============================
+
+.. include:: installation.rst
+
+===============================
+
+.. include:: quick_links.rst
+
+===============================
+
+.. include:: versioning.rst
+
+===============================
+
+.. include:: license.rst
+
+===============================
+
+.. include:: citing.rst
+
+----
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started
 
+   getting_started
    installation
    usage
+   tutorials
+   examples
 
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
 
    api_reference
-   modules
 
 .. toctree::
    :maxdepth: 2
-   :caption: Examples & Tutorials
+   :caption: Additional Information
 
-tutorials
-tutorials
-tutorials
-   examples
+   quick_links
+   faq
+   support
+   references
+   license
+   citing
 
-Introduction
-------------
-Kaira is an open-source framework for wireless communication research and development. It integrates core processing, advanced models, and robust pipelines to support cutting-edge experiments and real-world applications.
+.. toctree::
+   :maxdepth: 2
+   :caption: Build & Maintenance
 
-Overview & Introduction
------------------------
-Kaira is an open-source framework for wireless communication research and development. It provides a robust set of features including core processing, advanced models, and pipelines for cutting-edge experiments.
-
-Installation, usage, and API details are documented in the sections below.
+   changelog
+   contributing
+   code_of_conduct
+   makefile
+   development
+   build_documentation
+   versioning

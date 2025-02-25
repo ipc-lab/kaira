@@ -1,98 +1,125 @@
-# tests/test_pipelines.py
-import pytest
-import torch
+"""Tests for pipelines modules."""
+import unittest
+from unittest.mock import MagicMock
 
-from kaira.core import BasePipeline
+import torch
+from torch import nn
+
 from kaira.pipelines import DeepJSCCPipeline
 
 
-class MockEncoder(torch.nn.Module):
-    def forward(self, x):
-        return x * 2
+class MockEncoder(nn.Module):
+    """Mock encoder for testing."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Identity forward."""
+        return x
 
 
-class MockDecoder(torch.nn.Module):
-    def forward(self, x):
-        return x / 2
+class MockDecoder(nn.Module):
+    """Mock decoder for testing."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Identity forward."""
+        return x
 
 
-class MockConstraint(torch.nn.Module):
-    def forward(self, x):
-        return torch.clamp(x, -1, 1)
+class MockConstraint(nn.Module):
+    """Mock constraint for testing."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Identity forward."""
+        return x
 
 
-class MockChannel(torch.nn.Module):
-    def forward(self, x):
-        return x + torch.randn_like(x) * 0.1
+class MockChannel(nn.Module):
+    """Mock channel for testing."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Identity forward."""
+        return x
 
 
-@pytest.fixture
-def mock_encoder():
+def mock_encoder() -> MockEncoder:
+    """Mock encoder."""
     return MockEncoder()
 
 
-@pytest.fixture
-def mock_decoder():
+def mock_decoder() -> MockDecoder:
+    """Mock decoder."""
     return MockDecoder()
 
 
-@pytest.fixture
-def mock_constraint():
+def mock_constraint() -> MockConstraint:
+    """Mock constraint."""
     return MockConstraint()
 
 
-@pytest.fixture
-def mock_channel():
+def mock_channel() -> MockChannel:
+    """Mock channel."""
     return MockChannel()
 
 
-@pytest.fixture
-def sample_input():
+def sample_input() -> torch.Tensor:
+    """Sample input."""
     return torch.randn(1, 3, 32, 32)
 
 
-def test_deepjscc_pipeline_initialization(
-    mock_encoder, mock_decoder, mock_constraint, mock_channel
-):
-    """Test DeepJSCCPipeline initialization."""
-    pipeline = DeepJSCCPipeline(
-        encoder=mock_encoder,
-        decoder=mock_decoder,
-        constraint=mock_constraint,
-        channel=mock_channel,
-    )
-    assert isinstance(pipeline, DeepJSCCPipeline)
-    assert isinstance(pipeline, BasePipeline)
+class test_deepjscc_pipeline_initialization(unittest.TestCase):
+    """Tests for DeepJSCCPipeline initialization."""
 
-
-def test_deepjscc_pipeline_forward(
-    mock_encoder, mock_decoder, mock_constraint, mock_channel, sample_input
-):
-    """Test DeepJSCCPipeline forward pass."""
-    pipeline = DeepJSCCPipeline(
-        encoder=mock_encoder,
-        decoder=mock_decoder,
-        constraint=mock_constraint,
-        channel=mock_channel,
-    )
-    output = pipeline(sample_input)
-    assert isinstance(output, torch.Tensor)
-    assert output.shape == sample_input.shape
-
-
-def test_deepjscc_pipeline_components_called(
-    mock_encoder, mock_decoder, mock_constraint, mock_channel, sample_input
-):
-    """Test that the components of the DeepJSCCPipeline are called during the forward pass."""
-    # Use torch.spy to check if the forward methods of the components are called
-    with torch.no_grad():
-        pipeline = DeepJSCCPipeline(
-            encoder=mock_encoder,
-            decoder=mock_decoder,
-            constraint=mock_constraint,
-            channel=mock_channel,
+    def setUp(self):
+        """Set up for test methods."""
+        self.encoder = mock_encoder()
+        self.decoder = mock_decoder()
+        self.constraint = mock_constraint()
+        self.channel = mock_channel()
+        self.pipeline = DeepJSCCPipeline(
+            encoder=self.encoder,
+            decoder=self.decoder,
+            constraint=self.constraint,
+            channel=self.channel,
         )
-        output = pipeline(sample_input)
 
-        # Check that the output is different from the input
-        assert not torch.equal(output, sample_input)
+    def test_deepjscc_pipeline_initialization(self):
+        """Tests that DeepJSCCPipeline is initialized correctly."""
+        self.assertIsInstance(self.pipeline, DeepJSCCPipeline)
+        self.assertEqual(self.pipeline.encoder, self.encoder)
+        self.assertEqual(self.pipeline.decoder, self.decoder)
+        self.assertEqual(self.pipeline.constraint, self.constraint)
+        self.assertEqual(self.pipeline.channel, self.channel)
+
+
+class test_deepjscc_pipeline_forward(unittest.TestCase):
+    """Tests for DeepJSCCPipeline forward method."""
+
+    def setUp(self):
+        """Set up for test methods."""
+        self.encoder = mock_encoder()
+        self.decoder = mock_decoder()
+        self.constraint = mock_constraint()
+        self.channel = mock_channel()
+        self.pipeline = DeepJSCCPipeline(
+            encoder=self.encoder,
+            decoder=self.decoder,
+            constraint=self.constraint,
+            channel=self.channel,
+        )
+        self.input = sample_input()
+
+    def test_deepjscc_pipeline_forward(self):
+        """Tests that DeepJSCCPipeline forward method returns the correct output."""
+        output = self.pipeline(self.input)
+        self.assertEqual(output.shape, self.input.shape)
+
+
+class test_deepjscc_pipeline_components_called(unittest.TestCase):
+    """Tests for DeepJSCCPipeline components called."""
+
+    def setUp(self):
+        """Set up for test methods."""
+        self.encoder = mock_encoder()
+        self.decoder = mock_decoder()
+        self.constraint = mock_constraint()
+        self.channel = mock_channel()
+        self.pipeline

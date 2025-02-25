@@ -30,7 +30,13 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinxcontrib.bibtex",
     "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",  # Add source links
+    "sphinx.ext.intersphinx",  # Link to other projects
+    "sphinx.ext.coverage",  # Check documentation coverage
 ]
+
+# Automatically generate autosummary pages
+# autosummary_generate = True
 
 bibtex_bibfiles = ["refs.bib"]
 
@@ -79,9 +85,7 @@ html_theme = "sphinx_rtd_theme"
 
 html_static_path = ["_static"]
 
-html_css_files = [
-    #'custom.css',
-]
+html_css_files = []
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
@@ -99,3 +103,44 @@ source_suffix = {
 
 # Include README.md in the documentation
 master_doc = "index"
+
+
+def skip_member(app, what, name, obj, skip, options):
+    """Determine whether to skip a member during documentation generation.
+
+    This function is used to skip certain members (e.g., private attributes,
+    inherited members) from appearing in the generated documentation.
+
+    Args:
+        app: The Sphinx application object.
+        what (str): The type of the object being documented (e.g., "module", "class", "function").
+        name (str): The name of the member.
+        obj: The member object itself.
+        skip (bool): A flag indicating whether the member should be skipped by default.
+        options: Options passed to the directive.
+
+    Returns:
+        bool: True if the member should be skipped, False otherwise.
+    """
+    module = getattr(obj, "__module__", None)
+    if module and (
+        module.startswith("numpy.")
+        or module.startswith("torch.")
+        or module == "torch"
+        or module == "numpy"
+    ):
+        return True
+
+    return False
+
+
+def setup(app):
+    """Set up the Sphinx application.
+
+    This function is called when the Sphinx application is initialized.
+    It is used to connect event listeners and perform other setup tasks.
+
+    Args:
+        app: The Sphinx application object.
+    """
+    app.connect("autodoc-skip-member", skip_member)

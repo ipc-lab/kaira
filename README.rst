@@ -1,5 +1,6 @@
 .. image:: docs/_static/logo.png
     :align: center
+    :alt: Kaira Framework Logo
 
 Kaira — Wireless Communication Simulation Toolbox for PyTorch
 ==============================================================
@@ -55,6 +56,7 @@ Kaira — Wireless Communication Simulation Toolbox for PyTorch
 Kaira is an open-source simulation toolkit for wireless communications built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced wireless transmission algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
 
 `Documentation <https://kaira.readthedocs.io/en/latest/>`__
+
 DeepJSCC
 ========
 
@@ -120,6 +122,14 @@ Quick Links
 - **Coveralls:** `https://coveralls.io/github/ipc-lab/kaira?branch=master <https://coveralls.io/github/ipc-lab/kaira?branch=master>`_
 - **License:** `https://github.com/ipc-lab/kaira/blob/master/LICENSE <https://github.com/ipc-lab/kaira/blob/master/LICENSE>`_
 
+Support
+-------
+Get help and connect with the Kaira community through these channels:
+
+* `Documentation <https://kaira.readthedocs.io/>`_
+* `GitHub Issues <https://github.com/yourusername/kaira/issues>`_ - Bug reports and feature requests
+* `Discussions <https://github.com/yourusername/kaira/discussions>`_ - General questions and community discussions
+
 Versioning
 ==========
 
@@ -141,7 +151,6 @@ The full text of the license is shown below:
 
    :language: text
    :linenos:
-
 
 Citing Kaira
 ============

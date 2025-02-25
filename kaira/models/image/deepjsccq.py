@@ -11,18 +11,18 @@ from kaira.core import BaseModel
 
 
 class DeepJSCCQEncoder(BaseModel):
-    def __init__(self, N: int, M: int) -> None:
-        """The function initializes a neural network model with a series of residual blocks and
-        attention blocks.
+    """DeepJSCCQ Encoder Module.
 
-        Parameters
-        ----------
-        N : int
-            The parameter N represents the number of output channels for the ResidualBlocks in the g_a
-        module. It is an integer value.
-        M : int
-            The parameter M represents the number of output channels in the last convolutional layer of the
-        network.
+    This module encodes an image into a latent representation using a series of convolutional
+    layers and AFModules.
+    """
+
+    def __init__(self, N: int, M: int) -> None:
+        """Initialize the DeepJSCCQEncoder.
+
+        Args:
+            N (int): The number of output channels for the ResidualBlocks in the g_a module.
+            M (int): The number of output channels in the last convolutional layer of the network.
         """
         super().__init__()
 
@@ -41,17 +41,13 @@ class DeepJSCCQEncoder(BaseModel):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """The forward function applies a series of layers to the input tensor and returns the
-        final output.
+        """Forward pass through the encoder.
 
-        Parameters
-        ----------
-        x : torch.Tensor
-            The parameter `x` is a tensor of type `torch.Tensor`.
+        Args:
+            x (torch.Tensor): The input image.
 
-        Returns
-        -------
-            the tensor `x` after passing it through all the layers in the encoder
+        Returns:
+            torch.Tensor: The encoded latent representation.
         """
 
         for layer in self.g_a:
@@ -61,17 +57,18 @@ class DeepJSCCQEncoder(BaseModel):
 
 
 class DeepJSCCQDecoder(nn.Module):
-    def __init__(self, N: int, M: int) -> None:
-        """The function initializes a neural network model with a series of attention blocks and
-        residual blocks for image processing.
+    """DeepJSCCQ Decoder Module.
 
-        Parameters
-        ----------
-        N : int
-            The parameter N represents the number of input channels, while M represents the number of
-        output channels.
-        M : int
-            The parameter M represents the number of input channels for the neural network model.
+    This module decodes a latent representation into an image using a series of convolutional
+    layers and AFModules.
+    """
+
+    def __init__(self, N: int, M: int) -> None:
+        """Initialize the DeepJSCCQDecoder.
+
+        Args:
+            N (int): The number of input channels.
+            M (int): The number of output channels.
         """
         super().__init__()
 
@@ -91,18 +88,13 @@ class DeepJSCCQDecoder(nn.Module):
         )
 
     def forward(self, x):
-        """The forward function applies a series of layers to the input x and returns the final
-        output.
+        """Forward pass through the decoder.
 
-        Parameters
-        ----------
-        x
-            The parameter "x" represents the input data that will be passed through the layers of the
-        neural network.
+        Args:
+            x (torch.Tensor): The encoded latent representation.
 
-        Returns
-        -------
-            The output of the last layer in the self.g_s list.
+        Returns:
+            torch.Tensor: The decoded image.
         """
 
         for layer in self.g_s:

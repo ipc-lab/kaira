@@ -1,10 +1,10 @@
-constraints package
-===================
+kaira.core package
+==================
 
 Module contents
 ---------------
 
-.. automodule:: constraints
+.. automodule:: kaira.core
    :members:
    :undoc-members:
    :show-inheritance:

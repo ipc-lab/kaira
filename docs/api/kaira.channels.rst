@@ -1,10 +1,10 @@
-channels package
-================
+kaira.channels package
+======================
 
 Module contents
 ---------------
 
-.. automodule:: channels
+.. automodule:: kaira.channels
    :members:
    :undoc-members:
    :show-inheritance:

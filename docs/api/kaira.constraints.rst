@@ -1,10 +1,10 @@
-metrics package
-===============
+kaira.constraints package
+=========================
 
 Module contents
 ---------------
 
-.. automodule:: metrics
+.. automodule:: kaira.constraints
    :members:
    :undoc-members:
    :show-inheritance:

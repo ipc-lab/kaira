@@ -60,7 +60,7 @@ repos:
         args:
           [
             --verbose,
-            --fail-under=80,
+            --fail-under=100,
             --ignore-init-module,
             --ignore-init-method,
             --ignore-module,
@@ -110,7 +110,7 @@ repos:
       - id: mdformat
         args: ["--number"]
         additional_dependencies:
-          - mdformat-gfm
+          - mdformat-gfm==0.3.7
           - mdformat-tables
           - mdformat_frontmatter
           # - mdformat-toc

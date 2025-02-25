@@ -1,13 +1,13 @@
-utils package
-=============
+kaira.utils package
+===================
 
 Submodules
 ----------
 
-utils.losses module
--------------------
+kaira.utils.losses module
+-------------------------
 
-.. automodule:: utils.losses
+.. automodule:: kaira.utils.losses
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ utils.losses module
 Module contents
 ---------------
 
-.. automodule:: utils
+.. automodule:: kaira.utils
    :members:
    :undoc-members:
    :show-inheritance:

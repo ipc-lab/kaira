@@ -34,3 +34,14 @@ except FileNotFoundError:
     print(f"Error: Template file '{template_file_path}' not found.")
 except Exception as e:
     print(f"An error occurred: {e}")
+
+# Copy the contents of docs/changelog.rst to CHANGES.txt
+try:
+    with open("docs/changelog.rst") as changelog_file:
+        changelog_text = changelog_file.read()
+        with open("CHANGES.txt", "w+") as changes_file:
+            changes_file.write(changelog_text)
+except FileNotFoundError:
+    print("Error: Changelog file 'docs/changelog.rst' not found.")
+except Exception as e:
+    print(f"An error occurred: {e}")

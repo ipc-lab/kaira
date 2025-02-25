@@ -1,4 +1,6 @@
+import ast
 import os
+import re
 
 from setuptools import find_packages, setup
 
@@ -11,10 +13,13 @@ with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as
     requirements = f.read().splitlines()
 
 ver_file = os.path.join(this_directory, "kaira", "version.py")
-with open(ver_file) as f:
-    exec(f.read())
-
-VERSION = __version__  # noqa: F821
+with open(ver_file, encoding="utf-8") as f:
+    content = f.read()
+    match = re.search(r"__version_info__\s*=\s*(\([^)]+\))", content)
+    if not match:
+        raise RuntimeError("Unable to find __version_info__ in version.py")
+    version_info = ast.literal_eval(match.group(1))
+    VERSION = ".".join(map(str, version_info))
 
 setup(
     name="kaira",
