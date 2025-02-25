@@ -5,7 +5,7 @@ Contributing
 
 We welcome your contributions to Kaira! Your involvement is essential to our project's growth and improvement. Contributions can include code, documentation, issue triage, tutorials, and community support.
 
-We adhere to the [Contributor Covenant Code of Conduct](../CODE_OF_CONDUCT.md). All contributors are required to uphold its principles of openness, respect, and collaboration.
+We adhere to the `Contributor Covenant Code of Conduct <../CODE_OF_CONDUCT.md>`. All contributors are required to uphold its principles of openness, respect, and collaboration.
 
 If you encounter issues or have suggestions, please:
 - Submit a ticket via the `GitHub Issue Tracker <https://github.com/ipc-lab/kaira/issues>`_
