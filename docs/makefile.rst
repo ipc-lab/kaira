@@ -1,3 +1,5 @@
+.. _makefile:
+
 Makefile Documentation
 ======================
 

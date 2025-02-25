@@ -5,9 +5,10 @@ Contributing
 
 We welcome your contributions to Kaira! Your involvement is essential to our project's growth and improvement. Contributions can include code, documentation, issue triage, tutorials, and community support.
 
-We adhere to the `Contributor Covenant Code of Conduct <../CODE_OF_CONDUCT.md>`. All contributors are required to uphold its principles of openness, respect, and collaboration.
+We adhere to the :ref:`code_of_conduct`. All contributors are required to uphold its principles of openness, respect, and collaboration.
 
 If you encounter issues or have suggestions, please:
+
 - Submit a ticket via the `GitHub Issue Tracker <https://github.com/ipc-lab/kaira/issues>`_
 - Open a pull request for feature enhancements or bug fixes
 - Email us at `yilmaselimfirat (at) gmail.com` for further inquiries
@@ -27,20 +28,40 @@ Getting Started with Development
 
 To start contributing to Kaira:
 
-1. Set up your development environment following the :ref:`development_setup` guide
-2. Understand the :ref:`contributing` guidelines
-3. Familiarize yourself with the :ref:`code_of_conduct`
-4. Learn about our :ref:`test_coverage` requirements
+1. Set up your development environment following the :ref:`development-workflow` guide
+2. Familiarize yourself with the :ref:`code_of_conduct`
+3. Learn about our :ref:`test_coverage` requirements
 
 Development Workflow
---------------------
+------------------------
 
-The typical development workflow includes:
+.. _development-workflow:
 
-1. Setting up your environment
-2. Creating a feature branch
-3. Making changes and adding tests
-4. Submitting a pull request
+1. **Setting up your environment:**
+
+   - Clone the repository: `git clone https://github.com/ipc-lab/kaira.git`
+   - Navigate to the project directory: `cd kaira`
+   - Install development requirements: `pip install -r requirements-dev.txt`
+   - Set up pre-commit hooks: `pre-commit install`
+
+2. **Creating a feature branch:**
+
+   - Create a new branch for your feature: `git checkout -b feature-branch-name`
+
+3. **Making changes and adding tests:**
+
+   - Implement your changes in the codebase
+   - Add or update tests to cover your changes
+   - Build the documentation: `bash build_docs.sh`
+   - Ensure your code is PEP8 compliant: `bash lint.sh`
+   - Run tests to ensure everything works: `pytest --cov=kaira --cov-config=.coveragerc`
+   - Run pre-commit checks: `pre-commit run -a`
+
+4. **Submitting a pull request:**
+
+   - Commit your changes: `git commit -am "Description of changes"`
+   - Push your branch to GitHub: `git push origin feature-branch-name`
+   - Open a pull request on GitHub
 
 Pull Request Checklist
 ----------------------
@@ -54,4 +75,10 @@ Pull Request Checklist
 - **Documentation:** Update the documentation to reflect your changes, including any new features or modifications.
 - **Pre-Commit Hooks:** Ensure pre-commit hooks are set up and run successfully (`pre-commit run --all-files`).
 
-For detailed instructions on setting up your development environment and running tests, please see the :doc:`Development Instructions <development>`.
+Next Steps
+----------
+
+* :ref:`test_coverage`
+* :ref:`build_documentation`
+* :ref:`code_of_conduct`
+* :ref:`makefile`

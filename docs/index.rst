@@ -52,7 +52,7 @@ Indices and tables
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference
+   :caption: API Documentation
 
    api_reference
 
@@ -62,6 +62,7 @@ Indices and tables
 
    quick_links
    faq
+   best_practices
    support
    references
    license
@@ -75,7 +76,6 @@ Indices and tables
    contributing
    code_of_conduct
    makefile
-   development
    test_coverage
    build_documentation
    versioning
