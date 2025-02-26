@@ -1,6 +1,6 @@
 # Contributing
 
-We welcome your contributions to Kaira! Your involvement is essential to our project's growth and improvement. Contributions can include code, documentation, issue triage, tutorials, and community support.
+We welcome your contributions to Kaira! Your involvement is essential to our project's growth and improvement. Contributions can include code, documentation, issue triage, examples, and community support.
 
 We follow the [Python Software Foundation Code of Conduct](https://www.python.org/psf/codeofconduct/). All contributors are expected to adhere to its principles of openness, respect, and collaboration.
 

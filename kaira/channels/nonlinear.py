@@ -99,7 +99,7 @@ class RappModel(NonlinearChannel):
     saturation.
     
     Mathematical Model:
-        y = x / (1 + (|x|/sat_level)^(2*smoothness))^(1/(2*smoothness)) + n
+        y = x / (1 + (\|x\|/sat_level)^(2*smoothness))^(1/(2*smoothness)) + n
         where n ~ N(0, σ²)
         
     Args:

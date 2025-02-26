@@ -47,8 +47,7 @@ Indices and tables
 
    introduction
    installation
-   tutorials
-   auto_examples
+   auto_examples/index
 
 .. toctree::
    :maxdepth: 2
@@ -76,4 +75,3 @@ Indices and tables
    code_of_conduct
    makefile
    build_documentation
-   versioning

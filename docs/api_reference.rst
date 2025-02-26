@@ -37,6 +37,8 @@ They simulate various channel conditions and noise models.
 
 .. currentmodule:: kaira.channels
 
+Basic Channels
+^^^^^^^^^^^^^
 .. autosummary::
    :toctree: generated
    :template: class.rst
@@ -45,6 +47,58 @@ They simulate various channel conditions and noise models.
    PerfectChannel
    AWGNChannel
    ComplexAWGNChannel
+
+Fading Channels
+^^^^^^^^^^^^^
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   RayleighChannel
+   RicianChannel
+   FrequencySelectiveChannel
+
+Hardware Impairments
+^^^^^^^^^^^^^^^^^^^
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   PhaseNoiseChannel
+   IQImbalanceChannel
+   NonlinearChannel
+   RappModel
+
+Composition
+^^^^^^^^^^
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   ChannelPipeline
+   ParallelChannels
+
+Utilities
+^^^^^^^^
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   snr_to_noise_power
+   noise_power_to_snr
+   calculate_snr
+   evaluate_ber
+   plot_channel_response
+   plot_constellation
+   plot_impulse_response
+   measure_snr_vs_param
+   plot_snr_vs_param
+   evaluate_channel_ber
+   plot_ber_vs_snr
 
 .. seealso::
    See :class:`~kaira.core.BaseChannel` for the interface all channels must implement.
