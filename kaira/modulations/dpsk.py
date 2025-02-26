@@ -1,0 +1,311 @@
+"""Differential Phase-Shift Keying (DPSK) modulation schemes."""
+
+import torch
+import torch.nn as nn
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import Optional, Union, Literal, Tuple
+from .base import Modulator, Demodulator
+from .utils import plot_constellation
+
+
+class DPSKModulator(Modulator):
+    """Differential Phase-Shift Keying (DPSK) modulator.
+    
+    Encodes information in the phase differences between consecutive symbols
+    rather than absolute phases, making it robust to phase ambiguities.
+    """
+    
+    def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
+        """Initialize the DPSK modulator.
+        
+        Args:
+            order: Modulation order (must be a power of 2)
+            gray_coding: Whether to use Gray coding for phase mapping
+        """
+        super().__init__()
+        
+        # Validate order is a power of 2
+        if not (order > 0 and (order & (order - 1) == 0)):
+            raise ValueError(f"DPSK order must be a power of 2, got {order}")
+            
+        self.order = order
+        self.gray_coding = gray_coding
+        self._bits_per_symbol = int(np.log2(order))
+        
+        # Create constellation
+        self._create_constellation()
+        
+        # Initialize phase memory for differential encoding
+        self.register_buffer('_phase_memory', torch.tensor(1.0 + 0.0j))
+    
+    def _create_constellation(self) -> None:
+        """Create the DPSK constellation mapping."""
+        # Generate differential phase shifts
+        angles = torch.arange(0, self.order) * (2 * np.pi / self.order)
+        re_part = torch.cos(angles)
+        im_part = torch.sin(angles)
+        constellation = torch.complex(re_part, im_part)
+        
+        # Create bit pattern mapping
+        bit_patterns = torch.zeros(self.order, self._bits_per_symbol)
+        
+        if self.gray_coding:
+            # Apply Gray coding
+            for i in range(self.order):
+                gray_idx = i ^ (i >> 1)  # Binary to Gray conversion
+                bin_str = format(gray_idx, f'0{self._bits_per_symbol}b')
+                for j, bit in enumerate(bin_str):
+                    bit_patterns[i, j] = int(bit)
+        else:
+            # Standard binary coding
+            for i in range(self.order):
+                bin_str = format(i, f'0{self._bits_per_symbol}b')
+                for j, bit in enumerate(bin_str):
+                    bit_patterns[i, j] = int(bit)
+        
+        self.register_buffer('constellation', constellation)
+        self.register_buffer('bit_patterns', bit_patterns)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Modulate bit groups to DPSK symbols.
+        
+        Args:
+            x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
+            
+        Returns:
+            Complex tensor of DPSK symbols with shape (..., N)
+        """
+        # Ensure input length is divisible by bits_per_symbol
+        batch_shape = x.shape[:-1]
+        bit_len = x.shape[-1]
+        if bit_len % self._bits_per_symbol != 0:
+            raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
+        
+        # Reshape to groups of bits_per_symbol
+        x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+        symbol_len = x_reshaped.shape[-2]
+        
+        # Convert bit groups to indices
+        indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
+        for i in range(self._bits_per_symbol):
+            indices = indices | (x_reshaped[..., i].long() << (self._bits_per_symbol - i - 1))
+        
+        # Map indices to differential phase shifts
+        phase_shifts = self.constellation[indices]
+        
+        # Apply differential encoding
+        # Start with the reference phase from memory for the first symbol
+        ref_phase = self._phase_memory.expand(*batch_shape)
+        output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
+        
+        for i in range(symbol_len):
+            # Current symbol = previous symbol × phase shift
+            current = ref_phase * phase_shifts[..., i]
+            output[..., i] = current
+            ref_phase = current
+        
+        # Store last phase for next call
+        if self.training:
+            self._phase_memory = ref_phase.detach().mean().unsqueeze(0)
+        
+        return output
+    
+    def reset_state(self) -> None:
+        """Reset the internal phase memory to the default state."""
+        self._phase_memory = torch.tensor(1.0 + 0.0j)
+    
+    def plot_constellation(self, **kwargs) -> plt.Figure:
+        """Plot the DPSK constellation diagram.
+        
+        Args:
+            **kwargs: Additional arguments passed to plot_constellation
+            
+        Returns:
+            Matplotlib figure object
+        """
+        labels = []
+        for i in range(self.order):
+            bit_pattern = self.bit_patterns[i]
+            label = ''.join(str(int(bit)) for bit in bit_pattern)
+            labels.append(label)
+            
+        return plot_constellation(
+            self.constellation, 
+            labels=labels,
+            title=f"{self.order}-DPSK Constellation",
+            **kwargs
+        )
+    
+    @property
+    def bits_per_symbol(self) -> int:
+        """Number of bits per DPSK symbol."""
+        return self._bits_per_symbol
+
+
+class DPSKDemodulator(Demodulator):
+    """Differential Phase-Shift Keying (DPSK) demodulator."""
+    
+    def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
+        """Initialize the DPSK demodulator.
+        
+        Args:
+            order: Modulation order (must be a power of 2)
+            gray_coding: Whether Gray coding was used for phase mapping
+        """
+        super().__init__()
+        self.order = order
+        self.gray_coding = gray_coding
+        self._bits_per_symbol = int(np.log2(order))
+        
+        # Create reference modulator to access constellation
+        self.modulator = DPSKModulator(order, gray_coding)
+    
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+        """Demodulate DPSK symbols.
+        
+        Args:
+            y: Received tensor of DPSK symbols with shape (..., N)
+            noise_var: Noise variance for soft demodulation (optional)
+            
+        Returns:
+            If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions
+            with shape (..., (N-1)*bits_per_symbol) because first symbol is reference
+        """
+        batch_shape = y.shape[:-1]
+        symbol_len = y.shape[-1]
+        constellation = self.modulator.constellation
+        
+        # Need at least two symbols for differential demodulation
+        if symbol_len < 2:
+            raise ValueError("Need at least two symbols for differential demodulation")
+        
+        # Calculate phase differences between consecutive symbols
+        y_prev = y[..., :-1]
+        y_current = y[..., 1:]
+        
+        # z contains the differential phases (normalized by previous symbol)
+        z = y_current * torch.conj(y_prev)
+        z = z / (torch.abs(z) + 1e-9)  # Normalize to unit magnitude
+        
+        if noise_var is None:
+            # Hard decision: find closest constellation point
+            z_angle = torch.angle(z)
+            const_angles = torch.angle(constellation)
+            
+            # Find closest angle (considering circular distance)
+            expanded_z_angle = z_angle.unsqueeze(-1)  # (..., N-1, 1)
+            expanded_const_angle = const_angles.expand(*([1] * len(batch_shape)), symbol_len-1, self.order)  # (..., N-1, order)
+            
+            # Calculate circular distance
+            angle_diff = torch.abs((expanded_z_angle - expanded_const_angle + np.pi) % (2 * np.pi) - np.pi)
+            closest_indices = torch.argmin(angle_diff, dim=-1)  # (..., N-1)
+            
+            # Map to bit patterns using the modulator's bit patterns
+            bits = torch.zeros((*batch_shape, symbol_len-1, self._bits_per_symbol), 
+                               dtype=torch.float, device=y.device)
+            
+            for i in range(self.order):
+                mask = (closest_indices == i).unsqueeze(-1)
+                bit_pattern = self.modulator.bit_patterns[i].expand(*batch_shape, symbol_len-1, self._bits_per_symbol)
+                bits = torch.where(mask, bit_pattern, bits)
+            
+            return bits.reshape(*batch_shape, -1)
+        else:
+            # Soft decision
+            if not torch.is_tensor(noise_var):
+                noise_var = torch.tensor(noise_var, device=y.device)
+                
+            # For differential demodulation with noise, the effective noise variance is doubled
+            # because noise affects both current and previous symbols
+            effective_noise_var = 2.0 * noise_var
+            
+            # Handle broadcasting dimensions for effective_noise_var
+            if effective_noise_var.dim() == 0:  # scalar
+                effective_noise_var = effective_noise_var.expand(*batch_shape, symbol_len-1)
+                
+            # Calculate LLRs for each bit position
+            llrs = torch.zeros((*batch_shape, symbol_len-1, self._bits_per_symbol), device=y.device)
+            
+            for bit_idx in range(self._bits_per_symbol):
+                # Create masks for symbols where bit is 0 or 1
+                bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
+                bit_1_mask = ~bit_0_mask
+                
+                # Get constellation points for each bit value
+                const_bit_0 = constellation[bit_0_mask]
+                const_bit_1 = constellation[bit_1_mask]
+                
+                # Calculate minimum distance for each bit value
+                min_dist_0 = self._min_distance_to_points(z, const_bit_0, effective_noise_var)
+                min_dist_1 = self._min_distance_to_points(z, const_bit_1, effective_noise_var)
+                
+                # Calculate LLR: log(P(bit=0)/P(bit=1))
+                llrs[..., bit_idx] = min_dist_1 - min_dist_0
+                
+            return llrs.reshape(*batch_shape, -1)
+    
+    def _min_distance_to_points(self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor) -> torch.Tensor:
+        """Calculate minimum (negative) distance to constellation points for DPSK.
+        
+        Uses max-log approximation for computational efficiency.
+        
+        Args:
+            y: Received symbols with shape (..., N)
+            points: Constellation points to compare against with shape (M,)
+            noise_var: Noise variance with shape (..., N)
+            
+        Returns:
+            Minimum negative distance for each symbol in y
+        """
+        batch_shape = y.shape[:-1]
+        symbol_shape = y.shape[-1]
+        num_points = points.shape[0]
+        
+        # Reshape inputs for broadcasting
+        y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        points_expanded = points.reshape(1, 1, -1).expand(*batch_shape, symbol_shape, num_points)
+        noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        
+        # Calculate distances (using phase difference for DPSK)
+        distances = -torch.abs(y_expanded - points_expanded)**2 / noise_var_expanded
+        
+        # Return maximum (least negative) value
+        return torch.max(distances, dim=-1)[0]
+    
+    @property
+    def bits_per_symbol(self) -> int:
+        """Number of bits per DPSK symbol."""
+        return self._bits_per_symbol
+
+
+class DBPSKModulator(DPSKModulator):
+    """Differential Binary Phase-Shift Keying (DBPSK) modulator."""
+    
+    def __init__(self) -> None:
+        """Initialize the DBPSK modulator."""
+        super().__init__(order=2, gray_coding=True)
+
+
+class DBPSKDemodulator(DPSKDemodulator):
+    """Differential Binary Phase-Shift Keying (DBPSK) demodulator."""
+    
+    def __init__(self) -> None:
+        """Initialize the DBPSK demodulator."""
+        super().__init__(order=2, gray_coding=True)
+
+
+class DQPSKModulator(DPSKModulator):
+    """Differential Quadrature Phase-Shift Keying (DQPSK) modulator."""
+    
+    def __init__(self) -> None:
+        """Initialize the DQPSK modulator."""
+        super().__init__(order=4, gray_coding=True)
+
+
+class DQPSKDemodulator(DPSKDemodulator):
+    """Differential Quadrature Phase-Shift Keying (DQPSK) demodulator."""
+    
+    def __init__(self) -> None:
+        """Initialize the DQPSK demodulator."""
+        super().__init__(order=4, gray_coding=True)

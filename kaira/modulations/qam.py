@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional, Union, Literal, Tuple
 from .base import Modulator, Demodulator
 from .utils import plot_constellation, generate_gray_code_mapping
+import matplotlib.pyplot as plt
 
 
 class QAMModulator(Modulator):
