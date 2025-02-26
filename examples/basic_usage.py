@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-"""Basic Usage of Kaira
-=======================
-Basic usage example of Kaira for image transmission over a noisy channel. This example demonstrates how to create a simple JSCC system for image transmission.
+"""
+Basic Usage of Kaira
+===================
+
+This example demonstrates how to create a simple JSCC system for image transmission over a noisy channel using Kaira.
 """
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -17,6 +20,7 @@ from kaira.metrics import PSNR
 from kaira.models.image import DeepJSCCQ2Decoder, DeepJSCCQ2Encoder
 from kaira.pipelines import DeepJSCCPipeline
 from kaira.utils import snr_db_to_linear, to_tensor
+from kaira.constraints import AveragePowerConstraint
 
 
 # Load and preprocess an image
@@ -32,29 +36,10 @@ def load_image(path, size=(256, 256)):
     return transform(img).unsqueeze(0)  # Add batch dimension
 
 
-# Create JSCC model components
-encoder = DeepJSCCQ2Encoder(
-    in_channels=3,  # RGB image
-    latent_dim=16,  # Compressed representation dimension
-    compression_ratio=1 / 6,  # Compression factor
-)
-
-decoder = DeepJSCCQ2Decoder(out_channels=3, latent_dim=16)  # RGB image
-
-# Create a channel with 10dB SNR
-channel = AWGNChannel(snr=10.0)
-
-# Create pipeline
-pipeline = DeepJSCCPipeline(encoder=encoder, decoder=decoder, channel=channel)
-
-
-# Example usage
-def main():
-    """Run JSCC system for image transmission."""
-    # Create a sample image for demonstration
-    # This will serve as both the example image and provide the thumbnail
-    x = np.linspace(0, 1, 256)
-    y = np.linspace(0, 1, 256)
+def create_sample_image(size=(256, 256)):
+    """Create a sample image for demonstration."""
+    x = np.linspace(0, 1, size[0])
+    y = np.linspace(0, 1, size[1])
     x_grid, y_grid = np.meshgrid(x, y)
     
     # Create RGB components for a visually distinct image
@@ -70,20 +55,39 @@ def main():
     # Create RGB image
     rgb_image = np.stack([r, g, b], axis=2)
     
-    # Save the sample image
-    plt.figure(figsize=(8, 8))
-    plt.imshow(rgb_image)
-    plt.axis('off')
-    plt.title("Sample Image for Transmission")
-    plt.tight_layout()
-    plt.savefig("sample_image.jpg")
+    return rgb_image
+
+
+# Example usage
+def main():
+    """Run JSCC system for image transmission."""
+    # Create JSCC model components
+    encoder = DeepJSCCQ2Encoder(
+        N=64,
+        M=32
+    )
+
+    decoder = DeepJSCCQ2Decoder(M=32, N=64)  # RGB image
+
+    # Create a channel with 10dB SNR
+    channel = AWGNChannel(avg_noise_power=1.0)
+    
+    # Set the average power constraint
+    constraint = AveragePowerConstraint(1.0)
+
+    # Create pipeline
+    pipeline = DeepJSCCPipeline(encoder=encoder, decoder=decoder, channel=channel, constraint=constraint)
+    
+    # Create a sample image for demonstration
+    rgb_image = create_sample_image()
     
     # Create example thumbnail
     plt.figure(figsize=(4, 4))
     plt.imshow(rgb_image)
-    plt.title("Kaira JSCC Example")
+    plt.title("Sample Image")
     plt.axis('off')
     plt.tight_layout()
+    plt.show()
     
     # Convert to tensor for processing
     image = torch.tensor(rgb_image).permute(2, 0, 1).unsqueeze(0).float()
