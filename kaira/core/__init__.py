@@ -6,6 +6,7 @@ custom communication system components.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Callable, List
 
 import torch
 from torch import nn
@@ -119,13 +120,48 @@ class BaseModel(nn.Module, ABC):
 class BasePipeline(nn.Module, ABC):
     """Base Pipeline Module.
 
-    This is an abstract base class for defining communication system pipelines. Subclasses should
-    implement the forward method to define the pipeline's operation.
+    This is an abstract base class for defining communication system pipelines.
+    It provides the foundation for building sequential, parallel, and other pipeline types.
+    
+    Attributes:
+        steps: List of processing steps or components in the pipeline.
     """
+    
+    def __init__(self):
+        """Initialize the pipeline with an empty steps list."""
+        super().__init__()
+        self.steps = []
 
+    @abstractmethod
+    def add_step(self, step: Callable):
+        """Add a processing step to the pipeline.
+        
+        Args:
+            step: A callable that processes input data
+            
+        Returns:
+            The pipeline instance for method chaining
+        """
+        pass
+    
+    @abstractmethod
+    def remove_step(self, index: int):
+        """Remove a processing step from the pipeline.
+        
+        Args:
+            index: The index of the step to remove
+            
+        Returns:
+            The pipeline instance for method chaining
+        """
+        pass
+    
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the pipeline.
+
+        By default, this calls the run method, but subclasses may override
+        this behavior for specific torch.nn.Module integration.
 
         Args:
             x (torch.Tensor): The input signal.

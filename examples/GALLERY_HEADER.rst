@@ -2,7 +2,7 @@ Examples and Tutorials
 ======================
 
 Welcome to the Kaira Examples and Tutorials Gallery
-------------------------------------
+------------------------------------------------------------------------
 
 This gallery provides a comprehensive collection of examples demonstrating Kaira's capabilities for communications, signal processing, and machine learning applications. Each example includes:
 

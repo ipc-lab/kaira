@@ -38,7 +38,7 @@ They simulate various channel conditions and noise models.
 .. currentmodule:: kaira.channels
 
 Basic Channels
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 .. autosummary::
    :toctree: generated
    :template: class.rst
@@ -49,7 +49,7 @@ Basic Channels
    ComplexAWGNChannel
 
 Fading Channels
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 .. autosummary::
    :toctree: generated
    :template: class.rst
@@ -60,7 +60,7 @@ Fading Channels
    FrequencySelectiveChannel
 
 Hardware Impairments
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 .. autosummary::
    :toctree: generated
    :template: class.rst
@@ -71,18 +71,8 @@ Hardware Impairments
    NonlinearChannel
    RappModel
 
-Composition
-^^^^^^^^^^
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   ChannelPipeline
-   ParallelChannels
-
 Utilities
-^^^^^^^^
+^^^^^^^^^
 .. autosummary::
    :toctree: generated
    :template: function.rst
@@ -136,6 +126,9 @@ Pipelines integrate encoders, decoders, and channels into end-to-end communicati
    :nosignatures:
 
    DeepJSCCPipeline
+   SequentialPipeline
+   ParallelPipeline
+   BranchingPipeline
 
 .. seealso::
    See :class:`~kaira.core.BasePipeline` for the interface all pipelines must implement.

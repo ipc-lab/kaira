@@ -6,9 +6,9 @@ transmission using Deep Joint Source-Channel Coding (DeepJSCC).
 
 import torch
 import torch.nn as nn
+from kaira.core import BasePipeline
 
-
-class DeepJSCCPipeline(nn.Module):
+class DeepJSCCPipeline(BasePipeline):
     """DeepJSCC Pipeline Module.
 
     This module implements a pipeline for image compression and transmission using Deep Joint

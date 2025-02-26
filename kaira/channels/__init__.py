@@ -15,8 +15,6 @@ Available Channels:
     - IQImbalanceChannel: Channel modeling I/Q imbalance in hardware
     - NonlinearChannel: Channel with polynomial nonlinearity
     - RappModel: Rapp model for power amplifier nonlinearity
-    - ChannelPipeline: Sequential composition of multiple channels
-    - ParallelChannels: Parallel application of multiple channels
     
 Each channel implements a forward() method that takes an input tensor and returns
 the output tensor after applying the channel effects.
@@ -34,7 +32,6 @@ from .impairments import PhaseNoiseChannel, IQImbalanceChannel
 from .perfect import PerfectChannel
 from .nonlinear import NonlinearChannel, RappModel
 from .utils import snr_to_noise_power, noise_power_to_snr, calculate_snr, evaluate_ber
-from .composition import ChannelPipeline, ParallelChannels
 from .visualization import plot_channel_response, plot_constellation, plot_impulse_response
 from .testing import (measure_snr_vs_param, plot_snr_vs_param, 
                      evaluate_channel_ber, plot_ber_vs_snr)
@@ -51,11 +48,7 @@ __all__ = [
     "IQImbalanceChannel",
     "NonlinearChannel",
     "RappModel",
-    
-    # Channel composition
-    "ChannelPipeline",
-    "ParallelChannels",
-    
+        
     # Utility functions
     "snr_to_noise_power",
     "noise_power_to_snr",
