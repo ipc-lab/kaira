@@ -4,11 +4,12 @@ This module contains the DeepJSCCPipeline, which is a pipeline for image compres
 transmission using Deep Joint Source-Channel Coding (DeepJSCC).
 """
 
-import torch
 import torch.nn as nn
-from kaira.core import BasePipeline
 
-class DeepJSCCPipeline(BasePipeline):
+from .sequential import SequentialPipeline
+
+
+class DeepJSCCPipeline(SequentialPipeline):
     """DeepJSCC Pipeline Module.
 
     This module implements a pipeline for image compression and transmission using Deep Joint
@@ -31,23 +32,8 @@ class DeepJSCCPipeline(BasePipeline):
             constraint (nn.Module): The constraint module.
             decoder (nn.Module): The decoder module.
         """
-        super().__init__()
+        super().__init__(steps=[encoder, channel, constraint, decoder])
         self.encoder = encoder
         self.channel = channel
         self.constraint = constraint
         self.decoder = decoder
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the DeepJSCC pipeline.
-
-        Args:
-            x (torch.Tensor): The input image.
-
-        Returns:
-            torch.Tensor: The reconstructed image after passing through the pipeline.
-        """
-        x = self.encoder(x)
-        x = self.constraint(x)
-        x = self.channel(x)
-        x = self.decoder(x)
-        return x

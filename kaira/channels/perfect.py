@@ -1,7 +1,9 @@
 """Perfect Channel Implementation."""
 
 import torch
+
 from kaira.core import BaseChannel
+
 
 class PerfectChannel(BaseChannel):
     """Perfect (identity) channel that passes signals unchanged.

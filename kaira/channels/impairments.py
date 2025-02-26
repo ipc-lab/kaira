@@ -1,13 +1,16 @@
 """Hardware Impairment Channel Models."""
 
-import torch
 import math
+
+import torch
+
 from kaira.core import BaseChannel
 from kaira.utils import to_tensor
 
+
 class PhaseNoiseChannel(BaseChannel):
     """Phase Noise Channel.
-    
+
     Models the phase noise introduced by oscillators in communication systems.
     The phase noise is modeled as a Wiener process (random walk) with variance
     parameter controlling the severity of the noise.
@@ -18,7 +21,7 @@ class PhaseNoiseChannel(BaseChannel):
 
     Args:
         phase_noise_variance (float): Variance of the phase noise increments
-        
+
     Example:
         >>> channel = PhaseNoiseChannel(phase_noise_variance=0.01)
         >>> x = torch.complex(torch.ones(1000), torch.zeros(1000))
@@ -40,20 +43,22 @@ class PhaseNoiseChannel(BaseChannel):
         """
         if not torch.is_complex(x):
             x = torch.complex(x, torch.zeros_like(x))
-            
+
         batch_size = x.shape[0]
         seq_length = x.shape[-1] if len(x.shape) > 2 else 1
-        
+
         # Generate phase noise increments (Gaussian)
-        phase_incr = torch.randn(batch_size, seq_length, device=x.device) * torch.sqrt(self.phase_noise_variance)
-        
+        phase_incr = torch.randn(batch_size, seq_length, device=x.device) * torch.sqrt(
+            self.phase_noise_variance
+        )
+
         # Accumulate to get Wiener process
         phase_noise = torch.cumsum(phase_incr, dim=1)
-        
+
         # Reshape to match input dimensions
         if len(x.shape) > 2:
             phase_noise = phase_noise.view(*x.shape)
-        
+
         # Apply phase rotation
         phase_rotation = torch.exp(1j * phase_noise)
         return x * phase_rotation
@@ -61,7 +66,7 @@ class PhaseNoiseChannel(BaseChannel):
 
 class IQImbalanceChannel(BaseChannel):
     """I/Q Imbalance Channel.
-    
+
     Models the amplitude and phase imbalance between in-phase and quadrature
     components in radio frequency hardware.
 
@@ -72,7 +77,7 @@ class IQImbalanceChannel(BaseChannel):
     Args:
         amplitude_imbalance (float): Relative amplitude imbalance between I and Q
         phase_imbalance (float): Phase imbalance in radians
-        
+
     Example:
         >>> channel = IQImbalanceChannel(amplitude_imbalance=0.05, phase_imbalance=0.1)
         >>> x = torch.complex(torch.ones(10), torch.ones(10))
@@ -95,17 +100,19 @@ class IQImbalanceChannel(BaseChannel):
         """
         if not torch.is_complex(x):
             x = torch.complex(x, torch.zeros_like(x))
-            
+
         # Extract I and Q components
         i_component = x.real
         q_component = x.imag
-        
+
         # Apply amplitude imbalance
         i_imbalanced = i_component * (1 + self.amplitude_imbalance)
         q_imbalanced = q_component * (1 - self.amplitude_imbalance)
-        
+
         # Apply phase imbalance
-        q_phase_shifted = q_imbalanced * torch.cos(self.phase_imbalance) - i_imbalanced * torch.sin(self.phase_imbalance)
-        
+        q_phase_shifted = q_imbalanced * torch.cos(
+            self.phase_imbalance
+        ) - i_imbalanced * torch.sin(self.phase_imbalance)
+
         # Construct imbalanced signal
         return torch.complex(i_imbalanced, q_phase_shifted)

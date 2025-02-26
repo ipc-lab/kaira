@@ -1,9 +1,12 @@
 """Additive White Gaussian Noise Channel Implementations."""
 
 import torch
+
 from kaira.core import BaseChannel
 from kaira.utils import to_tensor
+
 from .utils import snr_to_noise_power
+
 
 class AWGNChannel(BaseChannel):
     """Additive White Gaussian Noise (AWGN) Channel.
@@ -41,7 +44,7 @@ class AWGNChannel(BaseChannel):
             None
         """
         super().__init__()
-        
+
         if snr_db is not None:
             self.snr_db = snr_db
             self.avg_noise_power = None  # Will be calculated per input in forward
@@ -65,7 +68,7 @@ class AWGNChannel(BaseChannel):
         if self.snr_db is not None:
             signal_power = torch.mean(torch.abs(x) ** 2)
             noise_power = snr_to_noise_power(signal_power, self.snr_db)
-            
+
         awgn = torch.randn_like(x) * torch.sqrt(noise_power)
         return x + awgn
 
@@ -93,7 +96,7 @@ class ComplexAWGNChannel(BaseChannel):
 
     def __init__(self, avg_noise_power=None, snr_db=None):
         super().__init__()
-        
+
         if snr_db is not None:
             self.snr_db = snr_db
             self.avg_noise_power = None  # Will be calculated per input in forward
@@ -116,10 +119,12 @@ class ComplexAWGNChannel(BaseChannel):
         noise_power = self.avg_noise_power
         if self.snr_db is not None:
             signal_power = torch.mean(torch.abs(x) ** 2)
-            noise_power = snr_to_noise_power(signal_power, self.snr_db) * 0.5  # Split between real/imag
-            
+            noise_power = (
+                snr_to_noise_power(signal_power, self.snr_db) * 0.5
+            )  # Split between real/imag
+
         noise_real = torch.randn_like(x.real) * torch.sqrt(noise_power)
         noise_imag = torch.randn_like(x.imag) * torch.sqrt(noise_power)
         noise = torch.complex(noise_real, noise_imag)
-        
+
         return x + noise

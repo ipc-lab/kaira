@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     table.parentNode.insertBefore(wrapper, table);
     wrapper.appendChild(table);
   });
-  
+
   // Add copy button to code blocks
   const codeBlocks = document.querySelectorAll('div.highlight pre');
   codeBlocks.forEach(block => {
@@ -40,11 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
     button.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
     button.style.color = '#e6f1ff';
     button.style.cursor = 'pointer';
-    
+
     // Ensure the parent has a relative position for absolute positioning
     const parent = block.parentElement;
     parent.style.position = 'relative';
-    
+
     button.addEventListener('click', () => {
       const code = block.textContent;
       navigator.clipboard.writeText(code).then(() => {
@@ -54,24 +54,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
       });
     });
-    
+
     parent.appendChild(button);
   });
-  
+
   // Add smooth scroll for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
       e.preventDefault();
       const targetId = this.getAttribute('href');
       if (targetId === '#') return;
-      
+
       const target = document.querySelector(targetId);
       if (target) {
         target.scrollIntoView({
           behavior: 'smooth',
           block: 'start'
         });
-        
+
         // Update URL without page jump
         history.pushState(null, null, targetId);
       }

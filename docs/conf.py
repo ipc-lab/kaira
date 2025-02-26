@@ -50,23 +50,23 @@ extensions = [
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to your example scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
-    "filename_pattern": r"\.py$",    # Include all Python files
+    "filename_pattern": r"\.py$",  # Include all Python files
     "ignore_pattern": r"__init__\.py",  # Ignore __init__.py files
-    "line_numbers": True,            # Show line numbers in code blocks
-    "download_all_examples": True,   # Option to download all examples
-    "plot_gallery": True,            # Generate plots from examples
-    "thumbnail_size": (320, 224),    # Size for gallery thumbnails
+    "line_numbers": True,  # Show line numbers in code blocks
+    "download_all_examples": True,  # Option to download all examples
+    "plot_gallery": True,  # Generate plots from examples
+    "thumbnail_size": (320, 224),  # Size for gallery thumbnails
     "remove_config_comments": True,  # Remove config comments in examples
-    "min_reported_time": 1,          # Minimum time to report in examples
-    "show_memory": False,            # Don't show memory usage
-    "matplotlib_animations": True,   # Enable matplotlib animations
-    "doc_module": ('kaira',),        # Document this module
+    "min_reported_time": 1,  # Minimum time to report in examples
+    "show_memory": False,  # Don't show memory usage
+    "matplotlib_animations": True,  # Enable matplotlib animations
+    "doc_module": ("kaira",),  # Document this module
     "default_thumb_file": "_static/logo.png",  # Default thumbnail image
-    "show_signature": True,          # Show function signatures
+    "show_signature": True,  # Show function signatures
     "reference_url": {
         "kaira": None,  # The module has no reference URL
     },
-    "capture_repr": ('_repr_html_', '__repr__'),  # Capture representations for objects
+    "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
 }
 
 # Configure autodoc
@@ -174,7 +174,7 @@ html_theme_options = {
     "titles_only": False,
     # 'display_version': True,
     "prev_next_buttons_location": "bottom",
-    #"style_external_links": True,
+    # "style_external_links": True,
     "style_nav_header_background": "#005f73",
 }
 
