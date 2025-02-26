@@ -30,7 +30,7 @@ Interpreting Coverage Reports
 After running the tests with coverage, you'll find:
 
 1. A console summary showing coverage percentages
-2. An HTML report in the ``coverage_html/`` directory
+2. An HTML report in the ``htmlcov/`` directory (default location)
 3. An XML report in ``coverage.xml`` (useful for CI integration)
 
 Open the HTML report in your browser to see detailed line-by-line coverage:
@@ -38,13 +38,13 @@ Open the HTML report in your browser to see detailed line-by-line coverage:
 .. code-block:: bash
 
     # On Linux
-    xdg-open coverage_html/index.html
+    xdg-open htmlcov/index.html
 
     # On macOS
-    open coverage_html/index.html
+    open htmlcov/index.html
 
     # On Windows
-    start coverage_html/index.html
+    start htmlcov/index.html
 
 Coverage Goals
 --------------

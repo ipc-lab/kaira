@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""Basic usage example of Kaira for image transmission over a noisy channel.
+"""Basic Usage of Kaira
+=======================
+
+Basic usage example of Kaira for image transmission over a noisy channel.
 
 This example demonstrates how to create a simple JSCC system for image transmission.
 """
