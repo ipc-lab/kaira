@@ -145,7 +145,10 @@ html_theme = "sphinx_rtd_theme"
 
 html_static_path = ["_static"]
 
-html_css_files = ["custom.css"]
+html_css_files = [
+    "custom.css",
+    "plot_directive.css",  # Add the plot directive CSS file
+]
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"

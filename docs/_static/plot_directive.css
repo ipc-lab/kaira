@@ -1,0 +1,57 @@
+/* Matplotlib plot directive styling */
+.plot {
+  margin: 1.5em 0;
+}
+
+.plot img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.plot-caption {
+  font-style: italic;
+  margin-top: 0.5em;
+  color: #555;
+  font-size: 0.9em;
+}
+
+.plot-controls a {
+  display: inline-block;
+  margin-right: 0.5em;
+  padding: 0.3em 0.5em;
+  background: #f3f4f6;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.plot-controls a:hover {
+  background: #e5e7eb;
+  text-decoration: none;
+}
+
+.plot .source-link {
+  display: block;
+  margin-top: 0.5em;
+  font-size: 0.85em;
+}
+
+/* Plot directive tooltip style */
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Adjust plot container for responsive layout */
+div[id^="plot-directive-"] {
+  overflow-x: auto;
+}
