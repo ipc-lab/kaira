@@ -42,8 +42,7 @@ extensions = [
     "sphinx.ext.todo",  # Add support for TODOs
     "sphinx.ext.ifconfig",  # Add support for conditional content
     "sphinx_design",  # Add sphinx-design for better UI components
-    "hoverxref.extension",
-    "sphinx_copybutton",
+    "hoverxref.extension"
 ]
 
 # Remove the duplicated and restrictive sphinx_gallery_conf
@@ -172,7 +171,7 @@ html_theme_options = {
     "titles_only": False,
     # 'display_version': True,
     "prev_next_buttons_location": "bottom",
-    "style_external_links": True,
+    #"style_external_links": True,
     "style_nav_header_background": "#005f73",
 }
 

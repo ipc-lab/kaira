@@ -2,10 +2,16 @@
 
 """
 Basic Usage of Kaira
-===================
+====================
 
 This example demonstrates how to create a simple JSCC system for image transmission over a noisy channel using Kaira.
 """
+
+# %%
+# Imports
+# -------
+#
+# First, we import the necessary libraries.
 
 import os
 import matplotlib.pyplot as plt
@@ -22,8 +28,13 @@ from kaira.pipelines import DeepJSCCPipeline
 from kaira.utils import snr_db_to_linear, to_tensor
 from kaira.constraints import AveragePowerConstraint
 
+# %%
+# Image Loading and Preparation
+# -----------------------------
+#
+# Functions to load or generate test images for transmission.
 
-# Load and preprocess an image
+
 def load_image(path, size=(256, 256)):
     """Load and preprocess an image for transmission."""
     img = Image.open(path).convert("RGB")
@@ -54,14 +65,19 @@ def create_sample_image(size=(256, 256)):
     
     # Create RGB image
     rgb_image = np.stack([r, g, b], axis=2)
-    
+        
     return rgb_image
 
+# %%
+# Setting up JSCC System Components
+# ---------------------------------
+#
+# Create the encoder, decoder, channel model, and constraint needed for JSCC.
 
-# Example usage
-def main():
-    """Run JSCC system for image transmission."""
-    # Create JSCC model components
+
+def create_jscc_system():
+    """Create JSCC model components."""
+    # Create encoder and decoder
     encoder = DeepJSCCQ2Encoder(
         N=64,
         M=32
@@ -69,7 +85,7 @@ def main():
 
     decoder = DeepJSCCQ2Decoder(M=32, N=64)  # RGB image
 
-    # Create a channel with 10dB SNR
+    # Create a channel with specified noise power
     channel = AWGNChannel(avg_noise_power=1.0)
     
     # Set the average power constraint
@@ -77,6 +93,68 @@ def main():
 
     # Create pipeline
     pipeline = DeepJSCCPipeline(encoder=encoder, decoder=decoder, channel=channel, constraint=constraint)
+    
+    return pipeline
+
+# %%
+# Image Transmission Example
+# --------------------------
+#
+# Demonstrate how to transmit an image through a noisy channel and reconstruct it.
+
+
+def transmit_image(pipeline, image):
+    """Transmit image through the JSCC pipeline."""
+    # Create SNR tensor with proper dimensions to match batch size
+    batch_size = image.size(0)
+    snr = torch.ones(batch_size, 1)  # Shape [batch_size, 1]
+
+    # Transmit through noisy channel
+    with torch.no_grad():
+        reconstructed = pipeline((image, snr))
+    
+    return reconstructed
+
+# %%
+# Evaluation and Visualization
+# ----------------------------
+#
+# Calculate quality metrics and visualize the transmission results.
+
+
+def evaluate_and_visualize(original, reconstructed):
+    """Calculate quality metrics and visualize results."""
+    # Calculate PSNR
+    psnr_metric = PSNR()
+    quality = psnr_metric(reconstructed, original)
+
+    print(f"PSNR: {quality:.2f} dB")
+
+    # Visualize results
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    axes[0].imshow(original.squeeze(0).permute(1, 2, 0).numpy())
+    axes[0].set_title("Original")
+    axes[0].axis('off')
+    
+    axes[1].imshow(reconstructed.squeeze(0).permute(1, 2, 0).numpy())
+    axes[1].set_title(f"Reconstructed (PSNR: {quality:.2f} dB)")
+    axes[1].axis('off')
+    
+    plt.suptitle("Image Transmission over a Noisy Channel")
+    plt.tight_layout()
+    plt.show()
+
+# %%
+# Full Example
+# ------------
+#
+# Run a complete example of image transmission using Kaira.
+
+
+def main():
+    """Run JSCC system for image transmission."""
+    # Create JSCC pipeline
+    pipeline = create_jscc_system()
     
     # Create a sample image for demonstration
     rgb_image = create_sample_image()
@@ -91,30 +169,12 @@ def main():
     
     # Convert to tensor for processing
     image = torch.tensor(rgb_image).permute(2, 0, 1).unsqueeze(0).float()
-
-    # Transmit through noisy channel
-    with torch.no_grad():
-        reconstructed = pipeline(image)
-
-    # Calculate PSNR
-    psnr_metric = PSNR()
-    quality = psnr_metric(reconstructed, image)
-
-    print(f"PSNR: {quality:.2f} dB")
-
-    # Visualize results
-    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-    axes[0].imshow(image.squeeze(0).permute(1, 2, 0).numpy())
-    axes[0].set_title("Original")
-    axes[0].axis('off')
     
-    axes[1].imshow(reconstructed.squeeze(0).permute(1, 2, 0).numpy())
-    axes[1].set_title(f"Reconstructed (PSNR: {quality:.2f} dB)")
-    axes[1].axis('off')
+    # Transmit the image
+    reconstructed = transmit_image(pipeline, image)
     
-    plt.suptitle("Image Transmission over a Noisy Channel")
-    plt.tight_layout()
-    plt.show()
+    # Evaluate and visualize the results
+    evaluate_and_visualize(image, reconstructed)
 
 
 if __name__ == "__main__":

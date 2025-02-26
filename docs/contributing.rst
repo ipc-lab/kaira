@@ -30,7 +30,11 @@ To start contributing to Kaira:
 
 1. Set up your development environment following the :ref:`development-workflow` guide
 2. Familiarize yourself with the :ref:`code_of_conduct`
-3. Learn about our :ref:`test_coverage` requirements
+3. Review the :ref:`makefile` for common development tasks
+4. Build the documentation using the :ref:`build_documentation` guide
+5. Submit a pull request with your changes
+6. Engage with the community and help others
+7. Share your experiences and feedback
 
 Development Workflow
 ------------------------
@@ -78,7 +82,6 @@ Pull Request Checklist
 Next Steps
 ----------
 
-* :ref:`test_coverage`
 * :ref:`build_documentation`
 * :ref:`code_of_conduct`
 * :ref:`makefile`

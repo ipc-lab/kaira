@@ -48,7 +48,7 @@ Indices and tables
    introduction
    installation
    tutorials
-   examples
+   auto_examples
 
 .. toctree::
    :maxdepth: 2
@@ -63,7 +63,6 @@ Indices and tables
    quick_links
    faq
    best_practices
-   support
    references
    license
    changelog
@@ -76,6 +75,5 @@ Indices and tables
    contributing
    code_of_conduct
    makefile
-   test_coverage
    build_documentation
    versioning

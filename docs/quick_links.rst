@@ -10,3 +10,11 @@ Quick Links
 - **Appveyor:** `https://ci.appveyor.com/project/ipc-lab/kaira/branch/master <https://ci.appveyor.com/project/ipc-lab/kaira/branch/master>`_
 - **Coveralls:** `https://coveralls.io/github/ipc-lab/kaira?branch=master <https://coveralls.io/github/ipc-lab/kaira?branch=master>`_
 - **License:** `https://github.com/ipc-lab/kaira/blob/master/LICENSE <https://github.com/ipc-lab/kaira/blob/master/LICENSE>`_
+
+Support
+-------
+Get help and connect with the Kaira community through these channels:
+
+* `Documentation <https://kaira.readthedocs.io/>`_ - Official project documentation
+* `GitHub Issues <https://github.com/ipc-lab/kaira/issues>`_ - Bug reports and feature requests
+* `Discussions <https://github.com/ipc-lab/kaira/discussions>`_ - General questions and community discussions
