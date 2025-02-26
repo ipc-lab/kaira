@@ -9,6 +9,19 @@
   --background-alt: #f9fafb;
   --border-color: #e5e7eb;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Add direct favicon link to ensure it loads properly */
+head::after {
+  content: "";
+  display: none;
+}
+
+/* Force favicon refresh */
+link[rel="shortcut icon"] {
+  href: "_static/favicon.ico";
+}
+
 html {
     height: 100%;
 }

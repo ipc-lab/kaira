@@ -42,7 +42,7 @@ extensions = [
     "sphinx.ext.todo",  # Add support for TODOs
     "sphinx.ext.ifconfig",  # Add support for conditional content
     "sphinx_design",  # Add sphinx-design for better UI components
-    "hoverxref.extension"
+    # "hoverxref.extension"
 ]
 
 # Remove the duplicated and restrictive sphinx_gallery_conf
