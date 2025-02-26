@@ -7,8 +7,8 @@ bit reliability analysis, and animations.
 Examples:
     Basic usage with a modulator:
     
-    >>> from kaira.modulations import QAMModulator, ConstellationVisualizer
-    >>> mod = QAMModulator(bits_per_symbol=4)  # 16-QAM
+    >>> from kaira.modulations import QAMBaseModulator, ConstellationVisualizer
+    >>> mod = QAMBaseModulator(bits_per_symbol=4)  # 16-QAM
     >>> viz = ConstellationVisualizer(modulator=mod)
     >>> fig = viz.plot_basic()
     >>> fig.savefig('16qam_constellation.png')
@@ -25,7 +25,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Circle
 import matplotlib.animation as animation
 from typing import Optional, Tuple, List, Dict, Union, Callable
-from kaira.core.modulations import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
 from .utils import plot_constellation
 
 
@@ -49,7 +49,7 @@ class ConstellationVisualizer:
     
     def __init__(
         self, 
-        modulator: Optional[Modulator] = None,
+        modulator: Optional[BaseModulator] = None,
         constellation: Optional[torch.Tensor] = None,
         bit_labels: Optional[List[str]] = None,
         title: str = "Constellation Diagram",
@@ -58,7 +58,7 @@ class ConstellationVisualizer:
         """Initialize the constellation visualizer.
         
         Args:
-            modulator: Modulator object to extract constellation from. If provided,
+            modulator: BaseModulator object to extract constellation from. If provided,
                        constellation points and bit patterns will be extracted from it.
             constellation: Direct constellation points (if modulator not provided).
                           Can be a torch.Tensor or numpy array of complex values.

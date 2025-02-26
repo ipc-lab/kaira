@@ -1,5 +1,5 @@
 Modulation Schemes and Visualization
-===================================
+====================================
 
 This tutorial introduces Kaira's modulation package, focusing on constellation visualization
 tools for analyzing digital modulation schemes.
@@ -9,25 +9,25 @@ tools for analyzing digital modulation schemes.
    :local:
 
 Introduction to Digital Modulation
----------------------------------
+----------------------------------
 
 Digital modulation is the process of encoding information onto carrier signals for
 transmission through physical channels. Kaira provides implementations of common
 modulation schemes and tools to analyze and visualize their properties.
 
 Modulation Architecture
----------------------
+-----------------------
 
 Kaira's modulation system is built on two core base classes:
 
-- :class:`~kaira.core.Modulator`: Abstract base class for all modulators
-- :class:`~kaira.core.Demodulator`: Abstract base class for all demodulators
+- :class:`~kaira.core.BaseModulator`: Abstract base class for all modulators
+- :class:`~kaira.core.BaseDemodulator`: Abstract base class for all demodulators
 
 These core classes define the interfaces that all modulation implementations must follow,
 ensuring consistent behavior across different schemes.
 
 Basic Usage
-----------
+-----------
 
 Here's a simple example of using a QAM modulator:
 
@@ -54,7 +54,7 @@ Here's a simple example of using a QAM modulator:
     print(f"BER: {ber}")
 
 Using ConstellationVisualizer
-----------------------------
+-----------------------------
 
 The :class:`~kaira.modulations.ConstellationVisualizer` class provides
 advanced tools for visualizing and analyzing modulation constellations.
@@ -75,7 +75,7 @@ Basic Constellation Plot
     fig.savefig('16qam_constellation.png')
 
 Decision Regions
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 Visualize decision boundaries between constellation points:
 
@@ -85,7 +85,7 @@ Visualize decision boundaries between constellation points:
     fig = viz.plot_decision_regions(resolution=200)
 
 Noise Effects
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 Analyze the effects of AWGN on the constellation:
 
@@ -95,7 +95,7 @@ Analyze the effects of AWGN on the constellation:
     fig = viz.plot_with_noise(snr_db=15.0, n_points=1000)
 
 Bit Error Rate Analysis
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Estimate BER performance across different SNR levels:
 
@@ -105,7 +105,7 @@ Estimate BER performance across different SNR levels:
     fig = viz.plot_ber_estimation(snr_db_range=[0, 5, 10, 15, 20])
 
 Phase Rotation Animation
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Create animations to visualize phase rotation effects:
 
@@ -122,7 +122,7 @@ Create animations to visualize phase rotation effects:
     # anim.save('phase_rotation.mp4', writer='ffmpeg')
 
 Eye Diagrams
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 Generate eye diagrams to analyze intersymbol interference:
 
@@ -136,7 +136,7 @@ Generate eye diagrams to analyze intersymbol interference:
     )
 
 Comparing Modulation Schemes
---------------------------
+----------------------------
 
 Kaira provides tools to compare different modulation schemes:
 
@@ -161,13 +161,10 @@ Kaira provides tools to compare different modulation schemes:
     )
 
 Advanced Visualization and Analysis
-----------------------------------
+-----------------------------------
 
 For more advanced use cases, the ConstellationVisualizer provides additional
 methods:
 
 - :meth:`~kaira.modulations.ConstellationVisualizer.plot_bit_reliability`: Analyze bit reliability with Log-Likelihood Ratio (LLR) heatmaps
 - :meth:`~kaira.modulations.ConstellationVisualizer.plot_trajectory`: Visualize trajectories between consecutive symbols
-- :meth:`~kaira.modulations.ConstellationVisualizer.plot_spectral_efficiency`: Compare spectral efficiency with other modulation schemes
-
-See the API reference for complete details on all available methods and parameters.

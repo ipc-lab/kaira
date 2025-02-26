@@ -26,8 +26,8 @@ These base classes define interfaces that all derived implementations must adher
    BaseMetric
    BaseModel
    BasePipeline
-   Modulator
-   Demodulator
+   BaseModulator
+   BaseDemodulator
 
 Channels
 --------
@@ -146,28 +146,13 @@ Metrics evaluate the quality of transmitted and reconstructed signals.
    See :class:`~kaira.core.BaseMetric` for the interface all metrics must implement.
 
 Modulations
-----------
+-----------
 
 The modulations package provides digital modulation schemes for communications systems,
 including modulators, demodulators, and visualization tools for constellation diagrams.
 
-Base Modulation Components
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Base classes for digital modulation schemes are provided in the core module:
-
-.. currentmodule:: kaira.core
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   Modulator
-   Demodulator
-
 Modulation Schemes
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 Concrete implementations of various digital modulation schemes:
 
@@ -226,7 +211,7 @@ Tools for visualizing and analyzing modulation constellations.
    calculate_theoretical_ber
 
 Benchmarking Tools
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 Tools for testing and comparing modulation schemes.
 

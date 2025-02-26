@@ -44,8 +44,8 @@ def awgn_channel(x: torch.Tensor, snr_db: float) -> Tuple[torch.Tensor, float]:
 
 
 def measure_ber(
-    modulator: Modulator, 
-    demodulator: Demodulator, 
+    modulator: BaseModulator, 
+    demodulator: BaseDemodulator, 
     snr_db: Union[float, List[float]], 
     n_bits: int = 100000,
     batch_size: int = 10000,
@@ -180,7 +180,7 @@ def plot_ber_curve(
 
 
 def compare_modulation_schemes(
-    modulators: Dict[str, Tuple[Modulator, Demodulator]],
+    modulators: Dict[str, Tuple[BaseModulator, BaseDemodulator]],
     snr_range: List[float],
     n_bits: int = 100000,
     batch_size: int = 10000,
@@ -259,8 +259,8 @@ def compare_modulation_schemes(
 
 
 def measure_throughput(
-    modulator: Modulator,
-    demodulator: Optional[Demodulator] = None,
+    modulator: BaseModulator,
+    demodulator: Optional[BaseDemodulator] = None,
     n_bits: int = 1000000,
     batch_size: int = 10000,
     n_runs: int = 5,
@@ -343,7 +343,7 @@ def measure_throughput(
 
 
 def benchmark_modulation_schemes(
-    modulators: Dict[str, Tuple[Modulator, Demodulator]],
+    modulators: Dict[str, Tuple[BaseModulator, BaseDemodulator]],
     n_bits: int = 1000000,
     batch_size: int = 10000,
     device: Optional[torch.device] = None

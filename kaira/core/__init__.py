@@ -16,8 +16,8 @@ __all__ = [
     "BaseMetric",
     "BaseModel",
     "BasePipeline",
-    "Modulator",
-    "Demodulator"
+    "BaseModulator",
+    "BaseDemodulator"
 ]
 
 

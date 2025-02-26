@@ -8,7 +8,16 @@ Available Channels:
     - AWGNChannel: Additive White Gaussian Noise channel
     - ComplexAWGNChannel: Complex-valued AWGN channel
     - PerfectChannel: Ideal channel with no distortion
-
+    - RayleighChannel: Rayleigh fading channel for wireless communications
+    - RicianChannel: Rician fading channel with line-of-sight component
+    - FrequencySelectiveChannel: Channel with frequency-selective fading
+    - PhaseNoiseChannel: Channel that introduces phase noise
+    - IQImbalanceChannel: Channel modeling I/Q imbalance in hardware
+    - NonlinearChannel: Channel with polynomial nonlinearity
+    - RappModel: Rapp model for power amplifier nonlinearity
+    - ChannelPipeline: Sequential composition of multiple channels
+    - ParallelChannels: Parallel application of multiple channels
+    
 Each channel implements a forward() method that takes an input tensor and returns
 the output tensor after applying the channel effects.
 
@@ -19,127 +28,48 @@ Example:
     >>> noisy_signal = channel(input_signal)
 """
 
-import torch
-
-from kaira.core import BaseChannel
-from kaira.utils import to_tensor
+from .awgn import AWGNChannel, ComplexAWGNChannel
+from .fading import RayleighChannel, RicianChannel, FrequencySelectiveChannel
+from .impairments import PhaseNoiseChannel, IQImbalanceChannel
+from .perfect import PerfectChannel
+from .nonlinear import NonlinearChannel, RappModel
+from .utils import snr_to_noise_power, noise_power_to_snr, calculate_snr, evaluate_ber
+from .composition import ChannelPipeline, ParallelChannels
+from .visualization import plot_channel_response, plot_constellation, plot_impulse_response
+from .testing import (measure_snr_vs_param, plot_snr_vs_param, 
+                     evaluate_channel_ber, plot_ber_vs_snr)
 
 __all__ = [
+    # Channel models
     "PerfectChannel",
     "AWGNChannel",
     "ComplexAWGNChannel",
+    "RayleighChannel", 
+    "RicianChannel",
+    "FrequencySelectiveChannel",
+    "PhaseNoiseChannel",
+    "IQImbalanceChannel",
+    "NonlinearChannel",
+    "RappModel",
+    
+    # Channel composition
+    "ChannelPipeline",
+    "ParallelChannels",
+    
+    # Utility functions
+    "snr_to_noise_power",
+    "noise_power_to_snr",
+    "calculate_snr",
+    "evaluate_ber",
+    
+    # Visualization utilities
+    "plot_channel_response",
+    "plot_constellation",
+    "plot_impulse_response",
+    
+    # Testing utilities
+    "measure_snr_vs_param",
+    "plot_snr_vs_param", 
+    "evaluate_channel_ber",
+    "plot_ber_vs_snr",
 ]
-
-
-class AWGNChannel(BaseChannel):
-    """Additive White Gaussian Noise (AWGN) Channel.
-
-    This channel adds real-valued Gaussian noise to the input signal.
-    The noise follows the distribution N(0, σ²) where σ² is the average noise power.
-
-    Mathematical Model:
-        y = x + n
-        where n ~ N(0, σ²)
-
-    Args:
-        avg_noise_power (float): The average noise power σ² (variance of the Gaussian noise)
-
-    Example:
-        >>> channel = AWGNChannel(avg_noise_power=0.1)
-        >>> x = torch.ones(10, 1)  # Input signal
-        >>> y = channel(x)  # Noisy output
-    """
-
-    def __init__(self, avg_noise_power: float):
-        """Initialize the AWGNChannel object.
-
-        Args:
-            avg_noise_power (float): The average noise power.
-
-        Returns:
-            None
-        """
-        super().__init__()
-        self.avg_noise_power = to_tensor(avg_noise_power)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply AWGN (Additive White Gaussian Noise) to the input tensor.
-
-        Args:
-            x (torch.Tensor): The input tensor of shape BxCxWxH.
-
-        Returns:
-            torch.Tensor: The output tensor after adding AWGN.
-        """
-        awgn = torch.randn_like(x) * torch.sqrt(self.avg_noise_power)
-        x = x + awgn
-        return x
-
-
-class ComplexAWGNChannel(BaseChannel):
-    """Complex Additive White Gaussian Noise (AWGN) Channel.
-
-    This channel adds complex-valued Gaussian noise to the input signal.
-    The noise follows CN(0, σ²) where σ² is split between real and imaginary components.
-
-    Mathematical Model:
-        y = x + n
-        where n ~ CN(0, σ²) = N(0, σ²/2) + jN(0, σ²/2)
-
-    Args:
-        avg_noise_power (float): The total average noise power σ² (split between real/imaginary)
-
-    Example:
-        >>> channel = ComplexAWGNChannel(avg_noise_power=0.1)
-        >>> x = torch.complex(torch.ones(10, 1), torch.zeros(10, 1))
-        >>> y = channel(x)  # Complex noisy output
-    """
-
-    def __init__(self, avg_noise_power: float):
-        super().__init__()
-        self.avg_noise_power = to_tensor(avg_noise_power) * 0.5
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the ComplexAWGNChannel.
-
-        Args:
-            x (torch.Tensor): The input signal tensor.
-
-        Returns:
-            torch.Tensor: The output signal tensor after adding complex Gaussian noise (equivalent to standard domain noise, but in complex domain).
-        """
-        awgn = torch.randn_like(x) * torch.sqrt(
-            torch.tensor(self.avg_noise_power, device=x.device)
-        )
-        x = x + awgn
-        return x
-
-
-class PerfectChannel(BaseChannel):
-    """Perfect (identity) channel that passes signals unchanged.
-
-    This channel represents an ideal communication medium with no distortion,
-    noise, or interference. It simply returns the input signal as is.
-
-    Mathematical Model:
-        y = x
-
-    Example:
-        >>> channel = PerfectChannel()
-        >>> x = torch.randn(10, 1)
-        >>> y = channel(x)  # y is identical to x
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x: torch.Tensor, *args) -> torch.Tensor:
-        """Forward pass of the perfect channel.
-
-        Args:
-            x (torch.Tensor): The input tensor.
-
-        Returns:
-            torch.Tensor: The input tensor without any modification.
-        """
-        return x
