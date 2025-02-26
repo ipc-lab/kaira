@@ -4,12 +4,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 from typing import Optional, Union, Literal, Tuple
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation, generate_gray_code_mapping
 import matplotlib.pyplot as plt
 
 
-class QAMModulator(Modulator):
+class QAMModulator(BaseModulator):
     """Quadrature Amplitude Modulation (QAM) modulator.
     
     Supports 16-QAM, 64-QAM, 256-QAM, and custom orders that are perfect squares.
@@ -151,7 +152,7 @@ class QAMModulator(Modulator):
         return self._bits_per_symbol
 
 
-class QAMDemodulator(Demodulator):
+class QAMDemodulator(BaseDemodulator):
     """Quadrature Amplitude Modulation (QAM) demodulator."""
     
     def __init__(self, order: Union[int, Literal[16, 64, 256]], normalize: bool = True) -> None:

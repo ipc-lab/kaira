@@ -16,6 +16,8 @@ __all__ = [
     "BaseMetric",
     "BaseModel",
     "BasePipeline",
+    "Modulator",
+    "Demodulator"
 ]
 
 
@@ -130,5 +132,103 @@ class BasePipeline(nn.Module, ABC):
 
         Returns:
             torch.Tensor: The output signal after processing by the pipeline.
+        """
+        pass
+
+class BaseModulator(ABC):
+    """Abstract base class for all modulators.
+    
+    A modulator maps bit sequences to complex symbols according to a specific
+    modulation scheme. This class defines the interface that all modulator
+    implementations must follow.
+    
+    Attributes:
+        bits_per_symbol: Number of bits encoded in each symbol
+        constellation: Complex-valued tensor of constellation points
+    """
+    
+    def __init__(self, bits_per_symbol: int) -> None:
+        """Initialize the modulator.
+        
+        Args:
+            bits_per_symbol: Number of bits to encode in each symbol
+        """
+        self.bits_per_symbol = bits_per_symbol
+        self.constellation = None
+        
+    @abstractmethod
+    def modulate(self, bits: torch.Tensor) -> torch.Tensor:
+        """Modulate bit sequences into complex symbols.
+        
+        Args:
+            bits: Input tensor of bits with shape (..., N) where N is the
+                 number of bits to modulate (multiple of bits_per_symbol)
+                 
+        Returns:
+            Complex-valued tensor of modulated symbols with shape
+            (..., N/bits_per_symbol)
+            
+        Raises:
+            ValueError: If the input shape is not compatible with bits_per_symbol
+        """
+        pass
+    
+    @abstractmethod
+    def _create_constellation(self) -> torch.Tensor:
+        """Create the modulation constellation points.
+        
+        Returns:
+            Complex-valued tensor of constellation points
+        """
+        pass
+
+
+class BaseDemodulator(ABC):
+    """Abstract base class for all demodulators.
+    
+    A demodulator maps received complex symbols back to bit sequences according
+    to a specific demodulation scheme, which may include soft or hard decisions.
+    
+    Attributes:
+        bits_per_symbol: Number of bits encoded in each symbol
+        constellation: Complex-valued tensor of constellation points
+    """
+    
+    def __init__(self, bits_per_symbol: int) -> None:
+        """Initialize the demodulator.
+        
+        Args:
+            bits_per_symbol: Number of bits encoded in each symbol
+        """
+        self.bits_per_symbol = bits_per_symbol
+        self.constellation = None
+        
+    @abstractmethod
+    def demodulate(self, symbols: torch.Tensor) -> torch.Tensor:
+        """Demodulate complex symbols into bit sequences (hard decision).
+        
+        Args:
+            symbols: Input tensor of complex symbols with shape (..., N)
+                    
+        Returns:
+            Tensor of demodulated bits with shape (..., N*bits_per_symbol)
+        """
+        pass
+    
+    @abstractmethod
+    def soft_demodulate(
+        self, 
+        symbols: torch.Tensor, 
+        noise_var: float
+    ) -> torch.Tensor:
+        """Demodulate complex symbols into soft bit values (LLRs).
+        
+        Args:
+            symbols: Input tensor of complex symbols with shape (..., N)
+            noise_var: Noise variance for LLR calculation
+                    
+        Returns:
+            Tensor of log-likelihood ratios (LLRs) for each bit with
+            shape (..., N*bits_per_symbol)
         """
         pass

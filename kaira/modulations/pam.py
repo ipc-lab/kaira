@@ -5,11 +5,12 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Union, Literal, Tuple
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation, binary_to_gray, gray_to_binary
 
 
-class PAMModulator(Modulator):
+class PAMModulator(BaseModulator):
     """Pulse Amplitude Modulation (PAM) modulator.
     
     Maps groups of bits to amplitude levels for transmission.
@@ -127,7 +128,7 @@ class PAMModulator(Modulator):
         return self._bits_per_symbol
 
 
-class PAMDemodulator(Demodulator):
+class PAMDemodulator(BaseDemodulator):
     """Pulse Amplitude Modulation (PAM) demodulator."""
     
     def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True) -> None:

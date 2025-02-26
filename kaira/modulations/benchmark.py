@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from typing import List, Tuple, Dict, Optional, Union, Callable, Type
 import time
 from pathlib import Path
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import calculate_theoretical_ber
 import pandas as pd
 

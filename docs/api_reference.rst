@@ -26,6 +26,8 @@ These base classes define interfaces that all derived implementations must adher
    BaseMetric
    BaseModel
    BasePipeline
+   Modulator
+   Demodulator
 
 Channels
 --------
@@ -142,6 +144,105 @@ Metrics evaluate the quality of transmitted and reconstructed signals.
 
 .. seealso::
    See :class:`~kaira.core.BaseMetric` for the interface all metrics must implement.
+
+Modulations
+----------
+
+The modulations package provides digital modulation schemes for communications systems,
+including modulators, demodulators, and visualization tools for constellation diagrams.
+
+Base Modulation Components
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Base classes for digital modulation schemes are provided in the core module:
+
+.. currentmodule:: kaira.core
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   Modulator
+   Demodulator
+
+Modulation Schemes
+^^^^^^^^^^^^^^^^^
+
+Concrete implementations of various digital modulation schemes:
+
+.. currentmodule:: kaira.modulations
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   PSKModulator
+   PSKDemodulator
+   BPSKModulator
+   BPSKDemodulator
+   QPSKModulator
+   QPSKDemodulator
+   QAMModulator
+   QAMDemodulator
+   PAMModulator
+   PAMDemodulator
+   OQPSKModulator
+   OQPSKDemodulator
+   Pi4QPSKModulator
+   Pi4QPSKDemodulator
+   DPSKModulator
+   DPSKDemodulator
+   DBPSKModulator
+   DBPSKDemodulator
+   DQPSKModulator
+   DQPSKDemodulator
+
+Constellation Visualization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Tools for visualizing and analyzing modulation constellations.
+
+.. currentmodule:: kaira.modulations
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   ConstellationVisualizer
+
+.. currentmodule:: kaira.modulations.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   plot_constellation
+   binary_to_gray
+   gray_to_binary
+   calculate_theoretical_ber
+
+Benchmarking Tools
+^^^^^^^^^^^^^^^^^
+
+Tools for testing and comparing modulation schemes.
+
+.. currentmodule:: kaira.modulations.benchmark
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   awgn_channel
+   measure_ber
+   plot_ber_curve
+   compare_modulation_schemes
+   measure_throughput
+   benchmark_modulation_schemes
 
 Utilities
 ---------

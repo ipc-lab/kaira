@@ -5,11 +5,12 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Union, Tuple
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation
 
 
-class OQPSKModulator(Modulator):
+class OQPSKModulator(BaseModulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) modulator.
     
     Similar to QPSK but with a half-symbol delay in the quadrature component,
@@ -120,7 +121,7 @@ class OQPSKModulator(Modulator):
         return 2
 
 
-class OQPSKDemodulator(Demodulator):
+class OQPSKDemodulator(BaseDemodulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) demodulator."""
     
     def __init__(self, normalize: bool = True) -> None:

@@ -5,11 +5,12 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Union, Tuple, List
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation
 
 
-class Pi4QPSKModulator(Modulator):
+class Pi4QPSKModulator(BaseModulator):
     """π/4-QPSK modulator.
     
     A variant of QPSK where the constellation is rotated by π/4 radians
@@ -150,7 +151,7 @@ class Pi4QPSKModulator(Modulator):
         return 2
 
 
-class Pi4QPSKDemodulator(Demodulator):
+class Pi4QPSKDemodulator(BaseDemodulator):
     """π/4-QPSK demodulator."""
     
     def __init__(self, normalize: bool = True) -> None:

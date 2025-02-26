@@ -1,4 +1,22 @@
-"""Enhanced visualization tools for modulation constellations."""
+"""Enhanced visualization tools for modulation constellations.
+
+This module provides advanced visualization capabilities for digital modulation
+constellations, including interactive plots, decision regions, noise effects,
+bit reliability analysis, and animations.
+
+Examples:
+    Basic usage with a modulator:
+    
+    >>> from kaira.modulations import QAMModulator, ConstellationVisualizer
+    >>> mod = QAMModulator(bits_per_symbol=4)  # 16-QAM
+    >>> viz = ConstellationVisualizer(modulator=mod)
+    >>> fig = viz.plot_basic()
+    >>> fig.savefig('16qam_constellation.png')
+    
+    Creating noise visualization:
+    
+    >>> viz.plot_with_noise(snr_db=15.0, n_points=1000)
+"""
 
 import torch
 import numpy as np
@@ -7,7 +25,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Circle
 import matplotlib.animation as animation
 from typing import Optional, Tuple, List, Dict, Union, Callable
-from .base import Modulator, Demodulator
+from kaira.core.modulations import Modulator, Demodulator
 from .utils import plot_constellation
 
 
@@ -15,7 +33,18 @@ class ConstellationVisualizer:
     """Advanced visualization tool for modulation constellations.
     
     Provides enhanced visualization features for constellation diagrams
-    including noise effects, decision regions, and animations.
+    including noise effects, decision regions, bit reliability mapping,
+    eye diagrams, and animations. This class serves as a comprehensive
+    toolkit for analyzing and visualizing digital modulation schemes.
+    
+    Attributes:
+        constellation: Complex-valued tensor of constellation points
+        bits_per_symbol: Number of bits per symbol
+        bit_labels: Optional bit labels for each constellation point
+        title: Plot title
+        figsize: Figure size tuple (width, height)
+        fig: Matplotlib figure instance
+        ax: Matplotlib axes instance
     """
     
     def __init__(
@@ -29,11 +58,21 @@ class ConstellationVisualizer:
         """Initialize the constellation visualizer.
         
         Args:
-            modulator: Modulator object to extract constellation from
-            constellation: Direct constellation points (if modulator not provided)
-            bit_labels: Optional bit labels for each constellation point
-            title: Plot title
-            figsize: Figure size as (width, height)
+            modulator: Modulator object to extract constellation from. If provided,
+                       constellation points and bit patterns will be extracted from it.
+            constellation: Direct constellation points (if modulator not provided).
+                          Can be a torch.Tensor or numpy array of complex values.
+            bit_labels: Optional bit labels for each constellation point. If not provided
+                       and modulator has bit_patterns, they will be used to generate labels.
+            title: Plot title for all generated visualizations.
+            figsize: Figure size as (width, height) in inches.
+            
+        Raises:
+            ValueError: If neither modulator nor constellation is provided.
+            
+        Note:
+            Either modulator or constellation must be provided. If both are provided,
+            the modulator takes precedence.
         """
         if modulator is not None:
             # Extract constellation from modulator
@@ -69,12 +108,20 @@ class ConstellationVisualizer:
     def plot_basic(self, show_grid: bool = True, show_labels: bool = True) -> plt.Figure:
         """Create a basic constellation diagram.
         
+        This method generates a standard constellation diagram showing the symbol
+        mapping points in the complex plane, with optional bit labels and grid lines.
+        
         Args:
-            show_grid: Whether to show grid lines
-            show_labels: Whether to show bit labels
+            show_grid: Whether to show grid lines in the background
+            show_labels: Whether to show bit labels for each constellation point
             
         Returns:
-            Matplotlib figure
+            Matplotlib figure containing the basic constellation diagram
+            
+        Example:
+            >>> viz = ConstellationVisualizer(modulator=qam_mod)
+            >>> fig = viz.plot_basic(show_labels=True)
+            >>> plt.show()
         """
         self.fig, self.ax = plt.subplots(figsize=self.figsize)
         constellation_np = self.constellation.numpy()
@@ -135,11 +182,21 @@ class ConstellationVisualizer:
     def plot_decision_regions(self, resolution: int = 200) -> plt.Figure:
         """Plot decision regions for the constellation.
         
+        Visualizes the decision boundaries between constellation points using
+        color-coded regions. Each region represents the set of points that
+        would be decoded to a particular constellation symbol.
+        
         Args:
-            resolution: Grid resolution for decision region visualization
+            resolution: Grid resolution for decision region visualization.
+                      Higher values produce smoother boundaries but increase
+                      computation time.
             
         Returns:
-            Matplotlib figure
+            Matplotlib figure showing the constellation with decision regions
+            
+        Note:
+            Decision regions are determined using minimum Euclidean distance,
+            which assumes AWGN channel conditions.
         """
         # Create figure if it doesn't exist
         if self.fig is None or self.ax is None:
@@ -234,13 +291,23 @@ class ConstellationVisualizer:
     ) -> plt.Figure:
         """Plot constellation with simulated noise.
         
+        Visualizes the effect of Additive White Gaussian Noise (AWGN) on
+        the constellation by showing how transmitted symbols spread around
+        the ideal constellation points.
+        
         Args:
-            snr_db: Signal-to-noise ratio in dB
-            n_points: Number of noisy points to generate
-            show_density: Whether to show 2D density of received points
+            snr_db: Signal-to-noise ratio in dB. Lower values result in
+                   more noise and greater symbol spreading.
+            n_points: Number of noisy points to generate and plot.
+            show_density: Whether to show 2D density of received points using
+                        a hexbin plot (True) or plot individual points (False).
             
         Returns:
-            Matplotlib figure
+            Matplotlib figure showing the constellation with noise effects
+            
+        Note:
+            Noise circles around constellation points indicate 2σ of the
+            noise distribution, containing approximately 68% of received symbols.
         """
         # Create figure if it doesn't exist
         if self.fig is None or self.ax is None:
@@ -339,13 +406,22 @@ class ConstellationVisualizer:
         return self.fig
     
     def plot_ber_estimation(self, snr_db_range: List[float] = None) -> plt.Figure:
-        """Plot estimated BER for the constellation.
+        """Plot estimated Bit Error Rate (BER) for the constellation.
+        
+        Uses Monte Carlo simulation to estimate the BER performance of the
+        modulation scheme across different SNR levels.
         
         Args:
-            snr_db_range: List of SNR values in dB to evaluate
+            snr_db_range: List of SNR values in dB to evaluate. If None,
+                         values from 0 to 20 dB in steps of 2 dB are used.
             
         Returns:
-            Matplotlib figure with BER curve
+            Matplotlib figure with BER vs SNR curve on semi-logarithmic scale
+            
+        Note:
+            The BER estimation assumes Gray coding and AWGN channel conditions.
+            For more accurate results, increase the number of simulated bits
+            in the implementation (default is 100,000 bits).
         """
         if snr_db_range is None:
             snr_db_range = np.arange(0, 21, 2)
@@ -408,13 +484,25 @@ class ConstellationVisualizer:
     ) -> animation.Animation:
         """Create an animation showing phase rotation of the constellation.
         
+        Visualizes the effect of a continuous phase rotation on the constellation,
+        which helps understand the impact of phase noise or frequency offset.
+        
         Args:
-            n_frames: Number of animation frames
-            rotation_cycles: Number of full rotation cycles
-            interval: Frame interval in milliseconds
+            n_frames: Number of animation frames to generate.
+            rotation_cycles: Number of full rotation cycles (360°) to complete.
+            interval: Frame interval in milliseconds (animation speed).
             
         Returns:
-            Matplotlib animation object
+            Matplotlib animation object that can be displayed in notebooks
+            or saved to file using animation.save()
+            
+        Example:
+            >>> anim = viz.animate_phase_rotation(rotation_cycles=2.0)
+            >>> from IPython.display import HTML
+            >>> HTML(anim.to_jshtml())  # For Jupyter display
+            
+        Note:
+            To save the animation: anim.save('rotation.mp4', writer='ffmpeg')
         """
         # Create figure if it doesn't exist
         if self.fig is None or self.ax is None:
@@ -496,14 +584,25 @@ class ConstellationVisualizer:
         return ani
     
     def plot_bit_reliability(self, snr_db: float = 10.0, n_points: int = 10000) -> plt.Figure:
-        """Visualize bit reliability with LLR heatmaps.
+        """Visualize bit reliability with Log-Likelihood Ratio (LLR) heatmaps.
+        
+        Creates a visualization showing the reliability of each bit position in
+        different regions of the complex plane, useful for understanding soft
+        decision performance with coding schemes.
         
         Args:
-            snr_db: Signal-to-noise ratio in dB
-            n_points: Number of points to generate for visualization
+            snr_db: Signal-to-noise ratio in dB for reliability calculation.
+            n_points: Number of points to generate for visualization density.
             
         Returns:
-            Matplotlib figure
+            Matplotlib figure with subplot for each bit position showing LLR heatmap
+            
+        Note:
+            LLR values are approximated using max-log simplification:
+            LLR ≈ (min_dist_bit1 - min_dist_bit0) / noise_power
+            
+            Positive LLR (red) indicates higher confidence in bit=0
+            Negative LLR (blue) indicates higher confidence in bit=1
         """
         constellation_np = self.constellation.numpy()
         
@@ -638,15 +737,28 @@ class ConstellationVisualizer:
     ) -> plt.Figure:
         """Generate an eye diagram for the modulation.
         
+        Creates eye diagrams for both I and Q components, showing the effects
+        of pulse shaping, ISI, and noise on the signal trajectory between symbols.
+        
         Args:
-            snr_db: Signal-to-noise ratio in dB
-            n_symbols: Number of symbols to simulate
-            samples_per_symbol: Samples per symbol for pulse shaping
-            pulse_type: Pulse shaping type ('rect', 'rrc', 'rc')
-            beta: Roll-off factor for RRC/RC filters
+            snr_db: Signal-to-noise ratio in dB.
+            n_symbols: Number of symbols to simulate in the sequence.
+            samples_per_symbol: Samples per symbol for pulse shaping (oversampling).
+            pulse_type: Pulse shaping type:
+                       - 'rect': Rectangular pulse (no shaping)
+                       - 'rrc': Root-Raised Cosine filter
+                       - 'rc': Raised Cosine filter
+            beta: Roll-off factor for RRC/RC filters (0.0 to 1.0).
+                 Higher values reduce ISI but require more bandwidth.
             
         Returns:
-            Matplotlib figure with eye diagram
+            Matplotlib figure with I and Q eye diagrams
+            
+        Note:
+            Eye openness indicates signal quality - a wider eye opening
+            means better discrimination between symbols and less ISI.
+            Vertical closures indicate amplitude distortion.
+            Horizontal closures indicate timing jitter sensitivity.
         """
         # Generate random symbols
         constellation_np = self.constellation.numpy()
@@ -771,14 +883,24 @@ class ConstellationVisualizer:
     ) -> plt.Figure:
         """Plot the trajectory between consecutive symbols.
         
+        Visualizes the path that the signal takes when transitioning between
+        symbols, useful for understanding modulation dynamics and potential
+        for spectral regrowth.
+        
         Args:
-            n_symbols: Number of symbols to simulate
-            snr_db: Optional SNR in dB (if provided, adds noise)
-            show_arrows: Whether to show directional arrows
-            alpha: Transparency of trajectories
+            n_symbols: Number of random symbols to plot in sequence.
+            snr_db: Optional SNR in dB. If provided, adds AWGN to the trajectories.
+            show_arrows: Whether to show directional arrows on trajectories.
+            alpha: Transparency level of the trajectory lines (0.0-1.0).
             
         Returns:
-            Matplotlib figure
+            Matplotlib figure showing symbol trajectories
+            
+        Note:
+            Trajectories show the most likely paths between symbols and can
+            reveal potential implementation issues like spectral spreading
+            or envelope variations that might affect amplifier linearity
+            requirements.
         """
         # Create figure if it doesn't exist
         if self.fig is None or self.ax is None:
@@ -869,11 +991,26 @@ class ConstellationVisualizer:
     def plot_spectral_efficiency(self, modulation_names: List[str] = None) -> plt.Figure:
         """Plot spectral efficiency comparison with other modulation schemes.
         
+        Creates a bar chart comparing the bits per symbol (spectral efficiency)
+        of the current modulation with other common schemes.
+        
         Args:
-            modulation_names: List of modulation schemes to compare against
+            modulation_names: List of modulation schemes to compare against.
+                            If None, uses ['BPSK', 'QPSK', '8PSK', '16QAM', 
+                            '64QAM', '256QAM'] as defaults.
             
         Returns:
             Matplotlib figure with spectral efficiency comparison
+            
+        Note:
+            Spectral efficiency shown is raw bits/symbol and doesn't account
+            for pulse shaping, coding overhead, or guard intervals that would
+            affect actual bandwidth efficiency in a real system.
+            
+        Example:
+            >>> viz = ConstellationVisualizer(modulator=qam_mod)
+            >>> fig = viz.plot_spectral_efficiency(['BPSK', 'QPSK', '16QAM'])
+            >>> plt.show()
         """
         if modulation_names is None:
             modulation_names = ['BPSK', 'QPSK', '8PSK', '16QAM', '64QAM', '256QAM']

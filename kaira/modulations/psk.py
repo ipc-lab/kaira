@@ -5,11 +5,12 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Union, Literal
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation, generate_gray_code_mapping
 
 
-class BPSKModulator(Modulator):
+class BPSKModulator(BaseModulator):
     """Binary Phase-Shift Keying (BPSK) modulator.
     
     Maps binary inputs (0, 1) to constellation points (-1, 1).
@@ -58,7 +59,7 @@ class BPSKModulator(Modulator):
         return 1
 
 
-class BPSKDemodulator(Demodulator):
+class BPSKDemodulator(BaseDemodulator):
     """Binary Phase-Shift Keying (BPSK) demodulator."""
     
     def __init__(self) -> None:
@@ -95,7 +96,7 @@ class BPSKDemodulator(Demodulator):
         return 1
 
 
-class QPSKModulator(Modulator):
+class QPSKModulator(BaseModulator):
     """Quadrature Phase-Shift Keying (QPSK) modulator.
     
     Maps pairs of bits to complex constellation points in QPSK modulation.
@@ -181,7 +182,7 @@ class QPSKModulator(Modulator):
         return 2
 
 
-class QPSKDemodulator(Demodulator):
+class QPSKDemodulator(BaseDemodulator):
     """Quadrature Phase-Shift Keying (QPSK) demodulator."""
     
     def __init__(self, normalize: bool = True) -> None:
@@ -239,7 +240,7 @@ class QPSKDemodulator(Demodulator):
         return 2
 
 
-class PSKModulator(Modulator):
+class PSKModulator(BaseModulator):
     """General M-ary Phase-Shift Keying (PSK) modulator.
     
     Maps groups of bits to complex constellation points around the unit circle.
@@ -347,7 +348,7 @@ class PSKModulator(Modulator):
         return self._bits_per_symbol
 
 
-class PSKDemodulator(Demodulator):
+class PSKDemodulator(BaseDemodulator):
     """General M-ary Phase-Shift Keying (PSK) demodulator.
     
     Demodulates complex constellation points back to bits.

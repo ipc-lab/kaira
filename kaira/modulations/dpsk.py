@@ -5,11 +5,12 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Union, Literal, Tuple
-from .base import Modulator, Demodulator
+from kaira.core import BaseModulator, BaseDemodulator
+
 from .utils import plot_constellation
 
 
-class DPSKModulator(Modulator):
+class DPSKModulator(BaseModulator):
     """Differential Phase-Shift Keying (DPSK) modulator.
     
     Encodes information in the phase differences between consecutive symbols
@@ -143,7 +144,7 @@ class DPSKModulator(Modulator):
         return self._bits_per_symbol
 
 
-class DPSKDemodulator(Demodulator):
+class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
     
     def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
