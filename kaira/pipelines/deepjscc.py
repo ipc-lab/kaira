@@ -6,8 +6,7 @@ transmission using Deep Joint Source-Channel Coding (DeepJSCC).
 
 import torch.nn as nn
 
-from kaira.core import BaseChannel, BaseConstraint, BaseModel
-
+from .base import BaseChannel, BaseConstraint, BaseModel
 from .sequential import SequentialPipeline
 
 

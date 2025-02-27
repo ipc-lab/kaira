@@ -7,8 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from kaira.core import BaseDemodulator, BaseModulator
-
+from .base import BaseDemodulator, BaseModulator
 from .utils import generate_gray_code_mapping, plot_constellation
 
 

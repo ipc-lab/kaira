@@ -3,10 +3,10 @@
 import torch
 import torch.nn.functional as F
 
-from kaira.core import BaseChannel
 from kaira.utils import to_tensor
+from kaira.utils.snr import snr_to_noise_power
 
-from .utils import snr_to_noise_power
+from .base import BaseChannel
 
 
 class RayleighChannel(BaseChannel):

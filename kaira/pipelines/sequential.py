@@ -1,6 +1,6 @@
 from typing import Any, Callable, List, Optional
 
-from kaira.core import BasePipeline
+from .base import BasePipeline
 
 
 class SequentialPipeline(BasePipeline):

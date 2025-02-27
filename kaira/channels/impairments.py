@@ -4,8 +4,9 @@ import math
 
 import torch
 
-from kaira.core import BaseChannel
 from kaira.utils import to_tensor
+
+from .base import BaseChannel
 
 
 class PhaseNoiseChannel(BaseChannel):

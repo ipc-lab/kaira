@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import torch
 from torch import nn
 
-from kaira.core import BaseChannel, BaseConstraint, BaseMetric, BaseModel, BasePipeline
+from .base import BaseChannel, BaseConstraint, BaseMetric, BaseModel, BasePipeline
 
 
 class DummyModule(nn.Module):

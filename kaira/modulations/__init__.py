@@ -21,6 +21,7 @@ from .dpsk import (
     DQPSKDemodulator,
     DQPSKModulator,
 )
+from .identity import IdentityDemodulator, IdentityModulator
 from .oqpsk import OQPSKDemodulator, OQPSKModulator
 from .pam import PAMDemodulator, PAMModulator
 from .pi4qpsk import Pi4QPSKDemodulator, Pi4QPSKModulator
@@ -61,6 +62,8 @@ __all__ = [
     "DBPSKDemodulator",
     "DQPSKModulator",
     "DQPSKDemodulator",
+    "IdentityModulator",
+    "IdentityDemodulator",
     "plot_constellation",
     "binary_to_gray",
     "gray_to_binary",

@@ -7,7 +7,7 @@ from compressai.layers import (
     ResidualBlockWithStride,
 )
 
-from kaira.core import BaseModel
+from .base import BaseModel
 
 
 class DeepJSCCQEncoder(BaseModel):

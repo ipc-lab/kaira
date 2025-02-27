@@ -9,8 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from kaira.core import BaseDemodulator, BaseModulator
-
+from .base import BaseDemodulator, BaseModulator
 from .utils import calculate_theoretical_ber
 
 

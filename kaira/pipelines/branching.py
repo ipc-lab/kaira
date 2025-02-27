@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from kaira.core import BasePipeline
+from .base import BasePipeline
 
 
 class BranchingPipeline(BasePipeline):

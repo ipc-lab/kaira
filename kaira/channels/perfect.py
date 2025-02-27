@@ -2,7 +2,7 @@
 
 import torch
 
-from kaira.core import BaseChannel
+from .base import BaseChannel
 
 
 class PerfectChannel(BaseChannel):

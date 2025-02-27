@@ -3,9 +3,9 @@
 import numpy as np
 import torch
 
-from kaira.core import BaseChannel
 from kaira.utils import to_tensor
 
+from .base import BaseChannel
 from .utils import snr_to_noise_power
 
 

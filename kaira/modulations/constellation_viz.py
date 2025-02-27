@@ -27,8 +27,7 @@ import torch
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Circle
 
-from kaira.core import BaseDemodulator, BaseModulator
-
+from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
 
 
