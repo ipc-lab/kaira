@@ -78,20 +78,6 @@ class FadingChannelPipeline(BasePipeline):
         if hasattr(self.fading_channel, "configure"):
             self.fading_channel.configure(fading_type=fading_type.value, **self.channel_params)
 
-    def add_step(self, step: nn.Module):
-        """Not applicable to fading channel pipeline."""
-        raise NotImplementedError(
-            "Cannot add steps directly to FadingChannelPipeline. "
-            "Use the appropriate components in the constructor."
-        )
-
-    def remove_step(self, index: int):
-        """Not applicable to fading channel pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps from FadingChannelPipeline. "
-            "Create a new instance with the desired components."
-        )
-
     def set_channel_params(
         self, fading_type: Optional[FadingType] = None, **kwargs
     ) -> "FadingChannelPipeline":

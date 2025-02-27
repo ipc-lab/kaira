@@ -87,20 +87,6 @@ class OFDMPipeline(BasePipeline):
         self.num_subcarriers = num_subcarriers
         self.cp_length = cp_length
 
-    def add_step(self, step: nn.Module):
-        """Not applicable to OFDM pipeline."""
-        raise NotImplementedError(
-            "Cannot add steps directly to OFDMPipeline. "
-            "Use the appropriate components in the constructor."
-        )
-
-    def remove_step(self, index: int):
-        """Not applicable to OFDM pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps from OFDMPipeline. "
-            "Create a new instance with the desired components."
-        )
-
     def forward(self, input_data: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Process input through the OFDM communication system.
 

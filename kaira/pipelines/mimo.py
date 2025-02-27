@@ -63,20 +63,6 @@ class MIMOPipeline(BasePipeline):
         self.num_tx_antennas = num_tx_antennas
         self.num_rx_antennas = num_rx_antennas
 
-    def add_step(self, step: nn.Module):
-        """Not applicable to MIMO pipeline."""
-        raise NotImplementedError(
-            "Cannot add steps directly to MIMOPipeline. "
-            "Use the appropriate components in the constructor."
-        )
-
-    def remove_step(self, index: int):
-        """Not applicable to MIMO pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps from MIMOPipeline. "
-            "Create a new instance with the desired components."
-        )
-
     def forward(self, input_data: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Process input through the MIMO communication system.
 

@@ -59,20 +59,6 @@ class FeedbackChannelPipeline(BasePipeline):
         self.feedback_processor = feedback_processor
         self.max_iterations = max_iterations
 
-    def add_step(self, step: Callable):
-        """Not applicable to feedback channel pipeline."""
-        raise NotImplementedError(
-            "Cannot add steps directly to FeedbackChannelPipeline. "
-            "Use the appropriate components in the constructor."
-        )
-
-    def remove_step(self, index: int):
-        """Not applicable to feedback channel pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps from FeedbackChannelPipeline. "
-            "Create a new instance with the desired components."
-        )
-
     def forward(self, input_data: torch.Tensor) -> Dict[str, Any]:
         """Process input through the feedback channel system.
 

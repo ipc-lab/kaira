@@ -59,16 +59,6 @@ class BranchingPipeline(BasePipeline):
         self.default_branch = pipeline
         return self
 
-    def add_step(self, step: Callable):
-        """Not applicable to branching pipeline."""
-        raise NotImplementedError("Use add_branch() instead for BranchingPipeline.")
-
-    def remove_step(self, index: int):
-        """Not applicable to branching pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps directly from BranchingPipeline. Use branch names instead."
-        )
-
     def remove_branch(self, name: str):
         """Remove a branch by name.
 

@@ -1,10 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .base import BasePipeline
+from .base import ConfigurablePipeline
 
 
-class ParallelPipeline(BasePipeline):
+class ParallelPipeline(ConfigurablePipeline):
     """A pipeline that processes steps in parallel.
 
     All steps receive the same input data and process independently.

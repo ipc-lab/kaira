@@ -1,171 +1,243 @@
 """Wyner-Ziv module for Kaira.
 
-This module contains the WynerZivPipeline, which implements distributed source coding with side
-information at the decoder.
+This module contains the WynerZivPipeline, which implements a distributed source coding
+system with side information at the decoder, based on the Wyner-Ziv coding theorem.
+
+The Wyner-Ziv coding theorem (A. Wyner and J. Ziv, 1976) is a fundamental result in 
+information theory that establishes the rate-distortion function for lossy source coding
+with side information available only at the decoder. This provides theoretical foundations
+for various practical applications such as distributed video/image coding, sensor networks,
+and distributed computing where communication resources are limited but correlated 
+information exists at different nodes.
+
+The implementation follows the key principles of Wyner-Ziv coding:
+1. Source encoding without access to side information
+2. Binning/quantization of encoded source
+3. Syndrome generation for efficient transmission
+4. Reconstruction at decoder using both received syndromes and side information
 """
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-from .base import BaseChannel, BaseModel, BasePipeline
+from .base import BaseChannel, BaseConstraint, BaseModel, BasePipeline
+
+
+class WynerZivCorrelationModel(nn.Module):
+    """Model for simulating correlation between source and side information.
+    
+    In Wyner-Ziv coding, there is correlation between the source X and the side information
+    Y available at the decoder. This module simulates different correlation models between
+    the source X and the side information Y. The correlation structure is critical as it
+    determines the theoretical rate bounds and practical coding efficiency.
+    
+    The correlation model effectively creates a virtual channel between X and Y, which
+    can be modeled as various types of conditional probability distributions p(Y|X).
+    
+    Attributes:
+        correlation_type (str): Type of correlation model ('gaussian', 'binary', 'custom')
+            - 'gaussian': Additive white Gaussian noise model (Y = X + N, where N ~ N(0, σ²))
+            - 'binary': Binary symmetric channel model with crossover probability p
+            - 'custom': User-defined correlation model through a transform function
+        correlation_params (Dict): Parameters specific to the correlation model
+    """
+    
+    def __init__(
+        self, 
+        correlation_type: str = 'gaussian', 
+        correlation_params: Optional[Dict[str, Any]] = None
+    ):
+        """Initialize the correlation model.
+        
+        Args:
+            correlation_type: Type of correlation model:
+                - 'gaussian': Additive Gaussian noise (requires 'sigma' parameter)
+                - 'binary': Binary symmetric channel (requires 'crossover_prob' parameter)
+                - 'custom': User-defined model (requires 'transform_fn' parameter)
+            correlation_params: Parameters for the correlation model:
+                - For 'gaussian': {'sigma': float} - Standard deviation of the noise
+                - For 'binary': {'crossover_prob': float} - Probability of bit flipping
+                - For 'custom': {'transform_fn': callable} - Custom transformation function
+        """
+        super().__init__()
+        self.correlation_type = correlation_type
+        self.correlation_params = correlation_params or {}
+        
+    def forward(self, source: torch.Tensor) -> torch.Tensor:
+        """Generate correlated side information from the source.
+        
+        Creates side information Y that is correlated with the source X according to
+        the specified correlation model. This simulates the scenario where the decoder
+        has access to side information that is statistically related to the source.
+        
+        Args:
+            source: Source signal X (can be continuous or discrete valued)
+            
+        Returns:
+            Correlated side information Y with statistical dependence on X according
+            to the specified correlation model
+            
+        Raises:
+            ValueError: If the correlation type is unknown or if the custom correlation
+                model is missing the required transform function
+        """
+        if self.correlation_type == 'gaussian':
+            # Y = X + Z, where Z ~ N(0, sigma²)
+            sigma = self.correlation_params.get('sigma', 1.0)
+            noise = torch.randn_like(source) * sigma
+            return source + noise
+            
+        elif self.correlation_type == 'binary':
+            # Binary symmetric channel with crossover probability p
+            p = self.correlation_params.get('crossover_prob', 0.1)
+            flip_mask = torch.bernoulli(torch.full_like(source, p))
+            return source * (1 - flip_mask) + (1 - source) * flip_mask
+            
+        elif self.correlation_type == 'custom':
+            # Custom correlation model
+            if 'transform_fn' in self.correlation_params:
+                return self.correlation_params['transform_fn'](source)
+            else:
+                raise ValueError("Custom correlation model requires 'transform_fn' parameter")
+                
+        else:
+            raise ValueError(f"Unknown correlation type: {self.correlation_type}")
 
 
 class WynerZivPipeline(BasePipeline):
-    """A pipeline that implements Wyner-Ziv coding.
-
-    Wyner-Ziv coding is a form of distributed source coding where the encoder compresses
-    a source without access to side information, while the decoder uses both the compressed
-    signal and the side information for reconstruction. This is particularly useful for
-    scenarios like distributed video coding.
-
+    """A pipeline for Wyner-Ziv coding with decoder side information.
+    
+    Wyner-Ziv coding is a form of lossy source coding with side information at the decoder.
+    This pipeline implements the complete process including source encoding, quantization,
+    syndrome generation, channel transmission, and decoding with side information.
+    
+    The pipeline follows these key steps:
+    1. The encoder compresses the source without knowledge of side information
+    2. The quantizer maps the encoded values to discrete symbols/indices
+    3. The syndrome generator creates a compressed representation (syndromes) 
+       that will be used for reconstruction when combined with side information
+    4. The syndromes are transmitted through a potentially noisy channel
+    5. The decoder combines received syndromes with side information to reconstruct
+       the original source with minimal distortion
+    
+    This implementation can be used for various distributed coding scenarios like
+    distributed image/video compression, sensor networks, etc.
+    
     Attributes:
-        encoder (BaseModel): The encoder that compresses the source
-        quantizer (nn.Module): Module that quantizes the encoded representation
-        channel (BaseChannel): The channel through which the quantized data is transmitted
-        decoder (BaseModel): The decoder that reconstructs the source using side information
-        correlation_model (nn.Module): Optional module modeling correlation between source and side info
+        encoder (BaseModel): Transforms the source data into a suitable representation
+        quantizer (nn.Module): Discretizes the continuous encoded representation
+        syndrome_generator (nn.Module): Creates syndrome bits for efficient transmission
+        channel (BaseChannel): Models the communication channel characteristics 
+        correlation_model (WynerZivCorrelationModel): Models statistical relationship
+            between source and side information (used when side info is not provided)
+        decoder (BaseModel): Reconstructs source using received syndromes and side info
+        constraint (BaseConstraint): Optional constraint on transmitted data (e.g., power)
     """
-
+    
     def __init__(
         self,
         encoder: BaseModel,
         quantizer: nn.Module,
+        syndrome_generator: nn.Module,
         channel: BaseChannel,
+        correlation_model: WynerZivCorrelationModel,
         decoder: BaseModel,
-        correlation_model: Optional[nn.Module] = None,
+        constraint: Optional[BaseConstraint] = None,
     ):
         """Initialize the Wyner-Ziv pipeline.
-
+        
         Args:
-            encoder (BaseModel): The encoder that compresses the source
-            quantizer (nn.Module): Module that quantizes the encoded representation
-            channel (BaseChannel): The channel for transmission
-            decoder (BaseModel): The decoder that reconstructs using side information
-            correlation_model (Optional[nn.Module]): Module to model correlation between
-                source and side information (default: None)
+            encoder: Model that encodes the source data into a latent representation
+                without knowledge of the side information
+            quantizer: Module that discretizes the encoded representation into 
+                a finite set of indices or symbols
+            syndrome_generator: Module that generates syndromes (parity bits or
+                compressed representation) for error correction or compression
+            channel: Channel model that simulates transmission effects such as
+                noise, fading, or packet loss on the syndromes
+            correlation_model: Model that generates or simulates the correlation
+                between the source and side information
+            decoder: Model that reconstructs the source using received syndromes
+                and the side information available at the decoder
+            constraint: Optional constraint (e.g., power, rate) applied to the
+                transmitted syndromes
         """
         super().__init__()
         self.encoder = encoder
         self.quantizer = quantizer
+        self.syndrome_generator = syndrome_generator
         self.channel = channel
-        self.decoder = decoder
         self.correlation_model = correlation_model
-
-    def add_step(self, step: Callable):
-        """Not applicable to Wyner-Ziv pipeline."""
-        raise NotImplementedError(
-            "Cannot add steps directly to WynerZivPipeline. "
-            "Use the appropriate components in the constructor."
-        )
-
-    def remove_step(self, index: int):
-        """Not applicable to Wyner-Ziv pipeline."""
-        raise NotImplementedError(
-            "Cannot remove steps from WynerZivPipeline. "
-            "Create a new instance with the desired components."
-        )
-
-    def generate_side_information(self, source: torch.Tensor) -> torch.Tensor:
-        """Generate side information from the source.
-
-        In a real distributed system, the side information would be measured
-        independently at the decoder. This method simulates that by applying
-        the correlation model to the source.
-
+        self.decoder = decoder
+        self.constraint = constraint
+        
+    def forward(
+        self, 
+        source: torch.Tensor, 
+        side_info: Optional[torch.Tensor] = None
+    ) -> Dict[str, torch.Tensor]:
+        """Process source through the Wyner-Ziv coding system.
+        
+        Implements the full Wyner-Ziv coding pipeline:
+        1. Encodes source into a latent representation
+        2. Quantizes the latent representation 
+        3. Generates syndromes (compressed representation)
+        4. Applies optional constraints on syndromes
+        5. Transmits syndromes through the channel
+        6. Either uses provided side information or generates it through correlation model
+        7. Reconstructs source using received syndromes and side information
+        
         Args:
-            source (torch.Tensor): The source data
-
+            source: The source data to encode and transmit efficiently
+            side_info: Optional pre-generated side information available at decoder.
+                If None, side information is generated using the correlation_model,
+                simulating a real-world scenario where side info is independently
+                available at the decoder
+            
         Returns:
-            torch.Tensor: The simulated side information
+            Dictionary containing intermediate and final outputs of the pipeline:
+                - encoded: Latent representation from source encoder
+                - quantized: Discretized representation after quantization
+                - syndromes: Compressed representation for transmission
+                - constrained: Syndromes after applying optional constraints
+                - received: Syndromes after channel transmission (possibly corrupted)
+                - side_info: Side information available at decoder
+                - decoded: Final reconstruction of the source using syndromes and side info
         """
-        if self.correlation_model is not None:
-            return self.correlation_model(source)
-        else:
-            # Default correlation model: add some noise
-            noise = torch.randn_like(source) * 0.1
-            return source + noise
-
-    def forward(self, input_data: torch.Tensor) -> Dict[str, Any]:
-        """Process input through the Wyner-Ziv system.
-
-        Args:
-            input_data (torch.Tensor): The source data to encode
-
-        Returns:
-            Dict[str, Any]: A dictionary containing:
-                - reconstructed: The reconstructed source
-                - encoded: The encoded representation
-                - side_info: The side information
-                - quantized: The quantized representation
-                - received: The representation after transmission
-        """
-        # Generate side information (only available at decoder)
-        side_info = self.generate_side_information(input_data)
-
-        # Encode the source (without access to side information)
-        encoded = self.encoder(input_data)
-
-        # Quantize the encoded representation
+        # Source encoding
+        encoded = self.encoder(source)
+        
+        # Quantization
         quantized = self.quantizer(encoded)
-
-        # Transmit through the channel
-        received = self.channel(quantized)
-
-        # Decode using the received data and side information
-        reconstructed = self.decoder(received, side_info)
-
-        return {
-            "reconstructed": reconstructed,
-            "encoded": encoded,
-            "side_info": side_info,
-            "quantized": quantized,
-            "received": received,
-        }
-
-
-class WynerZivCorrelationModel(nn.Module):
-    """Models the correlation between a source and side information.
-
-    This module is used to simulate how side information is related to the source in a Wyner-Ziv
-    coding system. In practice, different correlation models can be implemented depending on the
-    application domain.
-    """
-
-    def __init__(self, correlation_type: str = "gaussian", params: Dict = None):
-        """Initialize the correlation model.
-
-        Args:
-            correlation_type (str): Type of correlation ("gaussian", "laplacian", etc.)
-            params (Dict): Parameters for the correlation model
-        """
-        super().__init__()
-        self.correlation_type = correlation_type
-        self.params = params or {}
-
-        # Default parameters
-        self.noise_std = self.params.get("noise_std", 0.1)
-        self.noise_mean = self.params.get("noise_mean", 0.0)
-
-    def forward(self, source: torch.Tensor) -> torch.Tensor:
-        """Generate side information from the source.
-
-        Args:
-            source (torch.Tensor): The source data
-
-        Returns:
-            torch.Tensor: The simulated side information
-        """
-        if self.correlation_type == "gaussian":
-            noise = torch.randn_like(source) * self.noise_std + self.noise_mean
-            return source + noise
-
-        elif self.correlation_type == "laplacian":
-            # Simulate Laplacian noise
-            u = torch.rand_like(source)
-            noise = -self.noise_std * torch.sign(u - 0.5) * torch.log(1 - 2 * torch.abs(u - 0.5))
-            return source + noise
-
+        
+        # Generate syndromes for error correction
+        syndromes = self.syndrome_generator(quantized)
+        
+        # Apply optional power constraint on syndromes
+        if self.constraint is not None:
+            constrained = self.constraint(syndromes)
         else:
-            raise ValueError(f"Unknown correlation type: {self.correlation_type}")
+            constrained = syndromes
+        
+        # Transmit syndromes through channel
+        received = self.channel(constrained)
+        
+        # Generate side information if not provided
+        if side_info is None:
+            side_info = self.correlation_model(source)
+        
+        # Decode using received syndromes and side information
+        decoded = self.decoder(received, side_info)
+        
+        return {
+            "encoded": encoded,
+            "quantized": quantized,
+            "syndromes": syndromes,
+            "constrained": constrained,
+            "received": received,
+            "side_info": side_info,
+            "decoded": decoded,
+        }
