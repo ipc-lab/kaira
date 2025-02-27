@@ -10,118 +10,124 @@ import torch.nn.functional as F
 
 class VanillaGANLoss(nn.Module):
     """Vanilla GAN Loss Module.
-    
+
     This module implements the original GAN loss from Goodfellow et al. 2014.
     """
-    
-    def __init__(self, reduction='mean'):
+
+    def __init__(self, reduction="mean"):
         """Initialize the VanillaGANLoss module.
-        
+
         Args:
             reduction (str): Reduction method ('mean', 'sum', or 'none'). Default is 'mean'.
         """
         super().__init__()
         self.reduction = reduction
-    
-    def forward_discriminator(self, real_logits: torch.Tensor, fake_logits: torch.Tensor) -> torch.Tensor:
+
+    def forward_discriminator(
+        self, real_logits: torch.Tensor, fake_logits: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass for discriminator.
-        
+
         Args:
             real_logits (torch.Tensor): Discriminator outputs for real data.
             fake_logits (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Discriminator loss.
         """
         real_loss = F.binary_cross_entropy_with_logits(
-            real_logits, 
-            torch.ones_like(real_logits),
-            reduction=self.reduction
+            real_logits, torch.ones_like(real_logits), reduction=self.reduction
         )
         fake_loss = F.binary_cross_entropy_with_logits(
-            fake_logits, 
-            torch.zeros_like(fake_logits),
-            reduction=self.reduction
+            fake_logits, torch.zeros_like(fake_logits), reduction=self.reduction
         )
         return real_loss + fake_loss
-    
+
     def forward_generator(self, fake_logits: torch.Tensor) -> torch.Tensor:
         """Forward pass for generator.
-        
+
         Args:
             fake_logits (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Generator loss.
         """
         return F.binary_cross_entropy_with_logits(
-            fake_logits, 
-            torch.ones_like(fake_logits),
-            reduction=self.reduction
+            fake_logits, torch.ones_like(fake_logits), reduction=self.reduction
         )
-        
+
     def forward(self, discriminator_pred: torch.Tensor, is_real: bool) -> torch.Tensor:
         """Forward pass through the VanillaGANLoss module.
-        
+
         Args:
             discriminator_pred (torch.Tensor): Discriminator outputs.
             is_real (bool): Whether predictions are for real data.
-            
+
         Returns:
             torch.Tensor: The GAN loss.
         """
-        target = torch.ones_like(discriminator_pred) if is_real else torch.zeros_like(discriminator_pred)
-        return F.binary_cross_entropy_with_logits(discriminator_pred, target, reduction=self.reduction)
+        target = (
+            torch.ones_like(discriminator_pred)
+            if is_real
+            else torch.zeros_like(discriminator_pred)
+        )
+        return F.binary_cross_entropy_with_logits(
+            discriminator_pred, target, reduction=self.reduction
+        )
 
 
 class LSGANLoss(nn.Module):
     """Least Squares GAN Loss Module.
-    
+
     This module implements the LSGAN loss from Mao et al. 2017.
     """
-    
-    def __init__(self, reduction='mean'):
+
+    def __init__(self, reduction="mean"):
         """Initialize the LSGANLoss module.
-        
+
         Args:
             reduction (str): Reduction method ('mean', 'sum', or 'none'). Default is 'mean'.
         """
         super().__init__()
         self.reduction = reduction
-    
-    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+
+    def forward_discriminator(
+        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass for discriminator.
-        
+
         Args:
             real_pred (torch.Tensor): Discriminator outputs for real data.
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Discriminator loss.
         """
         real_loss = torch.mean((real_pred - 1) ** 2)
-        fake_loss = torch.mean(fake_pred ** 2)
+        fake_loss = torch.mean(fake_pred**2)
         return (real_loss + fake_loss) * 0.5
-    
+
     def forward_generator(self, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for generator.
-        
+
         Args:
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Generator loss.
         """
         return torch.mean((fake_pred - 1) ** 2)
-    
-    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
+
+    def forward(
+        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
+    ) -> torch.Tensor:
         """Forward pass through the LSGANLoss module.
-        
+
         Args:
             pred (torch.Tensor): Discriminator outputs.
             is_real (bool): Whether predictions are for real data.
             for_discriminator (bool): Whether calculating loss for discriminator. Default is True.
-            
+
         Returns:
             torch.Tensor: The LSGAN loss.
         """
@@ -129,52 +135,56 @@ class LSGANLoss(nn.Module):
             if is_real:
                 return torch.mean((pred - 1) ** 2)
             else:
-                return torch.mean(pred ** 2)
+                return torch.mean(pred**2)
         else:  # for generator
             return torch.mean((pred - 1) ** 2)
 
 
 class WassersteinGANLoss(nn.Module):
     """Wasserstein GAN Loss Module.
-    
+
     This module implements the WGAN loss from Arjovsky et al. 2017.
     """
-    
+
     def __init__(self):
         """Initialize the WassersteinGANLoss module."""
         super().__init__()
-    
-    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+
+    def forward_discriminator(
+        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass for discriminator.
-        
+
         Args:
             real_pred (torch.Tensor): Discriminator outputs for real data.
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Discriminator loss.
         """
         return -(torch.mean(real_pred) - torch.mean(fake_pred))
-    
+
     def forward_generator(self, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for generator.
-        
+
         Args:
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Generator loss.
         """
         return -torch.mean(fake_pred)
-    
-    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
+
+    def forward(
+        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
+    ) -> torch.Tensor:
         """Forward pass through the WassersteinGANLoss module.
-        
+
         Args:
             pred (torch.Tensor): Discriminator outputs.
             is_real (bool): Whether predictions are for real data.
             for_discriminator (bool): Whether calculating loss for discriminator. Default is True.
-            
+
         Returns:
             torch.Tensor: The Wasserstein loss.
         """
@@ -189,47 +199,51 @@ class WassersteinGANLoss(nn.Module):
 
 class HingeLoss(nn.Module):
     """Hinge Loss Module for GANs.
-    
+
     This module implements the hinge loss commonly used in spectral normalization GAN.
     """
-    
+
     def __init__(self):
         """Initialize the HingeLoss module."""
         super().__init__()
-    
-    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+
+    def forward_discriminator(
+        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass for discriminator.
-        
+
         Args:
             real_pred (torch.Tensor): Discriminator outputs for real data.
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Discriminator loss.
         """
         real_loss = F.relu(1.0 - real_pred).mean()
         fake_loss = F.relu(1.0 + fake_pred).mean()
         return real_loss + fake_loss
-    
+
     def forward_generator(self, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for generator.
-        
+
         Args:
             fake_pred (torch.Tensor): Discriminator outputs for fake data.
-            
+
         Returns:
             torch.Tensor: Generator loss.
         """
         return -fake_pred.mean()
-    
-    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
+
+    def forward(
+        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
+    ) -> torch.Tensor:
         """Forward pass through the HingeLoss module.
-        
+
         Args:
             pred (torch.Tensor): Discriminator outputs.
             is_real (bool): Whether predictions are for real data.
             for_discriminator (bool): Whether calculating loss for discriminator. Default is True.
-            
+
         Returns:
             torch.Tensor: The hinge loss.
         """
@@ -244,68 +258,65 @@ class HingeLoss(nn.Module):
 
 class FeatureMatchingLoss(nn.Module):
     """Feature Matching Loss Module for GANs.
-    
+
     This module implements the feature matching loss for improved GAN training.
     """
-    
+
     def __init__(self):
         """Initialize the FeatureMatchingLoss module."""
         super().__init__()
-    
+
     def forward(self, real_features: list, fake_features: list) -> torch.Tensor:
         """Forward pass through the FeatureMatchingLoss module.
-        
+
         Args:
             real_features (list): List of discriminator features for real data.
             fake_features (list): List of discriminator features for fake data.
-            
+
         Returns:
             torch.Tensor: The feature matching loss.
         """
         loss = 0.0
         for real_feat, fake_feat in zip(real_features, fake_features):
             loss += F.l1_loss(fake_feat.mean(0), real_feat.detach().mean(0))
-        
+
         return loss
 
 
 class R1GradientPenalty(nn.Module):
     """R1 Gradient Penalty Module for GANs.
-    
+
     This module implements the R1 gradient penalty for GAN training.
     """
-    
+
     def __init__(self, gamma=10.0):
         """Initialize the R1GradientPenalty module.
-        
+
         Args:
             gamma (float): Weight for the gradient penalty. Default is 10.0.
         """
         super().__init__()
         self.gamma = gamma
-    
+
     def forward(self, real_data: torch.Tensor, real_outputs: torch.Tensor) -> torch.Tensor:
         """Forward pass through the R1GradientPenalty module.
-        
+
         Args:
             real_data (torch.Tensor): Real input data.
             real_outputs (torch.Tensor): Discriminator outputs for real data.
-            
+
         Returns:
             torch.Tensor: The R1 gradient penalty.
         """
         # Create gradient graph
         grad_real = torch.autograd.grad(
-            outputs=real_outputs.sum(), 
-            inputs=real_data,
-            create_graph=True, 
-            retain_graph=True
+            outputs=real_outputs.sum(), inputs=real_data, create_graph=True, retain_graph=True
         )[0]
-        
+
         # Flatten the gradients
         grad_real = grad_real.view(grad_real.size(0), -1)
-        
+
         # Calculate gradient penalty
         grad_penalty = (grad_real.norm(2, dim=1) ** 2).mean()
-        
+
         return self.gamma * 0.5 * grad_penalty

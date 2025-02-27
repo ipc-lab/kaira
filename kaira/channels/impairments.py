@@ -10,7 +10,7 @@ from .base import BaseChannel
 
 
 class PhaseNoiseChannel(BaseChannel):
-    """Phase Noise Channel.
+    """Oscillator phase jitter simulation for communications systems.
 
     Models the phase noise introduced by oscillators in communication systems.
     The phase noise is modeled as a Wiener process (random walk) with variance
@@ -34,13 +34,17 @@ class PhaseNoiseChannel(BaseChannel):
         self.phase_noise_variance = to_tensor(phase_noise_variance)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply phase noise to the input tensor.
+        """Introduce random phase fluctuations to the signal.
+
+        Simulates oscillator phase noise as a Wiener process (random walk).
+        The phase noise affects the phase of the complex signal while
+        preserving its magnitude.
 
         Args:
             x (torch.Tensor): The input complex tensor.
 
         Returns:
-            torch.Tensor: The output tensor after applying phase noise.
+            torch.Tensor: The output tensor with phase noise applied.
         """
         if not torch.is_complex(x):
             x = torch.complex(x, torch.zeros_like(x))
@@ -66,10 +70,11 @@ class PhaseNoiseChannel(BaseChannel):
 
 
 class IQImbalanceChannel(BaseChannel):
-    """I/Q Imbalance Channel.
+    """RF front-end quadrature imbalance simulator.
 
     Models the amplitude and phase imbalance between in-phase and quadrature
-    components in radio frequency hardware.
+    components in radio frequency hardware. This common impairment affects
+    modulation quality and introduces image interference.
 
     Mathematical Model:
         y = (1+ε)x_I + j(1-ε)x_Q * exp(jθ)
@@ -91,13 +96,17 @@ class IQImbalanceChannel(BaseChannel):
         self.phase_imbalance = to_tensor(phase_imbalance)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply I/Q imbalance to the input tensor.
+        """Simulate hardware I/Q imbalance impairments.
+
+        Introduces amplitude and phase mismatch between I and Q components,
+        which causes imperfect quadrature relationships in the modulated signal.
+        This is a common RF front-end impairment.
 
         Args:
             x (torch.Tensor): The input complex tensor.
 
         Returns:
-            torch.Tensor: The output tensor after applying I/Q imbalance.
+            torch.Tensor: The output tensor with I/Q imbalance effects.
         """
         if not torch.is_complex(x):
             x = torch.complex(x, torch.zeros_like(x))

@@ -2,14 +2,13 @@
 
 import torch
 
-from kaira.utils import to_tensor
+from kaira.utils import snr_to_noise_power, to_tensor
 
 from .base import BaseChannel
-from .utils import snr_to_noise_power
 
 
 class AWGNChannel(BaseChannel):
-    """Additive White Gaussian Noise (AWGN) Channel.
+    """Real-valued additive white Gaussian noise (AWGN) channel for signal transmission.
 
     This channel adds real-valued Gaussian noise to the input signal.
     The noise follows the distribution N(0, σ²) where σ² is the average noise power.
@@ -55,7 +54,10 @@ class AWGNChannel(BaseChannel):
             raise ValueError("Either avg_noise_power or snr_db must be provided")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply AWGN (Additive White Gaussian Noise) to the input tensor.
+        """Add white Gaussian noise to the input signal.
+
+        Adds real-valued Gaussian noise with specified power or SNR to simulate
+        thermal noise and other random disturbances in the channel.
 
         Args:
             x (torch.Tensor): The input tensor of shape BxCxWxH.
@@ -74,7 +76,7 @@ class AWGNChannel(BaseChannel):
 
 
 class ComplexAWGNChannel(BaseChannel):
-    """Complex Additive White Gaussian Noise (AWGN) Channel.
+    """Complex-valued additive white Gaussian noise (AWGN) channel for signal transmission.
 
     This channel adds complex-valued Gaussian noise to the input signal.
     The noise follows CN(0, σ²) where σ² is split between real and imaginary components.
@@ -107,7 +109,10 @@ class ComplexAWGNChannel(BaseChannel):
             raise ValueError("Either avg_noise_power or snr_db must be provided")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the ComplexAWGNChannel.
+        """Add complex white Gaussian noise to the input signal.
+
+        Adds complex-valued Gaussian noise with equal power in real and
+        imaginary components, based on specified total noise power or SNR.
 
         Args:
             x (torch.Tensor): The input signal tensor (complex).

@@ -15,6 +15,7 @@ Available Channels:
     - IQImbalanceChannel: Channel modeling I/Q imbalance in hardware
     - NonlinearChannel: Channel with polynomial nonlinearity
     - RappModel: Rapp model for power amplifier nonlinearity
+    - LambdaChannel: Apply custom functions to create specialized channels
 
 Each channel implements a forward() method that takes an input tensor and returns
 the output tensor after applying the channel effects.
@@ -29,6 +30,7 @@ Example:
 from .awgn import AWGNChannel, ComplexAWGNChannel
 from .fading import FrequencySelectiveChannel, RayleighChannel, RicianChannel
 from .impairments import IQImbalanceChannel, PhaseNoiseChannel
+from .lambda_channel import LambdaChannel
 from .nonlinear import NonlinearChannel, RappModel
 from .perfect import PerfectChannel
 
@@ -43,4 +45,5 @@ __all__ = [
     "IQImbalanceChannel",
     "NonlinearChannel",
     "RappModel",
+    "LambdaChannel",
 ]

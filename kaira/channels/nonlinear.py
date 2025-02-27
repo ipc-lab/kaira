@@ -3,14 +3,13 @@
 import numpy as np
 import torch
 
-from kaira.utils import to_tensor
+from kaira.utils import snr_to_noise_power, to_tensor
 
 from .base import BaseChannel
-from .utils import snr_to_noise_power
 
 
 class NonlinearChannel(BaseChannel):
-    """Nonlinear Channel with Memory.
+    """Polynomial distortion channel with configurable nonlinearity.
 
     Models nonlinear distortion in communication systems, such as power amplifier
     nonlinearities. The nonlinearity is modeled using a memoryless polynomial function
@@ -50,7 +49,10 @@ class NonlinearChannel(BaseChannel):
             self.snr_db = None
 
     def apply_nonlinearity(self, x):
-        """Apply polynomial nonlinearity to input signal.
+        """Process signal through polynomial nonlinearity function.
+
+        Implements the nonlinear distortion using a polynomial function with
+        coefficients specified during initialization.
 
         Args:
             x (torch.Tensor): Input signal
@@ -64,7 +66,10 @@ class NonlinearChannel(BaseChannel):
         return result
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply nonlinear distortion and optional AWGN to the input tensor.
+        """Process signal through nonlinear distortion and optional noise.
+
+        First applies the polynomial nonlinearity to the input signal, then
+        optionally adds Gaussian noise based on the specified SNR or noise power.
 
         Args:
             x (torch.Tensor): The input tensor
@@ -95,7 +100,7 @@ class NonlinearChannel(BaseChannel):
 
 
 class RappModel(NonlinearChannel):
-    r"""Rapp Model for Power Amplifier Nonlinearity.
+    r"""Solid-state power amplifier model with smooth saturation characteristics.
 
     The Rapp model is commonly used to model the AM/AM conversion of solid-state
     power amplifiers. It provides a smooth transition from linear region to
@@ -127,13 +132,16 @@ class RappModel(NonlinearChannel):
         self.smoothness = smoothness
 
     def apply_nonlinearity(self, x):
-        """Apply Rapp model nonlinearity to input signal.
+        """Process signal through Rapp model power amplifier characteristic.
+
+        Implements the Rapp model for power amplifier nonlinearity, providing
+        a smooth transition from the linear region to saturation.
 
         Args:
             x (torch.Tensor): Input signal
 
         Returns:
-            torch.Tensor: Nonlinearly distorted signal
+            torch.Tensor: Signal after power amplifier distortion
         """
         if torch.is_complex(x):
             magnitude = torch.abs(x)

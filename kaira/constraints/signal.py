@@ -1,79 +1,109 @@
 """Signal characteristic constraints for communication systems.
 
-This module provides constraints related to signal characteristics such as
-amplitude limitations and spectral properties.
+This module provides constraints related to signal characteristics such as amplitude limitations
+and spectral properties. These constraints are essential for ensuring that transmitted signals
+comply with hardware limitations and regulatory requirements.
 """
 
 import torch
 import torch.nn.functional as F
+
 from .base import BaseConstraint
 
 
 class PeakAmplitudeConstraint(BaseConstraint):
-    """Peak Amplitude Constraint.
-    
-    Limits the maximum amplitude of the signal to prevent clipping.
+    """Enforces maximum signal amplitude by clipping values that exceed threshold.
+
+    Limits the maximum amplitude of the signal to prevent clipping in digital-to-analog
+    converters (DACs) and power amplifiers. This constraint applies a hard clipping
+    operation to ensure signal values remain within the specified bounds.
+
+    Attributes:
+        max_amplitude (float): Maximum allowed amplitude value
     """
-    
+
     def __init__(self, max_amplitude: float) -> None:
         """Initialize the peak amplitude constraint.
-        
+
         Args:
-            max_amplitude (float): Maximum allowed amplitude.
+            max_amplitude (float): Maximum allowed amplitude. Signal values exceeding
+                this threshold (positive or negative) will be clipped.
         """
         super().__init__()
         self.max_amplitude = max_amplitude
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply peak amplitude constraint.
-        
+
+        Clips the input signal to ensure all values fall within the range
+        [-max_amplitude, max_amplitude].
+
         Args:
-            x (torch.Tensor): Input tensor.
-            
+            x (torch.Tensor): Input tensor of any shape
+
         Returns:
-            torch.Tensor: Amplitude-constrained signal.
+            torch.Tensor: Amplitude-constrained signal with the same shape as input
         """
         # Simple clipping approach
         return torch.clamp(x, -self.max_amplitude, self.max_amplitude)
-    
-    
+
+
 class SpectralMaskConstraint(BaseConstraint):
-    """Spectral Mask Constraint.
-    
-    Ensures the signal's spectrum complies with regulatory requirements.
+    """Restricts signal frequency components to comply with regulatory spectral masks.
+
+    Ensures the signal's spectrum complies with regulatory requirements by limiting
+    the power spectral density at specific frequencies. This is particularly important
+    for preventing interference with adjacent channels or frequency bands.
+
+    The constraint works in the frequency domain by applying a scaling operation
+    to frequency components that exceed the mask.
+
+    Attributes:
+        mask (torch.Tensor): Spectral mask defining maximum power per frequency bin
     """
-    
+
     def __init__(self, mask: torch.Tensor) -> None:
         """Initialize the spectral mask constraint.
-        
+
         Args:
-            mask (torch.Tensor): Spectral mask defining maximum power per frequency bin.
+            mask (torch.Tensor): Spectral mask tensor defining maximum power per frequency bin.
+                The shape of this tensor should match the last dimension of the input signal
+                after FFT transformation.
         """
         super().__init__()
-        self.register_buffer('mask', mask)
-        
+        self.register_buffer("mask", mask)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply spectral mask constraint.
-        
+
+        Transforms the signal to the frequency domain, applies the spectral mask by
+        scaling frequency components that exceed the mask, then transforms back to
+        the time domain.
+
         Args:
-            x (torch.Tensor): Input tensor in time domain.
-            
+            x (torch.Tensor): Input tensor in time domain
+
         Returns:
-            torch.Tensor: Spectral mask constrained signal in time domain.
+            torch.Tensor: Spectral mask constrained signal in time domain with the
+                same shape as the input
+
+        Note:
+            This operation preserves the signal phase while scaling the magnitude
+            to comply with the mask.
         """
         x_freq = torch.fft.fft(x, dim=-1)
-        
+
         # Calculate power in frequency domain
-        power_spectrum = torch.abs(x_freq)**2
-        
+        power_spectrum = torch.abs(x_freq) ** 2
+
         # Apply mask by scaling where needed
         excess_indices = power_spectrum > self.mask.expand_as(power_spectrum)
-        
+
         if torch.any(excess_indices):
             # Scale frequency components to meet the mask
             scale_factor = torch.sqrt(self.mask / (power_spectrum + 1e-8))
             scale_factor = torch.where(excess_indices, scale_factor, torch.ones_like(scale_factor))
             x_freq = x_freq * scale_factor
-        
+
         # Convert back to time domain
         return torch.fft.ifft(x_freq, dim=-1).real

@@ -1,7 +1,8 @@
 import math
-from typing import Tuple, Union, Optional
+from typing import Optional, Tuple, Union
 
 import torch
+
 
 def snr_db_to_linear(snr_db: Union[float, torch.Tensor]) -> torch.Tensor:
     """Convert Signal-to-Noise Ratio from decibel to linear scale.
@@ -25,16 +26,16 @@ def snr_linear_to_db(snr_linear: Union[float, torch.Tensor]) -> torch.Tensor:
 
     Returns:
         torch.Tensor: SNR in decibel (dB) scale.
-    
+
     Raises:
         ValueError: If snr_linear contains zero or negative values.
     """
     if isinstance(snr_linear, float):
         snr_linear = torch.tensor(snr_linear)
-    
+
     if torch.any(snr_linear <= 0):
         raise ValueError("SNR in linear scale must be positive for dB conversion")
-        
+
     return 10 * torch.log10(snr_linear)
 
 
@@ -65,7 +66,7 @@ def noise_power_to_snr(
 
     Returns:
         torch.Tensor: Signal-to-Noise Ratio in decibels (dB).
-    
+
     Raises:
         ValueError: If noise_power contains zero values (would result in infinite SNR).
     """
@@ -73,32 +74,32 @@ def noise_power_to_snr(
         signal_power = torch.tensor(signal_power)
     if isinstance(noise_power, float):
         noise_power = torch.tensor(noise_power)
-        
+
     if torch.any(noise_power == 0):
         raise ValueError("Noise power cannot be zero (would result in infinite SNR)")
-        
+
     snr_linear = signal_power / noise_power
     return snr_linear_to_db(snr_linear)
 
 
 def calculate_snr(
-    original_signal: torch.Tensor, 
+    original_signal: torch.Tensor,
     noisy_signal: torch.Tensor,
     dim: Optional[Union[int, Tuple[int, ...]]] = None,
-    keepdim: bool = False
+    keepdim: bool = False,
 ) -> torch.Tensor:
     """Calculate the SNR between original and noisy signals.
 
     Args:
         original_signal (torch.Tensor): The original clean signal.
         noisy_signal (torch.Tensor): The noisy signal (original signal plus noise).
-        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power. 
+        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power.
             If None, uses all dimensions.
         keepdim (bool): Whether to keep the reduced dimensions in the output. Default is False.
 
     Returns:
         torch.Tensor: SNR in decibels (dB).
-        
+
     Raises:
         ValueError: If original and noisy signals have different shapes.
     """
@@ -114,8 +115,8 @@ def calculate_snr(
         original_power = torch.mean(torch.abs(original_signal) ** 2, dim=dim, keepdim=keepdim)
         noise_power = torch.mean(torch.abs(noise) ** 2, dim=dim, keepdim=keepdim)
     else:
-        original_power = torch.mean(original_signal ** 2, dim=dim, keepdim=keepdim)
-        noise_power = torch.mean(noise ** 2, dim=dim, keepdim=keepdim)
+        original_power = torch.mean(original_signal**2, dim=dim, keepdim=keepdim)
+        noise_power = torch.mean(noise**2, dim=dim, keepdim=keepdim)
 
     # Handle zero noise case
     eps = torch.finfo(original_power.dtype).eps
@@ -126,18 +127,18 @@ def calculate_snr(
 
 
 def add_noise_for_snr(
-    signal: torch.Tensor, 
+    signal: torch.Tensor,
     target_snr_db: Union[float, torch.Tensor],
-    dim: Optional[Union[int, Tuple[int, ...]]] = None
+    dim: Optional[Union[int, Tuple[int, ...]]] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Add Gaussian noise to achieve a target Signal-to-Noise Ratio.
-    
+
     Args:
         signal (torch.Tensor): The original clean signal.
         target_snr_db (Union[float, torch.Tensor]): Target Signal-to-Noise Ratio in decibels (dB).
-        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power. 
+        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power.
             If None, uses all dimensions.
-    
+
     Returns:
         Tuple[torch.Tensor, torch.Tensor]: A tuple containing:
             - Noisy signal (original signal with added noise)
@@ -147,11 +148,11 @@ def add_noise_for_snr(
     if torch.is_complex(signal):
         signal_power = torch.mean(torch.abs(signal) ** 2, dim=dim, keepdim=True)
     else:
-        signal_power = torch.mean(signal ** 2, dim=dim, keepdim=True)
-    
+        signal_power = torch.mean(signal**2, dim=dim, keepdim=True)
+
     # Calculate required noise power
     noise_power = snr_to_noise_power(signal_power, target_snr_db)
-    
+
     # Generate noise with the right power
     if torch.is_complex(signal):
         # For complex signals, generate complex noise
@@ -162,30 +163,27 @@ def add_noise_for_snr(
     else:
         noise_std = torch.sqrt(noise_power)
         noise = torch.randn_like(signal) * noise_std
-    
+
     noisy_signal = signal + noise
-    
+
     return noisy_signal, noise
 
 
 def estimate_signal_power(
-    signal: torch.Tensor,
-    dim: Optional[Union[int, Tuple[int, ...]]] = None,
-    keepdim: bool = False
+    signal: torch.Tensor, dim: Optional[Union[int, Tuple[int, ...]]] = None, keepdim: bool = False
 ) -> torch.Tensor:
     """Estimate the power of a signal.
-    
+
     Args:
         signal (torch.Tensor): The input signal (real or complex).
-        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power. 
+        dim (Optional[Union[int, Tuple[int, ...]]]): Dimensions to reduce when calculating power.
             If None, uses all dimensions.
         keepdim (bool): Whether to keep the reduced dimensions in the output. Default is False.
-    
+
     Returns:
         torch.Tensor: Signal power estimation.
     """
     if torch.is_complex(signal):
         return torch.mean(torch.abs(signal) ** 2, dim=dim, keepdim=keepdim)
     else:
-        return torch.mean(signal ** 2, dim=dim, keepdim=keepdim)
-
+        return torch.mean(signal**2, dim=dim, keepdim=keepdim)

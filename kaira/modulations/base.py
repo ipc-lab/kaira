@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import torch
 from torch import nn
 
+
 class BaseModulator(nn.Module, ABC):
     """Abstract base class for all modulators.
 
@@ -35,7 +36,8 @@ class BaseModulator(nn.Module, ABC):
             torch.Tensor: The output signal after processing by the model.
         """
         pass
-    
+
+
 class BaseDemodulator(ABC):
     """Abstract base class for all demodulators.
 

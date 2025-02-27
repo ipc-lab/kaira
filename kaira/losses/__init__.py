@@ -3,12 +3,6 @@
 This package provides various loss functions for different modalities.
 """
 
-from . import image, audio, text, multimodal, adversarial
+from . import adversarial, audio, image, multimodal, text
 
-__all__ = [
-    "image",
-    "audio",
-    "text",
-    "multimodal",
-    "adversarial"
-]
+__all__ = ["image", "audio", "text", "multimodal", "adversarial"]

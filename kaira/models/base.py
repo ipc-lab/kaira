@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import torch
 from torch import nn
 
+
 # A base class for models.
 class BaseModel(nn.Module, ABC):
     """Base Model Module.
@@ -32,4 +33,3 @@ class BaseModel(nn.Module, ABC):
             torch.Tensor: The output signal after processing by the model.
         """
         pass
-

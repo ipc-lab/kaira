@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import torch
 from torch import nn
 
+
 # A base class for metrics.
 class BaseMetric(nn.Module, ABC):
     """Base Metric Module.

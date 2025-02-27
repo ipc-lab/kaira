@@ -3,14 +3,13 @@
 import torch
 import torch.nn.functional as F
 
-from kaira.utils import to_tensor
-from kaira.utils.snr import snr_to_noise_power
+from kaira.utils import snr_to_noise_power, to_tensor
 
 from .base import BaseChannel
 
 
 class RayleighChannel(BaseChannel):
-    """Rayleigh Fading Channel.
+    """Rayleigh fading channel for non-line-of-sight wireless multipath propagation.
 
     Models a wireless channel with Rayleigh fading, which occurs when there is no
     line-of-sight path between the transmitter and receiver. The channel coefficients
@@ -46,7 +45,10 @@ class RayleighChannel(BaseChannel):
         self.normalize_energy = normalize_energy
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply Rayleigh fading and AWGN to the input tensor.
+        """Simulate non-line-of-sight multipath propagation with AWGN.
+
+        Applies complex Gaussian fading coefficients to model scattered
+        multipath components without a dominant path, then adds noise.
 
         Args:
             x (torch.Tensor): The input tensor.
@@ -88,7 +90,7 @@ class RayleighChannel(BaseChannel):
 
 
 class RicianChannel(BaseChannel):
-    """Rician Fading Channel.
+    """Rician fading channel with dominant line-of-sight path and scattered multipath components.
 
     Models a wireless channel with Rician fading, which occurs when there is a
     line-of-sight path between the transmitter and receiver, along with multiple
@@ -128,7 +130,10 @@ class RicianChannel(BaseChannel):
         self.normalize_energy = normalize_energy
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply Rician fading and AWGN to the input tensor.
+        """Simulate line-of-sight multipath propagation with AWGN.
+
+        Models a dominant path plus scattered paths using Rician statistics,
+        controlled by the K-factor parameter, then adds noise.
 
         Args:
             x (torch.Tensor): The input tensor.
@@ -176,7 +181,7 @@ class RicianChannel(BaseChannel):
 
 
 class FrequencySelectiveChannel(BaseChannel):
-    """Frequency-Selective Fading Channel.
+    """Frequency-selective fading channel with time dispersion for wideband communications.
 
     Models a wireless channel with frequency-selective fading caused by multipath
     propagation. The channel is implemented as a convolution with a random impulse
@@ -213,7 +218,18 @@ class FrequencySelectiveChannel(BaseChannel):
             raise ValueError("Either avg_noise_power or snr_db must be provided")
 
     def _generate_channel_taps(self, batch_size, device):
-        """Generate exponentially decaying channel taps with Rayleigh fading."""
+        """Create multipath channel impulse response with delay spread.
+
+        Generates complex Gaussian channel taps with exponentially decaying
+        power profile based on the specified delay spread.
+
+        Args:
+            batch_size (int): Number of independent channel realizations
+            device (torch.device): Device to create tensors on
+
+        Returns:
+            torch.Tensor: Complex channel taps of shape (batch_size, 1, tap_count)
+        """
         # Power delay profile (exponential decay)
         delays = torch.arange(self.tap_count, device=device).float()
         power_profile = torch.exp(-delays / self.delay_spread)
@@ -232,7 +248,10 @@ class FrequencySelectiveChannel(BaseChannel):
         return h
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply frequency-selective fading and AWGN to the input tensor.
+        """Simulate wideband channel with frequency-dependent fading.
+
+        Convolves the input signal with a random channel impulse response
+        representing multipath propagation with different delays, then adds noise.
 
         Args:
             x (torch.Tensor): The input tensor of shape (batch, channels, samples).

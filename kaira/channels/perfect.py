@@ -6,7 +6,7 @@ from .base import BaseChannel
 
 
 class PerfectChannel(BaseChannel):
-    """Perfect (identity) channel that passes signals unchanged.
+    """Identity channel that passes signals through unchanged.
 
     This channel represents an ideal communication medium with no distortion,
     noise, or interference. It simply returns the input signal as is.
@@ -24,7 +24,10 @@ class PerfectChannel(BaseChannel):
         super().__init__()
 
     def forward(self, x: torch.Tensor, *args) -> torch.Tensor:
-        """Forward pass of the perfect channel.
+        """Transmit signal without modification (identity operation).
+
+        Implements an ideal noiseless, distortionless channel that perfectly
+        preserves the input signal.
 
         Args:
             x (torch.Tensor): The input tensor.

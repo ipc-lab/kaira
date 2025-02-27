@@ -1,24 +1,25 @@
 """OFDM module for Kaira.
 
-This module contains the OFDMPipeline, which implements a complete Orthogonal
-Frequency Division Multiplexing system with multi-carrier modulation.
+This module contains the OFDMPipeline, which implements a complete Orthogonal Frequency Division
+Multiplexing system with multi-carrier modulation.
 """
 
-from typing import Dict, Optional, Tuple, List, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import torch
 import torch.nn as nn
 
-from .base import BasePipeline, BaseChannel, BaseModel
+from .base import BaseChannel, BaseModel, BasePipeline
 
 
 class OFDMPipeline(BasePipeline):
     """A pipeline for Orthogonal Frequency Division Multiplexing (OFDM) systems.
-    
+
     OFDM is a frequency-division multiplexing method used in many wireless and wireline
     communication systems. This pipeline models the complete OFDM transmission and
-    reception process, including pilot insertion, IFFT/FFT operations, cyclic prefix 
+    reception process, including pilot insertion, IFFT/FFT operations, cyclic prefix
     addition/removal, and channel estimation.
-    
+
     Attributes:
         encoder (BaseModel): Encodes the source data
         mapper (nn.Module): Maps encoded bits to QAM/PSK symbols
@@ -33,7 +34,7 @@ class OFDMPipeline(BasePipeline):
         demapper (nn.Module): Maps QAM/PSK symbols back to bits
         decoder (BaseModel): Decodes the received bits
     """
-    
+
     def __init__(
         self,
         encoder: BaseModel,
@@ -52,7 +53,7 @@ class OFDMPipeline(BasePipeline):
         cp_length: int = 16,
     ):
         """Initialize the OFDM pipeline.
-        
+
         Args:
             encoder: Model that encodes source data
             mapper: Module that maps bits to QAM/PSK symbols
@@ -82,30 +83,30 @@ class OFDMPipeline(BasePipeline):
         self.equalizer = equalizer
         self.demapper = demapper
         self.decoder = decoder
-        
+
         self.num_subcarriers = num_subcarriers
         self.cp_length = cp_length
-        
+
     def add_step(self, step: nn.Module):
         """Not applicable to OFDM pipeline."""
         raise NotImplementedError(
             "Cannot add steps directly to OFDMPipeline. "
             "Use the appropriate components in the constructor."
         )
-    
+
     def remove_step(self, index: int):
         """Not applicable to OFDM pipeline."""
         raise NotImplementedError(
             "Cannot remove steps from OFDMPipeline. "
             "Create a new instance with the desired components."
         )
-    
+
     def forward(self, input_data: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Process input through the OFDM communication system.
-        
+
         Args:
             input_data: The source data to transmit
-            
+
         Returns:
             Dictionary containing intermediate and final outputs:
                 - encoded: Output from the encoder
@@ -127,29 +128,31 @@ class OFDMPipeline(BasePipeline):
         pilot_inserted = self.pilot_inserter(mapped, self.num_subcarriers)
         time_domain = self.ifft(pilot_inserted, self.num_subcarriers)
         cp_added = self.cp_adder(time_domain, self.cp_length)
-        
+
         # Channel
         received = self.channel(cp_added)
-        
+
         # Receiver side
         cp_removed = self.cp_remover(received, self.cp_length)
         freq_domain = self.fft(cp_removed, self.num_subcarriers)
-        channel_estimate = self.channel_estimator(freq_domain, pilot_pattern=self.pilot_inserter.get_pattern())
+        channel_estimate = self.channel_estimator(
+            freq_domain, pilot_pattern=self.pilot_inserter.get_pattern()
+        )
         equalized = self.equalizer(freq_domain, channel_estimate)
         demapped = self.demapper(equalized)
         decoded = self.decoder(demapped)
-        
+
         return {
-            'encoded': encoded,
-            'mapped': mapped,
-            'pilot_inserted': pilot_inserted,
-            'time_domain': time_domain,
-            'cp_added': cp_added,
-            'received': received,
-            'cp_removed': cp_removed,
-            'freq_domain': freq_domain,
-            'channel_estimate': channel_estimate,
-            'equalized': equalized,
-            'demapped': demapped,
-            'decoded': decoded
+            "encoded": encoded,
+            "mapped": mapped,
+            "pilot_inserted": pilot_inserted,
+            "time_domain": time_domain,
+            "cp_added": cp_added,
+            "received": received,
+            "cp_removed": cp_removed,
+            "freq_domain": freq_domain,
+            "channel_estimate": channel_estimate,
+            "equalized": equalized,
+            "demapped": demapped,
+            "decoded": decoded,
         }
