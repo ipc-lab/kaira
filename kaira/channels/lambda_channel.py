@@ -1,11 +1,13 @@
 """Lambda Channel Implementation for Custom Functions.
 
-This module contains the LambdaChannel class which allows users to create custom
-channel models by applying arbitrary functions to input signals.
+This module contains the LambdaChannel class which allows users to create custom channel models by
+applying arbitrary functions to input signals.
 """
 
 import torch
+
 from .base import BaseChannel
+
 
 class LambdaChannel(BaseChannel):
     """Customizable channel that applies user-defined functions to signals.
@@ -27,7 +29,7 @@ class LambdaChannel(BaseChannel):
         >>> amplifier = LambdaChannel(lambda x: 2 * x)
         >>> x = torch.ones(10)
         >>> y = amplifier(x)  # y will contain all 2's
-        
+
         >>> # Create a channel that adds specific frequency distortion
         >>> def distort(x):
         ...     return x + 0.1 * torch.sin(2 * math.pi * 0.05 * torch.arange(len(x)))
@@ -40,10 +42,10 @@ class LambdaChannel(BaseChannel):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Transform input signal using the user-defined function.
-        
+
         Args:
             x (torch.Tensor): Input signal tensor
-            
+
         Returns:
             torch.Tensor: Transformed output signal
         """
