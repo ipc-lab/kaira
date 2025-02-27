@@ -6,16 +6,36 @@ import torch
 import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
-from .schemes.psk import BPSKModulator, BPSKDemodulator, QPSKModulator, QPSKDemodulator, PSKModulator, PSKDemodulator
-from .schemes.qam import QAMModulator, QAMDemodulator
-from .schemes.pam import PAMModulator, PAMDemodulator
-from .schemes.differential import DPSKModulator, DPSKDemodulator, DBPSKModulator, DBPSKDemodulator, DQPSKModulator, DQPSKDemodulator
-from .schemes.offset import OQPSKModulator, OQPSKDemodulator, Pi4QPSKModulator, Pi4QPSKDemodulator
-from .schemes.identity import IdentityModulator, IdentityDemodulator
+from .schemes.differential import (
+    DBPSKDemodulator,
+    DBPSKModulator,
+    DPSKDemodulator,
+    DPSKModulator,
+    DQPSKDemodulator,
+    DQPSKModulator,
+)
+from .schemes.identity import IdentityDemodulator, IdentityModulator
+from .schemes.offset import (
+    OQPSKDemodulator,
+    OQPSKModulator,
+    Pi4QPSKDemodulator,
+    Pi4QPSKModulator,
+)
+from .schemes.pam import PAMDemodulator, PAMModulator
+from .schemes.psk import (
+    BPSKDemodulator,
+    BPSKModulator,
+    PSKDemodulator,
+    PSKModulator,
+    QPSKDemodulator,
+    QPSKModulator,
+)
+from .schemes.qam import QAMDemodulator, QAMModulator
 
 # ============================================================================
 # Public API
 # ============================================================================
+
 
 def available_schemes() -> List[str]:
     """Get a list of all available modulation schemes.
@@ -90,21 +110,21 @@ def get_modulation_info(scheme: str) -> Dict[str, Union[int, float, bool]]:
         ValueError: If the scheme is not supported
     """
     from .utils.metrics import calculate_spectral_efficiency
-    
+
     scheme = scheme.lower()
     modulator = create_modulator(scheme)
-    
+
     info = {
         "name": scheme,
         "bits_per_symbol": modulator.bits_per_symbol,
         "spectral_efficiency": calculate_spectral_efficiency(scheme),
     }
-    
+
     # Add scheme-specific information
     for attr in ["order", "gray_coding", "normalize"]:
         if hasattr(modulator, attr):
             info[attr if attr != "normalize" else "normalized"] = getattr(modulator, attr)
-    
+
     return info
 
 

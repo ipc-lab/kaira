@@ -7,19 +7,8 @@ communications, with a focus on PyTorch-based implementations that support GPU a
 # Version information
 __version__ = "0.1.0"
 
-# Import base classes
-from .base import BaseDemodulator, BaseModulator
-from .dpsk import (
-    DBPSKDemodulator,
-    DBPSKModulator,
-    DPSKDemodulator,
-    DPSKModulator,
-    DQPSKDemodulator,
-    DQPSKModulator,
-)
-
 # Import primary public API
-from .factory import (
+from .api import (
     Modem,
     available_schemes,
     create_demodulator,
@@ -27,13 +16,36 @@ from .factory import (
     create_modulator,
     get_modulation_info,
 )
-from .identity import IdentityDemodulator, IdentityModulator
-from .oqpsk import OQPSKDemodulator, OQPSKModulator
-from .pam import PAMDemodulator, PAMModulator
-from .pi4qpsk import Pi4QPSKDemodulator, Pi4QPSKModulator
+
+# Import benchmarking tools
+from .benchmark import (
+    benchmark_modulation_schemes,
+    compare_modulation_schemes,
+    measure_ber,
+    plot_ber_curve,
+)
+
+# Import channel models
+from .channels.awgn import AWGNChannel
+from .schemes.differential import (
+    DBPSKDemodulator,
+    DBPSKModulator,
+    DPSKDemodulator,
+    DPSKModulator,
+    DQPSKDemodulator,
+    DQPSKModulator,
+)
+from .schemes.identity import IdentityDemodulator, IdentityModulator
+from .schemes.offset import (
+    OQPSKDemodulator,
+    OQPSKModulator,
+    Pi4QPSKDemodulator,
+    Pi4QPSKModulator,
+)
+from .schemes.pam import PAMDemodulator, PAMModulator
 
 # Import modulation classes for direct access
-from .psk import (
+from .schemes.psk import (
     BPSKDemodulator,
     BPSKModulator,
     PSKDemodulator,
@@ -41,10 +53,12 @@ from .psk import (
     QPSKDemodulator,
     QPSKModulator,
 )
-from .qam import QAMDemodulator, QAMModulator
+from .schemes.qam import QAMDemodulator, QAMModulator
+from .utils.coding import binary_to_gray, gray_to_binary
+from .utils.metrics import calculate_spectral_efficiency, calculate_theoretical_ber
 
 # Import utilities
-from .utils import binary_to_gray, gray_to_binary, plot_constellation
+from .utils.visualization import ConstellationVisualizer, plot_constellation
 
 # Define the public API
 __all__ = [
@@ -86,9 +100,20 @@ __all__ = [
     # Identity scheme
     "IdentityModulator",
     "IdentityDemodulator",
-    # Utilities
+    # Visualization
+    "ConstellationVisualizer",
     "plot_constellation",
     # Coding utilities
     "binary_to_gray",
     "gray_to_binary",
+    # Metrics
+    "calculate_theoretical_ber",
+    "calculate_spectral_efficiency",
+    # Channel models
+    "AWGNChannel",
+    # Benchmarking
+    "measure_ber",
+    "compare_modulation_schemes",
+    "plot_ber_curve",
+    "benchmark_modulation_schemes",
 ]
