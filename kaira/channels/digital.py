@@ -1,8 +1,8 @@
 """Digital Binary Channel Implementations for Discrete Communications.
 
-This module provides implementations of classic binary channels used in information theory
-and digital communications. These channels model discrete errors that occur in binary
-transmission systems.
+This module provides implementations of classic binary channels used in information theory and
+digital communications. These channels model discrete errors that occur in binary transmission
+systems.
 """
 
 import torch
@@ -49,22 +49,22 @@ class BinarySymmetricChannel(BaseChannel):
         """
         # Check if input uses {-1,1} format
         neg_one_format = (x == -1).any()
-        
+
         # Convert to {0,1} format if needed
         if neg_one_format:
             x = (x + 1) / 2
-            
+
         # Generate random values for potential bit flips
         noise = torch.rand_like(x.float())
-        
+
         # Apply bit flips where random values are less than crossover probability
         flips = (noise < self.crossover_prob).float()
         y = (x + flips) % 2
-        
+
         # Convert back to original format if needed
         if neg_one_format:
             y = 2 * y - 1
-            
+
         return y
 
 
@@ -108,13 +108,13 @@ class BinaryErasureChannel(BaseChannel):
         """
         # Generate random values for deciding erasures
         erasure_mask = torch.rand_like(x.float()) < self.erasure_prob
-        
+
         # Create output tensor by keeping original values where not erased
         y = x.clone().float()
-        
+
         # Apply erasures
         y[erasure_mask] = self.erasure_symbol
-            
+
         return y
 
 
@@ -157,24 +157,24 @@ class BinaryZChannel(BaseChannel):
         """
         # Check if input uses {-1,1} format
         neg_one_format = (x == -1).any()
-        
+
         # Convert to {0,1} format if needed
         if neg_one_format:
             x = (x + 1) / 2
-            
+
         # Generate mask for ones in the input
-        ones_mask = (x == 1)
-        
+        ones_mask = x == 1
+
         # Create output tensor starting with the input
         y = x.clone().float()
-        
+
         # For positions with 1s, generate random values and flip to 0 with probability error_prob
         if ones_mask.any():
             flip_mask = torch.rand_like(x[ones_mask]) < self.error_prob
             y[ones_mask][flip_mask] = 0
-        
+
         # Convert back to original format if needed
         if neg_one_format:
             y = 2 * y - 1
-            
+
         return y

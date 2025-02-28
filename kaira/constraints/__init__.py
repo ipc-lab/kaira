@@ -29,6 +29,12 @@ Example:
     >>> constrained_signal = combined(input_signal)
 """
 
+# Utility functions
+from . import utils
+
+# Antenna constraints
+from .antenna import PerAntennaPowerConstraint
+
 # Base constraint
 from .base import BaseConstraint
 
@@ -44,35 +50,25 @@ from .power import (
     TotalPowerConstraint,
 )
 
-# Antenna constraints
-from .antenna import PerAntennaPowerConstraint
-
 # Signal constraints
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
-
-# Utility functions
-from . import utils
 from .utils import combine_constraints, create_mimo_constraints, create_ofdm_constraints
 
 __all__ = [
     # Base classes
     "BaseConstraint",
     "CompositeConstraint",
-    
     # Power constraints
     "TotalPowerConstraint",
     "AveragePowerConstraint",
     "ComplexTotalPowerConstraint",
     "ComplexAveragePowerConstraint",
     "PAPRConstraint",
-    
     # Antenna constraints
     "PerAntennaPowerConstraint",
-    
     # Signal constraints
     "PeakAmplitudeConstraint",
     "SpectralMaskConstraint",
-    
     # Utility functions
     "utils",
     "combine_constraints",
