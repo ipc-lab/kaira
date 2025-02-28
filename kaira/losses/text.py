@@ -7,8 +7,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import BaseLoss
 
-class CrossEntropyLoss(nn.Module):
+
+class CrossEntropyLoss(BaseLoss):
     """Cross Entropy Loss Module.
 
     This module calculates the cross entropy loss for classification tasks.
@@ -38,7 +40,7 @@ class CrossEntropyLoss(nn.Module):
         return self.ce(x, target)
 
 
-class LabelSmoothingLoss(nn.Module):
+class LabelSmoothingLoss(BaseLoss):
     """Label Smoothing Loss Module.
 
     This module implements label smoothing to prevent overconfidence.
@@ -85,7 +87,7 @@ class LabelSmoothingLoss(nn.Module):
         return loss.mean()
 
 
-class CosineSimilarityLoss(nn.Module):
+class CosineSimilarityLoss(BaseLoss):
     """Cosine Similarity Loss Module.
 
     This module calculates loss based on cosine similarity between embeddings.
@@ -123,7 +125,7 @@ class CosineSimilarityLoss(nn.Module):
         return loss
 
 
-class Word2VecLoss(nn.Module):
+class Word2VecLoss(BaseLoss):
     """Word2Vec Loss Module.
 
     This module implements the negative sampling loss used in Word2Vec.

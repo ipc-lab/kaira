@@ -4,11 +4,12 @@ This module contains various loss functions for training multimodal systems.
 """
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import BaseLoss
 
-class ContrastiveLoss(nn.Module):
+
+class ContrastiveLoss(BaseLoss):
     """Contrastive Loss Module.
 
     This module calculates contrastive loss between embeddings from different modalities.
@@ -54,7 +55,7 @@ class ContrastiveLoss(nn.Module):
         return loss
 
 
-class TripletLoss(nn.Module):
+class TripletLoss(BaseLoss):
     """Triplet Loss Module for multimodal data.
 
     This module implements triplet loss with hard negative mining.
@@ -157,7 +158,7 @@ class TripletLoss(nn.Module):
         return loss.mean()
 
 
-class InfoNCELoss(nn.Module):
+class InfoNCELoss(BaseLoss):
     """InfoNCE Loss Module for multimodal contrastive learning.
 
     This module implements the Noise Contrastive Estimation loss.
@@ -217,7 +218,7 @@ class InfoNCELoss(nn.Module):
         return loss
 
 
-class CMCLoss(nn.Module):
+class CMCLoss(BaseLoss):
     """Cross-Modal Consistency Loss Module.
 
     This module implements a loss to ensure consistency across modalities.
@@ -232,14 +233,14 @@ class CMCLoss(nn.Module):
         super().__init__()
         self.lambda_cmc = lambda_cmc
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor, proj1: nn.Module, proj2: nn.Module) -> torch.Tensor:
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor, proj1: BaseLoss, proj2: BaseLoss) -> torch.Tensor:
         """Forward pass through the CMCLoss module.
 
         Args:
             x1 (torch.Tensor): Features from the first modality.
             x2 (torch.Tensor): Features from the second modality.
-            proj1 (nn.Module): Projection head for the first modality.
-            proj2 (nn.Module): Projection head for the second modality.
+            proj1 (BaseLoss): Projection head for the first modality.
+            proj2 (BaseLoss): Projection head for the second modality.
 
         Returns:
             torch.Tensor: The cross-modal consistency loss.
@@ -263,7 +264,7 @@ class CMCLoss(nn.Module):
         return self.lambda_cmc * loss
 
 
-class AlignmentLoss(nn.Module):
+class AlignmentLoss(BaseLoss):
     """Alignment Loss for multimodal embeddings.
 
     This module aligns embeddings from different modalities.

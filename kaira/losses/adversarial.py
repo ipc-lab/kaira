@@ -4,11 +4,12 @@ This module contains various adversarial loss functions for GAN-based training.
 """
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import BaseLoss
 
-class VanillaGANLoss(nn.Module):
+
+class VanillaGANLoss(BaseLoss):
     """Vanilla GAN Loss Module.
 
     This module implements the original GAN loss from Goodfellow et al. 2014.
@@ -62,7 +63,7 @@ class VanillaGANLoss(nn.Module):
         return F.binary_cross_entropy_with_logits(discriminator_pred, target, reduction=self.reduction)
 
 
-class LSGANLoss(nn.Module):
+class LSGANLoss(BaseLoss):
     """Least Squares GAN Loss Module.
 
     This module implements the LSGAN loss from Mao et al. 2017.
@@ -122,7 +123,7 @@ class LSGANLoss(nn.Module):
             return torch.mean((pred - 1) ** 2)
 
 
-class WassersteinGANLoss(nn.Module):
+class WassersteinGANLoss(BaseLoss):
     """Wasserstein GAN Loss Module.
 
     This module implements the WGAN loss from Arjovsky et al. 2017.
@@ -175,7 +176,7 @@ class WassersteinGANLoss(nn.Module):
             return -torch.mean(pred)
 
 
-class HingeLoss(nn.Module):
+class HingeLoss(BaseLoss):
     """Hinge Loss Module for GANs.
 
     This module implements the hinge loss commonly used in spectral normalization GAN.
@@ -230,7 +231,7 @@ class HingeLoss(nn.Module):
             return -pred.mean()
 
 
-class FeatureMatchingLoss(nn.Module):
+class FeatureMatchingLoss(BaseLoss):
     """Feature Matching Loss Module for GANs.
 
     This module implements the feature matching loss for improved GAN training.
@@ -257,7 +258,7 @@ class FeatureMatchingLoss(nn.Module):
         return loss
 
 
-class R1GradientPenalty(nn.Module):
+class R1GradientPenalty(BaseLoss):
     """R1 Gradient Penalty Module for GANs.
 
     This module implements the R1 gradient penalty for GAN training.

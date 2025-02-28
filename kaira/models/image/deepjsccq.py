@@ -7,8 +7,8 @@ from compressai.layers import (
     ResidualBlockWithStride,
 )
 
+from ..base import BaseModel
 from ..registry import ModelRegistry
-from .base import BaseModel
 
 
 @ModelRegistry.register_model()

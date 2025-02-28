@@ -17,16 +17,6 @@ from .dpsk import (
     DQPSKModulator,
 )
 
-# Factory functions for creating modulators and demodulators
-from .factory import (
-    Modem,
-    available_schemes,
-    create_demodulator,
-    create_modem,
-    create_modulator,
-    get_modulation_info,
-)
-
 # Identity schemes (for testing/debugging)
 from .identity import IdentityDemodulator, IdentityModulator
 from .oqpsk import OQPSKDemodulator, OQPSKModulator
@@ -65,13 +55,6 @@ __all__ = [
     # Base classes
     "BaseModulator",
     "BaseDemodulator",
-    # Factory functions
-    "available_schemes",
-    "create_modulator",
-    "create_demodulator",
-    "create_modem",
-    "get_modulation_info",
-    "Modem",
     # QAM schemes
     "QAMModulator",
     "QAMDemodulator",

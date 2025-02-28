@@ -54,5 +54,4 @@ class PeakSignalNoiseRatio(BaseMetric):
         return values.mean(), values.std()
 
 
-# Alias for backward compatibility
 PSNR = PeakSignalNoiseRatio

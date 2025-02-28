@@ -101,7 +101,7 @@ class CompositeMetric(BaseMetric):
                 The interpretation of this value depends on the constituent metrics and weights.
                 With appropriate weighting, higher values typically indicate better results.
         """
-        result = 0.0
+        result = torch.tensor(0.0, device=x.device)
         for name, metric in self.metrics.items():
             if name in self.weights:
                 metric_value = metric(x, y)

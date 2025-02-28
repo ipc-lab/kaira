@@ -1,3 +1,5 @@
+import os
+import random
 from typing import Any, Union
 
 import numpy as np
@@ -59,6 +61,23 @@ def calculate_num_filters_image(num_strided_layers, bw_ratio):
     assert res.is_integer()
 
     return res
+
+
+def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministic: bool = True):
+    """Seed all random number generators to make runs reproducible.
+
+    Args:
+        seed (int): The seed value for random number generators.
+        cudnn_benchmark (bool): If True, allows the use of CuDNN's auto-tuner to find the best algorithm for your hardware. Setting this False might have performance implications.
+        cudnn_deterministic (bool): If True, makes CuDNN operations deterministic. Setting this False might have performance implications.
+    """
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = cudnn_deterministic
+    torch.backends.cudnn.benchmark = cudnn_benchmark
 
 
 __all__ = [

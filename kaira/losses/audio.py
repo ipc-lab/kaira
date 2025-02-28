@@ -8,8 +8,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
 
+from .base import BaseLoss
 
-class L1AudioLoss(nn.Module):
+
+class L1AudioLoss(BaseLoss):
     """L1 Audio Loss Module.
 
     This module calculates the L1 loss between the input and target audio signals.
@@ -33,7 +35,7 @@ class L1AudioLoss(nn.Module):
         return self.l1(x, target)
 
 
-class SpectralConvergenceLoss(nn.Module):
+class SpectralConvergenceLoss(BaseLoss):
     """Spectral Convergence Loss Module.
 
     This module calculates the spectral convergence loss between the input and target spectra.
@@ -56,7 +58,7 @@ class SpectralConvergenceLoss(nn.Module):
         return torch.norm(target_mag - x_mag, p="fro") / torch.norm(target_mag, p="fro")
 
 
-class LogSTFTMagnitudeLoss(nn.Module):
+class LogSTFTMagnitudeLoss(BaseLoss):
     """Log STFT Magnitude Loss Module.
 
     This module calculates the log STFT magnitude loss between the input and target spectra.
@@ -81,7 +83,7 @@ class LogSTFTMagnitudeLoss(nn.Module):
         return F.l1_loss(log_x_mag, log_target_mag)
 
 
-class STFTLoss(nn.Module):
+class STFTLoss(BaseLoss):
     """STFT Loss Module.
 
     This module calculates the STFT loss between the input and target audio signals, combining
@@ -145,7 +147,7 @@ class STFTLoss(nn.Module):
         return sc_loss + mag_loss
 
 
-class MultiResolutionSTFTLoss(nn.Module):
+class MultiResolutionSTFTLoss(BaseLoss):
     """Multi-Resolution STFT Loss Module.
 
     This module calculates STFT loss at multiple resolutions for better time-frequency coverage.
@@ -188,7 +190,7 @@ class MultiResolutionSTFTLoss(nn.Module):
         return loss / len(self.stft_losses)
 
 
-class MelSpectrogramLoss(nn.Module):
+class MelSpectrogramLoss(BaseLoss):
     """Mel-Spectrogram Loss Module.
 
     This module calculates the loss between mel-spectrograms of input and target audio.
@@ -246,7 +248,7 @@ class MelSpectrogramLoss(nn.Module):
         return F.l1_loss(x_mel, target_mel)
 
 
-class FeatureMatchingLoss(nn.Module):
+class FeatureMatchingLoss(BaseLoss):
     """Feature Matching Loss Module.
 
     This module calculates the loss between features extracted from a pretrained model.
@@ -256,7 +258,7 @@ class FeatureMatchingLoss(nn.Module):
         """Initialize the FeatureMatchingLoss module.
 
         Args:
-            model (nn.Module): Pretrained model for feature extraction.
+            model (BaseLoss): Pretrained model for feature extraction.
             layers (list): List of layer indices to extract features from.
             weights (list, optional): Weights for each layer. Default is None (equal weights).
         """
@@ -334,7 +336,7 @@ class FeatureMatchingLoss(nn.Module):
         return loss
 
 
-class AudioContrastiveLoss(nn.Module):
+class AudioContrastiveLoss(BaseLoss):
     """Audio Contrastive Loss Module.
 
     This module calculates a contrastive loss to bring similar audio samples closer in feature

@@ -4,11 +4,7 @@ This module contains various metrics for evaluating the performance of communica
 """
 
 from .base import BaseMetric
-from .factories import (
-    CompositeMetric,
-    create_composite_metric,
-    create_image_quality_metrics,
-)
+from .composite import CompositeMetric
 from .image import (
     LPIPS,
     PSNR,
@@ -18,7 +14,13 @@ from .image import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from .registry import create_metric, list_metrics, register_metric
+from .registry import (
+    create_composite_metric,
+    create_image_quality_metrics,
+    create_metric,
+    list_metrics,
+    register_metric,
+)
 from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio
 from .utils import compute_multiple_metrics, format_metric_results
 

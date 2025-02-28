@@ -60,7 +60,6 @@ import torch
 
 from .base import BaseMetric
 from .composite import CompositeMetric
-from .image import LPIPS, PSNR, SSIM, MultiScaleSSIM
 
 # Registries for metrics and factories
 _METRIC_REGISTRY: Dict[str, Type[BaseMetric]] = {}
@@ -249,6 +248,8 @@ def create_image_quality_metrics(data_range: float = 1.0, lpips_net_type: Litera
         score = composite(pred, target)
         ```
     """
+    from .image import LPIPS, PSNR, SSIM, MultiScaleSSIM
+
     metrics = {
         "psnr": PSNR(data_range=data_range),
         "ssim": SSIM(data_range=data_range),

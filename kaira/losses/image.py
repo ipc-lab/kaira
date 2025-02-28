@@ -5,18 +5,22 @@ LPIPS loss, and SSIM loss.
 """
 
 
+from typing import Sequence
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models
+from torchvision import models  # type: ignore
 
 from kaira.metrics import (
     LearnedPerceptualImagePatchSimilarity,
     StructuralSimilarityIndexMeasure,
 )
 
+from .base import BaseLoss
 
-class MSELoss(nn.Module):
+
+class MSELoss(BaseLoss):
     """Mean Squared Error (MSE) Loss Module.
 
     This module calculates the MSE loss between the input and the target.
@@ -40,17 +44,17 @@ class MSELoss(nn.Module):
         return self.mse(x, target)
 
 
-class CombinedLoss(nn.Module):
+class CombinedLoss(BaseLoss):
     """Combined Loss Module.
 
     This module combines multiple loss functions into a single loss function.
     """
 
-    def __init__(self, losses: nn.ModuleList, weights: list[float]):
+    def __init__(self, losses: Sequence[BaseLoss], weights: list[float]):
         """Initialize the CombinedLoss module.
 
         Args:
-            losses (nn.ModuleList): A list of loss functions to combine.
+            losses (Sequence[BaseLoss]): A list of loss functions to combine.
             weights (list[float]): A list of weights for each loss function.
         """
         super().__init__()
@@ -67,13 +71,14 @@ class CombinedLoss(nn.Module):
         Returns:
             torch.Tensor: The combined loss between the input and the target.
         """
-        loss = 0
+        loss = torch.tensor(0.0, device=x.device)
+
         for i, cur_loss in enumerate(self.losses):
             loss += self.weights[i] * cur_loss(x, target)
         return loss
 
 
-class MSELPIPSLoss(nn.Module):
+class MSELPIPSLoss(BaseLoss):
     """MSELPIPSLoss Module.
 
     This module combines MSE and LPIPS losses with configurable weights.
@@ -107,7 +112,7 @@ class MSELPIPSLoss(nn.Module):
         return self.mse_weight * mse + self.lpips_weight * lpips
 
 
-class LPIPSLoss(nn.Module):
+class LPIPSLoss(BaseLoss):
     """Learned Perceptual Image Patch Similarity (LPIPS) Loss Module.
 
     This module calculates the LPIPS loss between the input and the target.
@@ -131,7 +136,7 @@ class LPIPSLoss(nn.Module):
         return self.lpips(x, target)
 
 
-class SSIMLoss(nn.Module):
+class SSIMLoss(BaseLoss):
     """Structural Similarity Index Measure (SSIM) Loss Module.
 
     This module calculates the SSIM loss between the input and the target.
@@ -155,7 +160,7 @@ class SSIMLoss(nn.Module):
         return 1 - self.ssim(x, target)
 
 
-class MSSSIMLoss(nn.Module):
+class MSSSIMLoss(BaseLoss):
     """Multi-Scale Structural Similarity Index Measure (MS-SSIM) Loss Module.
 
     This module calculates the MS-SSIM loss between the input and the target.
@@ -179,7 +184,7 @@ class MSSSIMLoss(nn.Module):
         return 1 - self.ms_ssim(x, target)
 
 
-class L1Loss(nn.Module):
+class L1Loss(BaseLoss):
     """L1 (Mean Absolute Error) Loss Module.
 
     This module calculates the L1 loss between the input and the target.
@@ -203,7 +208,7 @@ class L1Loss(nn.Module):
         return self.l1(x, target)
 
 
-class VGGLoss(nn.Module):
+class VGGLoss(BaseLoss):
     """VGG Perceptual Loss Module.
 
     This module calculates the perceptual loss using features extracted by the VGG network.
@@ -273,7 +278,7 @@ class VGGLoss(nn.Module):
         return loss
 
 
-class TotalVariationLoss(nn.Module):
+class TotalVariationLoss(BaseLoss):
     """Total Variation Loss Module.
 
     This module calculates the total variation loss to encourage spatial smoothness.
@@ -298,7 +303,7 @@ class TotalVariationLoss(nn.Module):
         return (h_tv + w_tv) / batch_size
 
 
-class GradientLoss(nn.Module):
+class GradientLoss(BaseLoss):
     """Gradient Loss Module.
 
     This module calculates the gradient loss to preserve edge information.
@@ -340,7 +345,7 @@ class GradientLoss(nn.Module):
         return loss / c
 
 
-class PSNRLoss(nn.Module):
+class PSNRLoss(BaseLoss):
     """Peak Signal-to-Noise Ratio (PSNR) Loss Module.
 
     This module calculates the negative PSNR (to be minimized) between the input and target.
@@ -371,7 +376,7 @@ class PSNRLoss(nn.Module):
         return -psnr
 
 
-class StyleLoss(nn.Module):
+class StyleLoss(BaseLoss):
     """Style Loss Module based on Gram matrices.
 
     This module calculates the style loss used in neural style transfer.
@@ -451,7 +456,7 @@ class StyleLoss(nn.Module):
         return loss
 
 
-class FocalLoss(nn.Module):
+class FocalLoss(BaseLoss):
     """Focal Loss Module for dealing with class imbalance.
 
     This implementation works for both binary and multi-class problems.
@@ -511,7 +516,7 @@ class FocalLoss(nn.Module):
             return focal_loss
 
 
-class ElasticLoss(nn.Module):
+class ElasticLoss(BaseLoss):
     """Elastic Loss combines L1 and L2 losses.
 
     This loss function smoothly transitions between L1 and L2 behavior.

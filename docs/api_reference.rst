@@ -1,20 +1,60 @@
 Kaira API Reference
 ===================
 
+.. note::
+   Kaira version |version| documentation. For older versions, please refer to the version selector above.
+
 This documentation provides a comprehensive reference of Kaira's components organized by functional category.
 Each component is documented with its parameters, methods, and usage examples.
 
 .. contents:: Table of Contents
-   :depth: 2
+   :depth: 3
    :local:
 
-Core Components
----------------
+Overview
+--------
 
-Core components provide the fundamental abstractions for building communication systems in Kaira.
-These base classes define interfaces that all derived implementations must adhere to.
+Kaira is a modular toolkit for wireless communication systems built on PyTorch. The library is organized into
+several key modules that handle different aspects of communication systems:
 
-.. currentmodule:: kaira.core
+- **Channels**: Model transmission mediums with various noise and distortion characteristics
+- **Constraints**: Enforce practical limitations on transmitted signals
+- **Metrics**: Evaluate quality and performance of communication systems
+- **Models**: Implement neural network architectures for encoding and decoding
+- **Modulations**: Implement digital modulation schemes for wireless transmission
+- **Pipelines**: Integrate components into end-to-end communication systems
+- **Losses**: Provide objective functions for training neural networks
+- **Utilities**: Helper functions and tools for common operations
+
+Base Components
+--------------
+
+Base classes define the fundamental interfaces that all implementations must adhere to.
+These abstract classes establish the contract that derived classes must fulfill.
+
+.. currentmodule:: kaira
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   channels.BaseChannel
+   constraints.BaseConstraint
+   metrics.BaseMetric
+   models.BaseModel
+   pipelines.BasePipeline
+   modulations.BaseModulator
+   modulations.BaseDemodulator
+   losses.BaseLoss
+
+Channels
+--------
+
+Channel models simulate the transmission medium between sender and receiver.
+They apply noise, distortion, fading, and other effects that impact signal quality in real-world scenarios.
+
+.. currentmodule:: kaira.channels
 
 .. autosummary::
    :toctree: generated
@@ -22,81 +62,36 @@ These base classes define interfaces that all derived implementations must adher
    :nosignatures:
 
    BaseChannel
-   BaseConstraint
-   BaseMetric
-   BaseModel
-   BasePipeline
-   BaseModulator
-   BaseDemodulator
+   LambdaChannel
 
-Channels
---------
-
-Channel implementations model the transmission medium between sender and receiver.
-They simulate various channel conditions and noise models.
-
-.. currentmodule:: kaira.channels
-
-Basic Channels
-^^^^^^^^^^^^^^
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
+   # Perfect/Identity channels
    PerfectChannel
+   IdentityChannel
+   IdealChannel
+
+   # Analog channels
    AWGNChannel
-   ComplexAWGNChannel
-
-Fading Channels
-^^^^^^^^^^^^^^^
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   RayleighChannel
-   RicianChannel
-   FrequencySelectiveChannel
-
-Hardware Impairments
-^^^^^^^^^^^^^^^^^^^^
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
+   GaussianChannel
+   LaplacianChannel
+   PoissonChannel
    PhaseNoiseChannel
-   IQImbalanceChannel
+   FlatFadingChannel
    NonlinearChannel
-   RappModel
 
-Utilities
-^^^^^^^^^
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   snr_to_noise_power
-   noise_power_to_snr
-   calculate_snr
-   evaluate_ber
-   plot_channel_response
-   plot_constellation
-   plot_impulse_response
-   measure_snr_vs_param
-   plot_snr_vs_param
-   evaluate_channel_ber
-   plot_ber_vs_snr
+   # Digital channels
+   BinarySymmetricChannel
+   BinaryErasureChannel
+   BinaryZChannel
 
 .. seealso::
-   See :class:`~kaira.core.BaseChannel` for the interface all channels must implement.
+   :class:`~kaira.pipelines.FadingChannelPipeline` for working with fading channels in a complete pipeline.
+   :class:`~kaira.modulations.BaseModulator` for modulation schemes that prepare signals for channel transmission.
 
 Constraints
 -----------
 
-Constraints enforce signal power limitations and other physical constraints on transmitted signals.
+Constraints enforce signal limitations that must be satisfied in physical systems.
+These include power limitations, hardware restrictions, and regulatory requirements.
 
 .. currentmodule:: kaira.constraints
 
@@ -105,75 +100,47 @@ Constraints enforce signal power limitations and other physical constraints on t
    :template: class.rst
    :nosignatures:
 
-   AveragePowerConstraint
-   ComplexAveragePowerConstraint
-   ComplexTotalPowerConstraint
+   BaseConstraint
+   CompositeConstraint
+
+   # Power constraints
    TotalPowerConstraint
+   AveragePowerConstraint
+   ComplexTotalPowerConstraint
+   ComplexAveragePowerConstraint
+   PAPRConstraint
 
-.. seealso::
-   See :class:`~kaira.core.BaseConstraint` for the interface all constraints must implement.
+   # Antenna constraints
+   PerAntennaPowerConstraint
 
-Pipelines
----------
+   # Signal constraints
+   PeakAmplitudeConstraint
+   SpectralMaskConstraint
 
-Pipelines integrate encoders, decoders, and channels into end-to-end communication systems.
-
-.. currentmodule:: kaira.pipelines
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   DeepJSCCPipeline
-   SequentialPipeline
-   ParallelPipeline
-   BranchingPipeline
-
-.. seealso::
-   See :class:`~kaira.core.BasePipeline` for the interface all pipelines must implement.
-
-Models
-------
-
-Models implement the neural network architectures for encoders, decoders, and other learnable components.
-
-Components
-^^^^^^^^^^
-
-Common components that can be reused across different model architectures.
-
-.. currentmodule:: kaira.models.components
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   AFModule
-
-Image Models
+Constraint Utilities
 ^^^^^^^^^^^^^^^^^^^
 
-Specialized models for image transmission tasks.
+Helper functions to create and combine constraints for common scenarios.
 
-.. currentmodule:: kaira.models.image
+.. currentmodule:: kaira.constraints.utils
 
 .. autosummary::
    :toctree: generated
-   :template: class.rst
+   :template: function.rst
    :nosignatures:
 
-   DeepJSCCQ2Encoder
-   DeepJSCCQ2Decoder
+   combine_constraints
+   create_ofdm_constraints
+   create_mimo_constraints
 
 .. seealso::
-   These models can be used with :class:`~kaira.pipelines.DeepJSCCPipeline` for end-to-end image transmission.
+   :class:`~kaira.pipelines.OFDMPipeline` and :class:`~kaira.pipelines.MIMOPipeline` for using these constraints in complete systems.
 
 Metrics
 -------
 
 Metrics evaluate the quality of transmitted and reconstructed signals.
+They quantify performance in terms of accuracy, fidelity, and perceptual quality.
 
 .. currentmodule:: kaira.metrics
 
@@ -182,28 +149,176 @@ Metrics evaluate the quality of transmitted and reconstructed signals.
    :template: class.rst
    :nosignatures:
 
+   BaseMetric
+   CompositeMetric
+
+   # Image quality metrics
    PeakSignalNoiseRatio
    PSNR
    StructuralSimilarityIndexMeasure
    SSIM
    MultiScaleSSIM
    LearnedPerceptualImagePatchSimilarity
+   LPIPS
 
-.. seealso::
-   See :class:`~kaira.core.BaseMetric` for the interface all metrics must implement.
+   # Signal metrics
+   SignalToNoiseRatio
+   SNR
+   BitErrorRate
+   BER
+   BlockErrorRate
+   BLER
+
+Metric Utilities
+^^^^^^^^^^^^^^^
+
+Helper functions for working with metrics and formatting results.
+
+.. currentmodule:: kaira.metrics.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   compute_multiple_metrics
+   format_metric_results
+   visualize_metrics_comparison
+   benchmark_metrics
+   batch_metrics_to_table
+   print_metric_table
+   summarize_metrics_over_batches
+
+Metric Factories
+^^^^^^^^^^^^^^^
+
+Factory functions to simplify creation of commonly used metric combinations.
+
+.. currentmodule:: kaira.metrics
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   create_image_quality_metrics
+   create_composite_metric
+
+Metric Registry
+^^^^^^^^^^^^^^^
+
+Registry system for dynamic metric creation and discovery.
+
+.. currentmodule:: kaira.metrics
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   register_metric
+   create_metric
+   list_metrics
+
+Models
+------
+
+Models implement the neural network architectures for encoders, decoders, and other learnable components.
+These form the core of learning-based communication systems.
+
+.. currentmodule:: kaira.models
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseModel
+   ModelRegistry
+
+Model Components
+^^^^^^^^^^^^^^^
+
+Reusable neural network building blocks for constructing communication models.
+
+.. currentmodule:: kaira.models.components
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   # Common neural network components for building models
+   AFModule
+
+Image Models
+^^^^^^^^^^^
+
+Models specialized for image transmission and reconstruction.
+
+.. currentmodule:: kaira.models.image
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   # Image-specific neural network models
+   DeepJSCCQEncoder
+   DeepJSCCQDecoder
+   DeepJSCCQ2Encoder
+   DeepJSCCQ2Decoder
+
+Losses
+------
+
+Loss functions used for training neural network models with different optimization objectives.
+
+.. currentmodule:: kaira.losses
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseLoss
+   CompositeLoss
+   adversarial
+   audio
+   text
+   image
+   multimodal
+
 
 Modulations
 -----------
 
-The modulations package provides digital modulation schemes for communications systems,
-including modulators, demodulators, and visualization tools for constellation diagrams.
-
-Modulation Schemes
-^^^^^^^^^^^^^^^^^^
-
-Concrete implementations of various digital modulation schemes:
+Digital modulation schemes for mapping bits to symbols for wireless transmission.
+These transform digital data into waveforms suitable for transmission over physical channels.
 
 .. currentmodule:: kaira.modulations
+
+Basic Modulation
+^^^^^^^^^^^^^^^
+
+Base classes and simple modulation schemes.
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseModulator
+   BaseDemodulator
+
+   # Identity schemes
+   IdentityModulator
+   IdentityDemodulator
+
+PSK Modulation
+^^^^^^^^^^^^^
+
+Phase Shift Keying modulation schemes, which encode data by varying the phase of a carrier wave.
 
 .. autosummary::
    :toctree: generated
@@ -216,14 +331,38 @@ Concrete implementations of various digital modulation schemes:
    BPSKDemodulator
    QPSKModulator
    QPSKDemodulator
+
+   # Special PSK variants
+   Pi4QPSKModulator
+   Pi4QPSKDemodulator
+   OQPSKModulator
+   OQPSKDemodulator
+
+QAM & PAM Modulation
+^^^^^^^^^^^^^^^^^^^
+
+Quadrature Amplitude Modulation and Pulse Amplitude Modulation schemes.
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    QAMModulator
    QAMDemodulator
    PAMModulator
    PAMDemodulator
-   OQPSKModulator
-   OQPSKDemodulator
-   Pi4QPSKModulator
-   Pi4QPSKDemodulator
+
+Differential Modulation
+^^^^^^^^^^^^^^^^^^^^^^
+
+Differential encoding schemes that encode information in the change between symbols.
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
    DPSKModulator
    DPSKDemodulator
    DBPSKModulator
@@ -231,19 +370,10 @@ Concrete implementations of various digital modulation schemes:
    DQPSKModulator
    DQPSKDemodulator
 
-Constellation Visualization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Modulation Utilities
+^^^^^^^^^^^^^^^^^^^
 
-Tools for visualizing and analyzing modulation constellations.
-
-.. currentmodule:: kaira.modulations
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   ConstellationVisualizer
+Helper functions for working with modulation schemes and analyzing their properties.
 
 .. currentmodule:: kaira.modulations.utils
 
@@ -252,34 +382,60 @@ Tools for visualizing and analyzing modulation constellations.
    :template: function.rst
    :nosignatures:
 
-   plot_constellation
    binary_to_gray
    gray_to_binary
+   binary_array_to_gray
+   gray_array_to_binary
+   plot_constellation
    calculate_theoretical_ber
+   calculate_spectral_efficiency
 
-Benchmarking Tools
-^^^^^^^^^^^^^^^^^^
+Pipelines
+---------
 
-Tools for testing and comparing modulation schemes.
+Pipelines integrate encoders, decoders, channels, and other components into end-to-end communication systems.
+They provide a high-level interface for running simulations and training models.
 
-.. currentmodule:: kaira.modulations.benchmark
+.. currentmodule:: kaira.pipelines
+
+Generic Pipelines
+^^^^^^^^^^^^^^^
+
+General-purpose pipelines that can be used with any types of components.
 
 .. autosummary::
    :toctree: generated
-   :template: function.rst
+   :template: class.rst
    :nosignatures:
 
-   awgn_channel
-   measure_ber
-   plot_ber_curve
-   compare_modulation_schemes
-   measure_throughput
-   benchmark_modulation_schemes
+   BasePipeline
+   SequentialPipeline
+   ParallelPipeline
+   BranchingPipeline
+
+Communication System Pipelines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Specialized pipelines for specific communication scenarios and techniques.
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   DeepJSCCPipeline
+   WynerZivPipeline
+   WynerZivCorrelationModel
+   OFDMPipeline
+   MIMOPipeline
+   FadingChannelPipeline
+   FadingType
+   FeedbackChannelPipeline
 
 Utilities
 ---------
 
-Utility functions to assist with common tasks across the library.
+General utility functions for data manipulation, visualization, and configuration.
 
 .. currentmodule:: kaira.utils
 
@@ -288,6 +444,13 @@ Utility functions to assist with common tasks across the library.
    :template: function.rst
    :nosignatures:
 
-   snr_db_to_linear
-   snr_linear_to_db
-   to_tensor
+   seed_everything
+    to_tensor
+    calculate_num_filters_image
+    snr_db_to_linear
+    snr_linear_to_db
+    snr_to_noise_power
+    noise_power_to_snr
+    calculate_snr
+    add_noise_for_snr
+    estimate_signal_power
