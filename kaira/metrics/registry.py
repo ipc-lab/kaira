@@ -10,47 +10,43 @@ of configurable evaluation pipelines that can select metrics at runtime.
 
 Examples:
     Register a custom metric:
-    ```python
-    from kaira.metrics.registry import register_metric
-    from kaira.metrics.base import BaseMetric
 
-    @register_metric()  # Uses class name as the registration key
-    class MyCustomMetric(BaseMetric):
-        def __init__(self, param1=1.0):
-            super().__init__(name="my_custom_metric")
-            self.param1 = param1
-
-        def forward(self, x, y):
-            # Implement metric computation
-            return result
-    ```
+    >>> from kaira.metrics.registry import register_metric
+    >>> from kaira.metrics.base import BaseMetric
+    >>>
+    >>> @register_metric()  # Uses class name as the registration key
+    >>> class MyCustomMetric(BaseMetric):
+    ...     def __init__(self, param1=1.0):
+    ...         super().__init__(name="my_custom_metric")
+    ...         self.param1 = param1
+    ...
+    ...     def forward(self, x, y):
+    ...         # Implement metric computation
+    ...         return result
 
     Register with custom name:
-    ```python
-    @register_metric("awesome_metric")
-    class ComplicatedMetricWithLongName(BaseMetric):
-        # implementation
-    ```
+
+    >>> @register_metric("awesome_metric")
+    >>> class ComplicatedMetricWithLongName(BaseMetric):
+    ...     # implementation
 
     Create a metric from registry:
-    ```python
-    from kaira.metrics.registry import create_metric
 
-    # Create instance using registered name
-    metric = create_metric("mycustommetric", param1=2.0)
-    ```
+    >>> from kaira.metrics.registry import create_metric
+    >>>
+    >>> # Create instance using registered name
+    >>> metric = create_metric("mycustommetric", param1=2.0)
 
     Use factory functions for common metric suites:
-    ```python
-    from kaira.metrics.registry import create_image_quality_metrics, create_composite_metric
 
-    # Create standard image metrics
-    metrics_dict = create_image_quality_metrics(data_range=2.0)
-
-    # Create weighted combination
-    weights = {"psnr": 0.6, "ssim": 0.4}
-    combined = create_composite_metric(metrics_dict, weights)
-    ```
+    >>> from kaira.metrics.registry import create_image_quality_metrics, create_composite_metric
+    >>>
+    >>> # Create standard image metrics
+    >>> metrics_dict = create_image_quality_metrics(data_range=2.0)
+    >>>
+    >>> # Create weighted combination
+    >>> weights = {"psnr": 0.6, "ssim": 0.4}
+    >>> combined = create_composite_metric(metrics_dict, weights)
 """
 
 import inspect
@@ -81,15 +77,13 @@ def register_metric(name: Optional[str] = None):
         Callable: Decorator function that registers the metric class
 
     Example:
-        ```python
-        @register_metric()  # Uses class name as key
-        class MyMetric(BaseMetric):
-            # implementation
-
-        @register_metric("better_name")  # Uses custom name as key
-        class GenericNameThatNeedsBetterRegistryKey(BaseMetric):
-            # implementation
-        ```
+        >>> @register_metric()  # Uses class name as key
+        >>> class MyMetric(BaseMetric):
+        ...     # implementation
+        ...
+        >>> @register_metric("better_name")  # Uses custom name as key
+        >>> class GenericNameThatNeedsBetterRegistryKey(BaseMetric):
+        ...     # implementation
     """
 
     def decorator(cls: Type[BaseMetric]) -> Type[BaseMetric]:
@@ -121,13 +115,11 @@ def create_metric(name: str, **kwargs: Any) -> BaseMetric:
         TypeError: If the provided kwargs don't match the metric's expected parameters
 
     Example:
-        ```python
-        # Create a PSNR metric with custom parameters
-        psnr = create_metric("psnr", data_range=255.0)
-
-        # Create a custom registered metric
-        my_metric = create_metric("mycustommetric", param1=10, param2="value")
-        ```
+        >>> # Create a PSNR metric with custom parameters
+        >>> psnr = create_metric("psnr", data_range=255.0)
+        >>>
+        >>> # Create a custom registered metric
+        >>> my_metric = create_metric("mycustommetric", param1=10, param2="value")
     """
     if name not in _METRIC_REGISTRY:
         raise KeyError(f"Metric '{name}' not found in registry. Available metrics: {list(_METRIC_REGISTRY.keys())}")
@@ -144,14 +136,12 @@ def list_metrics() -> List[str]:
         List[str]: Names (registry keys) of all registered metrics
 
     Example:
-        ```python
-        available_metrics = list_metrics()
-        print(f"Available metrics: {available_metrics}")
-
-        # Check if a specific metric is available
-        if "lpips" in list_metrics():
-            metric = create_metric("lpips")
-        ```
+        >>> available_metrics = list_metrics()
+        >>> print(f"Available metrics: {available_metrics}")
+        >>>
+        >>> # Check if a specific metric is available
+        >>> if "lpips" in list_metrics():
+        ...     metric = create_metric("lpips")
     """
     return list(_METRIC_REGISTRY.keys())
 
@@ -178,12 +168,10 @@ def get_metric_info(name: str) -> Dict[str, Any]:
         KeyError: If the metric name is not found in the registry
 
     Example:
-        ```python
-        # Get information about the PSNR metric
-        psnr_info = get_metric_info("psnr")
-        print(f"PSNR parameters: {psnr_info['parameters']}")
-        print(f"Documentation: {psnr_info['docstring']}")
-        ```
+        >>> # Get information about the PSNR metric
+        >>> psnr_info = get_metric_info("psnr")
+        >>> print(f"PSNR parameters: {psnr_info['parameters']}")
+        >>> print(f"Documentation: {psnr_info['docstring']}")
     """
     if name not in _METRIC_REGISTRY:
         raise KeyError(f"Metric '{name}' not found in registry")
@@ -229,24 +217,22 @@ def create_image_quality_metrics(data_range: float = 1.0, lpips_net_type: Litera
             with input tensors.
 
     Example:
-        ```python
-        import torch
-
-        # Create metrics for normalized images [0,1]
-        metrics = create_image_quality_metrics(data_range=1.0, device=torch.device('cuda'))
-
-        # Generate some test images
-        pred = torch.rand(1, 3, 256, 256).cuda()  # Batch of random RGB images
-        target = torch.rand(1, 3, 256, 256).cuda()
-
-        # Compute metrics individually
-        psnr_value = metrics['psnr'](pred, target)
-        ssim_value = metrics['ssim'](pred, target)
-
-        # Or create a composite metric
-        composite = create_composite_metric(metrics, weights={'psnr': 0.5, 'ssim': 0.5})
-        score = composite(pred, target)
-        ```
+        >>> import torch
+        >>>
+        >>> # Create metrics for normalized images [0,1]
+        >>> metrics = create_image_quality_metrics(data_range=1.0, device=torch.device('cuda'))
+        >>>
+        >>> # Generate some test images
+        >>> pred = torch.rand(1, 3, 256, 256).cuda()  # Batch of random RGB images
+        >>> target = torch.rand(1, 3, 256, 256).cuda()
+        >>>
+        >>> # Compute metrics individually
+        >>> psnr_value = metrics['psnr'](pred, target)
+        >>> ssim_value = metrics['ssim'](pred, target)
+        >>>
+        >>> # Or create a composite metric
+        >>> composite = create_composite_metric(metrics, weights={'psnr': 0.5, 'ssim': 0.5})
+        >>> score = composite(pred, target)
     """
     from .image import LPIPS, PSNR, SSIM, MultiScaleSSIM
 
@@ -290,20 +276,18 @@ def create_composite_metric(metrics: Dict[str, BaseMetric], weights: Optional[Di
             and can be used like any other metric.
 
     Example:
-        ```python
-        from kaira.metrics import PSNR, SSIM
-        from kaira.metrics.registry import create_composite_metric
-
-        # Create individual metrics
-        psnr = PSNR(data_range=1.0)
-        ssim = SSIM(data_range=1.0)
-        lpips = LPIPS(net_type='alex')  # Lower values are better
-
-        # Create a balanced composite metric (higher values = better)
-        metrics = {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
-        weights = {'psnr': 0.4, 'ssim': 0.4, 'lpips': -0.2}  # Negative weight for LPIPS
-
-        balanced_metric = create_composite_metric(metrics, weights)
-        ```
+        >>> from kaira.metrics import PSNR, SSIM
+        >>> from kaira.metrics.registry import create_composite_metric
+        >>>
+        >>> # Create individual metrics
+        >>> psnr = PSNR(data_range=1.0)
+        >>> ssim = SSIM(data_range=1.0)
+        >>> lpips = LPIPS(net_type='alex')  # Lower values are better
+        >>>
+        >>> # Create a balanced composite metric (higher values = better)
+        >>> metrics = {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
+        >>> weights = {'psnr': 0.4, 'ssim': 0.4, 'lpips': -0.2}  # Negative weight for LPIPS
+        >>>
+        >>> balanced_metric = create_composite_metric(metrics, weights)
     """
     return CompositeMetric(metrics, weights)

@@ -19,10 +19,6 @@
 
 ===============================
 
-.. include:: versioning.rst
-
-===============================
-
 .. include:: license.rst
 
 ===============================
@@ -33,13 +29,6 @@
 
 Kaira Documentation
 ==========================================
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 .. toctree::
    :maxdepth: 2

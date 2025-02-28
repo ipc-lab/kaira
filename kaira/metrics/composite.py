@@ -38,25 +38,23 @@ class CompositeMetric(BaseMetric):
         negative weights or transforming the metric beforehand).
 
     Example:
-        ```python
-        from kaira.metrics import PSNR, SSIM, LPIPS
-        from kaira.metrics.composite import CompositeMetric
-
-        # Create individual metrics
-        psnr = PSNR()
-        ssim = SSIM()
-        lpips = LPIPS()
-
-        # Create a composite metric with custom weights
-        # Note: LPIPS is "lower is better" while PSNR and SSIM are "higher is better"
-        metrics = {"psnr": psnr, "ssim": ssim, "lpips": lpips}
-        weights = {"psnr": 0.3, "ssim": 0.3, "lpips": -0.4}  # Negative weight for LPIPS
-        composite = CompositeMetric(metrics=metrics, weights=weights)
-
-        # Evaluate images
-        score = composite(prediction, target)
-        individual_scores = composite.compute_individual(prediction, target)
-        ```
+        >>> from kaira.metrics import PSNR, SSIM, LPIPS
+        >>> from kaira.metrics.composite import CompositeMetric
+        >>>
+        >>> # Create individual metrics
+        >>> psnr = PSNR()
+        >>> ssim = SSIM()
+        >>> lpips = LPIPS()
+        >>>
+        >>> # Create a composite metric with custom weights
+        >>> # Note: LPIPS is "lower is better" while PSNR and SSIM are "higher is better"
+        >>> metrics = {"psnr": psnr, "ssim": ssim, "lpips": lpips}
+        >>> weights = {"psnr": 0.3, "ssim": 0.3, "lpips": -0.4}  # Negative weight for LPIPS
+        >>> composite = CompositeMetric(metrics=metrics, weights=weights)
+        >>>
+        >>> # Evaluate images
+        >>> score = composite(prediction, target)
+        >>> individual_scores = composite.compute_individual(prediction, target)
     """
 
     def __init__(self, metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None):

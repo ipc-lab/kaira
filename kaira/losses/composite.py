@@ -34,26 +34,24 @@ class CompositeLoss(BaseLoss):
     multiple criteria.
 
     Example:
-        ```python
-        from kaira.losses import L1Loss, SSIMLoss, PerceptualLoss
-        from kaira.losses.composite import CompositeLoss
-
-        # Create individual losses
-        l1_loss = L1Loss()
-        ssim_loss = SSIMLoss()
-        perceptual_loss = PerceptualLoss()
-
-        # Create a composite loss with custom weights
-        losses = {"l1": l1_loss, "ssim": ssim_loss, "perceptual": perceptual_loss}
-        weights = {"l1": 1.0, "ssim": 0.5, "perceptual": 0.1}
-        composite_loss = CompositeLoss(losses=losses, weights=weights)
-
-        # Train a model with the composite loss
-        output = model(input_data)
-        loss = composite_loss(output, target)
-        loss.backward()
-        optimizer.step()
-        ```
+        >>> from kaira.losses import L1Loss, SSIMLoss, PerceptualLoss
+        >>> from kaira.losses.composite import CompositeLoss
+        >>>
+        >>> # Create individual losses
+        >>> l1_loss = L1Loss()
+        >>> ssim_loss = SSIMLoss()
+        >>> perceptual_loss = PerceptualLoss()
+        >>>
+        >>> # Create a composite loss with custom weights
+        >>> losses = {"l1": l1_loss, "ssim": ssim_loss, "perceptual": perceptual_loss}
+        >>> weights = {"l1": 1.0, "ssim": 0.5, "perceptual": 0.1}
+        >>> composite_loss = CompositeLoss(losses=losses, weights=weights)
+        >>>
+        >>> # Train a model with the composite loss
+        >>> output = model(input_data)
+        >>> loss = composite_loss(output, target)
+        >>> loss.backward()
+        >>> optimizer.step()
     """
 
     def __init__(self, losses: Dict[str, BaseLoss], weights: Optional[Dict[str, float]] = None):

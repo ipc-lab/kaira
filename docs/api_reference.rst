@@ -1,5 +1,5 @@
 Kaira API Reference
-===================
+=====================================
 
 .. note::
    Kaira version |version| documentation. For older versions, please refer to the version selector above.
@@ -12,7 +12,7 @@ Each component is documented with its parameters, methods, and usage examples.
    :local:
 
 Overview
---------
+--------------
 
 Kaira is a modular toolkit for wireless communication systems built on PyTorch. The library is organized into
 several key modules that handle different aspects of communication systems:
@@ -27,7 +27,7 @@ several key modules that handle different aspects of communication systems:
 - **Utilities**: Helper functions and tools for common operations
 
 Base Components
---------------
+--------------------------
 
 Base classes define the fundamental interfaces that all implementations must adhere to.
 These abstract classes establish the contract that derived classes must fulfill.
@@ -49,7 +49,7 @@ These abstract classes establish the contract that derived classes must fulfill.
    losses.BaseLoss
 
 Channels
---------
+--------------
 
 Channel models simulate the transmission medium between sender and receiver.
 They apply noise, distortion, fading, and other effects that impact signal quality in real-world scenarios.
@@ -88,7 +88,7 @@ They apply noise, distortion, fading, and other effects that impact signal quali
    :class:`~kaira.modulations.BaseModulator` for modulation schemes that prepare signals for channel transmission.
 
 Constraints
------------
+--------------------
 
 Constraints enforce signal limitations that must be satisfied in physical systems.
 These include power limitations, hardware restrictions, and regulatory requirements.
@@ -118,7 +118,7 @@ These include power limitations, hardware restrictions, and regulatory requireme
    SpectralMaskConstraint
 
 Constraint Utilities
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Helper functions to create and combine constraints for common scenarios.
 
@@ -137,7 +137,7 @@ Helper functions to create and combine constraints for common scenarios.
    :class:`~kaira.pipelines.OFDMPipeline` and :class:`~kaira.pipelines.MIMOPipeline` for using these constraints in complete systems.
 
 Metrics
--------
+-------------
 
 Metrics evaluate the quality of transmitted and reconstructed signals.
 They quantify performance in terms of accuracy, fidelity, and perceptual quality.
@@ -170,7 +170,7 @@ They quantify performance in terms of accuracy, fidelity, and perceptual quality
    BLER
 
 Metric Utilities
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Helper functions for working with metrics and formatting results.
 
@@ -190,7 +190,7 @@ Helper functions for working with metrics and formatting results.
    summarize_metrics_over_batches
 
 Metric Factories
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Factory functions to simplify creation of commonly used metric combinations.
 
@@ -205,7 +205,7 @@ Factory functions to simplify creation of commonly used metric combinations.
    create_composite_metric
 
 Metric Registry
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Registry system for dynamic metric creation and discovery.
 
@@ -221,7 +221,7 @@ Registry system for dynamic metric creation and discovery.
    list_metrics
 
 Models
-------
+------------
 
 Models implement the neural network architectures for encoders, decoders, and other learnable components.
 These form the core of learning-based communication systems.
@@ -237,7 +237,7 @@ These form the core of learning-based communication systems.
    ModelRegistry
 
 Model Components
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Reusable neural network building blocks for constructing communication models.
 
@@ -252,7 +252,7 @@ Reusable neural network building blocks for constructing communication models.
    AFModule
 
 Image Models
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Models specialized for image transmission and reconstruction.
 
@@ -270,7 +270,7 @@ Models specialized for image transmission and reconstruction.
    DeepJSCCQ2Decoder
 
 Losses
-------
+------------
 
 Loss functions used for training neural network models with different optimization objectives.
 
@@ -291,7 +291,7 @@ Loss functions used for training neural network models with different optimizati
 
 
 Modulations
------------
+--------------------
 
 Digital modulation schemes for mapping bits to symbols for wireless transmission.
 These transform digital data into waveforms suitable for transmission over physical channels.
@@ -299,7 +299,7 @@ These transform digital data into waveforms suitable for transmission over physi
 .. currentmodule:: kaira.modulations
 
 Basic Modulation
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Base classes and simple modulation schemes.
 
@@ -316,7 +316,7 @@ Base classes and simple modulation schemes.
    IdentityDemodulator
 
 PSK Modulation
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Phase Shift Keying modulation schemes, which encode data by varying the phase of a carrier wave.
 
@@ -339,7 +339,7 @@ Phase Shift Keying modulation schemes, which encode data by varying the phase of
    OQPSKDemodulator
 
 QAM & PAM Modulation
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Quadrature Amplitude Modulation and Pulse Amplitude Modulation schemes.
 
@@ -354,7 +354,7 @@ Quadrature Amplitude Modulation and Pulse Amplitude Modulation schemes.
    PAMDemodulator
 
 Differential Modulation
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Differential encoding schemes that encode information in the change between symbols.
 
@@ -371,7 +371,7 @@ Differential encoding schemes that encode information in the change between symb
    DQPSKDemodulator
 
 Modulation Utilities
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Helper functions for working with modulation schemes and analyzing their properties.
 
@@ -391,7 +391,7 @@ Helper functions for working with modulation schemes and analyzing their propert
    calculate_spectral_efficiency
 
 Pipelines
----------
+------------------
 
 Pipelines integrate encoders, decoders, channels, and other components into end-to-end communication systems.
 They provide a high-level interface for running simulations and training models.
@@ -399,7 +399,7 @@ They provide a high-level interface for running simulations and training models.
 .. currentmodule:: kaira.pipelines
 
 Generic Pipelines
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 General-purpose pipelines that can be used with any types of components.
 
@@ -414,7 +414,7 @@ General-purpose pipelines that can be used with any types of components.
    BranchingPipeline
 
 Communication System Pipelines
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Specialized pipelines for specific communication scenarios and techniques.
 
@@ -433,7 +433,7 @@ Specialized pipelines for specific communication scenarios and techniques.
    FeedbackChannelPipeline
 
 Utilities
----------
+------------------
 
 General utility functions for data manipulation, visualization, and configuration.
 

@@ -115,6 +115,7 @@ class WynerZivPipeline(BasePipeline):
     syndrome generation, channel transmission, and decoding with side information.
 
     The pipeline follows these key steps:
+
     1. The encoder compresses the source without knowledge of side information
     2. The quantizer maps the encoded values to discrete symbols/indices
     3. The syndrome generator creates a compressed representation (syndromes)

@@ -18,13 +18,12 @@ class IdentityModulator(BaseModulator):
     or for testing.
 
     Attributes:
-        bits_per_symbol (int): Always 1, as this is a passthrough
         constellation (torch.Tensor): Trivial constellation points [0, 1]
     """
 
     def __init__(self):
         """Initialize the identity modulator."""
-        super().__init__(bits_per_symbol=1)
+        super().__init__()
         self.constellation = self._create_constellation()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -48,6 +47,14 @@ class IdentityModulator(BaseModulator):
             The same tensor, unchanged
         """
         return bits
+
+    @property
+    def bits_per_symbol(self) -> int:
+        """Number of bits per symbol.
+
+        Always 1, as this is a passthrough.
+        """
+        return 1
 
     def _create_constellation(self) -> torch.Tensor:
         """Create a trivial constellation (just 0 and 1).
@@ -77,13 +84,12 @@ class IdentityDemodulator(BaseDemodulator):
     or for testing.
 
     Attributes:
-        bits_per_symbol (int): Always 1, as this is a passthrough
         constellation (torch.Tensor): Trivial constellation points [0, 1]
     """
 
     def __init__(self):
         """Initialize the identity demodulator."""
-        super().__init__(bits_per_symbol=1)
+        super().__init__()
         self.constellation = torch.tensor([0.0, 1.0], dtype=torch.complex64)
 
     def forward(self, y: torch.Tensor, noise_var=None) -> torch.Tensor:
@@ -100,6 +106,14 @@ class IdentityDemodulator(BaseDemodulator):
         if noise_var is not None:
             return self.soft_demodulate(y, noise_var)
         return self.demodulate(y)
+
+    @property
+    def bits_per_symbol(self) -> int:
+        """Number of bits per symbol.
+
+        Always 1, as this is a passthrough.
+        """
+        return 1
 
     def demodulate(self, symbols: torch.Tensor) -> torch.Tensor:
         """Pass input symbols through unchanged.

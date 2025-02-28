@@ -1,6 +1,6 @@
 """Base classes for modulation and demodulation schemes."""
 
-from abc import abstractmethod
+from abc import abstractmethod, abstractproperty
 from typing import Optional, Union
 
 import torch
@@ -14,7 +14,6 @@ class BaseModulator(nn.Module):
     modulation scheme.
 
     Attributes:
-        bits_per_symbol: Number of bits encoded in each symbol
         constellation: Complex-valued tensor of constellation points
     """
 
@@ -27,12 +26,10 @@ class BaseModulator(nn.Module):
         super().__init__()
         self._bits_per_symbol = bits_per_symbol
 
-    @property
+    @abstractproperty
     def bits_per_symbol(self) -> int:
-        """Number of bits per symbol."""
-        if self._bits_per_symbol is None:
-            raise NotImplementedError("bits_per_symbol must be defined in subclass")
-        return self._bits_per_symbol
+        """:no-index:"""
+        pass
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -68,11 +65,8 @@ class BaseModulator(nn.Module):
 class BaseDemodulator(nn.Module):
     """Abstract base class for all demodulators.
 
-    A demodulator maps received complex symbols back to bit sequences according
-    to a specific demodulation scheme, which may include soft or hard decisions.
-
-    Attributes:
-        bits_per_symbol: Number of bits encoded in each symbol
+    A demodulator maps received complex symbols back to bit sequences according to a specific
+    demodulation scheme, which may include soft or hard decisions.
     """
 
     def __init__(self, bits_per_symbol: Optional[int] = None) -> None:
@@ -84,7 +78,7 @@ class BaseDemodulator(nn.Module):
         super().__init__()
         self._bits_per_symbol = bits_per_symbol
 
-    @property
+    @abstractproperty
     def bits_per_symbol(self) -> int:
         """Number of bits per symbol."""
         if self._bits_per_symbol is None:
