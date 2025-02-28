@@ -11,8 +11,6 @@ from typing import List, Optional, Tuple, Union
 import torch
 from torch import nn
 
-from kaira.pipelines.sequential import SequentialPipeline
-
 
 class BaseConstraint(nn.Module, ABC):
     """Abstract foundation for implementing signal constraints in PyTorch-compatible format.
@@ -62,34 +60,3 @@ class BaseConstraint(nn.Module, ABC):
         """
         start_dim = 1 if exclude_batch else 0
         return tuple(range(start_dim, len(x.shape)))
-
-
-class CompositeConstraint(BaseConstraint, SequentialPipeline):
-    """Applies multiple signal constraints in sequence as a single unified constraint.
-
-    This class combines multiple BaseConstraint objects into a single constraint that applies
-    each component constraint sequentially. It inherits from both BaseConstraint and
-    SequentialPipeline to provide constraint functionality with sequential processing
-    capabilities.
-
-    The composite pattern allows complex constraint combinations to be treated as a
-    single constraint object, enabling modular constraint creation and reuse.
-
-    Attributes:
-        constraints (list): List of BaseConstraint objects to apply in sequence
-
-    Example:
-        >>> power_constraint = TotalPowerConstraint(1.0)
-        >>> papr_constraint = PAPRConstraint(4.0)
-        >>> combined = CompositeConstraint([power_constraint, papr_constraint])
-        >>> # Or using the utility function:
-        >>> # combined = combine_constraints([power_constraint, papr_constraint])
-        >>> constrained_signal = combined(input_signal)
-
-    Note:
-        When a composite constraint is applied, each component constraint is applied
-        in the order they were provided. This ordering can significantly affect the
-        final result, as constraints may interact with each other.
-    """
-
-    pass
