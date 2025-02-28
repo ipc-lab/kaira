@@ -5,9 +5,7 @@ sequentially as a single unified constraint. This enables modular constraint cre
 composition for complex signal requirements.
 """
 
-from typing import List, Optional, Union
-
-import torch
+from typing import List
 
 from kaira.pipelines.sequential import SequentialPipeline
 
