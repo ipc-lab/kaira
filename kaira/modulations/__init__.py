@@ -1,14 +1,24 @@
-"""Digital modulation schemes for wireless communication systems.
+"""Digital modulation schemes for wireless communications.
 
-This module provides implementations of common digital modulation techniques used in wireless
-communications, with a focus on PyTorch-based implementations that support GPU acceleration.
+This package provides implementations of common digital modulation and demodulation techniques used
+in modern communication systems, including PSK, QAM, PAM, and differential modulation schemes.
 """
 
-# Version information
-__version__ = "0.1.0"
+# Base classes
+from .base import BaseDemodulator, BaseModulator
 
-# Import primary public API
-from .api import (
+# Differential schemes
+from .dpsk import (
+    DBPSKDemodulator,
+    DBPSKModulator,
+    DPSKDemodulator,
+    DPSKModulator,
+    DQPSKDemodulator,
+    DQPSKModulator,
+)
+
+# Factory functions for creating modulators and demodulators
+from .factory import (
     Modem,
     available_schemes,
     create_demodulator,
@@ -17,35 +27,18 @@ from .api import (
     get_modulation_info,
 )
 
-# Import benchmarking tools
-from .benchmark import (
-    benchmark_modulation_schemes,
-    compare_modulation_schemes,
-    measure_ber,
-    plot_ber_curve,
-)
+# Identity schemes (for testing/debugging)
+from .identity import IdentityDemodulator, IdentityModulator
+from .oqpsk import OQPSKDemodulator, OQPSKModulator
 
-# Import channel models
-from .channels.awgn import AWGNChannel
-from .schemes.differential import (
-    DBPSKDemodulator,
-    DBPSKModulator,
-    DPSKDemodulator,
-    DPSKModulator,
-    DQPSKDemodulator,
-    DQPSKModulator,
-)
-from .schemes.identity import IdentityDemodulator, IdentityModulator
-from .schemes.offset import (
-    OQPSKDemodulator,
-    OQPSKModulator,
-    Pi4QPSKDemodulator,
-    Pi4QPSKModulator,
-)
-from .schemes.pam import PAMDemodulator, PAMModulator
+# PAM schemes
+from .pam import PAMDemodulator, PAMModulator
 
-# Import modulation classes for direct access
-from .schemes.psk import (
+# Special PSK variants
+from .pi4qpsk import Pi4QPSKDemodulator, Pi4QPSKModulator
+
+# PSK schemes
+from .psk import (
     BPSKDemodulator,
     BPSKModulator,
     PSKDemodulator,
@@ -53,38 +46,50 @@ from .schemes.psk import (
     QPSKDemodulator,
     QPSKModulator,
 )
-from .schemes.qam import QAMDemodulator, QAMModulator
-from .utils.coding import binary_to_gray, gray_to_binary
-from .utils.metrics import calculate_spectral_efficiency, calculate_theoretical_ber
 
-# Import utilities
-from .utils.visualization import ConstellationVisualizer, plot_constellation
+# QAM schemes
+from .qam import QAMDemodulator, QAMModulator
 
-# Define the public API
+# Utility functions
+from .utils import (
+    binary_array_to_gray,
+    binary_to_gray,
+    calculate_spectral_efficiency,
+    calculate_theoretical_ber,
+    gray_array_to_binary,
+    gray_to_binary,
+    plot_constellation,
+)
+
 __all__ = [
-    # API
-    "available_schemes",
-    "create_demodulator",
-    "create_modulator",
-    "create_modem",
-    "get_modulation_info",
-    "Modem",
     # Base classes
     "BaseModulator",
     "BaseDemodulator",
-    # PSK family
+    # Factory functions
+    "available_schemes",
+    "create_modulator",
+    "create_demodulator",
+    "create_modem",
+    "get_modulation_info",
+    "Modem",
+    # QAM schemes
+    "QAMModulator",
+    "QAMDemodulator",
+    # PSK schemes
     "BPSKModulator",
     "BPSKDemodulator",
     "QPSKModulator",
     "QPSKDemodulator",
     "PSKModulator",
     "PSKDemodulator",
-    # QAM family
-    "QAMModulator",
-    "QAMDemodulator",
-    # PAM family
+    # PAM schemes
     "PAMModulator",
     "PAMDemodulator",
+    # Special PSK variants
+    "Pi4QPSKModulator",
+    "Pi4QPSKDemodulator",
+    "OQPSKModulator",
+    "OQPSKDemodulator",
     # Differential schemes
     "DPSKModulator",
     "DPSKDemodulator",
@@ -92,28 +97,15 @@ __all__ = [
     "DBPSKDemodulator",
     "DQPSKModulator",
     "DQPSKDemodulator",
-    # Offset schemes
-    "OQPSKModulator",
-    "OQPSKDemodulator",
-    "Pi4QPSKModulator",
-    "Pi4QPSKDemodulator",
-    # Identity scheme
+    # Identity schemes
     "IdentityModulator",
     "IdentityDemodulator",
-    # Visualization
-    "ConstellationVisualizer",
-    "plot_constellation",
-    # Coding utilities
+    # Utility functions
     "binary_to_gray",
     "gray_to_binary",
-    # Metrics
+    "binary_array_to_gray",
+    "gray_array_to_binary",
+    "plot_constellation",
     "calculate_theoretical_ber",
     "calculate_spectral_efficiency",
-    # Channel models
-    "AWGNChannel",
-    # Benchmarking
-    "measure_ber",
-    "compare_modulation_schemes",
-    "plot_ber_curve",
-    "benchmark_modulation_schemes",
 ]

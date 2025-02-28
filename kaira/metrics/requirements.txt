@@ -1,5 +1,0 @@
-torch>=1.7.0
-torchmetrics>=0.8.0
-pytorch-msssim>=0.2.1
-matplotlib>=3.3.0
-numpy>=1.19.0
