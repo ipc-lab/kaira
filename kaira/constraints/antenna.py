@@ -6,6 +6,8 @@ for ensuring proper operation of multi-antenna transmitters and compliance with 
 specifications.
 """
 
+from typing import Optional
+
 import torch
 
 from .base import BaseConstraint
@@ -26,7 +28,7 @@ class PerAntennaPowerConstraint(BaseConstraint):
         uniform_power (float, optional): Uniform power level for all antennas
     """
 
-    def __init__(self, power_budget: torch.Tensor = None, uniform_power: float = None) -> None:
+    def __init__(self, power_budget: Optional[torch.Tensor] = None, uniform_power: Optional[float] = None) -> None:
         """Initialize the per-antenna power constraint.
 
         Args:
@@ -44,9 +46,7 @@ class PerAntennaPowerConstraint(BaseConstraint):
             in the input signal.
         """
         super().__init__()
-        assert (power_budget is not None) or (
-            uniform_power is not None
-        ), "Either power_budget or uniform_power must be provided"
+        assert (power_budget is not None) or (uniform_power is not None), "Either power_budget or uniform_power must be provided"
         self.power_budget = power_budget
         self.uniform_power = uniform_power
 

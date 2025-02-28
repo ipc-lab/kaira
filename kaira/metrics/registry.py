@@ -54,7 +54,7 @@ Examples:
 """
 
 import inspect
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Literal, Optional, Type
 
 import torch
 
@@ -131,9 +131,7 @@ def create_metric(name: str, **kwargs: Any) -> BaseMetric:
         ```
     """
     if name not in _METRIC_REGISTRY:
-        raise KeyError(
-            f"Metric '{name}' not found in registry. Available metrics: {list(_METRIC_REGISTRY.keys())}"
-        )
+        raise KeyError(f"Metric '{name}' not found in registry. Available metrics: {list(_METRIC_REGISTRY.keys())}")
     return _METRIC_REGISTRY[name](**kwargs)
 
 
@@ -193,10 +191,7 @@ def get_metric_info(name: str) -> Dict[str, Any]:
 
     metric_class = _METRIC_REGISTRY[name]
     signature = inspect.signature(metric_class.__init__)
-    params = {
-        k: v.default if v.default is not inspect.Parameter.empty else None
-        for k, v in list(signature.parameters.items())[1:]  # Skip 'self'
-    }
+    params = {k: v.default if v.default is not inspect.Parameter.empty else None for k, v in list(signature.parameters.items())[1:]}  # Skip 'self'
 
     return {
         "name": name,
@@ -207,9 +202,7 @@ def get_metric_info(name: str) -> Dict[str, Any]:
     }
 
 
-def create_image_quality_metrics(
-    data_range: float = 1.0, lpips_net_type: str = "alex", device: Optional[torch.device] = None
-) -> Dict[str, BaseMetric]:
+def create_image_quality_metrics(data_range: float = 1.0, lpips_net_type: Literal["vgg", "alex", "squeeze"] = "alex", device: Optional[torch.device] = None) -> Dict[str, BaseMetric]:
     """Create a standard suite of image quality assessment metrics.
 
     This factory function creates a collection of commonly used image quality metrics
@@ -224,7 +217,7 @@ def create_image_quality_metrics(
     Args:
         data_range (float): The data range of the images. Use 1.0 for normalized images
             in range [0,1] or 255.0 for uint8 images in range [0,255].
-        lpips_net_type (str): The backbone network for LPIPS. Options are:
+        lpips_net_type (Literal['vgg', 'alex', 'squeeze']): The backbone network for LPIPS. Options are:
             - 'alex': AlexNet (faster, less accurate)
             - 'vgg': VGG network (slower, more accurate)
             - 'squeeze': SqueezeNet (fastest, least accurate)
@@ -270,9 +263,7 @@ def create_image_quality_metrics(
     return metrics
 
 
-def create_composite_metric(
-    metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None
-) -> BaseMetric:
+def create_composite_metric(metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None) -> BaseMetric:
     """Create a composite metric that combines multiple metrics with weights.
 
     This factory function creates a CompositeMetric instance that applies multiple

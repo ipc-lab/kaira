@@ -19,9 +19,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
     where 1 means perfect similarity.
     """
 
-    def __init__(
-        self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, **kwargs: Any
-    ) -> None:
+    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, **kwargs: Any) -> None:
         """Initialize the SSIM module.
 
         Args:
@@ -31,9 +29,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="SSIM")
-        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(
-            data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **kwargs
-        )
+        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **kwargs)
 
     def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
         """Calculate SSIM between predicted and target images.

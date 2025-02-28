@@ -61,10 +61,7 @@ class BlockErrorRate(BaseMetric):
         batch_size = x.size(0)
         # Make sure tensor can be evenly divided into blocks
         if x.numel() % (batch_size * self.block_size) != 0:
-            raise ValueError(
-                f"Input size {x.numel()} is not divisible by batch_size ({batch_size}) "
-                f"multiplied by block_size ({self.block_size})"
-            )
+            raise ValueError(f"Input size {x.numel()} is not divisible by batch_size ({batch_size}) " f"multiplied by block_size ({self.block_size})")
 
         # Reshape to [batch_size, num_blocks, block_size, ...]
         remainder_dims = x.shape[1:]

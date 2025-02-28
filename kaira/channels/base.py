@@ -5,7 +5,7 @@ communications systems simulation.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, TypeVar
+from typing import Any, Callable, Dict, TypeVar
 
 import torch
 from torch import nn
@@ -75,7 +75,7 @@ class LambdaChannel(BaseChannel):
         where f is any user-defined function
 
     Args:
-        fn (callable): The function to apply to the input signal.
+        fn (Callable): The function to apply to the input signal.
             Must accept a torch.Tensor and return a torch.Tensor of compatible shape.
 
     Example:
@@ -90,7 +90,7 @@ class LambdaChannel(BaseChannel):
         >>> channel = LambdaChannel(distort)
     """
 
-    def __init__(self, fn: callable):
+    def __init__(self, fn: Callable):
         super().__init__()
         self.fn = fn
 

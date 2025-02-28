@@ -23,9 +23,7 @@ class VanillaGANLoss(nn.Module):
         super().__init__()
         self.reduction = reduction
 
-    def forward_discriminator(
-        self, real_logits: torch.Tensor, fake_logits: torch.Tensor
-    ) -> torch.Tensor:
+    def forward_discriminator(self, real_logits: torch.Tensor, fake_logits: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
         Args:
@@ -35,12 +33,8 @@ class VanillaGANLoss(nn.Module):
         Returns:
             torch.Tensor: Discriminator loss.
         """
-        real_loss = F.binary_cross_entropy_with_logits(
-            real_logits, torch.ones_like(real_logits), reduction=self.reduction
-        )
-        fake_loss = F.binary_cross_entropy_with_logits(
-            fake_logits, torch.zeros_like(fake_logits), reduction=self.reduction
-        )
+        real_loss = F.binary_cross_entropy_with_logits(real_logits, torch.ones_like(real_logits), reduction=self.reduction)
+        fake_loss = F.binary_cross_entropy_with_logits(fake_logits, torch.zeros_like(fake_logits), reduction=self.reduction)
         return real_loss + fake_loss
 
     def forward_generator(self, fake_logits: torch.Tensor) -> torch.Tensor:
@@ -52,9 +46,7 @@ class VanillaGANLoss(nn.Module):
         Returns:
             torch.Tensor: Generator loss.
         """
-        return F.binary_cross_entropy_with_logits(
-            fake_logits, torch.ones_like(fake_logits), reduction=self.reduction
-        )
+        return F.binary_cross_entropy_with_logits(fake_logits, torch.ones_like(fake_logits), reduction=self.reduction)
 
     def forward(self, discriminator_pred: torch.Tensor, is_real: bool) -> torch.Tensor:
         """Forward pass through the VanillaGANLoss module.
@@ -66,14 +58,8 @@ class VanillaGANLoss(nn.Module):
         Returns:
             torch.Tensor: The GAN loss.
         """
-        target = (
-            torch.ones_like(discriminator_pred)
-            if is_real
-            else torch.zeros_like(discriminator_pred)
-        )
-        return F.binary_cross_entropy_with_logits(
-            discriminator_pred, target, reduction=self.reduction
-        )
+        target = torch.ones_like(discriminator_pred) if is_real else torch.zeros_like(discriminator_pred)
+        return F.binary_cross_entropy_with_logits(discriminator_pred, target, reduction=self.reduction)
 
 
 class LSGANLoss(nn.Module):
@@ -91,9 +77,7 @@ class LSGANLoss(nn.Module):
         super().__init__()
         self.reduction = reduction
 
-    def forward_discriminator(
-        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
-    ) -> torch.Tensor:
+    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
         Args:
@@ -118,9 +102,7 @@ class LSGANLoss(nn.Module):
         """
         return torch.mean((fake_pred - 1) ** 2)
 
-    def forward(
-        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
-    ) -> torch.Tensor:
+    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
         """Forward pass through the LSGANLoss module.
 
         Args:
@@ -150,9 +132,7 @@ class WassersteinGANLoss(nn.Module):
         """Initialize the WassersteinGANLoss module."""
         super().__init__()
 
-    def forward_discriminator(
-        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
-    ) -> torch.Tensor:
+    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
         Args:
@@ -175,9 +155,7 @@ class WassersteinGANLoss(nn.Module):
         """
         return -torch.mean(fake_pred)
 
-    def forward(
-        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
-    ) -> torch.Tensor:
+    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
         """Forward pass through the WassersteinGANLoss module.
 
         Args:
@@ -207,9 +185,7 @@ class HingeLoss(nn.Module):
         """Initialize the HingeLoss module."""
         super().__init__()
 
-    def forward_discriminator(
-        self, real_pred: torch.Tensor, fake_pred: torch.Tensor
-    ) -> torch.Tensor:
+    def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
         Args:
@@ -234,9 +210,7 @@ class HingeLoss(nn.Module):
         """
         return -fake_pred.mean()
 
-    def forward(
-        self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True
-    ) -> torch.Tensor:
+    def forward(self, pred: torch.Tensor, is_real: bool, for_discriminator: bool = True) -> torch.Tensor:
         """Forward pass through the HingeLoss module.
 
         Args:
@@ -309,9 +283,7 @@ class R1GradientPenalty(nn.Module):
             torch.Tensor: The R1 gradient penalty.
         """
         # Create gradient graph
-        grad_real = torch.autograd.grad(
-            outputs=real_outputs.sum(), inputs=real_data, create_graph=True, retain_graph=True
-        )[0]
+        grad_real = torch.autograd.grad(outputs=real_outputs.sum(), inputs=real_data, create_graph=True, retain_graph=True)[0]
 
         # Flatten the gradients
         grad_real = grad_real.view(grad_real.size(0), -1)

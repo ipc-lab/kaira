@@ -17,6 +17,10 @@ class DPSKModulator(BaseModulator):
     phases, making it robust to phase ambiguities.
     """
 
+    constellation: torch.Tensor  # Type annotation for the buffer
+    bit_patterns: torch.Tensor  # Type annotation for the buffer
+    _phase_memory: torch.Tensor  # Type annotation for the buffer
+
     def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
         """Initialize the DPSK modulator.
 
@@ -32,7 +36,7 @@ class DPSKModulator(BaseModulator):
 
         self.order = order
         self.gray_coding = gray_coding
-        self._bits_per_symbol = int(np.log2(order))
+        self._bits_per_symbol: int = int(np.log2(order))
 
         # Create constellation
         self._create_constellation()
@@ -131,9 +135,7 @@ class DPSKModulator(BaseModulator):
             label = "".join(str(int(bit)) for bit in bit_pattern)
             labels.append(label)
 
-        return plot_constellation(
-            self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs
-        )
+        return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -154,14 +156,12 @@ class DPSKDemodulator(BaseDemodulator):
         super().__init__()
         self.order = order
         self.gray_coding = gray_coding
-        self._bits_per_symbol = int(np.log2(order))
+        self._bits_per_symbol: int = int(np.log2(order))
 
         # Create reference modulator to access constellation
         self.modulator = DPSKModulator(order, gray_coding)
 
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate DPSK symbols.
 
         Args:
@@ -195,14 +195,10 @@ class DPSKDemodulator(BaseDemodulator):
 
             # Find closest angle (considering circular distance)
             expanded_z_angle = z_angle.unsqueeze(-1)  # (..., N-1, 1)
-            expanded_const_angle = const_angles.expand(
-                *([1] * len(batch_shape)), symbol_len - 1, self.order
-            )  # (..., N-1, order)
+            expanded_const_angle = const_angles.expand(*([1] * len(batch_shape)), symbol_len - 1, self.order)  # (..., N-1, order)
 
             # Calculate circular distance
-            angle_diff = torch.abs(
-                (expanded_z_angle - expanded_const_angle + np.pi) % (2 * np.pi) - np.pi
-            )
+            angle_diff = torch.abs((expanded_z_angle - expanded_const_angle + np.pi) % (2 * np.pi) - np.pi)
             closest_indices = torch.argmin(angle_diff, dim=-1)  # (..., N-1)
 
             # Map to bit patterns using the modulator's bit patterns
@@ -214,9 +210,7 @@ class DPSKDemodulator(BaseDemodulator):
 
             for i in range(self.order):
                 mask = (closest_indices == i).unsqueeze(-1)
-                bit_pattern = self.modulator.bit_patterns[i].expand(
-                    *batch_shape, symbol_len - 1, self._bits_per_symbol
-                )
+                bit_pattern = self.modulator.bit_patterns[i].expand(*batch_shape, symbol_len - 1, self._bits_per_symbol)
                 bits = torch.where(mask, bit_pattern, bits)
 
             return bits.reshape(*batch_shape, -1)
@@ -234,9 +228,7 @@ class DPSKDemodulator(BaseDemodulator):
                 effective_noise_var = effective_noise_var.expand(*batch_shape, symbol_len - 1)
 
             # Calculate LLRs for each bit position
-            llrs = torch.zeros(
-                (*batch_shape, symbol_len - 1, self._bits_per_symbol), device=y.device
-            )
+            llrs = torch.zeros((*batch_shape, symbol_len - 1, self._bits_per_symbol), device=y.device)
 
             for bit_idx in range(self._bits_per_symbol):
                 # Create masks for symbols where bit is 0 or 1
@@ -256,9 +248,7 @@ class DPSKDemodulator(BaseDemodulator):
 
             return llrs.reshape(*batch_shape, -1)
 
-    def _min_distance_to_points(
-        self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor
-    ) -> torch.Tensor:
+    def _min_distance_to_points(self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor) -> torch.Tensor:
         """Calculate minimum (negative) distance to constellation points for DPSK.
 
         Uses max-log approximation for computational efficiency.

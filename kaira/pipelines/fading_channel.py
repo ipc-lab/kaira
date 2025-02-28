@@ -78,9 +78,7 @@ class FadingChannelPipeline(BasePipeline):
         if hasattr(self.fading_channel, "configure"):
             self.fading_channel.configure(fading_type=fading_type.value, **self.channel_params)
 
-    def set_channel_params(
-        self, fading_type: Optional[FadingType] = None, **kwargs
-    ) -> "FadingChannelPipeline":
+    def set_channel_params(self, fading_type: Optional[FadingType] = None, **kwargs) -> "FadingChannelPipeline":
         """Update the fading channel parameters.
 
         Args:
@@ -97,9 +95,7 @@ class FadingChannelPipeline(BasePipeline):
 
         # Reconfigure fading channel with updated parameters
         if hasattr(self.fading_channel, "configure"):
-            self.fading_channel.configure(
-                fading_type=self.fading_type.value, **self.channel_params
-            )
+            self.fading_channel.configure(fading_type=self.fading_type.value, **self.channel_params)
 
         return self
 

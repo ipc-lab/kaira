@@ -38,9 +38,7 @@ def snr_linear_to_db(snr_linear: Union[float, torch.Tensor]) -> torch.Tensor:
     return 10 * torch.log10(snr_linear)
 
 
-def snr_to_noise_power(
-    signal_power: Union[float, torch.Tensor], snr_db: Union[float, torch.Tensor]
-) -> torch.Tensor:
+def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[float, torch.Tensor]) -> torch.Tensor:
     """Convert SNR in dB to noise power given a signal power.
 
     Args:
@@ -54,9 +52,7 @@ def snr_to_noise_power(
     return signal_power / snr_linear
 
 
-def noise_power_to_snr(
-    signal_power: Union[float, torch.Tensor], noise_power: Union[float, torch.Tensor]
-) -> torch.Tensor:
+def noise_power_to_snr(signal_power: Union[float, torch.Tensor], noise_power: Union[float, torch.Tensor]) -> torch.Tensor:
     """Calculate SNR in dB given signal and noise power.
 
     Args:
@@ -168,9 +164,7 @@ def add_noise_for_snr(
     return noisy_signal, noise
 
 
-def estimate_signal_power(
-    signal: torch.Tensor, dim: Optional[Union[int, Tuple[int, ...]]] = None, keepdim: bool = False
-) -> torch.Tensor:
+def estimate_signal_power(signal: torch.Tensor, dim: Optional[Union[int, Tuple[int, ...]]] = None, keepdim: bool = False) -> torch.Tensor:
     """Estimate the power of a signal.
 
     Args:

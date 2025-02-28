@@ -5,7 +5,7 @@ sequentially as a single unified constraint. This enables modular constraint cre
 composition for complex signal requirements.
 """
 
-from typing import List
+from typing import Sequence
 
 from kaira.pipelines.sequential import SequentialPipeline
 
@@ -38,11 +38,11 @@ class CompositeConstraint(BaseConstraint, SequentialPipeline):
         final result, as constraints may interact with each other.
     """
 
-    def __init__(self, constraints: List[BaseConstraint]) -> None:
+    def __init__(self, constraints: Sequence[BaseConstraint]) -> None:
         """Initialize a composite constraint with a list of component constraints.
 
         Args:
-            constraints (List[BaseConstraint]): List of constraint objects to apply in sequence
+            constraints (Sequence[BaseConstraint]): List of constraint objects to apply in sequence
 
         Raises:
             ValueError: If constraints list is empty
@@ -50,6 +50,7 @@ class CompositeConstraint(BaseConstraint, SequentialPipeline):
         if not constraints:
             raise ValueError("CompositeConstraint requires at least one constraint")
 
+        # Convert to List[Callable] for SequentialPipeline compatibility
         super().__init__(constraints)
 
     def add_constraint(self, constraint: BaseConstraint) -> None:
@@ -61,4 +62,4 @@ class CompositeConstraint(BaseConstraint, SequentialPipeline):
         if not isinstance(constraint, BaseConstraint):
             raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
 
-        self.add_step(str(len(self)), constraint)
+        self.add_step(constraint)

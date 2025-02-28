@@ -19,12 +19,7 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
     indicate greater perceptual similarity.
     """
 
-    def __init__(
-        self,
-        net_type: Literal["vgg", "alex", "squeeze"] = "alex",
-        normalize: bool = False,
-        **kwargs: Any
-    ) -> None:
+    def __init__(self, net_type: Literal["vgg", "alex", "squeeze"] = "alex", normalize: bool = False, **kwargs: Any) -> None:
         """Initialize the LPIPS module.
 
         Args:
@@ -35,9 +30,7 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
         super().__init__(name="LPIPS")
         self.net_type = net_type
         self.normalize = normalize
-        self.lpips = torchmetrics.image.lpip.LearnedPerceptualImagePatchSimilarity(
-            net_type, normalize=normalize, reduction=None, **kwargs
-        )
+        self.lpips = torchmetrics.image.lpip.LearnedPerceptualImagePatchSimilarity(net_type, normalize=normalize, reduction=None, **kwargs)
 
         self.register_buffer("sum_scores", torch.tensor(0.0))
         self.register_buffer("sum_sq", torch.tensor(0.0))

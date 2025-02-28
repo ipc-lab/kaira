@@ -25,9 +25,7 @@ class ContrastiveLoss(nn.Module):
         self.margin = margin
         self.temperature = temperature
 
-    def forward(
-        self, embeddings1: torch.Tensor, embeddings2: torch.Tensor, labels: torch.Tensor = None
-    ) -> torch.Tensor:
+    def forward(self, embeddings1: torch.Tensor, embeddings2: torch.Tensor, labels: torch.Tensor = None) -> torch.Tensor:
         """Forward pass through the ContrastiveLoss module.
 
         Args:
@@ -174,9 +172,7 @@ class InfoNCELoss(nn.Module):
         super().__init__()
         self.temperature = temperature
 
-    def forward(
-        self, query: torch.Tensor, key: torch.Tensor, queue: torch.Tensor = None
-    ) -> torch.Tensor:
+    def forward(self, query: torch.Tensor, key: torch.Tensor, queue: torch.Tensor = None) -> torch.Tensor:
         """Forward pass through the InfoNCELoss module.
 
         Args:
@@ -236,9 +232,7 @@ class CMCLoss(nn.Module):
         super().__init__()
         self.lambda_cmc = lambda_cmc
 
-    def forward(
-        self, x1: torch.Tensor, x2: torch.Tensor, proj1: nn.Module, proj2: nn.Module
-    ) -> torch.Tensor:
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor, proj1: nn.Module, proj2: nn.Module) -> torch.Tensor:
         """Forward pass through the CMCLoss module.
 
         Args:

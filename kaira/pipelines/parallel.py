@@ -10,9 +10,7 @@ class ParallelPipeline(ConfigurablePipeline):
     All steps receive the same input data and process independently.
     """
 
-    def __init__(
-        self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None
-    ):
+    def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None):
         """Initialize the parallel pipeline.
 
         Args:

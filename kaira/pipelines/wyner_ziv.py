@@ -174,9 +174,7 @@ class WynerZivPipeline(BasePipeline):
         self.decoder = decoder
         self.constraint = constraint
 
-    def forward(
-        self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None
-    ) -> Dict[str, torch.Tensor]:
+    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
         """Process source through the Wyner-Ziv coding system.
 
         Implements the full Wyner-Ziv coding pipeline:

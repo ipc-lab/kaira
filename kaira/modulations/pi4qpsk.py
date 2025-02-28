@@ -17,10 +17,16 @@ class Pi4QPSKModulator(BaseModulator):
     providing improved envelope properties.
     """
 
+    qpsk: torch.Tensor  # Type annotation for the buffer
+    qpsk_rotated: torch.Tensor  # Type annotation for the buffer
+    constellation: torch.Tensor  # Type annotation for the buffer
+    bit_patterns: torch.Tensor  # Type annotation for the buffer
+    _use_rotated: torch.Tensor  # Type annotation for the buffer
+
     def __init__(self) -> None:
         """Initialize the π/4-QPSK modulator."""
         super().__init__()
-        self._bits_per_symbol = 2
+        self._bits_per_symbol: int = 2
 
         # Create two QPSK constellations, one rotated by π/4
         self._create_constellations()
@@ -113,9 +119,7 @@ class Pi4QPSKModulator(BaseModulator):
             # Add each bit pattern twice (once for each constellation)
             labels.extend([bit_str + "⊙", bit_str + "⊗"])
 
-        return plot_constellation(
-            self.constellation, labels=labels, title="π/4-QPSK Constellation", **kwargs
-        )
+        return plot_constellation(self.constellation, labels=labels, title="π/4-QPSK Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -126,10 +130,12 @@ class Pi4QPSKModulator(BaseModulator):
 class Pi4QPSKDemodulator(BaseDemodulator):
     """Π/4-QPSK demodulator."""
 
+    _use_rotated: torch.Tensor  # Type annotation for the buffer
+
     def __init__(self) -> None:
         """Initialize the π/4-QPSK demodulator."""
         super().__init__()
-        self._bits_per_symbol = 2
+        self._bits_per_symbol: int = 2
 
         # Create reference modulator to access constellations
         self.modulator = Pi4QPSKModulator()
@@ -137,9 +143,7 @@ class Pi4QPSKDemodulator(BaseDemodulator):
         # Keep track of which constellation to use for demodulation
         self.register_buffer("_use_rotated", torch.tensor(False))
 
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate π/4-QPSK symbols.
 
         Args:

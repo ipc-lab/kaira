@@ -93,9 +93,7 @@ class BaseDemodulator(nn.Module):
         return self._bits_per_symbol
 
     @abstractmethod
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate symbols to bits or LLRs.
 
         Args:

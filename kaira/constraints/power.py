@@ -102,9 +102,7 @@ class AveragePowerConstraint(BaseConstraint):
         """
         dims = self.get_dimensions(x)
         x_norm = torch.norm(x, dim=dims, keepdim=True)
-        avg_power_sqrt = self.power_avg_factor * torch.sqrt(
-            torch.prod(torch.tensor(x.shape[1:]), 0)
-        )
+        avg_power_sqrt = self.power_avg_factor * torch.sqrt(torch.prod(torch.tensor(x.shape[1:]), 0))
         x = x * self.power_avg_factor * avg_power_sqrt / (x_norm + 1e-8)
         return x
 

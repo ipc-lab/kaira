@@ -167,9 +167,7 @@ class Modem(nn.Module):
         """
         return self.modulator(x)
 
-    def demodulate(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def demodulate(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate symbols to bits or LLRs.
 
         Args:

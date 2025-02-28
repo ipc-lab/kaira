@@ -423,9 +423,7 @@ class FlatFadingChannel(BaseChannel):
             # Generate log-normal shadowing in linear scale
             sigma_ln = self.shadow_sigma_db * (np.log(10) / 10)  # Convert from dB to natural log
             ln_mean = -(sigma_ln**2) / 2  # Ensure unit mean
-            shadow = torch.exp(
-                torch.randn(batch_size, num_blocks, device=device) * sigma_ln + ln_mean
-            )
+            shadow = torch.exp(torch.randn(batch_size, num_blocks, device=device) * sigma_ln + ln_mean)
 
             # Apply shadowing to fast fading component
             h = h_rayleigh * torch.complex(shadow, torch.zeros_like(shadow))
@@ -495,9 +493,7 @@ class FlatFadingChannel(BaseChannel):
         noise_power = self.avg_noise_power
         if self.snr_db is not None:
             signal_power = torch.mean(torch.abs(y) ** 2)
-            noise_power = (
-                snr_to_noise_power(signal_power, self.snr_db) * 0.5
-            )  # Split between real/imag
+            noise_power = snr_to_noise_power(signal_power, self.snr_db) * 0.5  # Split between real/imag
 
         noise_real = torch.randn_like(y.real) * torch.sqrt(noise_power)
         noise_imag = torch.randn_like(y.imag) * torch.sqrt(noise_power)
@@ -570,9 +566,7 @@ class NonlinearChannel(BaseChannel):
                 self.avg_noise_power = avg_noise_power
                 self.snr_db = None
             else:
-                raise ValueError(
-                    "If add_noise=True, either avg_noise_power or snr_db must be provided"
-                )
+                raise ValueError("If add_noise=True, either avg_noise_power or snr_db must be provided")
         else:
             self.avg_noise_power = None
             self.snr_db = None

@@ -68,8 +68,8 @@ class CombinedLoss(nn.Module):
             torch.Tensor: The combined loss between the input and the target.
         """
         loss = 0
-        for i, l in enumerate(self.losses):
-            loss += self.weights[i] * l(x, target)
+        for i, cur_loss in enumerate(self.losses):
+            loss += self.weights[i] * cur_loss(x, target)
         return loss
 
 
@@ -307,16 +307,8 @@ class GradientLoss(nn.Module):
     def __init__(self):
         """Initialize the GradientLoss module."""
         super().__init__()
-        self.sobel_x = (
-            torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32)
-            .unsqueeze(0)
-            .unsqueeze(0)
-        )
-        self.sobel_y = (
-            torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=torch.float32)
-            .unsqueeze(0)
-            .unsqueeze(0)
-        )
+        self.sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        self.sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=torch.float32).unsqueeze(0).unsqueeze(0)
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the GradientLoss module.
@@ -492,9 +484,7 @@ class FocalLoss(nn.Module):
         if inputs.shape[1] == 1 or len(inputs.shape) == 1:
             inputs = inputs.view(-1)
             targets = targets.view(-1)
-            bce_loss = F.binary_cross_entropy_with_logits(
-                inputs, targets.float(), reduction="none"
-            )
+            bce_loss = F.binary_cross_entropy_with_logits(inputs, targets.float(), reduction="none")
             pt = torch.exp(-bce_loss)
             focal_loss = (1 - pt) ** self.gamma * bce_loss
 
@@ -551,8 +541,6 @@ class ElasticLoss(nn.Module):
         squared_diff = diff**2
 
         # If abs_diff < beta, use L2 loss, else use L1 loss
-        loss = torch.where(
-            abs_diff < self.beta, 0.5 * squared_diff / self.beta, abs_diff - 0.5 * self.beta
-        )
+        loss = torch.where(abs_diff < self.beta, 0.5 * squared_diff / self.beta, abs_diff - 0.5 * self.beta)
 
         return loss.mean()

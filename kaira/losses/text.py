@@ -23,9 +23,7 @@ class CrossEntropyLoss(nn.Module):
             label_smoothing (float): Label smoothing value. Default is 0.0.
         """
         super().__init__()
-        self.ce = nn.CrossEntropyLoss(
-            weight=weight, ignore_index=ignore_index, label_smoothing=label_smoothing
-        )
+        self.ce = nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_index, label_smoothing=label_smoothing)
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the CrossEntropyLoss module.
@@ -173,15 +171,11 @@ class Word2VecLoss(nn.Module):
         pos_loss = F.logsigmoid(pos_score)
 
         # Negative samples
-        neg_samples = torch.randint(
-            0, self.vocab_size, (batch_size, self.n_negatives), device=input_idx.device
-        )
+        neg_samples = torch.randint(0, self.vocab_size, (batch_size, self.n_negatives), device=input_idx.device)
         neg_emb = self.out_embed(neg_samples)  # [batch_size, n_negatives, embed_dim]
 
         # Calculate negative scores
-        neg_score = torch.bmm(neg_emb, input_emb.unsqueeze(2)).squeeze(
-            2
-        )  # [batch_size, n_negatives]
+        neg_score = torch.bmm(neg_emb, input_emb.unsqueeze(2)).squeeze(2)  # [batch_size, n_negatives]
         neg_loss = F.logsigmoid(-neg_score).sum(1)
 
         # Total loss

@@ -18,7 +18,7 @@ from .image import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from .registry import create_metric, list_metrics, register_factory, register_metric
+from .registry import create_metric, list_metrics, register_metric
 from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio
 from .utils import compute_multiple_metrics, format_metric_results
 
@@ -42,7 +42,6 @@ __all__ = [
     "BLER",
     # Registry
     "register_metric",
-    "register_factory",
     "create_metric",
     "list_metrics",
     # Factories

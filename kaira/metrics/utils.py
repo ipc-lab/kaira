@@ -1,6 +1,5 @@
 """Utility functions for metrics."""
 
-import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -11,9 +10,7 @@ from torch import Tensor
 from .base import BaseMetric
 
 
-def compute_multiple_metrics(
-    metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor
-) -> Dict[str, Union[Tensor, Tuple[Tensor, Tensor]]]:
+def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor) -> Dict[str, Union[Tensor, Tuple[Tensor, Tensor]]]:
     """Compute multiple metrics at once.
 
     Args:
@@ -50,33 +47,6 @@ def format_metric_results(results: Dict[str, Any]) -> str:
         else:
             lines.append(f"{name}: {value:.4f}")
     return ", ".join(lines)
-
-
-def save_metrics_to_json(results: Dict[str, Any], filename: str) -> None:
-    """Save metrics results to a JSON file.
-
-    Args:
-        results (Dict[str, Any]): Dictionary of metric results
-        filename (str): Filename to save to
-    """
-    # Convert tensors to Python types
-    serializable_results = {}
-    for name, value in results.items():
-        if isinstance(value, tuple) and len(value) == 2:
-            mean, std = value
-            serializable_results[name] = {
-                "mean": float(
-                    mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean
-                ),
-                "std": float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std),
-            }
-        elif isinstance(value, torch.Tensor):
-            serializable_results[name] = float(value.detach().cpu().numpy())
-        else:
-            serializable_results[name] = value
-
-    with open(filename, "w") as f:
-        json.dump(serializable_results, f, indent=2)
 
 
 def visualize_metrics_comparison(
@@ -118,18 +88,10 @@ def visualize_metrics_comparison(
             value = results[metric]
             if isinstance(value, tuple) and len(value) == 2:
                 mean, std = value
-                means.append(
-                    float(mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean)
-                )
-                errors.append(
-                    float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std)
-                )
+                means.append(float(mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean))
+                errors.append(float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std))
             else:
-                means.append(
-                    float(
-                        value.detach().cpu().numpy() if isinstance(value, torch.Tensor) else value
-                    )
-                )
+                means.append(float(value.detach().cpu().numpy() if isinstance(value, torch.Tensor) else value))
                 errors.append(0)
 
         # Plot bars with error bars
@@ -154,9 +116,7 @@ def visualize_metrics_comparison(
     plt.show()
 
 
-def benchmark_metrics(
-    metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor, repeat: int = 10
-) -> Dict[str, Dict[str, float]]:
+def benchmark_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor, repeat: int = 10) -> Dict[str, Dict[str, float]]:
     """Benchmark execution time of metrics.
 
     Args:
@@ -263,7 +223,7 @@ def summarize_metrics_over_batches(metrics_history: List[Dict[str, Any]]) -> Dic
     import numpy as np
 
     # Initialize summary dict
-    summary = {}
+    summary: Dict[str, List[float]] = {}
 
     # Collect all metrics
     for batch_metrics in metrics_history:

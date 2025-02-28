@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional, Sequence
 
 from .base import ConfigurablePipeline
 
@@ -9,7 +9,7 @@ class SequentialPipeline(ConfigurablePipeline):
     Each step receives the output of the previous step as its input.
     """
 
-    def __init__(self, steps: Optional[List[Callable]] = None):
+    def __init__(self, steps: Optional[Sequence[Callable]] = None):
         """Initialize the sequential pipeline.
 
         Args:

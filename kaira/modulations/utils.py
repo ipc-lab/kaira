@@ -148,9 +148,7 @@ def plot_constellation(
     return fig
 
 
-def calculate_theoretical_ber(
-    modulation: str, snr_db: Union[float, List[float], np.ndarray, torch.Tensor]
-) -> np.ndarray:
+def calculate_theoretical_ber(modulation: str, snr_db: Union[float, List[float], np.ndarray, torch.Tensor]) -> np.ndarray:
     """Calculate theoretical Bit Error Rate (BER) for common modulations.
 
     Args:

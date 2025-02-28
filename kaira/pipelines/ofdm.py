@@ -121,9 +121,7 @@ class OFDMPipeline(BasePipeline):
         # Receiver side
         cp_removed = self.cp_remover(received, self.cp_length)
         freq_domain = self.fft(cp_removed, self.num_subcarriers)
-        channel_estimate = self.channel_estimator(
-            freq_domain, pilot_pattern=self.pilot_inserter.get_pattern()
-        )
+        channel_estimate = self.channel_estimator(freq_domain, pilot_pattern=self.pilot_inserter.get_pattern())
         equalized = self.equalizer(freq_domain, channel_estimate)
         demapped = self.demapper(equalized)
         decoded = self.decoder(demapped)

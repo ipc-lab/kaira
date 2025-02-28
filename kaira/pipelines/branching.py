@@ -16,9 +16,7 @@ class BranchingPipeline(BasePipeline):
         self.branches = {}  # Dict of name -> (condition, pipeline)
         self.default_branch = None
 
-    def add_branch(
-        self, condition: Callable[[Any], bool], pipeline: BasePipeline, name: Optional[str] = None
-    ):
+    def add_branch(self, condition: Callable[[Any], bool], pipeline: BasePipeline, name: Optional[str] = None):
         """Add a conditional branch with associated pipeline.
 
         Args:

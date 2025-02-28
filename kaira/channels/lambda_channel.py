@@ -4,6 +4,8 @@ This module contains the LambdaChannel class which allows users to create custom
 applying arbitrary functions to input signals.
 """
 
+from typing import Callable
+
 import torch
 
 from .base import BaseChannel
@@ -36,7 +38,7 @@ class LambdaChannel(BaseChannel):
         >>> channel = LambdaChannel(distort)
     """
 
-    def __init__(self, fn: callable):
+    def __init__(self, fn: Callable):
         super().__init__()
         self.fn = fn
 

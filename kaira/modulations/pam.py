@@ -16,9 +16,11 @@ class PAMModulator(BaseModulator):
     Maps groups of bits to amplitude levels for transmission.
     """
 
-    def __init__(
-        self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True
-    ) -> None:
+    levels: torch.Tensor  # Type annotation for the buffer
+    constellation: torch.Tensor  # Type annotation for the buffer
+    bit_patterns: torch.Tensor  # Type annotation for the buffer
+
+    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True) -> None:
         """Initialize the PAM modulator.
 
         Args:
@@ -35,7 +37,7 @@ class PAMModulator(BaseModulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol = int(np.log2(order))
+        self._bits_per_symbol: int = int(np.log2(order))
 
         # Create PAM constellation
         self._create_constellation()
@@ -117,9 +119,7 @@ class PAMModulator(BaseModulator):
             bit_str = "".join(str(int(bit)) for bit in bit_pattern)
             labels.append(bit_str)
 
-        return plot_constellation(
-            self.constellation, labels=labels, title=f"{self.order}-PAM Constellation", **kwargs
-        )
+        return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-PAM Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -130,9 +130,7 @@ class PAMModulator(BaseModulator):
 class PAMDemodulator(BaseDemodulator):
     """Pulse Amplitude Modulation (PAM) demodulator."""
 
-    def __init__(
-        self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True
-    ) -> None:
+    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True) -> None:
         """Initialize the PAM demodulator.
 
         Args:
@@ -144,14 +142,12 @@ class PAMDemodulator(BaseDemodulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol = int(np.log2(order))
+        self._bits_per_symbol: int = int(np.log2(order))
 
         # Create reference modulator to access constellation
         self.modulator = PAMModulator(order, gray_coding, normalize)
 
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate PAM symbols.
 
         Args:
@@ -170,9 +166,7 @@ class PAMDemodulator(BaseDemodulator):
         if noise_var is None:
             # Hard decision: find closest level
             expanded_y = y_real.unsqueeze(-1)  # (..., N, 1)
-            expanded_levels = levels.expand(
-                *([1] * len(batch_shape)), symbol_shape, self.order
-            )  # (..., N, order)
+            expanded_levels = levels.expand(*([1] * len(batch_shape)), symbol_shape, self.order)  # (..., N, order)
 
             # Calculate distances to levels
             distances = torch.abs(expanded_y - expanded_levels)
@@ -187,9 +181,7 @@ class PAMDemodulator(BaseDemodulator):
             for i in range(self.order):
                 bits = torch.where(
                     closest_indices.unsqueeze(-1) == i,
-                    self.modulator.bit_patterns[i].expand(
-                        *batch_shape, symbol_shape, self._bits_per_symbol
-                    ),
+                    self.modulator.bit_patterns[i].expand(*batch_shape, symbol_shape, self._bits_per_symbol),
                     bits,
                 )
 
@@ -204,9 +196,7 @@ class PAMDemodulator(BaseDemodulator):
                 noise_var = noise_var.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
-            llrs = torch.zeros(
-                (*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device
-            )
+            llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
 
             # For each bit position
             for bit_idx in range(self._bits_per_symbol):
@@ -227,9 +217,7 @@ class PAMDemodulator(BaseDemodulator):
 
             return llrs.reshape(*batch_shape, -1)
 
-    def _min_distance_to_levels(
-        self, y: torch.Tensor, levels: torch.Tensor, noise_var: torch.Tensor
-    ) -> torch.Tensor:
+    def _min_distance_to_levels(self, y: torch.Tensor, levels: torch.Tensor, noise_var: torch.Tensor) -> torch.Tensor:
         """Calculate minimum (negative) distance to a set of amplitude levels.
 
         Uses max-log approximation for computational efficiency.
@@ -254,8 +242,9 @@ class PAMDemodulator(BaseDemodulator):
         # Calculate distances
         distances = -torch.abs(y_expanded - levels_expanded) ** 2 / noise_var_expanded
 
-        # Return maximum (least negative) value
-        return torch.max(distances, dim=-1)[0]
+        # Return maximum (least negative) value - fix the type error by explicitly dealing with tuple return
+        max_values, _ = torch.max(distances, dim=-1)
+        return max_values
 
     @property
     def bits_per_symbol(self) -> int:

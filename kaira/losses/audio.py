@@ -169,14 +169,7 @@ class MultiResolutionSTFTLoss(nn.Module):
         super().__init__()
         assert len(fft_sizes) == len(hop_sizes) == len(win_lengths)
 
-        self.stft_losses = nn.ModuleList(
-            [
-                STFTLoss(
-                    fft_size=fft_size, hop_size=hop_size, win_length=win_length, window=window
-                )
-                for fft_size, hop_size, win_length in zip(fft_sizes, hop_sizes, win_lengths)
-            ]
-        )
+        self.stft_losses = nn.ModuleList([STFTLoss(fft_size=fft_size, hop_size=hop_size, win_length=win_length, window=window) for fft_size, hop_size, win_length in zip(fft_sizes, hop_sizes, win_lengths)])
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the MultiResolutionSTFTLoss module.
@@ -311,11 +304,7 @@ class FeatureMatchingLoss(nn.Module):
         # Register hooks
         handles = []
         for i, layer_idx in enumerate(self.layers):
-            handles.append(
-                list(self.model.children())[layer_idx].register_forward_hook(
-                    get_activation(f"layer_{i}")
-                )
-            )
+            handles.append(list(self.model.children())[layer_idx].register_forward_hook(get_activation(f"layer_{i}")))
 
         # Forward pass for input
         self.model(x)
@@ -327,11 +316,7 @@ class FeatureMatchingLoss(nn.Module):
         # Register hooks for target
         handles = []
         for i, layer_idx in enumerate(self.layers):
-            handles.append(
-                list(self.model.children())[layer_idx].register_forward_hook(
-                    get_target_activation(f"layer_{i}")
-                )
-            )
+            handles.append(list(self.model.children())[layer_idx].register_forward_hook(get_target_activation(f"layer_{i}")))
 
         # Forward pass for target
         self.model(target)
@@ -344,9 +329,7 @@ class FeatureMatchingLoss(nn.Module):
         loss = 0.0
         for i in range(len(self.layers)):
             layer_name = f"layer_{i}"
-            loss += self.weights[i] * F.l1_loss(
-                activations_x[layer_name], activations_target[layer_name]
-            )
+            loss += self.weights[i] * F.l1_loss(activations_x[layer_name], activations_target[layer_name])
 
         return loss
 

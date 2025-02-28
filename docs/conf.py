@@ -240,22 +240,11 @@ def skip_member(app, what, name, obj, skip, options):
         return True
 
     module = getattr(obj, "__module__", None)
-    if module and (
-        module.startswith("numpy.")
-        or module.startswith("torch.")
-        or module == "torch"
-        or module == "numpy"
-        or module == "torchmetrics"
-    ):
+    if module and (module.startswith("numpy.") or module.startswith("torch.") or module == "torch" or module == "numpy" or module == "torchmetrics"):
         return True
 
     # Skip specific problematic methods
-    if (
-        what == "method"
-        and name == "plot"
-        and hasattr(obj, "__module__")
-        and "torchmetrics.image.ssim" in getattr(obj, "__module__", "")
-    ):
+    if what == "method" and name == "plot" and hasattr(obj, "__module__") and "torchmetrics.image.ssim" in getattr(obj, "__module__", ""):
         return True
 
     return False

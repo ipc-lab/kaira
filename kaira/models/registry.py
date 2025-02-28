@@ -1,6 +1,6 @@
 """Model registry for Kaira."""
 
-from typing import Callable, Dict, Type
+from typing import Callable, Dict, Optional, Type
 
 from .base import BaseModel
 
@@ -25,11 +25,11 @@ class ModelRegistry:
         cls._models[name] = model_class
 
     @classmethod
-    def register_model(cls, name: str = None) -> Callable:
+    def register_model(cls, name: Optional[str] = None) -> Callable:
         """Decorator to register a model class in the registry.
 
         Args:
-            name (str, optional): The name to register the model under.
+            name (Optional[str], optional): The name to register the model under.
                                  If None, the class name will be used (converted to lowercase).
 
         Returns:
@@ -57,9 +57,7 @@ class ModelRegistry:
             KeyError: If the model is not registered.
         """
         if name not in cls._models:
-            raise KeyError(
-                f"Model '{name}' not found in registry. Available models: {list(cls._models.keys())}"
-            )
+            raise KeyError(f"Model '{name}' not found in registry. Available models: {list(cls._models.keys())}")
         return cls._models[name]
 
     @classmethod

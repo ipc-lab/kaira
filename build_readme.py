@@ -10,11 +10,7 @@ try:
                 try:
                     with open(include_file_path) as included_file:
                         included_text = included_file.read()
-                        output_text += (
-                            included_text.replace(".. literalinclude:: ../LICENSE", "")
-                            .replace("<../LICENSE>", "<LICENSE>")
-                            .replace(":class:", " ")
-                        )
+                        output_text += included_text.replace(".. literalinclude:: ../LICENSE", "").replace("<../LICENSE>", "<LICENSE>").replace(":class:", " ")
                 except FileNotFoundError:
                     print(f"Error: Included file '{include_file_path}' not found.")
                 except Exception as e:

@@ -16,9 +16,10 @@ class QAMModulator(BaseModulator):
     Maps groups of bits to constellation points with different amplitudes and phases.
     """
 
-    def __init__(
-        self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True
-    ) -> None:
+    constellation: torch.Tensor  # Type annotation for the buffer
+    bit_patterns: torch.Tensor  # Type annotation for the buffer
+
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True) -> None:
         """Initialize the QAM modulator.
 
         Args:
@@ -36,8 +37,8 @@ class QAMModulator(BaseModulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol = int(np.log2(order))
-        self._k = sqrt_order  # Number of points on each dimension
+        self._bits_per_symbol: int = int(np.log2(order))
+        self._k: int = sqrt_order  # Number of points on each dimension
 
         # Create QAM constellation
         self._create_constellation()
@@ -85,6 +86,7 @@ class QAMModulator(BaseModulator):
                 for j, bit in enumerate(bin_str):
                     bit_patterns[i, j] = int(bit)
 
+        # Register buffers directly with the computed values
         self.register_buffer("constellation", constellation)
         self.register_buffer("bit_patterns", bit_patterns)
 
@@ -129,9 +131,7 @@ class QAMModulator(BaseModulator):
             bit_str = "".join(str(int(bit)) for bit in bit_pattern)
             labels.append(bit_str)
 
-        return plot_constellation(
-            self.constellation, labels=labels, title=f"{self.order}-QAM Constellation", **kwargs
-        )
+        return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-QAM Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -142,9 +142,7 @@ class QAMModulator(BaseModulator):
 class QAMDemodulator(BaseDemodulator):
     """Quadrature Amplitude Modulation (QAM) demodulator."""
 
-    def __init__(
-        self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True
-    ) -> None:
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True) -> None:
         """Initialize the QAM demodulator.
 
         Args:
@@ -156,14 +154,12 @@ class QAMDemodulator(BaseDemodulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol = int(np.log2(order))
+        self._bits_per_symbol: int = int(np.log2(order))
 
         # Create reference modulator to access constellation
         self.modulator = QAMModulator(order, gray_coding, normalize)
 
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate QAM symbols.
 
         Args:
@@ -180,9 +176,7 @@ class QAMDemodulator(BaseDemodulator):
         if noise_var is None:
             # Hard decision: find closest constellation point
             expanded_y = y.unsqueeze(-1)  # (..., N, 1)
-            expanded_const = constellation.expand(
-                *([1] * len(batch_shape)), symbol_shape, self.order
-            )  # (..., N, order)
+            expanded_const = constellation.expand(*([1] * len(batch_shape)), symbol_shape, self.order)  # (..., N, order)
 
             # Calculate Euclidean distances in complex plane
             distances = torch.abs(expanded_y - expanded_const)
@@ -197,9 +191,7 @@ class QAMDemodulator(BaseDemodulator):
             for i in range(self.order):
                 bits = torch.where(
                     closest_indices.unsqueeze(-1) == i,
-                    self.modulator.bit_patterns[i].expand(
-                        *batch_shape, symbol_shape, self._bits_per_symbol
-                    ),
+                    self.modulator.bit_patterns[i].expand(*batch_shape, symbol_shape, self._bits_per_symbol),
                     bits,
                 )
 
@@ -214,9 +206,7 @@ class QAMDemodulator(BaseDemodulator):
                 noise_var = noise_var.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
-            llrs = torch.zeros(
-                (*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device
-            )
+            llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
 
             # For each bit position
             for bit_idx in range(self._bits_per_symbol):
@@ -237,9 +227,7 @@ class QAMDemodulator(BaseDemodulator):
 
             return llrs.reshape(*batch_shape, -1)
 
-    def _min_distance_to_points(
-        self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor
-    ) -> torch.Tensor:
+    def _min_distance_to_points(self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor) -> torch.Tensor:
         """Calculate minimum (negative) distance to constellation points.
 
         Uses max-log approximation for computational efficiency.

@@ -210,16 +210,12 @@ def verify_constraint(
         results["success"] = max_amp <= expected_value + tolerance
 
     else:
-        raise ValueError(
-            f"Unsupported property: {expected_property}. Supported values are: power, papr, amplitude"
-        )
+        raise ValueError(f"Unsupported property: {expected_property}. Supported values are: power, papr, amplitude")
 
     return results
 
 
-def apply_constraint_chain(
-    constraints: List[BaseConstraint], input_tensor: torch.Tensor, verbose: bool = False
-) -> torch.Tensor:
+def apply_constraint_chain(constraints: List[BaseConstraint], input_tensor: torch.Tensor, verbose: bool = False) -> torch.Tensor:
     """Apply a list of constraints in sequence and optionally print debug info.
 
     Applies multiple constraints to a tensor sequentially and provides optional
@@ -253,12 +249,7 @@ def apply_constraint_chain(
         if verbose:
             power_before = torch.mean(torch.abs(x_prev) ** 2).item()
             power_after = torch.mean(torch.abs(x) ** 2).item()
-            print(
-                f"[{i}] {constraint.__class__.__name__}: "
-                f"power before={power_before:.6f}, "
-                f"after={power_after:.6f}, "
-                f"change={power_after/power_before:.6f}x"
-            )
+            print(f"[{i}] {constraint.__class__.__name__}: " f"power before={power_before:.6f}, " f"after={power_after:.6f}, " f"change={power_after/power_before:.6f}x")
 
     return x
 

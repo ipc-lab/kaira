@@ -35,9 +35,7 @@ class BaseMetric(nn.Module, ABC):
         """
         pass
 
-    def compute_with_stats(
-        self, x: torch.Tensor, y: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def compute_with_stats(self, x: torch.Tensor, y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute metric with mean and standard deviation.
 
         Args:

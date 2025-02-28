@@ -27,7 +27,7 @@ repos:
     rev: 23.9.1 # Updated version
     hooks:
       - id: black
-        args: [--line-length, "99"]
+        args: [--line-length, "299"]
 
   # Python import sorting
   - repo: https://github.com/PyCQA/isort
@@ -78,7 +78,7 @@ repos:
     rev: v0.0.292
     hooks:
       - id: ruff
-        args: ["--fix", "--line-length=99"]
+        args: ["--fix", "--line-length=299"]
 
   # Type checking with mypy (fixed)
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -142,11 +142,11 @@ repos:
     rev: 1.7.0 # Updated version
     hooks:
       - id: nbqa-black
-        args: ["--line-length=99"]
+        args: ["--line-length=299"]
       - id: nbqa-isort
         args: ["--profile=black"]
       - id: nbqa-ruff # Changed from flake8 to ruff
-        args: ["--line-length=99"]
+        args: ["--line-length=299"]
 
   # Validate GitHub Actions workflows (new)
   - repo: https://github.com/python-jsonschema/check-jsonschema

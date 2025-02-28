@@ -17,6 +17,10 @@ class OQPSKModulator(BaseModulator):
     single-bit transitions and improved spectral properties.
     """
 
+    constellation: torch.Tensor  # Type annotation for the buffer
+    bit_patterns: torch.Tensor  # Type annotation for the buffer
+    _delayed_quad: torch.Tensor  # Type annotation for the buffer
+
     def __init__(self, normalize: bool = True) -> None:
         """Initialize the OQPSK modulator.
 
@@ -103,9 +107,7 @@ class OQPSKModulator(BaseModulator):
             bit_pattern = self.bit_patterns[i]
             labels.append(f"{int(bit_pattern[0])}{int(bit_pattern[1])}")
 
-        return plot_constellation(
-            self.constellation, labels=labels, title="OQPSK Constellation", **kwargs
-        )
+        return plot_constellation(self.constellation, labels=labels, title="OQPSK Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -126,9 +128,7 @@ class OQPSKDemodulator(BaseDemodulator):
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
 
-    def forward(
-        self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None
-    ) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate OQPSK symbols.
 
         Args:
@@ -151,9 +151,7 @@ class OQPSKDemodulator(BaseDemodulator):
             bits_imag = (y_imag >= 0).float() * (-1.0) + (y_imag < 0).float() * 1.0
             bits_imag = bits_imag * (-0.5) + 0.5  # Convert -1/1 to 0/1
 
-            return torch.cat(
-                [bits_real.reshape(*batch_shape, 1), bits_imag.reshape(*batch_shape, 1)], dim=-1
-            ).reshape(*batch_shape[:-1], -1)
+            return torch.cat([bits_real.reshape(*batch_shape, 1), bits_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
         else:
             # Soft decision: LLRs
             if not torch.is_tensor(noise_var):
@@ -168,9 +166,7 @@ class OQPSKDemodulator(BaseDemodulator):
             llr_real = 2 * y_real * self._normalization / noise_var
             llr_imag = 2 * y_imag * self._normalization / noise_var
 
-            return torch.cat(
-                [llr_real.reshape(*batch_shape, 1), llr_imag.reshape(*batch_shape, 1)], dim=-1
-            ).reshape(*batch_shape[:-1], -1)
+            return torch.cat([llr_real.reshape(*batch_shape, 1), llr_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
 
     @property
     def bits_per_symbol(self) -> int:
