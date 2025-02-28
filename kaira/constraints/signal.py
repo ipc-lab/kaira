@@ -6,7 +6,6 @@ comply with hardware limitations and regulatory requirements.
 """
 
 import torch
-import torch.nn.functional as F
 
 from .base import BaseConstraint
 

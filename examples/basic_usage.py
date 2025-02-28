@@ -13,7 +13,6 @@ This example demonstrates how to create a simple JSCC system for image transmiss
 #
 # First, we import the necessary libraries.
 
-import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,13 +20,11 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-import kaira
 from kaira.channels import AWGNChannel
 from kaira.constraints import AveragePowerConstraint
 from kaira.metrics import PSNR
 from kaira.models.image import DeepJSCCQ2Decoder, DeepJSCCQ2Encoder
 from kaira.pipelines import DeepJSCCPipeline
-from kaira.utils import snr_db_to_linear, to_tensor
 
 # %%
 # Image Loading and Preparation

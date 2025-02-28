@@ -173,7 +173,7 @@ def benchmark_metrics(
     results = {}
 
     for name, metric in metrics.items():
-        start_time = time.time()
+        time.time()
 
         # Warm-up run
         _ = metric(preds, targets)

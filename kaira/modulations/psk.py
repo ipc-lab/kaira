@@ -5,10 +5,9 @@ from typing import Literal, Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
-from .utils import generate_gray_code_mapping, plot_constellation
+from .utils import plot_constellation
 
 
 class BPSKModulator(BaseModulator):

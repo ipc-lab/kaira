@@ -21,18 +21,6 @@ Kaira — Wireless Communication Simulation Toolbox for PyTorch
    :target: https://dev.azure.com/ipc-lab/kaira/_build/latest?branchName=master
    :alt: Azure Pipelines Build Status
 
-.. image:: https://travis-ci.org/ipc-lab/kaira.svg?branch=master
-   :target: https://travis-ci.org/ipc-lab/kaira
-   :alt: Travis CI Build Status
-
-.. image:: https://ci.appveyor.com/api/projects/status/<APPVEYOR_ID>/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/ipc-lab/kaira/branch/master
-   :alt: AppVeyor Build Status
-
-.. image:: https://circleci.com/gh/ipc-lab/kaira.svg?style=svg
-   :target: https://circleci.com/gh/ipc-lab/kaira
-   :alt: CircleCI Status
-
 .. image:: https://coveralls.io/repos/github/ipc-lab/kaira/badge.svg?branch=master
    :target: https://coveralls.io/github/ipc-lab/kaira?branch=master
    :alt: Coverage Status

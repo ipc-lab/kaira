@@ -5,19 +5,14 @@ constraints in wireless communication systems. These utilities streamline the pr
 configuring common constraint combinations and verifying constraint effectiveness.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import torch
 
 from .antenna import PerAntennaPowerConstraint
 from .base import BaseConstraint
 from .composite import CompositeConstraint
-from .power import (
-    AveragePowerConstraint,
-    ComplexTotalPowerConstraint,
-    PAPRConstraint,
-    TotalPowerConstraint,
-)
+from .power import ComplexTotalPowerConstraint, PAPRConstraint, TotalPowerConstraint
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
 
 # Factory functions for common constraint combinations

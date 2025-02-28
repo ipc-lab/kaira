@@ -5,7 +5,7 @@ communications systems simulation.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TypeVar, Union
+from typing import Any, Dict, TypeVar
 
 import torch
 from torch import nn

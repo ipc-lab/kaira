@@ -17,13 +17,13 @@ The implementation follows the key principles of Wyner-Ziv coding:
 4. Reconstruction at decoder using both received syndromes and side information
 """
 
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
 import torch
 import torch.nn as nn
 
 from .base import BaseChannel, BaseConstraint, BaseModel, BasePipeline
+
 
 # TODO: move to datagenerator
 class WynerZivCorrelationModel(nn.Module):

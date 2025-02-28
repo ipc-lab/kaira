@@ -1,14 +1,13 @@
 """Pulse Amplitude Modulation (PAM) schemes."""
 
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
-from .utils import binary_to_gray, gray_to_binary, plot_constellation
+from .utils import binary_to_gray, plot_constellation
 
 
 class PAMModulator(BaseModulator):
@@ -48,7 +47,7 @@ class PAMModulator(BaseModulator):
 
         # Reorder levels if using Gray coding
         if self.gray_coding:
-            indices = torch.arange(self.order)
+            torch.arange(self.order)
             gray_indices = torch.tensor([binary_to_gray(i) for i in range(self.order)])
             _, sorted_indices = torch.sort(gray_indices)
             levels = base_levels[sorted_indices]

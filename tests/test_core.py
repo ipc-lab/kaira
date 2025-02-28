@@ -1,6 +1,5 @@
 """Tests for core modules."""
 import unittest
-from unittest.mock import MagicMock
 
 import torch
 from torch import nn

@@ -2,7 +2,6 @@
 
 from typing import Any, Tuple
 
-import torch
 import torchmetrics.image
 from torch import Tensor
 

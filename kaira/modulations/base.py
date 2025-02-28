@@ -1,7 +1,7 @@
 """Base classes for modulation and demodulation schemes."""
 
-from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Union
+from abc import abstractmethod
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn

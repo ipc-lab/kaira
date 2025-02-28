@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-from ..base import BaseModel
 from ..registry import ModelRegistry
 
 

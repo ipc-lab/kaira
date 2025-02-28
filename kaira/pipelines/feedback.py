@@ -4,7 +4,7 @@ This module contains the FeedbackChannelPipeline, which models a communication s
 feedback path from the receiver to the transmitter.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict
 
 import torch
 import torch.nn as nn

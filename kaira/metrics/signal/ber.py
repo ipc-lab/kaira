@@ -1,6 +1,6 @@
 """Bit Error Rate (BER) metric."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 from torch import Tensor

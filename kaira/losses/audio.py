@@ -291,8 +291,6 @@ class FeatureMatchingLoss(nn.Module):
         Returns:
             torch.Tensor: The feature matching loss.
         """
-        x_features = []
-        target_features = []
 
         # Register hooks to capture activations
         activations_x = {}

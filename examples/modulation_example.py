@@ -67,17 +67,17 @@ def visualization_example():
 
     # Visualize constellations
     visualizer = ConstellationVisualizer(qam16_mod)
-    fig = visualizer.plot_basic()
+    visualizer.plot_basic()
     plt.savefig("16qam_constellation.png")
     print("Saved 16-QAM constellation plot to 16qam_constellation.png")
 
     # Visualize with noise
-    fig_noise = visualizer.plot_with_noise(snr_db=15)
+    visualizer.plot_with_noise(snr_db=15)
     plt.savefig("16qam_constellation_noisy.png")
     print("Saved noisy 16-QAM constellation plot to 16qam_constellation_noisy.png")
 
     # Visualize with phase noise
-    fig_phase = visualizer.plot_with_phase_noise(phase_std=0.1)
+    visualizer.plot_with_phase_noise(phase_std=0.1)
     plt.savefig("16qam_constellation_phase_noise.png")
     print("Saved phase-noisy 16-QAM constellation plot to 16qam_constellation_phase_noise.png")
 

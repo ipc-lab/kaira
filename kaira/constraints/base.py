@@ -6,7 +6,7 @@ can be applied to signals in a PyTorch-compatible way.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Tuple
 
 import torch
 from torch import nn

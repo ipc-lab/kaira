@@ -1,14 +1,13 @@
 """Quadrature Amplitude Modulation (QAM) schemes."""
 
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
-from .utils import binary_to_gray, gray_to_binary, plot_constellation
+from .utils import binary_to_gray, plot_constellation
 
 
 class QAMModulator(BaseModulator):

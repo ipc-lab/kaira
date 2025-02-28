@@ -54,10 +54,9 @@ Examples:
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type
 
 import torch
-from torch import nn
 
 from .base import BaseMetric
 from .composite import CompositeMetric

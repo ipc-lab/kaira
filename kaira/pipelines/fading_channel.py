@@ -5,7 +5,7 @@ various types of fading channels (Rayleigh, Rician, Nakagami, etc.)
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn

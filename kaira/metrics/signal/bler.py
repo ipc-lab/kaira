@@ -1,6 +1,6 @@
 """Block Error Rate (BLER) metric for communication systems."""
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import torch
 from torch import Tensor

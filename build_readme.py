@@ -1,6 +1,3 @@
-import os
-import sys
-
 output_text = ""
 template_file_path = "README_template.rst"
 

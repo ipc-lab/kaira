@@ -1,11 +1,10 @@
 """Offset Quadrature Phase-Shift Keying (OQPSK) modulation scheme."""
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
@@ -62,7 +61,7 @@ class OQPSKModulator(BaseModulator):
 
         # Reshape to pairs of bits
         x_reshaped = x.reshape(*batch_shape, -1, 2)
-        symbol_len = x_reshaped.shape[-2]
+        x_reshaped.shape[-2]
 
         # Separate in-phase and quadrature bits
         in_phase_bits = x_reshaped[..., 0]  # (..., N)

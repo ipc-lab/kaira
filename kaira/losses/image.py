@@ -4,7 +4,6 @@ This module contains various loss functions for training communication systems, 
 LPIPS loss, and SSIM loss.
 """
 
-import math
 
 import torch
 import torch.nn as nn

@@ -4,7 +4,6 @@ This module provides identity modulators and demodulators that simply pass data 
 modification. These are useful as placeholders or for testing pipelines without actual modulation.
 """
 
-from typing import Optional
 
 import torch
 

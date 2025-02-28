@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from compressai.layers import (
     AttentionBlock,
@@ -8,6 +7,7 @@ from compressai.layers import (
 )
 
 from kaira.models.components.afmodule import AFModule
+
 from ..base import BaseModel
 from ..registry import ModelRegistry
 
@@ -55,7 +55,7 @@ class DeepJSCCQ2Encoder(BaseModel):
         Returns:
             float: The bandwidth ratio.
         """
-        return 1/4  # Downsampling 2x twice
+        return 1 / 4  # Downsampling 2x twice
 
     def forward(self, x):
         """Forward pass through the encoder.

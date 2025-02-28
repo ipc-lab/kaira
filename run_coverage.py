@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Run pytest with coverage and generate reports."""
-import os
 import subprocess  # nosec B404 - Usage is deliberate and controlled
 import sys
 

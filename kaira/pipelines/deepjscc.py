@@ -4,7 +4,6 @@ This module contains the DeepJSCCPipeline, which is a pipeline for image compres
 transmission using Deep Joint Source-Channel Coding (DeepJSCC).
 """
 
-import torch.nn as nn
 
 from .base import BaseChannel, BaseConstraint, BaseModel
 from .sequential import SequentialPipeline

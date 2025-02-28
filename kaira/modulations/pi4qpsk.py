@@ -5,7 +5,6 @@ from typing import Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
