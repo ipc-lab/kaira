@@ -25,7 +25,7 @@ import torch.nn as nn
 
 from .base import BaseChannel, BaseConstraint, BaseModel, BasePipeline
 
-
+# TODO: move to datagenerator
 class WynerZivCorrelationModel(nn.Module):
     """Model for simulating correlation between source and side information.
 

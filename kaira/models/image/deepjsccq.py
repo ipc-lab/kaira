@@ -8,8 +8,10 @@ from compressai.layers import (
 )
 
 from .base import BaseModel
+from ..registry import ModelRegistry
 
 
+@ModelRegistry.register_model()
 class DeepJSCCQEncoder(BaseModel):
     """DeepJSCCQ Encoder Module.
 
@@ -56,7 +58,8 @@ class DeepJSCCQEncoder(BaseModel):
         return x
 
 
-class DeepJSCCQDecoder(nn.Module):
+@ModelRegistry.register_model()
+class DeepJSCCQDecoder(BaseModel):
     """DeepJSCCQ Decoder Module.
 
     This module decodes a latent representation into an image using a series of convolutional

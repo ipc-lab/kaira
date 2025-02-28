@@ -1,7 +1,11 @@
 import torch
 from torch import nn
 
+from ..base import BaseModel
+from ..registry import ModelRegistry
 
+
+@ModelRegistry.register_model()
 class AFModule(nn.Module):
     """
     AFModule: Activation-Normalization-Linear Module.

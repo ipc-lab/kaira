@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from compressai.layers import (
     AttentionBlock,
@@ -7,9 +8,12 @@ from compressai.layers import (
 )
 
 from kaira.models.components.afmodule import AFModule
+from ..base import BaseModel
+from ..registry import ModelRegistry
 
 
-class DeepJSCCQ2Encoder(nn.Module):
+@ModelRegistry.register_model()
+class DeepJSCCQ2Encoder(BaseModel):
     """DeepJSCCQ2 Encoder Module.
 
     This module encodes an image into a latent representation using a series of convolutional
@@ -44,6 +48,15 @@ class DeepJSCCQ2Encoder(nn.Module):
             ]
         )
 
+    @property
+    def bandwidth_ratio(self) -> float:
+        """Calculate the bandwidth ratio of the model.
+
+        Returns:
+            float: The bandwidth ratio.
+        """
+        return 1/4  # Downsampling 2x twice
+
     def forward(self, x):
         """Forward pass through the encoder.
 
@@ -69,7 +82,8 @@ class DeepJSCCQ2Encoder(nn.Module):
         return x
 
 
-class DeepJSCCQ2Decoder(nn.Module):
+@ModelRegistry.register_model()
+class DeepJSCCQ2Decoder(BaseModel):
     """DeepJSCCQ2 Decoder Module.
 
     This module decodes a latent representation into an image using a series of convolutional
@@ -104,6 +118,15 @@ class DeepJSCCQ2Decoder(nn.Module):
                 AFModule(N=3, csi_length=csi_length),
             ]
         )
+
+    @property
+    def bandwidth_ratio(self) -> float:
+        """Calculate the bandwidth ratio of the model.
+
+        Returns:
+            float: The bandwidth ratio.
+        """
+        return 4.0  # Upsampling 2x twice
 
     def forward(self, x):
         """Forward pass through the decoder.
