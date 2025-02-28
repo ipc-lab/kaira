@@ -20,29 +20,27 @@ Pipeline Categories:
 
 # Base pipeline class only
 from .base import BasePipeline
-
-# Generic pipelines
-from .sequential import SequentialPipeline
-from .parallel import ParallelPipeline
 from .branching import BranchingPipeline
 
 # Communication system pipelines
 from .deepjscc import DeepJSCCPipeline
-from .wyner_ziv import WynerZivPipeline, WynerZivCorrelationModel
-from .ofdm import OFDMPipeline
-from .mimo import MIMOPipeline
 from .fading_channel import FadingChannelPipeline, FadingType
 from .feedback import FeedbackChannelPipeline
+from .mimo import MIMOPipeline
+from .ofdm import OFDMPipeline
+from .parallel import ParallelPipeline
+
+# Generic pipelines
+from .sequential import SequentialPipeline
+from .wyner_ziv import WynerZivCorrelationModel, WynerZivPipeline
 
 __all__ = [
     # Base pipeline class
     "BasePipeline",
-    
     # Generic pipelines
     "SequentialPipeline",
     "ParallelPipeline",
     "BranchingPipeline",
-    
     # Communication system pipelines
     "DeepJSCCPipeline",
     "WynerZivPipeline",

@@ -5,9 +5,12 @@ communications systems simulation.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, TypeVar, Union
 
 import torch
 from torch import nn
+
+T = TypeVar("T", bound="BaseChannel")
 
 
 class BaseChannel(nn.Module, ABC):
@@ -26,16 +29,6 @@ class BaseChannel(nn.Module, ABC):
     - Combined with neural networks
     - Run on GPUs when available
     - Included in larger end-to-end communications system models
-
-    Example:
-        >>> class MyCustomChannel(BaseChannel):
-        ...     def __init__(self, param):
-        ...         super().__init__()
-        ...         self.param = param
-        ...
-        ...     def forward(self, x):
-        ...         # Apply channel effects to input signal x
-        ...         return x + self.param * torch.randn_like(x)
     """
 
     @abstractmethod
@@ -53,3 +46,61 @@ class BaseChannel(nn.Module, ABC):
             torch.Tensor: The output signal after passing through the channel.
         """
         pass
+
+    def get_config(self) -> Dict[str, Any]:
+        """Get a dictionary of the channel's configuration.
+
+        This method returns a dictionary containing the channel's parameters,
+        which can be used to recreate the channel instance.
+
+        Returns:
+            Dict[str, Any]: Dictionary of parameter names and values
+        """
+        config = {}
+        for key, value in self.__dict__.items():
+            if not key.startswith("_"):
+                config[key] = value
+        return config
+
+
+class LambdaChannel(BaseChannel):
+    """Customizable channel that applies user-defined functions to signals.
+
+    This channel provides a flexible way to implement custom channel behavior by
+    wrapping any arbitrary function. It can be used to model specific distortions,
+    transformations, or to combine multiple channel effects into a single model.
+
+    Mathematical Model:
+        y = f(x)
+        where f is any user-defined function
+
+    Args:
+        fn (callable): The function to apply to the input signal.
+            Must accept a torch.Tensor and return a torch.Tensor of compatible shape.
+
+    Example:
+        >>> # Create a custom channel that doubles the amplitude
+        >>> amplifier = LambdaChannel(lambda x: 2 * x)
+        >>> x = torch.ones(10)
+        >>> y = amplifier(x)  # y will contain all 2's
+
+        >>> # Create a channel that adds specific frequency distortion
+        >>> def distort(x):
+        ...     return x + 0.1 * torch.sin(2 * math.pi * 0.05 * torch.arange(len(x)))
+        >>> channel = LambdaChannel(distort)
+    """
+
+    def __init__(self, fn: callable):
+        super().__init__()
+        self.fn = fn
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Transform input signal using the user-defined function.
+
+        Args:
+            x (torch.Tensor): Input signal tensor
+
+        Returns:
+            torch.Tensor: Transformed output signal
+        """
+        return self.fn(x)

@@ -1,3 +1,4 @@
+.todo
 dist/
 __pycache__/
 .coverage

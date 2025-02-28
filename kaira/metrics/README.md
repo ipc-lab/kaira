@@ -28,4 +28,3 @@ The metrics module in Kaira is designed with the following features:
 ## Usage Examples
 
 ### Basic Usage
-
