@@ -2,10 +2,10 @@
 
 from typing import List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import torch
-from scipy import special
+from scipy import special  # type: ignore
 
 
 def binary_to_gray(num: int) -> int:
@@ -46,17 +46,17 @@ def binary_array_to_gray(binary: Union[List[int], np.ndarray, torch.Tensor]) -> 
         Gray-coded array
     """
     if isinstance(binary, torch.Tensor):
-        binary = binary.detach().cpu().numpy()
-    elif isinstance(binary, list):
-        binary = np.array(binary)
+        binary_np = binary.detach().cpu().numpy()
+    else:
+        binary_np = np.asarray(binary)
 
     # Convert to integers if the array contains decimals
-    if binary.dtype == np.float32 or binary.dtype == np.float64:
-        binary = binary.astype(np.int64)
+    if binary_np.dtype == np.float32 or binary_np.dtype == np.float64:
+        binary_np = binary_np.astype(np.int64)
 
     # Convert each number to Gray code
-    gray = np.zeros_like(binary)
-    for i, num in enumerate(binary):
+    gray = np.zeros_like(binary_np)
+    for i, num in enumerate(binary_np):
         gray[i] = binary_to_gray(num)
 
     return gray
@@ -71,18 +71,19 @@ def gray_array_to_binary(gray: Union[List[int], np.ndarray, torch.Tensor]) -> np
     Returns:
         Binary array
     """
+
     if isinstance(gray, torch.Tensor):
-        gray = gray.detach().cpu().numpy()
-    elif isinstance(gray, list):
-        gray = np.array(gray)
+        gray_np = gray.detach().cpu().numpy()
+    else:
+        gray_np = np.asarray(gray)
 
     # Convert to integers if the array contains decimals
-    if gray.dtype == np.float32 or gray.dtype == np.float64:
-        gray = gray.astype(np.int64)
+    if gray_np.dtype == np.float32 or gray_np.dtype == np.float64:
+        gray_np = gray_np.astype(np.int64)
 
     # Convert each number from Gray code to binary
-    binary = np.zeros_like(gray)
-    for i, num in enumerate(gray):
+    binary = np.zeros_like(gray_np)
+    for i, num in enumerate(gray_np):
         binary[i] = gray_to_binary(num)
 
     return binary

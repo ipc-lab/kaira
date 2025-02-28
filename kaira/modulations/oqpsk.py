@@ -2,7 +2,7 @@
 
 from typing import Optional, Union
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore  # type: ignore
 import numpy as np
 import torch
 
@@ -154,7 +154,7 @@ class OQPSKDemodulator(BaseDemodulator):
             return torch.cat([bits_real.reshape(*batch_shape, 1), bits_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
         else:
             # Soft decision: LLRs
-            if not torch.is_tensor(noise_var):
+            if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
 
             # Handle broadcasting dimensions for noise_var

@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional, Union
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore  # type: ignore
 import numpy as np
 import torch
 
@@ -216,14 +216,16 @@ class DPSKDemodulator(BaseDemodulator):
             return bits.reshape(*batch_shape, -1)
         else:
             # Soft decision
-            if not torch.is_tensor(noise_var):
+            if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
 
             # For differential demodulation with noise, the effective noise variance is doubled
             # because noise affects both current and previous symbols
             effective_noise_var = 2.0 * noise_var
 
-            # Handle broadcasting dimensions for effective_noise_var
+            if not isinstance(effective_noise_var, torch.Tensor):
+                effective_noise_var = torch.tensor(effective_noise_var, device=y.device)
+
             if effective_noise_var.dim() == 0:  # scalar
                 effective_noise_var = effective_noise_var.expand(*batch_shape, symbol_len - 1)
 

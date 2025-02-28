@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional, Union
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import torch
 
@@ -48,7 +48,7 @@ class BPSKModulator(BaseModulator):
         Returns:
             Matplotlib figure object
         """
-        return plot_constellation(self.constellation, labels=torch.tensor([0, 1]), title="BPSK Constellation", **kwargs)
+        return plot_constellation(self.constellation, labels=["0", "1"], title="BPSK Constellation", **kwargs)
 
     @property
     def bits_per_symbol(self) -> int:
@@ -81,7 +81,7 @@ class BPSKDemodulator(BaseDemodulator):
             return (y_real >= 0).float()
         else:
             # Support both scalar and tensor noise variance
-            if not torch.is_tensor(noise_var):
+            if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
 
             # Soft decision: LLR calculation
@@ -213,7 +213,7 @@ class QPSKDemodulator(BaseDemodulator):
             return torch.cat([bits_real.reshape(*batch_shape, 1), bits_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
         else:
             # Support both scalar and tensor noise variance
-            if not torch.is_tensor(noise_var):
+            if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
 
             # Handle broadcasting dimensions for noise_var
@@ -408,7 +408,7 @@ class PSKDemodulator(BaseDemodulator):
             return bits.reshape(*batch_shape, -1)
         else:
             # Soft decision: LLR calculation
-            if not torch.is_tensor(noise_var):
+            if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
 
             # Handle broadcasting dimensions for noise_var

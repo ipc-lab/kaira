@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import torch
 from torch import Tensor
@@ -27,7 +27,7 @@ def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targ
             results[name] = metric.compute_with_stats(preds, targets)
         else:
             results[name] = metric(preds, targets)
-    return results
+    return results  # type: ignore
 
 
 def format_metric_results(results: Dict[str, Any]) -> str:

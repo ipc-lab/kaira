@@ -26,7 +26,6 @@ class BaseModulator(nn.Module):
         """
         super().__init__()
         self._bits_per_symbol = bits_per_symbol
-        self.constellation = None
 
     @property
     def bits_per_symbol(self) -> int:
