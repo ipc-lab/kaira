@@ -1,4 +1,4 @@
-.. _makefile:
+.. _makefile-doc:
 
 Makefile Documentation
 ======================
@@ -126,7 +126,7 @@ The ``lint`` target runs linting checks on the codebase to identify potential is
         ./scripts/lint.sh
 
 coverage
-^^^^^^^
+^^^^^^^^
 The ``coverage`` target runs tests with coverage analysis to measure the extent of test coverage across the codebase.
 
 .. code-block:: make
@@ -153,7 +153,7 @@ The ``build-docs`` target generates HTML documentation from RST files, making th
         ./scripts/build_docs.sh
 
 build-readme
-^^^^^^^^^^^
+^^^^^^^^^^^^
 The ``build-readme`` target builds the README.rst file from a template, ensuring the project's front-facing documentation stays updated.
 
 .. code-block:: make
@@ -181,7 +181,7 @@ Before submitting a pull request:
     make clean && make test-full && make coverage && make build-docs && make build-readme && make deploy
 
 Development Workflow Example
----------------------------
+----------------------------
 Here's a typical workflow for Kaira development:
 
 1. Sync with the main branch:
