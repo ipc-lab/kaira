@@ -10,10 +10,6 @@
 
 .. include:: docs/quick_links.rst
 
-.. include:: docs/support.rst
-
-.. include:: docs/versioning.rst
-
 .. include:: docs/license.rst
 
 .. include:: docs/citing.rst

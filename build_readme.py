@@ -10,7 +10,12 @@ try:
                 try:
                     with open(include_file_path) as included_file:
                         included_text = included_file.read()
-                        output_text += included_text.replace(".. literalinclude:: ../LICENSE", "").replace("<../LICENSE>", "<LICENSE>").replace(":class:", " ")
+                        
+                        if include_file_path == "docs/license.rst":
+                            included_text = included_text.split("\n")[0]
+                            included_text += "\n"
+                            
+                        output_text += included_text.replace(":class:", " ")
                 except FileNotFoundError:
                     print(f"Error: Included file '{include_file_path}' not found.")
                 except Exception as e:

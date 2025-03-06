@@ -25,18 +25,6 @@ Kaira — Wireless Communication Simulation Toolbox for PyTorch
    :target: https://dev.azure.com/ipc-lab/kaira/_build/latest?branchName=master
    :alt: Azure Pipelines Build Status
 
-.. image:: https://travis-ci.org/ipc-lab/kaira.svg?branch=master
-   :target: https://travis-ci.org/ipc-lab/kaira
-   :alt: Travis CI Build Status
-
-.. image:: https://ci.appveyor.com/api/projects/status/<APPVEYOR_ID>/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/ipc-lab/kaira/branch/master
-   :alt: AppVeyor Build Status
-
-.. image:: https://circleci.com/gh/ipc-lab/kaira.svg?style=svg
-   :target: https://circleci.com/gh/ipc-lab/kaira
-   :alt: CircleCI Status
-
 .. image:: https://coveralls.io/repos/github/ipc-lab/kaira/badge.svg?branch=master
    :target: https://coveralls.io/github/ipc-lab/kaira?branch=master
    :alt: Coverage Status
@@ -206,7 +194,6 @@ Quick Links
 ===========
 
 - **GitHub Repository:** `https://github.com/ipc-lab/kaira/ <https://github.com/ipc-lab/kaira/>`_
-- **Documentation:** `https://kaira.readthedocs.io/ <https://kaira.readthedocs.io/>`_
 - **PyPI Package:** `https://pypi.org/project/kaira <https://pypi.org/project/kaira/>`_
 - **Travis CI:** `https://travis-ci.com/github/ipc-lab/kaira <https://travis-ci.com/github/ipc-lab/kaira>`_
 - **Azure Pipelines:** `https://dev.azure.com/ipc-lab/kaira/ <https://dev.azure.com/ipc-lab/kaira/>`_
@@ -219,31 +206,12 @@ Support
 -------
 Get help and connect with the Kaira community through these channels:
 
-* `Documentation <https://kaira.readthedocs.io/>`_
-* `GitHub Issues <https://github.com/yourusername/kaira/issues>`_ - Bug reports and feature requests
-* `Discussions <https://github.com/yourusername/kaira/discussions>`_ - General questions and community discussions
-
-Versioning
-==========
-
-Kaira adheres to [Semantic Versioning](http://semver.org/). Version numbers follow the pattern `major.minor.patch`, where:
-
-- **major** versions introduce incompatible API changes,
-- **minor** versions add functionality in a backwards-compatible manner,
-- **patch** versions include backwards-compatible bug fixes.
-
-This systematic approach ensures clear communication of changes and helps maintain compatibility.
+* `Documentation <https://kaira.readthedocs.io/>`_ - Official project documentation
+* `GitHub Issues <https://github.com/ipc-lab/kaira/issues>`_ - Bug reports and feature requests
+* `Discussions <https://github.com/ipc-lab/kaira/discussions>`_ - General questions and community discussions
+* `Gitter Chat <https://gitter.im/ipc-lab/kaira>`_ - Live chat with developers and users
 
 License
-=======
-
-Kaira is distributed under the terms of the `MIT License <https://github.com/ipc-lab/kaira/blob/master/LICENSE>`_.
-
-The full text of the license is shown below:
-
-
-   :language: text
-   :linenos:
 
 Citing Kaira
 ============
