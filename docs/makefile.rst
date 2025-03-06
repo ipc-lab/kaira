@@ -38,6 +38,11 @@ The Makefile contains the following targets:
 - **sync**: Update the current branch with changes from the main branch.
 - **test**: Run tests excluding slow ones.
 - **test-full**: Run all tests.
+- **lint**: Run linting checks on the codebase.
+- **coverage**: Run tests with coverage analysis.
+- **deploy**: Deploy the package to PyPI.
+- **build-docs**: Generate HTML documentation.
+- **build-readme**: Build README.rst from template.
 
 Targets in Detail
 -----------------
@@ -111,8 +116,53 @@ The ``test-full`` target runs all available tests, including the slow ones, for 
     test-full: ## Run all tests
         pytest
 
+lint
+^^^^
+The ``lint`` target runs linting checks on the codebase to identify potential issues, style violations, and other code quality concerns.
+
+.. code-block:: make
+
+    lint: ## Run linting checks
+        ./scripts/lint.sh
+
+coverage
+^^^^^^^
+The ``coverage`` target runs tests with coverage analysis to measure the extent of test coverage across the codebase.
+
+.. code-block:: make
+
+    coverage: ## Run tests with coverage analysis
+        python ./scripts/run_coverage.py
+
+deploy
+^^^^^^
+The ``deploy`` target handles the process of packaging and deploying the Kaira package to PyPI, making it available for installation via pip.
+
+.. code-block:: make
+
+    deploy: ## Deploy package to PyPI
+        ./scripts/deploy.sh
+
+build-docs
+^^^^^^^^^^
+The ``build-docs`` target generates HTML documentation from RST files, making the documentation easily browsable.
+
+.. code-block:: make
+
+    build-docs: ## Generate HTML documentation
+        ./scripts/build_docs.sh
+
+build-readme
+^^^^^^^^^^^
+The ``build-readme`` target builds the README.rst file from a template, ensuring the project's front-facing documentation stays updated.
+
+.. code-block:: make
+
+    build-readme: ## Build README.rst from template
+        python ./scripts/build_readme.py
+
 Common Use Cases
----------------
+----------------
 
 Before submitting a pull request:
 
@@ -121,14 +171,25 @@ Before submitting a pull request:
     # Format code and run quick tests
     make format && make test
 
-Preparing for a clean development session:
+    # Checking code quality before committing
+    make format && make lint
 
-.. code-block:: bash
+    # Comprehensive check before submitting a pull request
+    make clean && make format && make lint && make test-full && make coverage
 
-    # Clean up and sync with main
-    make clean && make sync
+    # Preparing a new release
+    make clean && make test-full && make coverage && make build-docs && make build-readme && make deploy
 
-See Also
---------
-- :ref:`contributing` - Information about contributing to the Kaira project
-- :ref:`development` - Development guidelines and best practices
+Development Workflow Example
+---------------------------
+Here's a typical workflow for Kaira development:
+
+1. Sync with the main branch:
+
+   .. code-block:: bash
+
+       make sync
+
+2. Make your code changes
+
+3. Format code and run linting checks:
