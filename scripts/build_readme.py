@@ -1,3 +1,8 @@
+import os
+
+# Change working directory to the root project directory
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
 output_text = ""
 template_file_path = "README_template.rst"
 
@@ -6,7 +11,7 @@ try:
         for line in template_file:
             line = line.strip("\n").replace(".. include:: ", "")
             if line.endswith(".rst"):
-                include_file_path = line  # os.path.join(".", line) if you need relative path
+                include_file_path = line
                 try:
                     with open(include_file_path) as included_file:
                         included_text = included_file.read()

@@ -1,4 +1,3 @@
-
 help:  ## Show help
 	@grep -E '^[.a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
@@ -25,3 +24,18 @@ test: ## Run not slow tests
 
 test-full: ## Run all tests
 	pytest
+
+lint: ## Run linting checks
+	./scripts/lint.sh
+
+coverage: ## Run tests with coverage analysis
+	python ./scripts/run_coverage.py
+
+deploy: ## Deploy package to PyPI
+	./scripts/deploy.sh
+
+build-docs: ## Generate HTML documentation
+	./scripts/build_docs.sh
+
+build-readme: ## Build README.rst from template
+	python ./scripts/build_readme.py

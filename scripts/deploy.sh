@@ -21,8 +21,8 @@ pip install --quiet --upgrade setuptools wheel twine
 
 echo "=== Starting deployment process for Kaira ==="
 
-# Extract version from setup.py or another source
-VERSION=$(python3 -c "import re; print(re.search(r'version=[\"\'](.*?)[\"\']', open('setup.py').read()).group(1))")
+# Extract version from setup.py or another source - adjusted path for script location
+VERSION=$(python3 -c "import re; print(re.search(r'version=[\"\'](.*?)[\"\']', open('../setup.py').read()).group(1))")
 echo "Preparing to deploy version: $VERSION"
 
 # Check if this version already exists on PyPI
@@ -39,6 +39,9 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Deployment cancelled."
     exit 0
 fi
+
+# Change to parent directory before cleaning and building
+cd ..
 
 echo "Cleaning previous build artifacts..."
 rm -rf build/ dist/ *.egg-info/
