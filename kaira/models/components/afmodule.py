@@ -7,10 +7,13 @@ from ..registry import ModelRegistry
 @ModelRegistry.register_model()
 class AFModule(nn.Module):
     """
-    AFModule: Activation-Normalization-Linear Module.
+    AFModule: Attention-Feature Module :cite:`xu2021wireless`.
 
-    This module combines an activation function, a normalization layer, and a linear layer
-    into a single module. It is a common building block in many neural network architectures.
+    This module implements a an attention mechanism that recalibrates feature maps 
+    by explicitly modeling interdependencies between channel state information and
+    the input features. This module allows the same model to be used during training 
+    and testing across channels with different signal-to-noise ratio without significant 
+    performance degradation.
     """
 
     def __init__(self, N, csi_length):

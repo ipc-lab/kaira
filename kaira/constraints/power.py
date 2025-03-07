@@ -2,7 +2,7 @@
 
 This module contains constraint implementations that enforce power limitations on signals. Power
 constraints are fundamental in communication systems to ensure compliance with regulatory limits,
-prevent hardware damage, and optimize energy efficiency.
+prevent hardware damage, and optimize energy efficiency :cite:`goldsmith2005wireless` :cite:`love2003grassmannian`.
 """
 
 import torch
@@ -14,10 +14,13 @@ class TotalPowerConstraint(BaseConstraint):
     """Normalizes signal to achieve exact total power regardless of input signal power.
 
     This module applies a constraint on the total power of the input tensor. It ensures that the
-    total power does not exceed a specified limit by scaling the signal appropriately.
+    total power does not exceed a specified limit by scaling the signal appropriately
+    :cite:`wunder2013energy`.
 
     The constraint normalizes the signal to exactly match the specified power level,
-    regardless of the input signal's power.
+    regardless of the input signal's power. It automatically detects complex signals and
+    applies the appropriate power scaling, distributing power between real and imaginary
+    components as needed.
 
     Attributes:
         total_power (float): The maximum allowed total power
@@ -30,7 +33,7 @@ class TotalPowerConstraint(BaseConstraint):
         Args:
             total_power (float): The target total power for the signal in linear units
                 (not dB). The constraint will scale the signal to achieve exactly this
-                power level.
+                power level for both real and complex signals.
         """
         super().__init__()
         self.total_power = total_power
@@ -40,9 +43,10 @@ class TotalPowerConstraint(BaseConstraint):
         """Apply the total power constraint to the input tensor.
 
         Normalizes the input tensor to have exactly the specified total power.
+        Automatically handles both real and complex-valued inputs.
 
         Args:
-            x (torch.Tensor): The input tensor of any shape
+            x (torch.Tensor): The input tensor of any shape (real or complex)
 
         Returns:
             torch.Tensor: The scaled tensor with the same shape as input, adjusted to
@@ -50,11 +54,19 @@ class TotalPowerConstraint(BaseConstraint):
 
         Note:
             The power is calculated across all dimensions except the batch dimension.
+            For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
         dims = self.get_dimensions(x)
         x_norm = torch.norm(x, dim=dims, keepdim=True)
-        x = x * self.total_power_factor / (x_norm + 1e-8)
+        
+        # Adjust power factor for complex signals
+        power_factor = self.total_power_factor
+        if torch.is_complex(x):
+            # For complex signals, distribute power between real/imaginary components
+            power_factor = self.total_power_factor * torch.sqrt(torch.tensor(0.5))
+        
+        x = x * power_factor / (x_norm + 1e-8)
         return x
 
 
@@ -62,10 +74,13 @@ class AveragePowerConstraint(BaseConstraint):
     """Scales signal to achieve specified average power per sample.
 
     This module applies a constraint on the average power of the input tensor. It ensures that the
-    average power (power per sample) does not exceed a specified limit.
+    average power (power per sample) does not exceed a specified limit. Average power constraints
+    are essential in communications systems for meeting regulatory requirements and optimizing
+    signal-to-noise ratio :cite:`goldsmith2005wireless` :cite:`proakis2007digital`.
 
     Unlike the TotalPowerConstraint which constrains the sum of power across all samples,
-    this constraint focuses on the average power per sample.
+    this constraint focuses on the average power per sample. It automatically handles
+    both real and complex signals, applying appropriate power scaling for complex signals.
 
     Attributes:
         average_power (float): The maximum allowed average power
@@ -78,7 +93,7 @@ class AveragePowerConstraint(BaseConstraint):
         Args:
             average_power (float): The target average power per sample in linear units
                 (not dB). The constraint will scale the signal to achieve exactly this
-                average power level.
+                average power level for both real and complex signals.
         """
         super().__init__()
         self.average_power = average_power
@@ -88,9 +103,10 @@ class AveragePowerConstraint(BaseConstraint):
         """Apply the average power constraint to the input tensor.
 
         Normalizes the input tensor to have exactly the specified average power.
+        Automatically handles both real and complex-valued inputs.
 
         Args:
-            x (torch.Tensor): The input tensor of any shape
+            x (torch.Tensor): The input tensor of any shape (real or complex)
 
         Returns:
             torch.Tensor: The scaled tensor with the same shape as input, adjusted to
@@ -98,63 +114,34 @@ class AveragePowerConstraint(BaseConstraint):
 
         Note:
             The power is calculated across all dimensions except the batch dimension.
+            For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
         dims = self.get_dimensions(x)
         x_norm = torch.norm(x, dim=dims, keepdim=True)
-        avg_power_sqrt = self.power_avg_factor * torch.sqrt(torch.prod(torch.tensor(x.shape[1:]), 0))
-        x = x * self.power_avg_factor * avg_power_sqrt / (x_norm + 1e-8)
+        
+        # Calculate scaling factor for average power
+        power_factor = self.power_avg_factor
+        if torch.is_complex(x):
+            # For complex signals, distribute power between real/imaginary components
+            power_factor = self.power_avg_factor * torch.sqrt(torch.tensor(0.5))
+            
+        avg_power_sqrt = power_factor * torch.sqrt(torch.prod(torch.tensor(x.shape[1:]), 0))
+        x = x * avg_power_sqrt / (x_norm + 1e-8)
         return x
-
-
-class ComplexTotalPowerConstraint(TotalPowerConstraint):
-    """Adjusts complex signal power accounting for real and imaginary component distribution.
-
-    Specialization of TotalPowerConstraint for complex-valued signals. Since complex signals
-    distribute power between real and imaginary components, this constraint adjusts the power
-    calculation by a factor of sqrt(0.5) to account for this distribution.
-
-    This constraint is particularly useful for baseband complex signals in communications.
-    """
-
-    def __init__(self, total_power: float) -> None:
-        """Initialize the ComplexTotalPowerConstraint module.
-
-        Args:
-            total_power (float): The target total power for the complex signal in linear
-                units (not dB). Internally, this is scaled by sqrt(0.5) to account for
-                power distribution between real and imaginary components.
-        """
-        super().__init__(total_power * torch.sqrt(0.5))
-
-
-class ComplexAveragePowerConstraint(AveragePowerConstraint):
-    """Applies average power constraint adjusted for complex signal characteristics.
-
-    Specialization of AveragePowerConstraint for complex-valued signals. Since complex signals
-    distribute power between real and imaginary components, this constraint adjusts the power
-    calculation by a factor of sqrt(0.5) to account for this distribution.
-    """
-
-    def __init__(self, average_power: float) -> None:
-        """Initialize the ComplexAveragePowerConstraint module.
-
-        Args:
-            average_power (float): The target average power for the complex signal in linear
-                units (not dB). Internally, this is scaled by sqrt(0.5) to account for
-                power distribution between real and imaginary components.
-        """
-        super().__init__(average_power * torch.sqrt(0.5))
 
 
 class PAPRConstraint(BaseConstraint):
     """Reduces peak-to-average power ratio using soft clipping to minimize signal distortion.
 
     Limits the peak-to-average power ratio of the signal, which is critical in OFDM and
-    multicarrier systems to reduce nonlinear distortions and improve power amplifier efficiency.
+    multicarrier systems to reduce nonlinear distortions and improve power amplifier efficiency
+    :cite:`han2005overview` :cite:`jiang2008overview`.
 
     This constraint applies soft clipping to signal peaks that would cause the PAPR to
     exceed the specified threshold, while preserving the signal shape as much as possible.
+    The PAPR reduction techniques are extensively studied in wireless communications
+    :cite:`tellambura1997computation`.
 
     Attributes:
         max_papr (float): Maximum allowed peak-to-average power ratio in linear units (not dB)

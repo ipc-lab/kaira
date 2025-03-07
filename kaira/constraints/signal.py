@@ -2,7 +2,7 @@
 
 This module provides constraints related to signal characteristics such as amplitude limitations
 and spectral properties. These constraints are essential for ensuring that transmitted signals
-comply with hardware limitations and regulatory requirements.
+comply with hardware limitations and regulatory requirements :cite:`han2005overview` :cite:`armstrong2002peak`.
 """
 
 import torch
@@ -16,6 +16,8 @@ class PeakAmplitudeConstraint(BaseConstraint):
     Limits the maximum amplitude of the signal to prevent clipping in digital-to-analog
     converters (DACs) and power amplifiers. This constraint applies a hard clipping
     operation to ensure signal values remain within the specified bounds.
+    Peak amplitude constraints are critical for practical communication systems as discussed
+    in :cite:`armstrong2002peak` and :cite:`jiang2008overview`.
 
     Attributes:
         max_amplitude (float): Maximum allowed amplitude value
@@ -52,7 +54,8 @@ class SpectralMaskConstraint(BaseConstraint):
 
     Ensures the signal's spectrum complies with regulatory requirements by limiting
     the power spectral density at specific frequencies. This is particularly important
-    for preventing interference with adjacent channels or frequency bands.
+    for preventing interference with adjacent channels or frequency bands
+    :cite:`weiss2004spectrum` :cite:`fcc2002revision`.
 
     The constraint works in the frequency domain by applying a scaling operation
     to frequency components that exceed the mask.

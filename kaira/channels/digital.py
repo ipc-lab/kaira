@@ -3,6 +3,9 @@
 This module provides implementations of classic binary channels used in information theory and
 digital communications. These channels model discrete errors that occur in binary transmission
 systems.
+
+For comprehensive coverage of these channel models, see :cite:`cover2006elements`, :cite:`mackay2003information`,
+and :cite:`shannon1948mathematical`.
 """
 
 import torch
@@ -17,7 +20,7 @@ class BinarySymmetricChannel(BaseChannel):
 
     The Binary Symmetric Channel is a fundamental model in information theory where
     each bit is independently flipped with probability p. It represents a binary channel
-    with symmetric crossover characteristics.
+    with symmetric crossover characteristics :cite:`cover2006elements`.
 
     Mathematical Model:
         P(y=0|x=1) = P(y=1|x=0) = p (crossover probability)
@@ -73,7 +76,7 @@ class BinaryErasureChannel(BaseChannel):
 
     The Binary Erasure Channel is a channel model where bits are either received correctly
     or erased (lost) with probability p. It's commonly used to model packet loss in
-    communication systems.
+    communication systems :cite:`mackay2003information` :cite:`richardson2008modern`.
 
     Mathematical Model:
         P(y=e|x=0) = P(y=e|x=1) = p (erasure probability)
@@ -123,7 +126,8 @@ class BinaryZChannel(BaseChannel):
 
     The Z Channel is an asymmetric binary channel where only one type of bit flip
     can occur: 1→0 errors happen with probability p, while 0→1 errors never occur.
-    This models systems where one type of error is much more likely than the other.
+    This models systems where one type of error is much more likely than the other
+    :cite:`verdu2002spectral` :cite:`golomb1980limiting`.
 
     Mathematical Model:
         P(y=0|x=1) = p (1→0 error probability)

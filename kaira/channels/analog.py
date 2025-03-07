@@ -3,6 +3,8 @@
 This module provides implementations of channels with continuous inputs, supporting both real and
 complex-valued signals. These channels represent various types of noise and distortions found in
 analog communication systems.
+
+For a comprehensive overview of analog channel models, see :cite:`goldsmith2005wireless` and :cite:`proakis2007digital`.
 """
 
 import numpy as np
@@ -68,7 +70,8 @@ class AWGNChannel(BaseChannel):
 
     This channel adds Gaussian noise to the input signal, supporting both real
     and complex-valued inputs automatically. For complex inputs, noise is added
-    to both real and imaginary components.
+    to both real and imaginary components. AWGN channels are fundamental in communication
+    theory and commonly used as a baseline model :cite:`proakis2007digital`.
 
     Mathematical Model:
         y = x + n
@@ -128,7 +131,8 @@ class LaplacianChannel(BaseChannel):
 
     Models a channel with noise following the Laplacian distribution, which has
     heavier tails than Gaussian noise. This channel supports both real and
-    complex-valued inputs.
+    complex-valued inputs. Laplacian noise is often used to model impulsive noise
+    environments :cite:`middleton1977statistical`.
 
     Mathematical Model:
         y = x + n
@@ -202,8 +206,7 @@ class PoissonChannel(BaseChannel):
 
     Models a channel where the output follows a Poisson distribution with
     mean proportional to the input. This is commonly used to model photon
-    counting systems. For complex inputs, the magnitude is used to generate
-    Poisson counts, and the phase is preserved.
+    counting systems and optical communication channels :cite:`middleton1977statistical`.
 
     Mathematical Model:
         y ~ Poisson(λ·\|x\|)
@@ -270,7 +273,7 @@ class PhaseNoiseChannel(BaseChannel):
     """Channel that introduces random phase noise.
 
     Models a channel where the phase of the signal is perturbed by random noise,
-    which is common in oscillator circuits and synchronization.
+    which is common in oscillator circuits and synchronization :cite:`demir2000phase`.
 
     Mathematical Model:
         y = x * exp(j·θ)
@@ -311,7 +314,8 @@ class FlatFadingChannel(BaseChannel):
 
     Models a wireless channel where the fading coefficient remains constant over
     a specified coherence time and then changes to a new independent realization.
-    This represents blockwise fading commonly used in communications analysis.
+    This represents blockwise fading commonly used in communications analysis
+    :cite:`tse2005fundamentals` :cite:`rappaport2024wireless`.
 
     Mathematical Model:
         y[i] = h[⌊i/L⌋] * x[i] + n[i]
@@ -513,7 +517,8 @@ class NonlinearChannel(BaseChannel):
 
     Models various nonlinear effects by applying a user-specified nonlinear function
     to the input signal, optionally followed by additive noise. Handles both real and
-    complex-valued signals.
+    complex-valued signals. Common nonlinear models include the Saleh model for traveling-wave
+    tube amplifiers :cite:`saleh1981frequency`.
 
     Mathematical Model:
         y = f(x) + n

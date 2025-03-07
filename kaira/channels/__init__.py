@@ -16,13 +16,14 @@ from .analog import (
 )
 
 # Base channel classes
-from .base import BaseChannel, LambdaChannel
+from .base import BaseChannel
 
 # Digital channel models
 from .digital import BinaryErasureChannel, BinarySymmetricChannel, BinaryZChannel
 
 # Perfect/Identity channel
-from .lambda_channel import IdealChannel, IdentityChannel, PerfectChannel
+from .lambda_channel import LambdaChannel
+from .identity import IdealChannel, IdentityChannel, PerfectChannel
 
 __all__ = [
     # Base classes

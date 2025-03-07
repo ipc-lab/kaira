@@ -12,7 +12,7 @@ import torch
 from .antenna import PerAntennaPowerConstraint
 from .base import BaseConstraint
 from .composite import CompositeConstraint
-from .power import ComplexTotalPowerConstraint, PAPRConstraint, TotalPowerConstraint
+from .power import PAPRConstraint, TotalPowerConstraint
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
 
 # Factory functions for common constraint combinations
@@ -48,11 +48,7 @@ def create_ofdm_constraints(
     """
     constraints = []
 
-    # Add power constraint based on signal type
-    if is_complex:
-        constraints.append(ComplexTotalPowerConstraint(total_power))
-    else:
-        constraints.append(TotalPowerConstraint(total_power))
+    constraints.append(TotalPowerConstraint(total_power))
 
     # Add PAPR constraint
     constraints.append(PAPRConstraint(max_papr))
