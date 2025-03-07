@@ -96,7 +96,15 @@ autosummary_template_mapping = {
     "method": "method.rst",
 }
 
-bibtex_bibfiles = ["refs.bib"]
+# Configure sphinxcontrib.bibtex with improved settings
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "plain"  # Use the built-in plain style which is more tolerant
+bibtex_reference_style = "author_year"
+bibtex_tooltips = False # disable default tooltips
+# Remove other bibtex settings that might be incompatible
+bibtex_cite_id = "cite-{key}"
+# bibtex_bibliography_header = "<h2>References</h2>"
+# bibtex_footbibliography_header = "<h3>Footnote Citations</h3>"
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -149,6 +157,9 @@ html_css_files = [
     "custom.css",
     "plot_directive.css",  # Add the plot directive CSS file
 ]
+
+# Add custom JavaScript file - ensure correct format
+html_js_files = []
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"

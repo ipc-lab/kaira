@@ -1,5 +1,5 @@
 References
 ==========
 
-.. bibliography:: refs.bib
+.. bibliography:: references.bib
    :labelprefix: B
