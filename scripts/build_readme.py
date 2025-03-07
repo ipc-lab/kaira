@@ -17,7 +17,7 @@ try:
                         included_text = included_file.read()
                         
                         if include_file_path == "docs/license.rst":
-                            included_text = included_text.split("\n")[0]
+                            included_text = "\n".join(included_text.split("\n")[:4])
                             included_text += "\n"
                             
                         output_text += included_text.replace(":class:", " ")
