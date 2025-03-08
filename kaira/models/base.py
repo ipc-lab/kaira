@@ -12,16 +12,6 @@ class BaseModel(nn.Module, ABC):
     implement the bandwidth_ratio and forward methods.
     """
 
-    @property
-    @abstractmethod
-    def bandwidth_ratio(self) -> float:
-        """Calculate the bandwidth ratio of the model.
-
-        Returns:
-            float: The bandwidth ratio.
-        """
-        pass
-
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the model.
