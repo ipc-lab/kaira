@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Tuple, Union, List
+from typing import Optional, Dict, Tuple, Union, List, Any, BinaryIO
 import torch
 import subprocess
 import os
@@ -21,12 +21,9 @@ class BPGCompressor(BaseModel):
     """
     BPG (Better Portable Graphics) image compression based on bpgenc and bpgdec.
     
-    This model operates in two modes:
-    1. Fixed quality mode: When quality is provided, uses that specific quality setting
-    2. Target bitrate mode: When max_bits_per_image is provided, finds the highest
-       quality that results in a compressed image smaller than the target size
-    
-    Both modes can optionally return the actual number of bits used per image.
+    This class provides BPG-based compression. It can operate in two modes:
+    1. Fixed quality mode: directly uses the specified quality level
+    2. Bit-constrained mode: finds the highest quality that stays under a bit budget
     """
     
     def __init__(
@@ -36,7 +33,9 @@ class BPGCompressor(BaseModel):
         bpg_encoder_path: str = 'bpgenc',
         bpg_decoder_path: str = 'bpgdec',
         n_jobs: int = None,
-        collect_stats: bool = False
+        collect_stats: bool = False,
+        return_bits: bool = True,
+        return_compressed_data: bool = False
     ):
         """
         Initialize the BPG Compressor.
@@ -51,6 +50,8 @@ class BPGCompressor(BaseModel):
             bpg_decoder_path: Path to the BPG decoder executable
             n_jobs: Number of parallel jobs to use (default: CPU count // 2)
             collect_stats: Whether to collect and return compression statistics
+            return_bits: Whether to return bits per image in forward pass
+            return_compressed_data: Whether to return the compressed binary data
         """
         super(BPGCompressor, self).__init__()
         
@@ -67,6 +68,8 @@ class BPGCompressor(BaseModel):
         self.bpg_decoder_path = bpg_decoder_path
         self.n_jobs = n_jobs if n_jobs is not None else max(1, multiprocessing.cpu_count() // 2)
         self.collect_stats = collect_stats
+        self.return_bits = return_bits
+        self.return_compressed_data = return_compressed_data
         self.stats = {}
         
         # Check if BPG tools are available
@@ -81,7 +84,10 @@ class BPGCompressor(BaseModel):
             logger.error(f"BPG encoder not found at '{self.bpg_encoder_path}'. Please install BPG tools.")
             raise RuntimeError(f"BPG encoder not found at '{self.bpg_encoder_path}'")
         
-    def forward(self, x, return_bits: bool = False):
+    def forward(self, x) -> Union[torch.Tensor, 
+                                 Tuple[torch.Tensor, List[int]], 
+                                 Tuple[torch.Tensor, List[bytes]],
+                                 Tuple[torch.Tensor, List[int], List[bytes]]]:
         """
         Process a batch of images through BPG compression.
         
@@ -91,11 +97,12 @@ class BPGCompressor(BaseModel):
         
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
-            return_bits: Whether to return bits per image along with output tensor
             
         Returns:
-            If return_bits=False: Tensor of compressed-decompressed images
-            If return_bits=True: Tuple of (Tensor, List[int]) with images and bits per image
+            If no additional returns: Just the reconstructed image tensor
+            If return_bits=True: Tuple of (tensor, bits per image)
+            If return_compressed_data=True: Tuple of (tensor, compressed binary data)
+            If both are True: Tuple of (tensor, bits per image, compressed binary data)
         """
         start_time = time.time()
         
@@ -106,44 +113,57 @@ class BPGCompressor(BaseModel):
                 'img_stats': []
             }
         
+        # Always collect bits information if return_bits or collect_stats is True
+        collect_info = self.return_bits or self.collect_stats or self.return_compressed_data
+        
         # Process images in parallel
         results = Parallel(n_jobs=self.n_jobs)(
-            delayed(self.parallel_forward_bpg)(i, x[i], return_bits or self.collect_stats) 
+            delayed(self.parallel_forward_bpg)(i, x[i], collect_info) 
             for i in range(x.shape[0])
         )
         
-        # Unpack results based on what was requested
-        if return_bits or self.collect_stats:
-            images = []
-            bits_per_image = []
-            
-            for result in results:
+        # Unpack results
+        images = []
+        bits_per_image = [] if self.return_bits or self.collect_stats else None
+        compressed_data = [] if self.return_compressed_data else None
+        
+        for result in results:
+            if collect_info:
                 img, info = result
                 images.append(img)
-                bits_per_image.append(int(info.get('bits', 0)))
+                
+                if self.return_bits or self.collect_stats:
+                    bits_per_image.append(int(info.get('bits', 0)))
+                
+                if self.return_compressed_data:
+                    compressed_data.append(info.get('compressed_data', b''))
                 
                 # Update full stats if requested
                 if self.collect_stats:
                     self.stats['total_bits'] += info.get('bits', 0)
                     self.stats['img_stats'].append(info)
-            
-            x_hat = torch.stack(images, dim=0).to(x.device)
-            
-            # Calculate aggregate statistics if requested
-            if self.collect_stats and x.shape[0] > 0:
-                self.stats['avg_quality'] = sum(s.get('quality', 0) for s in self.stats['img_stats']) / x.shape[0]
-                self.stats['avg_bpp'] = self.stats['total_bits'] / x.shape[0]
-                self.stats['avg_compression_ratio'] = sum(
-                    s.get('compression_ratio', 0) for s in self.stats['img_stats']
-                ) / x.shape[0]
-        else:
-            x_hat = torch.stack(results, dim=0).to(x.device)
-            bits_per_image = None
+            else:
+                images.append(result)
+        
+        x_hat = torch.stack(images, dim=0).to(x.device)
+        
+        # Calculate aggregate statistics if requested
+        if self.collect_stats and x.shape[0] > 0:
+            self.stats['avg_quality'] = sum(s.get('quality', 0) for s in self.stats['img_stats']) / x.shape[0]
+            self.stats['avg_bpp'] = self.stats['total_bits'] / x.shape[0]
+            self.stats['avg_compression_ratio'] = sum(
+                s.get('compression_ratio', 0) for s in self.stats['img_stats']
+            ) / x.shape[0]
         
         self.stats['processing_time'] = time.time() - start_time
         
-        if return_bits:
+        # Return appropriate output based on flags
+        if self.return_bits and self.return_compressed_data:
+            return x_hat, bits_per_image, compressed_data
+        elif self.return_bits:
             return x_hat, bits_per_image
+        elif self.return_compressed_data:
+            return x_hat, compressed_data
         else:
             return x_hat
 
@@ -217,6 +237,12 @@ class BPGCompressor(BaseModel):
         # Get compressed size
         compressed_size = os.path.getsize(paths['compressed'])
         bits = compressed_size * 8
+        
+        # Read compressed data if needed
+        compressed_data = None
+        if self.return_compressed_data and return_info:
+            with open(paths['compressed'], 'rb') as f:
+                compressed_data = f.read()
             
         # Decompress
         result = subprocess.run(
@@ -240,6 +266,9 @@ class BPGCompressor(BaseModel):
                 'bpp': bits / (x.shape[1] * x.shape[2]),
                 'compression_ratio': original_size / compressed_size if compressed_size > 0 else 0
             }
+            if compressed_data is not None:
+                stats['compressed_data'] = compressed_data
+                
             result = (img, stats)
         else:
             result = img
@@ -347,6 +376,20 @@ class BPGCompressor(BaseModel):
             img = transform(Image.open(paths['best_output']).convert('RGB'))
             
             if return_info:
+                # Read compressed data if requested
+                compressed_data = None
+                if self.return_compressed_data:
+                    # We need to re-compress at the best quality to get the data
+                    temp_compressed = os.path.join(paths['dir'], f"final_{uuid.uuid4()}.bpg")
+                    result = subprocess.run(
+                        [self.bpg_encoder_path, '-q', str(best_quality), '-o', temp_compressed, paths['input']],
+                        capture_output=True, text=True
+                    )
+                    if result.returncode == 0:
+                        with open(temp_compressed, 'rb') as f:
+                            compressed_data = f.read()
+                        os.remove(temp_compressed)
+                
                 stats = {
                     'quality': best_quality,
                     'bits': best_bits,
@@ -354,6 +397,10 @@ class BPGCompressor(BaseModel):
                     'compression_ratio': original_size / (best_bits/8) if best_bits > 0 else 0,
                     'target_bits': target_bits
                 }
+                
+                if compressed_data is not None:
+                    stats['compressed_data'] = compressed_data
+                
                 result = (img, stats)
             else:
                 result = img
@@ -361,6 +408,8 @@ class BPGCompressor(BaseModel):
             logger.warning(f"Could not find any quality level meeting target of {target_bits} bits")
             if return_info:
                 stats = {'quality': -1, 'bits': 0, 'target_bits': target_bits}
+                if self.return_compressed_data:
+                    stats['compressed_data'] = b''
                 result = (torch.randn_like(x), stats)
             else:
                 result = torch.randn_like(x)
@@ -376,7 +425,7 @@ class BPGCompressor(BaseModel):
             return {}
         return self.stats
 
-    # Add a dedicated method for getting bits per image
+    # Update method signature to align with class variable
     def get_bits_per_image(self, x):
         """
         Compress images and return only the bit counts per image
@@ -390,6 +439,15 @@ class BPGCompressor(BaseModel):
         Returns:
             List[int]: Number of bits used for each compressed image
         """
-        _, bits_per_image = self.forward(x, return_bits=True)
-        return bits_per_image
+        # Temporarily override return_bits setting
+        original_return_bits = self.return_bits
+        self.return_bits = True
+        
+        try:
+            _, bits_per_image = self.forward(x)
+        finally:
+            # Restore original setting
+            self.return_bits = original_return_bits
 
+
+        return bits_per_image
