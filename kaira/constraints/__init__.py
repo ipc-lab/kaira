@@ -44,8 +44,6 @@ from .composite import CompositeConstraint
 # Power constraints
 from .power import (
     AveragePowerConstraint,
-    ComplexAveragePowerConstraint,
-    ComplexTotalPowerConstraint,
     PAPRConstraint,
     TotalPowerConstraint,
 )
@@ -61,8 +59,6 @@ __all__ = [
     # Power constraints
     "TotalPowerConstraint",
     "AveragePowerConstraint",
-    "ComplexTotalPowerConstraint",
-    "ComplexAveragePowerConstraint",
     "PAPRConstraint",
     # Antenna constraints
     "PerAntennaPowerConstraint",

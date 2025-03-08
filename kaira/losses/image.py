@@ -1,7 +1,8 @@
 """Losses module for Kaira.
 
 This module contains various loss functions for training communication systems, including MSE loss,
-LPIPS loss, and SSIM loss.
+LPIPS loss, and SSIM loss. These loss functions are widely used in image processing and
+computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
 """
 
 
@@ -24,6 +25,8 @@ class MSELoss(BaseLoss):
     """Mean Squared Error (MSE) Loss Module.
 
     This module calculates the MSE loss between the input and the target.
+    MSE is the most widely used loss function for regression tasks and image restoration
+    :cite:`wang2009mean`.
     """
 
     def __init__(self):
@@ -48,6 +51,8 @@ class CombinedLoss(BaseLoss):
     """Combined Loss Module.
 
     This module combines multiple loss functions into a single loss function.
+    Combining multiple losses is a common approach to improve image quality by
+    addressing different aspects of visual perception :cite:`zhao2016loss`.
     """
 
     def __init__(self, losses: Sequence[BaseLoss], weights: list[float]):
@@ -82,6 +87,8 @@ class MSELPIPSLoss(BaseLoss):
     """MSELPIPSLoss Module.
 
     This module combines MSE and LPIPS losses with configurable weights.
+    This combination balances pixel-wise accuracy (MSE) with perceptual quality (LPIPS)
+    :cite:`zhang2018unreasonable`.
     """
 
     def __init__(self, mse_weight=1.0, lpips_weight=1.0):
@@ -116,6 +123,9 @@ class LPIPSLoss(BaseLoss):
     """Learned Perceptual Image Patch Similarity (LPIPS) Loss Module.
 
     This module calculates the LPIPS loss between the input and the target.
+    LPIPS uses deep features to measure perceptual similarity between images,
+    which correlates better with human judgment than pixel-based metrics
+    :cite:`zhang2018unreasonable`.
     """
 
     def __init__(self):
@@ -140,6 +150,8 @@ class SSIMLoss(BaseLoss):
     """Structural Similarity Index Measure (SSIM) Loss Module.
 
     This module calculates the SSIM loss between the input and the target.
+    SSIM evaluates image similarity based on luminance, contrast, and structure,
+    better matching human visual perception :cite:`wang2004image`.
     """
 
     def __init__(self):
@@ -164,6 +176,8 @@ class MSSSIMLoss(BaseLoss):
     """Multi-Scale Structural Similarity Index Measure (MS-SSIM) Loss Module.
 
     This module calculates the MS-SSIM loss between the input and the target.
+    MS-SSIM extends SSIM by evaluating similarity at multiple scales, making it
+    more robust to viewing distance variations :cite:`wang2003multiscale`.
     """
 
     def __init__(self):
@@ -188,6 +202,8 @@ class L1Loss(BaseLoss):
     """L1 (Mean Absolute Error) Loss Module.
 
     This module calculates the L1 loss between the input and the target.
+    L1 loss is often preferred over MSE for image restoration tasks as it
+    preserves edges better and is more robust to outliers :cite:`zhao2016loss`.
     """
 
     def __init__(self):
@@ -212,6 +228,8 @@ class VGGLoss(BaseLoss):
     """VGG Perceptual Loss Module.
 
     This module calculates the perceptual loss using features extracted by the VGG network.
+    VGG loss measures similarity in feature space rather than pixel space, capturing
+    perceptual differences better :cite:`johnson2016perceptual` :cite:`dosovitskiy2016generating`.
     """
 
     def __init__(self, layer_weights=None):
@@ -282,6 +300,8 @@ class TotalVariationLoss(BaseLoss):
     """Total Variation Loss Module.
 
     This module calculates the total variation loss to encourage spatial smoothness.
+    Total variation regularization reduces noise while preserving edges in images
+    :cite:`rudin1992nonlinear` :cite:`mahendran2015understanding`.
     """
 
     def __init__(self):
@@ -307,6 +327,8 @@ class GradientLoss(BaseLoss):
     """Gradient Loss Module.
 
     This module calculates the gradient loss to preserve edge information.
+    Gradient loss explicitly penalizes differences in image gradients, helping to
+    preserve structural information and edges :cite:`mathieu2015deep`.
     """
 
     def __init__(self):
@@ -349,6 +371,8 @@ class PSNRLoss(BaseLoss):
     """Peak Signal-to-Noise Ratio (PSNR) Loss Module.
 
     This module calculates the negative PSNR (to be minimized) between the input and target.
+    PSNR is a standard metric for image quality assessment :cite:`hore2010image`,
+    though it doesn't always correlate well with human perception :cite:`huynh2008scope`.
     """
 
     def __init__(self, max_val=1.0):
@@ -380,6 +404,8 @@ class StyleLoss(BaseLoss):
     """Style Loss Module based on Gram matrices.
 
     This module calculates the style loss used in neural style transfer.
+    Style loss computes the difference between Gram matrices of feature maps,
+    capturing texture information independent of spatial arrangement :cite:`gatys2016image`.
     """
 
     def __init__(self):
@@ -460,6 +486,8 @@ class FocalLoss(BaseLoss):
     """Focal Loss Module for dealing with class imbalance.
 
     This implementation works for both binary and multi-class problems.
+    Focal loss addresses class imbalance by down-weighting well-classified examples,
+    focusing training on difficult examples :cite:`lin2017focal`.
     """
 
     def __init__(self, alpha=None, gamma=2.0, reduction="mean"):
@@ -520,6 +548,8 @@ class ElasticLoss(BaseLoss):
     """Elastic Loss combines L1 and L2 losses.
 
     This loss function smoothly transitions between L1 and L2 behavior.
+    Elastic net regularization combines the benefits of both L1 and L2 penalties,
+    offering robustness to outliers while maintaining smoothness :cite:`zou2005regularization`.
     """
 
     def __init__(self, beta=1.0):

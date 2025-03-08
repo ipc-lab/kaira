@@ -212,6 +212,9 @@ Get help and connect with the Kaira community through these channels:
 * `Gitter Chat <https://gitter.im/ipc-lab/kaira>`_ - Live chat with developers and users
 
 License
+=======
+
+Kaira is distributed under the terms of the `MIT License <https://github.com/ipc-lab/kaira/blob/master/LICENSE>`_.
 
 Citing Kaira
 ============

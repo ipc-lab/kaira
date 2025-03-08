@@ -4,8 +4,6 @@ import torch
 
 from kaira.constraints import (
     AveragePowerConstraint,
-    ComplexAveragePowerConstraint,
-    ComplexTotalPowerConstraint,
     TotalPowerConstraint,
 )
 from kaira.models.components import AFModule
@@ -83,11 +81,11 @@ def test_complex_constraints():
     power = 1.0
 
     # Test complex total power constraint
-    total_constraint = ComplexTotalPowerConstraint(total_power=power)
+    total_constraint = TotalPowerConstraint(total_power=power)
     total_output = total_constraint(x)
     assert torch.isclose(torch.sum(total_output**2), torch.tensor(power), rtol=1e-5)
 
     # Test complex average power constraint
-    avg_constraint = ComplexAveragePowerConstraint(average_power=power)
+    avg_constraint = AveragePowerConstraint(average_power=power)
     avg_output = avg_constraint(x)
     assert torch.isclose(torch.mean(avg_output**2), torch.tensor(power), rtol=1e-5)

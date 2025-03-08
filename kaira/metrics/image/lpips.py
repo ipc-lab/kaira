@@ -1,4 +1,8 @@
-"""Learned Perceptual Image Patch Similarity (LPIPS) metric."""
+"""Learned Perceptual Image Patch Similarity (LPIPS) metric.
+
+LPIPS is a learned perceptual metric that leverages deep features and better correlates
+with human perception than traditional metrics :cite:`zhang2018unreasonable`.
+"""
 
 from typing import Any, Literal, Tuple
 
@@ -16,7 +20,9 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
     """Learned Perceptual Image Patch Similarity (LPIPS) Module.
 
     LPIPS measures the perceptual similarity between images using deep features. Lower values
-    indicate greater perceptual similarity.
+    indicate greater perceptual similarity. Unlike traditional metrics like PSNR and SSIM,
+    LPIPS uses human perceptual judgments to calibrate a deep feature-based metric
+    :cite:`zhang2018unreasonable`.
     """
 
     def __init__(self, net_type: Literal["vgg", "alex", "squeeze"] = "alex", normalize: bool = False, **kwargs: Any) -> None:

@@ -1,4 +1,8 @@
-"""Bit Error Rate (BER) metric."""
+"""Bit Error Rate (BER) metric.
+
+BER is one of the most fundamental performance metrics in digital communications, providing
+a measure of the reliability of the entire system :cite:`proakis2007digital` :cite:`ziemer2006principles`.
+"""
 
 from typing import Optional
 
@@ -14,7 +18,9 @@ class BitErrorRate(BaseMetric):
     """Bit Error Rate (BER) metric.
 
     BER measures the number of bit errors divided by the total number of bits transmitted. Lower
-    values indicate better performance.
+    values indicate better performance. BER is one of the most common figure of merit used to assess systems
+    that transmit digital data from one location to another :cite:`proakis2007digital` and serves
+    as the cornerstone for performance evaluation in communications :cite:`barry2003digital`.
     """
 
     def __init__(self, threshold: float = 0.5, name: Optional[str] = None):

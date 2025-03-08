@@ -1,4 +1,9 @@
-"""Peak Signal-to-Noise Ratio (PSNR) metric."""
+"""Peak Signal-to-Noise Ratio (PSNR) metric.
+
+PSNR is a widely used objective quality metric for image and video processing
+:cite:`hore2010image` :cite:`huynh2008scope`. Despite its limitations in perceptual
+correlation, it remains one of the most common benchmarks for image quality assessment.
+"""
 
 from typing import Any, Tuple
 
@@ -15,7 +20,8 @@ class PeakSignalNoiseRatio(BaseMetric):
 
     PSNR measures the ratio between the maximum possible power of a signal and the power of
     corrupting noise that affects the quality of its representation. Higher values indicate better
-    quality.
+    quality :cite:`hore2010image`. While PSNR doesn't perfectly correlate with human perception,
+    it is widely used for its simplicity and clear physical meaning :cite:`wang2009mean`.
     """
 
     def __init__(self, data_range: float = 1.0, **kwargs: Any) -> None:

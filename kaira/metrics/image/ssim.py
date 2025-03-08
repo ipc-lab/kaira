@@ -1,4 +1,9 @@
-"""Structural Similarity Index Measure (SSIM) metrics."""
+"""Structural Similarity Index Measure (SSIM) metrics.
+
+SSIM is a perceptual metric that quantifies image quality degradation caused by 
+processing such as data compression or by losses in data transmission :cite:`wang2004image`.
+MS-SSIM extends this concept to multiple scales :cite:`wang2003multiscale`.
+"""
 
 from typing import Any, Tuple
 
@@ -16,7 +21,8 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
     """Structural Similarity Index Measure (SSIM) Module.
 
     SSIM measures the perceptual difference between two similar images. Values range from 0 to 1,
-    where 1 means perfect similarity.
+    where 1 means perfect similarity. The metric considers luminance, contrast, and structure
+    to better match human visual perception :cite:`wang2004image` :cite:`brunet2011mathematical`.
     """
 
     def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, **kwargs: Any) -> None:
@@ -62,7 +68,9 @@ class MultiScaleSSIM(BaseMetric):
     """Multi-Scale Structural Similarity Index Measure (MS-SSIM) Module.
 
     This module calculates the MS-SSIM between two images. MS-SSIM is an extension of the SSIM
-    metric that considers multiple scales to better capture perceptual similarity.
+    metric that considers multiple scales to better capture perceptual similarity
+    :cite:`wang2003multiscale`. It has been shown to correlate better with human perception
+    than single-scale methods :cite:`wang2004image`.
     """
 
     def __init__(self, kernel_size: int = 11, data_range: float = 1.0, **kwargs: Any) -> None:

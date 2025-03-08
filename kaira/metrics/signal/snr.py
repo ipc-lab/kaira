@@ -1,4 +1,8 @@
-"""Signal-to-Noise Ratio (SNR) metric."""
+"""Signal-to-Noise Ratio (SNR) metric.
+
+SNR is a fundamental measure for quantifying the quality of a signal in the presence of noise,
+widely used in communications and signal processing :cite:`goldsmith2005wireless` :cite:`sklar2001digital`.
+"""
 
 from typing import Optional, Tuple
 
@@ -14,7 +18,9 @@ class SignalToNoiseRatio(BaseMetric):
     """Signal-to-Noise Ratio (SNR) metric.
 
     SNR measures the ratio of signal power to noise power, expressed in decibels (dB). Higher
-    values indicate better signal quality.
+    values indicate better signal quality :cite:`sklar2001digital`. This metric is fundamental
+    in determining the performance limits of communication systems as discussed in 
+    :cite:`shannon1948mathematical`.
     """
 
     def __init__(self, name: Optional[str] = None):

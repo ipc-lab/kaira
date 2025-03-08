@@ -1,4 +1,8 @@
-"""Block Error Rate (BLER) metric for communication systems."""
+"""Block Error Rate (BLER) metric for communication systems.
+
+BLER is a key performance indicator for block-based transmission schemes like those used
+in modern wireless systems :cite:`lin2004error` :cite:`moon2005error`.
+"""
 
 from typing import Optional, Tuple
 
@@ -17,7 +21,8 @@ class BlockErrorRate(BaseMetric):
     is considered erroneous if any bit/symbol within the block is incorrect.
 
     BLER is commonly used in communication systems to evaluate the performance of channel coding
-    schemes, especially in scenarios with burst errors.
+    schemes, especially in scenarios with burst errors :cite:`lin2004error`. In modern cellular
+    systems like 5G, BLER is a critical performance metric :cite:`3gpp2018nr`.
     """
 
     def __init__(

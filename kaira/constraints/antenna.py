@@ -3,7 +3,7 @@
 This module provides constraints that apply to multi-antenna systems such as MIMO, including per-
 antenna power distribution and other antenna-specific limitations. These constraints are essential
 for ensuring proper operation of multi-antenna transmitters and compliance with hardware
-specifications.
+specifications :cite:`paulraj2003introduction` :cite:`spencer2004introduction`.
 """
 
 from typing import Optional
@@ -18,7 +18,10 @@ class PerAntennaPowerConstraint(BaseConstraint):
 
     Ensures each antenna in a multi-antenna system (such as MIMO) adheres to its specific
     power budget. This constraint is crucial for systems where each antenna has its own
-    power amplifier with individual power limitations.
+    power amplifier with individual power limitations :cite:`yu2007transmitter` :cite:`wunder2013energy`.
+
+    Per-antenna power constraints are often more practical than sum-power constraints in real
+    MIMO systems, as discussed in :cite:`christopoulos2014weighted` and :cite:`yu2007transmitter`.
 
     The constraint can be configured either with individual power budgets for each antenna
     or with a uniform power value across all antennas.

@@ -106,8 +106,6 @@ These include power limitations, hardware restrictions, and regulatory requireme
    # Power constraints
    TotalPowerConstraint
    AveragePowerConstraint
-   ComplexTotalPowerConstraint
-   ComplexAveragePowerConstraint
    PAPRConstraint
 
    # Antenna constraints
