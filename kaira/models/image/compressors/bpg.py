@@ -21,15 +21,18 @@ class BPGCompressor(BaseModel):
     """
     BPG (Better Portable Graphics) image compression based on bpgenc and bpgdec.
     
-    This model can operate in two modes:
-    1. Fixed quality mode: Uses a specific BPG quality setting
-    2. Target bitrate mode: Finds the highest quality that meets a bit budget
+    This model operates in two modes:
+    1. Fixed quality mode: When quality is provided, uses that specific quality setting
+    2. Target bitrate mode: When max_bits_per_image is provided, finds the highest
+       quality that results in a compressed image smaller than the target size
+    
+    Both modes can optionally return the actual number of bits used per image.
     """
     
     def __init__(
         self, 
         max_bits_per_image: Optional[int] = None, 
-        bpg_quality: Optional[int] = None,
+        quality: Optional[int] = None,
         bpg_encoder_path: str = 'bpgenc',
         bpg_decoder_path: str = 'bpgdec',
         n_jobs: int = None,
@@ -39,8 +42,11 @@ class BPGCompressor(BaseModel):
         Initialize the BPG Compressor.
         
         Args:
-            max_bits_per_image: Maximum bits allowed per compressed image
-            bpg_quality: Fixed quality level for BPG compression (0-51, higher is better)
+            max_bits_per_image: Maximum bits allowed per compressed image. If provided without
+                               quality, the compressor will find the highest quality that 
+                               produces files smaller than this limit.
+            quality: Fixed quality level for BPG compression (0-51, higher is better).
+                    If provided, this exact quality will be used regardless of resulting file size.
             bpg_encoder_path: Path to the BPG encoder executable
             bpg_decoder_path: Path to the BPG decoder executable
             n_jobs: Number of parallel jobs to use (default: CPU count // 2)
@@ -49,14 +55,14 @@ class BPGCompressor(BaseModel):
         super(BPGCompressor, self).__init__()
         
         # At least one of the two parameters must be provided
-        if max_bits_per_image is None and bpg_quality is None:
+        if max_bits_per_image is None and quality is None:
             raise ValueError("At least one of the two parameters must be provided")
         
-        if bpg_quality is not None and (bpg_quality < 0 or bpg_quality > 51):
+        if quality is not None and (quality < 0 or quality > 51):
             raise ValueError("BPG quality must be between 0 and 51")
             
         self.max_bits_per_image = max_bits_per_image
-        self.bpg_quality = bpg_quality
+        self.quality = quality
         self.bpg_encoder_path = bpg_encoder_path
         self.bpg_decoder_path = bpg_decoder_path
         self.n_jobs = n_jobs if n_jobs is not None else max(1, multiprocessing.cpu_count() // 2)
@@ -78,6 +84,10 @@ class BPGCompressor(BaseModel):
     def forward(self, x, return_bits: bool = False):
         """
         Process a batch of images through BPG compression.
+        
+        The compression method depends on initialization parameters:
+        - If quality was provided, that fixed quality is used
+        - If max_bits_per_image was provided, the highest quality meeting the bit constraint is found
         
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
@@ -150,8 +160,8 @@ class BPGCompressor(BaseModel):
             If return_info=False: Processed image tensor
             If return_info=True: Tuple of (tensor, info_dict)
         """
-        if self.bpg_quality is not None:
-            result = self.compress_with_quality(idx, img, self.bpg_quality, return_info)
+        if self.quality is not None:
+            result = self.compress_with_quality(idx, img, self.quality, return_info)
         else:
             result = self.compress_with_target_size(idx, img, self.max_bits_per_image, return_info)
         
@@ -368,7 +378,18 @@ class BPGCompressor(BaseModel):
 
     # Add a dedicated method for getting bits per image
     def get_bits_per_image(self, x):
-        """Compress images and return only the bit counts per image"""
+        """
+        Compress images and return only the bit counts per image
+        
+        The compression method depends on whether quality or max_bits_per_image was provided
+        during initialization.
+        
+        Args:
+            x: Tensor of shape [batch_size, channels, height, width]
+            
+        Returns:
+            List[int]: Number of bits used for each compressed image
+        """
         _, bits_per_image = self.forward(x, return_bits=True)
         return bits_per_image
 
