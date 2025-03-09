@@ -7,8 +7,10 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseLoss
+from .registry import LossRegistry
 
 
+@LossRegistry.register_loss()
 class ContrastiveLoss(BaseLoss):
     """Contrastive Loss Module.
 
@@ -55,6 +57,7 @@ class ContrastiveLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class TripletLoss(BaseLoss):
     """Triplet Loss Module for multimodal data.
 
@@ -158,6 +161,7 @@ class TripletLoss(BaseLoss):
         return loss.mean()
 
 
+@LossRegistry.register_loss()
 class InfoNCELoss(BaseLoss):
     """InfoNCE Loss Module for multimodal contrastive learning.
 
@@ -218,6 +222,7 @@ class InfoNCELoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class CMCLoss(BaseLoss):
     """Cross-Modal Consistency Loss Module.
 
@@ -264,6 +269,7 @@ class CMCLoss(BaseLoss):
         return self.lambda_cmc * loss
 
 
+@LossRegistry.register_loss()
 class AlignmentLoss(BaseLoss):
     """Alignment Loss for multimodal embeddings.
 

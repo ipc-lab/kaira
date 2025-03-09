@@ -9,8 +9,10 @@ import torch.nn.functional as F
 import torchaudio
 
 from .base import BaseLoss
+from .registry import LossRegistry
 
 
+@LossRegistry.register_loss()
 class L1AudioLoss(BaseLoss):
     """L1 Audio Loss Module.
 
@@ -35,6 +37,7 @@ class L1AudioLoss(BaseLoss):
         return self.l1(x, target)
 
 
+@LossRegistry.register_loss()
 class SpectralConvergenceLoss(BaseLoss):
     """Spectral Convergence Loss Module.
 
@@ -58,6 +61,7 @@ class SpectralConvergenceLoss(BaseLoss):
         return torch.norm(target_mag - x_mag, p="fro") / torch.norm(target_mag, p="fro")
 
 
+@LossRegistry.register_loss()
 class LogSTFTMagnitudeLoss(BaseLoss):
     """Log STFT Magnitude Loss Module.
 
@@ -83,6 +87,7 @@ class LogSTFTMagnitudeLoss(BaseLoss):
         return F.l1_loss(log_x_mag, log_target_mag)
 
 
+@LossRegistry.register_loss()
 class STFTLoss(BaseLoss):
     """STFT Loss Module.
 
@@ -147,6 +152,7 @@ class STFTLoss(BaseLoss):
         return sc_loss + mag_loss
 
 
+@LossRegistry.register_loss()
 class MultiResolutionSTFTLoss(BaseLoss):
     """Multi-Resolution STFT Loss Module.
 
@@ -190,6 +196,7 @@ class MultiResolutionSTFTLoss(BaseLoss):
         return loss / len(self.stft_losses)
 
 
+@LossRegistry.register_loss()
 class MelSpectrogramLoss(BaseLoss):
     """Mel-Spectrogram Loss Module.
 
@@ -248,6 +255,7 @@ class MelSpectrogramLoss(BaseLoss):
         return F.l1_loss(x_mel, target_mel)
 
 
+@LossRegistry.register_loss()
 class FeatureMatchingLoss(BaseLoss):
     """Feature Matching Loss Module.
 
@@ -336,6 +344,7 @@ class FeatureMatchingLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class AudioContrastiveLoss(BaseLoss):
     """Audio Contrastive Loss Module.
 

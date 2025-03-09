@@ -8,8 +8,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .base import BaseLoss
+from .registry import LossRegistry
 
 
+@LossRegistry.register_loss()
 class CrossEntropyLoss(BaseLoss):
     """Cross Entropy Loss Module.
 
@@ -40,6 +42,7 @@ class CrossEntropyLoss(BaseLoss):
         return self.ce(x, target)
 
 
+@LossRegistry.register_loss()
 class LabelSmoothingLoss(BaseLoss):
     """Label Smoothing Loss Module.
 
@@ -87,6 +90,7 @@ class LabelSmoothingLoss(BaseLoss):
         return loss.mean()
 
 
+@LossRegistry.register_loss()
 class CosineSimilarityLoss(BaseLoss):
     """Cosine Similarity Loss Module.
 
@@ -125,6 +129,7 @@ class CosineSimilarityLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class Word2VecLoss(BaseLoss):
     """Word2Vec Loss Module.
 

@@ -19,8 +19,10 @@ from kaira.metrics import (
 )
 
 from .base import BaseLoss
+from .registry import LossRegistry
 
 
+@LossRegistry.register_loss()
 class MSELoss(BaseLoss):
     """Mean Squared Error (MSE) Loss Module.
 
@@ -47,6 +49,7 @@ class MSELoss(BaseLoss):
         return self.mse(x, target)
 
 
+@LossRegistry.register_loss()
 class CombinedLoss(BaseLoss):
     """Combined Loss Module.
 
@@ -83,6 +86,7 @@ class CombinedLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class MSELPIPSLoss(BaseLoss):
     """MSELPIPSLoss Module.
 
@@ -119,6 +123,7 @@ class MSELPIPSLoss(BaseLoss):
         return self.mse_weight * mse + self.lpips_weight * lpips
 
 
+@LossRegistry.register_loss()
 class LPIPSLoss(BaseLoss):
     """Learned Perceptual Image Patch Similarity (LPIPS) Loss Module.
 
@@ -146,6 +151,7 @@ class LPIPSLoss(BaseLoss):
         return self.lpips(x, target)
 
 
+@LossRegistry.register_loss()
 class SSIMLoss(BaseLoss):
     """Structural Similarity Index Measure (SSIM) Loss Module.
 
@@ -172,6 +178,7 @@ class SSIMLoss(BaseLoss):
         return 1 - self.ssim(x, target)
 
 
+@LossRegistry.register_loss()
 class MSSSIMLoss(BaseLoss):
     """Multi-Scale Structural Similarity Index Measure (MS-SSIM) Loss Module.
 
@@ -198,6 +205,7 @@ class MSSSIMLoss(BaseLoss):
         return 1 - self.ms_ssim(x, target)
 
 
+@LossRegistry.register_loss()
 class L1Loss(BaseLoss):
     """L1 (Mean Absolute Error) Loss Module.
 
@@ -224,6 +232,7 @@ class L1Loss(BaseLoss):
         return self.l1(x, target)
 
 
+@LossRegistry.register_loss()
 class VGGLoss(BaseLoss):
     """VGG Perceptual Loss Module.
 
@@ -296,6 +305,7 @@ class VGGLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class TotalVariationLoss(BaseLoss):
     """Total Variation Loss Module.
 
@@ -323,6 +333,7 @@ class TotalVariationLoss(BaseLoss):
         return (h_tv + w_tv) / batch_size
 
 
+@LossRegistry.register_loss()
 class GradientLoss(BaseLoss):
     """Gradient Loss Module.
 
@@ -367,6 +378,7 @@ class GradientLoss(BaseLoss):
         return loss / c
 
 
+@LossRegistry.register_loss()
 class PSNRLoss(BaseLoss):
     """Peak Signal-to-Noise Ratio (PSNR) Loss Module.
 
@@ -400,6 +412,7 @@ class PSNRLoss(BaseLoss):
         return -psnr
 
 
+@LossRegistry.register_loss()
 class StyleLoss(BaseLoss):
     """Style Loss Module based on Gram matrices.
 
@@ -482,6 +495,7 @@ class StyleLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class FocalLoss(BaseLoss):
     """Focal Loss Module for dealing with class imbalance.
 
@@ -544,6 +558,7 @@ class FocalLoss(BaseLoss):
             return focal_loss
 
 
+@LossRegistry.register_loss()
 class ElasticLoss(BaseLoss):
     """Elastic Loss combines L1 and L2 losses.
 

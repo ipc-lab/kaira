@@ -7,8 +7,10 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseLoss
+from .registry import LossRegistry
 
 
+@LossRegistry.register_loss()
 class VanillaGANLoss(BaseLoss):
     """Vanilla GAN Loss Module.
 
@@ -63,6 +65,7 @@ class VanillaGANLoss(BaseLoss):
         return F.binary_cross_entropy_with_logits(discriminator_pred, target, reduction=self.reduction)
 
 
+@LossRegistry.register_loss()
 class LSGANLoss(BaseLoss):
     """Least Squares GAN Loss Module.
 
@@ -123,6 +126,7 @@ class LSGANLoss(BaseLoss):
             return torch.mean((pred - 1) ** 2)
 
 
+@LossRegistry.register_loss()
 class WassersteinGANLoss(BaseLoss):
     """Wasserstein GAN Loss Module.
 
@@ -176,6 +180,7 @@ class WassersteinGANLoss(BaseLoss):
             return -torch.mean(pred)
 
 
+@LossRegistry.register_loss()
 class HingeLoss(BaseLoss):
     """Hinge Loss Module for GANs.
 
@@ -231,6 +236,7 @@ class HingeLoss(BaseLoss):
             return -pred.mean()
 
 
+@LossRegistry.register_loss()
 class FeatureMatchingLoss(BaseLoss):
     """Feature Matching Loss Module for GANs.
 
@@ -258,6 +264,7 @@ class FeatureMatchingLoss(BaseLoss):
         return loss
 
 
+@LossRegistry.register_loss()
 class R1GradientPenalty(BaseLoss):
     """R1 Gradient Penalty Module for GANs.
 
