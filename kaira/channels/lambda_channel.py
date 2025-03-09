@@ -9,8 +9,10 @@ from typing import Callable
 import torch
 
 from .base import BaseChannel
+from .registry import ChannelRegistry
 
 
+@ChannelRegistry.register_channel()
 class LambdaChannel(BaseChannel):
     """Customizable channel that applies user-defined functions to signals.
 
@@ -54,6 +56,7 @@ class LambdaChannel(BaseChannel):
         return self.fn(x)
 
 
+@ChannelRegistry.register_channel()
 class PerfectChannel(BaseChannel):
     """Identity channel that passes signals through unchanged.
 

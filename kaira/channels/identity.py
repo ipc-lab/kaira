@@ -7,8 +7,10 @@ where information is transmitted without any error or loss :cite:`shannon1948mat
 import torch
 
 from .base import BaseChannel
+from .registry import ChannelRegistry
 
 
+@ChannelRegistry.register_channel()
 class PerfectChannel(BaseChannel):
     """Identity channel that passes signals through unchanged.
 

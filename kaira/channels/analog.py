@@ -13,6 +13,7 @@ import torch
 from kaira.utils import snr_to_noise_power, to_tensor
 
 from .base import BaseChannel
+from .registry import ChannelRegistry
 
 
 def _apply_noise(x: torch.Tensor, noise_power=None, snr_db=None) -> torch.Tensor:
@@ -65,6 +66,7 @@ def _to_complex(x: torch.Tensor) -> torch.Tensor:
         return torch.complex(x, torch.zeros_like(x))
 
 
+@ChannelRegistry.register_channel()
 class AWGNChannel(BaseChannel):
     """Additive white Gaussian noise (AWGN) channel for signal transmission.
 
@@ -126,6 +128,7 @@ class AWGNChannel(BaseChannel):
 GaussianChannel = AWGNChannel
 
 
+@ChannelRegistry.register_channel()
 class LaplacianChannel(BaseChannel):
     """Channel with additive Laplacian (double-exponential) noise.
 
@@ -201,6 +204,7 @@ class LaplacianChannel(BaseChannel):
         return x + noise
 
 
+@ChannelRegistry.register_channel()
 class PoissonChannel(BaseChannel):
     r"""Channel with signal-dependent Poisson noise.
 
@@ -269,6 +273,7 @@ class PoissonChannel(BaseChannel):
             return y
 
 
+@ChannelRegistry.register_channel()
 class PhaseNoiseChannel(BaseChannel):
     """Channel that introduces random phase noise.
 
@@ -309,6 +314,7 @@ class PhaseNoiseChannel(BaseChannel):
         return x * torch.exp(1j * phase_noise)
 
 
+@ChannelRegistry.register_channel()
 class FlatFadingChannel(BaseChannel):
     """Flat fading channel with configurable distribution and coherence time.
 
@@ -512,6 +518,7 @@ class FlatFadingChannel(BaseChannel):
         return y
 
 
+@ChannelRegistry.register_channel()
 class NonlinearChannel(BaseChannel):
     """General nonlinear channel with configurable transfer function.
 

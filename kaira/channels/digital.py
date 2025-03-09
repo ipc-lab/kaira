@@ -13,8 +13,10 @@ import torch
 from kaira.utils import to_tensor
 
 from .base import BaseChannel
+from .registry import ChannelRegistry
 
 
+@ChannelRegistry.register_channel()
 class BinarySymmetricChannel(BaseChannel):
     """Binary Symmetric Channel (BSC) with symmetric bit flip probability.
 
@@ -71,6 +73,7 @@ class BinarySymmetricChannel(BaseChannel):
         return y
 
 
+@ChannelRegistry.register_channel()
 class BinaryErasureChannel(BaseChannel):
     """Binary Erasure Channel (BEC) with symbol erasure probability.
 
@@ -121,6 +124,7 @@ class BinaryErasureChannel(BaseChannel):
         return y
 
 
+@ChannelRegistry.register_channel()
 class BinaryZChannel(BaseChannel):
     """Z Channel (asymmetric binary channel) with one-sided error probability.
 

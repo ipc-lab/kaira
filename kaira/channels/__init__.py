@@ -25,6 +25,9 @@ from .digital import BinaryErasureChannel, BinarySymmetricChannel, BinaryZChanne
 from .lambda_channel import LambdaChannel
 from .identity import IdealChannel, IdentityChannel, PerfectChannel
 
+# Channel registry
+from .registry import ChannelRegistry
+
 __all__ = [
     # Base classes
     "BaseChannel",
@@ -45,4 +48,6 @@ __all__ = [
     "PhaseNoiseChannel",
     "FlatFadingChannel",
     "NonlinearChannel",
+    # Channel registry
+    "ChannelRegistry",
 ]
