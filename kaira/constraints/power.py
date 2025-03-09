@@ -8,8 +8,10 @@ prevent hardware damage, and optimize energy efficiency :cite:`goldsmith2005wire
 import torch
 
 from .base import BaseConstraint
+from .registry import ConstraintRegistry
 
 
+@ConstraintRegistry.register_constraint()
 class TotalPowerConstraint(BaseConstraint):
     """Normalizes signal to achieve exact total power regardless of input signal power.
 
@@ -70,6 +72,7 @@ class TotalPowerConstraint(BaseConstraint):
         return x
 
 
+@ConstraintRegistry.register_constraint()
 class AveragePowerConstraint(BaseConstraint):
     """Scales signal to achieve specified average power per sample.
 
@@ -131,6 +134,7 @@ class AveragePowerConstraint(BaseConstraint):
         return x
 
 
+@ConstraintRegistry.register_constraint()
 class PAPRConstraint(BaseConstraint):
     """Reduces peak-to-average power ratio using soft clipping to minimize signal distortion.
 

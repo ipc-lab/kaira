@@ -8,8 +8,10 @@ comply with hardware limitations and regulatory requirements :cite:`han2005overv
 import torch
 
 from .base import BaseConstraint
+from .registry import ConstraintRegistry
 
 
+@ConstraintRegistry.register_constraint()
 class PeakAmplitudeConstraint(BaseConstraint):
     """Enforces maximum signal amplitude by clipping values that exceed threshold.
 
@@ -49,6 +51,7 @@ class PeakAmplitudeConstraint(BaseConstraint):
         return torch.clamp(x, -self.max_amplitude, self.max_amplitude)
 
 
+@ConstraintRegistry.register_constraint()
 class SpectralMaskConstraint(BaseConstraint):
     """Restricts signal frequency components to comply with regulatory spectral masks.
 

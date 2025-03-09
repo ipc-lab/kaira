@@ -52,6 +52,8 @@ from .power import (
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
 from .utils import combine_constraints, create_mimo_constraints, create_ofdm_constraints
 
+from .registry import ConstraintRegistry
+
 __all__ = [
     # Base classes
     "BaseConstraint",
@@ -68,4 +70,8 @@ __all__ = [
     # Utility functions
     "utils",
     "combine_constraints",
+    "create_mimo_constraints",
+    "create_ofdm_constraints",
+    # Registry
+    "ConstraintRegistry",
 ]

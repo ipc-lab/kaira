@@ -11,8 +11,10 @@ from typing import Optional
 import torch
 
 from .base import BaseConstraint
+from .registry import ConstraintRegistry
 
 
+@ConstraintRegistry.register_constraint()
 class PerAntennaPowerConstraint(BaseConstraint):
     """Distributes power budget across multiple antennas to ensure per-antenna power limits.
 
