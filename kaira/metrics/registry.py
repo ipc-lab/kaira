@@ -11,10 +11,10 @@ of configurable evaluation pipelines that can select metrics at runtime.
 Examples:
     Register a custom metric:
 
-    >>> from kaira.metrics.registry import register_metric
+    >>> from kaira.metrics.registry import MetricRegistry
     >>> from kaira.metrics.base import BaseMetric
     >>>
-    >>> @register_metric()  # Uses class name as the registration key
+    >>> @MetricRegistry.register_metric()  # Uses class name as the registration key
     >>> class MyCustomMetric(BaseMetric):
     ...     def __init__(self, param1=1.0):
     ...         super().__init__(name="my_custom_metric")
@@ -26,268 +26,285 @@ Examples:
 
     Register with custom name:
 
-    >>> @register_metric("awesome_metric")
+    >>> @MetricRegistry.register_metric("awesome_metric")
     >>> class ComplicatedMetricWithLongName(BaseMetric):
     ...     # implementation
 
     Create a metric from registry:
 
-    >>> from kaira.metrics.registry import create_metric
+    >>> from kaira.metrics.registry import MetricRegistry
     >>>
     >>> # Create instance using registered name
-    >>> metric = create_metric("mycustommetric", param1=2.0)
+    >>> metric = MetricRegistry.create("mycustommetric", param1=2.0)
 
     Use factory functions for common metric suites:
 
-    >>> from kaira.metrics.registry import create_image_quality_metrics, create_composite_metric
+    >>> from kaira.metrics.registry import MetricRegistry
     >>>
     >>> # Create standard image metrics
-    >>> metrics_dict = create_image_quality_metrics(data_range=2.0)
+    >>> metrics_dict = MetricRegistry.create_image_quality_metrics(data_range=2.0)
     >>>
     >>> # Create weighted combination
     >>> weights = {"psnr": 0.6, "ssim": 0.4}
-    >>> combined = create_composite_metric(metrics_dict, weights)
+    >>> combined = MetricRegistry.create_composite_metric(metrics_dict, weights)
 """
 
 import inspect
-from typing import Any, Dict, List, Literal, Optional, Type
+from typing import Any, Callable, Dict, List, Literal, Optional, Type
 
 import torch
 
 from .base import BaseMetric
 from .composite import CompositeMetric
 
-# Registries for metrics and factories
-_METRIC_REGISTRY: Dict[str, Type[BaseMetric]] = {}
 
+class MetricRegistry:
+    """A registry for metrics in Kaira.
 
-def register_metric(name: Optional[str] = None):
-    """Decorator to register a metric class in the global registry.
-
-    This makes the metric discoverable and instantiable through the registry system.
-    Each registered metric must inherit from BaseMetric to ensure compatibility.
-
-    Args:
-        name (Optional[str]): Optional custom name for the metric. If not provided,
-            the lowercase class name will be used as the registration key.
-            Using custom names is helpful for shorter keys or when the class name
-            is not descriptive enough.
-
-    Returns:
-        Callable: Decorator function that registers the metric class
-
-    Example:
-        >>> @register_metric()  # Uses class name as key
-        >>> class MyMetric(BaseMetric):
-        ...     # implementation
-        ...
-        >>> @register_metric("better_name")  # Uses custom name as key
-        >>> class GenericNameThatNeedsBetterRegistryKey(BaseMetric):
-        ...     # implementation
+    This class provides a centralized registry for all metrics, making it easier to instantiate them
+    by name with appropriate parameters.
     """
 
-    def decorator(cls: Type[BaseMetric]) -> Type[BaseMetric]:
-        metric_name = name or cls.__name__.lower()
-        if metric_name in _METRIC_REGISTRY:
-            raise ValueError(f"Metric with name '{metric_name}' already registered")
-        _METRIC_REGISTRY[metric_name] = cls
-        return cls
+    _metrics: Dict[str, Type[BaseMetric]] = {}
 
-    return decorator
+    @classmethod
+    def register(cls, name: str, metric_class: Type[BaseMetric]) -> None:
+        """Register a new metric in the registry.
 
+        Args:
+            name (str): The name to register the metric under.
+            metric_class (Type[BaseMetric]): The metric class to register.
+        """
+        if name in cls._metrics:
+            raise ValueError(f"Metric with name '{name}' already registered")
+        cls._metrics[name] = metric_class
 
-def create_metric(name: str, **kwargs: Any) -> BaseMetric:
-    """Create a metric instance from the registry with the specified parameters.
+    @classmethod
+    def register_metric(cls, name: Optional[str] = None) -> Callable[[Type[BaseMetric]], Type[BaseMetric]]:
+        """Decorator to register a metric class in the global registry.
 
-    This function instantiates a registered metric class with the provided parameters,
-    allowing for flexible creation of metrics at runtime based on configuration.
+        This makes the metric discoverable and instantiable through the registry system.
+        Each registered metric must inherit from BaseMetric to ensure compatibility.
 
-    Args:
-        name (str): Name of the metric to create (case-sensitive registry key)
-        **kwargs: Arguments to pass to the metric constructor. These should match
-            the parameters expected by the metric's __init__ method.
+        Args:
+            name (Optional[str]): Optional custom name for the metric. If not provided,
+                the lowercase class name will be used as the registration key.
+                Using custom names is helpful for shorter keys or when the class name
+                is not descriptive enough.
 
-    Returns:
-        BaseMetric: Instantiated metric object ready for use
+        Returns:
+            Callable: Decorator function that registers the metric class
 
-    Raises:
-        KeyError: If the metric name is not found in the registry
-        TypeError: If the provided kwargs don't match the metric's expected parameters
+        Example:
+            >>> @MetricRegistry.register_metric()  # Uses class name as key
+            >>> class MyMetric(BaseMetric):
+            ...     # implementation
+            ...
+            >>> @MetricRegistry.register_metric("better_name")  # Uses custom name as key
+            >>> class GenericNameThatNeedsBetterRegistryKey(BaseMetric):
+            ...     # implementation
+        """
 
-    Example:
-        >>> # Create a PSNR metric with custom parameters
-        >>> psnr = create_metric("psnr", data_range=255.0)
-        >>>
-        >>> # Create a custom registered metric
-        >>> my_metric = create_metric("mycustommetric", param1=10, param2="value")
-    """
-    if name not in _METRIC_REGISTRY:
-        raise KeyError(f"Metric '{name}' not found in registry. Available metrics: {list(_METRIC_REGISTRY.keys())}")
-    return _METRIC_REGISTRY[name](**kwargs)
+        def decorator(cls: Type[BaseMetric]) -> Type[BaseMetric]:
+            metric_name = name or cls.__name__.lower()
+            MetricRegistry.register(metric_name, cls)
+            return cls
 
+        return decorator
 
-def list_metrics() -> List[str]:
-    """List all registered metrics available for creation.
+    @classmethod
+    def create(cls, name: str, **kwargs: Any) -> BaseMetric:
+        """Create a metric instance from the registry with the specified parameters.
 
-    This function returns the names of all metrics that have been registered
-    and can be instantiated using the create_metric function.
+        This function instantiates a registered metric class with the provided parameters,
+        allowing for flexible creation of metrics at runtime based on configuration.
 
-    Returns:
-        List[str]: Names (registry keys) of all registered metrics
+        Args:
+            name (str): Name of the metric to create (case-sensitive registry key)
+            **kwargs: Arguments to pass to the metric constructor. These should match
+                the parameters expected by the metric's __init__ method.
 
-    Example:
-        >>> available_metrics = list_metrics()
-        >>> print(f"Available metrics: {available_metrics}")
-        >>>
-        >>> # Check if a specific metric is available
-        >>> if "lpips" in list_metrics():
-        ...     metric = create_metric("lpips")
-    """
-    return list(_METRIC_REGISTRY.keys())
+        Returns:
+            BaseMetric: Instantiated metric object ready for use
 
+        Raises:
+            KeyError: If the metric name is not found in the registry
+            TypeError: If the provided kwargs don't match the metric's expected parameters
 
-def get_metric_info(name: str) -> Dict[str, Any]:
-    """Get detailed information about a registered metric.
+        Example:
+            >>> # Create a PSNR metric with custom parameters
+            >>> psnr = MetricRegistry.create("psnr", data_range=255.0)
+            >>>
+            >>> # Create a custom registered metric
+            >>> my_metric = MetricRegistry.create("mycustommetric", param1=10, param2="value")
+        """
+        if name not in cls._metrics:
+            raise KeyError(f"Metric '{name}' not found in registry. Available metrics: {list(cls._metrics.keys())}")
+        return cls._metrics[name](**kwargs)
 
-    This function provides introspection capabilities to examine a metric's
-    parameters, documentation, and other metadata without instantiating it.
-    Useful for dynamic UI generation or parameter validation.
+    @classmethod
+    def list_metrics(cls) -> List[str]:
+        """List all registered metrics available for creation.
 
-    Args:
-        name (str): Name of the metric to inspect
+        This function returns the names of all metrics that have been registered
+        and can be instantiated using the create_metric function.
 
-    Returns:
-        Dict[str, Any]: Dictionary containing:
-            - name: Registry key of the metric
-            - class: Original class name
-            - module: Module where the class is defined
-            - docstring: Documentation string
-            - parameters: Dictionary of parameter names and default values
+        Returns:
+            List[str]: Names (registry keys) of all registered metrics
 
-    Raises:
-        KeyError: If the metric name is not found in the registry
+        Example:
+            >>> available_metrics = MetricRegistry.list_metrics()
+            >>> print(f"Available metrics: {available_metrics}")
+            >>>
+            >>> # Check if a specific metric is available
+            >>> if "lpips" in MetricRegistry.list_metrics():
+            ...     metric = MetricRegistry.create("lpips")
+        """
+        return list(cls._metrics.keys())
 
-    Example:
-        >>> # Get information about the PSNR metric
-        >>> psnr_info = get_metric_info("psnr")
-        >>> print(f"PSNR parameters: {psnr_info['parameters']}")
-        >>> print(f"Documentation: {psnr_info['docstring']}")
-    """
-    if name not in _METRIC_REGISTRY:
-        raise KeyError(f"Metric '{name}' not found in registry")
+    @classmethod
+    def get_metric_info(cls, name: str) -> Dict[str, Any]:
+        """Get detailed information about a registered metric.
 
-    metric_class = _METRIC_REGISTRY[name]
-    signature = inspect.signature(metric_class.__init__)
-    params = {k: v.default if v.default is not inspect.Parameter.empty else None for k, v in list(signature.parameters.items())[1:]}  # Skip 'self'
+        This function provides introspection capabilities to examine a metric's
+        parameters, documentation, and other metadata without instantiating it.
+        Useful for dynamic UI generation or parameter validation.
 
-    return {
-        "name": name,
-        "class": metric_class.__name__,
-        "module": metric_class.__module__,
-        "docstring": inspect.getdoc(metric_class),
-        "parameters": params,
-    }
+        Args:
+            name (str): Name of the metric to inspect
 
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - name: Registry key of the metric
+                - class: Original class name
+                - module: Module where the class is defined
+                - docstring: Documentation string
+                - parameters: Dictionary of parameter names and default values
 
-def create_image_quality_metrics(data_range: float = 1.0, lpips_net_type: Literal["vgg", "alex", "squeeze"] = "alex", device: Optional[torch.device] = None) -> Dict[str, BaseMetric]:
-    """Create a standard suite of image quality assessment metrics.
+        Raises:
+            KeyError: If the metric name is not found in the registry
 
-    This factory function creates a collection of commonly used image quality metrics
-    with consistent parameters, making it easy to evaluate images across multiple metrics.
+        Example:
+            >>> # Get information about the PSNR metric
+            >>> psnr_info = MetricRegistry.get_metric_info("psnr")
+            >>> print(f"PSNR parameters: {psnr_info['parameters']}")
+            >>> print(f"Documentation: {psnr_info['docstring']}")
+        """
+        if name not in cls._metrics:
+            raise KeyError(f"Metric '{name}' not found in registry")
 
-    The returned metrics include:
-    - PSNR (Peak Signal-to-Noise Ratio): A pixel-level fidelity metric
-    - SSIM (Structural Similarity Index): A perceptual metric focusing on structure
-    - MS-SSIM (Multi-Scale SSIM): A multi-scale version of SSIM
-    - LPIPS (Learned Perceptual Image Patch Similarity): A learned perceptual metric
+        metric_class = cls._metrics[name]
+        signature = inspect.signature(metric_class.__init__)
+        params = {k: v.default if v.default is not inspect.Parameter.empty else None for k, v in list(signature.parameters.items())[1:]}  # Skip 'self'
 
-    Args:
-        data_range (float): The data range of the images. Use 1.0 for normalized images
-            in range [0,1] or 255.0 for uint8 images in range [0,255].
-        lpips_net_type (Literal['vgg', 'alex', 'squeeze']): The backbone network for LPIPS. Options are:
-            - 'alex': AlexNet (faster, less accurate)
-            - 'vgg': VGG network (slower, more accurate)
-            - 'squeeze': SqueezeNet (fastest, least accurate)
-        device (Optional[torch.device]): Device to place the metrics on.
-            If None, metrics will be on the default device (typically CPU).
+        return {
+            "name": name,
+            "class": metric_class.__name__,
+            "module": metric_class.__module__,
+            "docstring": inspect.getdoc(metric_class),
+            "parameters": params,
+        }
 
-    Returns:
-        Dict[str, BaseMetric]: Dictionary mapping metric names to initialized metrics.
-            All metrics follow the BaseMetric interface and can be called directly
-            with input tensors.
+    @classmethod
+    def create_image_quality_metrics(cls, data_range: float = 1.0, lpips_net_type: Literal["vgg", "alex", "squeeze"] = "alex", device: Optional[torch.device] = None) -> Dict[str, BaseMetric]:
+        """Create a standard suite of image quality assessment metrics.
 
-    Example:
-        >>> import torch
-        >>>
-        >>> # Create metrics for normalized images [0,1]
-        >>> metrics = create_image_quality_metrics(data_range=1.0, device=torch.device('cuda'))
-        >>>
-        >>> # Generate some test images
-        >>> pred = torch.rand(1, 3, 256, 256).cuda()  # Batch of random RGB images
-        >>> target = torch.rand(1, 3, 256, 256).cuda()
-        >>>
-        >>> # Compute metrics individually
-        >>> psnr_value = metrics['psnr'](pred, target)
-        >>> ssim_value = metrics['ssim'](pred, target)
-        >>>
-        >>> # Or create a composite metric
-        >>> composite = create_composite_metric(metrics, weights={'psnr': 0.5, 'ssim': 0.5})
-        >>> score = composite(pred, target)
-    """
-    from .image import LPIPS, PSNR, SSIM, MultiScaleSSIM
+        This factory function creates a collection of commonly used image quality metrics
+        with consistent parameters, making it easy to evaluate images across multiple metrics.
 
-    metrics = {
-        "psnr": PSNR(data_range=data_range),
-        "ssim": SSIM(data_range=data_range),
-        "ms_ssim": MultiScaleSSIM(data_range=data_range),
-        "lpips": LPIPS(net_type=lpips_net_type),
-    }
+        The returned metrics include:
+        - PSNR (Peak Signal-to-Noise Ratio): A pixel-level fidelity metric
+        - SSIM (Structural Similarity Index): A perceptual metric focusing on structure
+        - MS-SSIM (Multi-Scale SSIM): A multi-scale version of SSIM
+        - LPIPS (Learned Perceptual Image Patch Similarity): A learned perceptual metric
 
-    if device is not None:
-        for metric in metrics.values():
-            metric.to(device)
+        Args:
+            data_range (float): The data range of the images. Use 1.0 for normalized images
+                in range [0,1] or 255.0 for uint8 images in range [0,255].
+            lpips_net_type (Literal['vgg', 'alex', 'squeeze']): The backbone network for LPIPS. Options are:
+                - 'alex': AlexNet (faster, less accurate)
+                - 'vgg': VGG network (slower, more accurate)
+                - 'squeeze': SqueezeNet (fastest, least accurate)
+            device (Optional[torch.device]): Device to place the metrics on.
+                If None, metrics will be on the default device (typically CPU).
 
-    return metrics
+        Returns:
+            Dict[str, BaseMetric]: Dictionary mapping metric names to initialized metrics.
+                All metrics follow the BaseMetric interface and can be called directly
+                with input tensors.
 
+        Example:
+            >>> import torch
+            >>>
+            >>> # Create metrics for normalized images [0,1]
+            >>> metrics = MetricRegistry.create_image_quality_metrics(data_range=1.0, device=torch.device('cuda'))
+            >>>
+            >>> # Generate some test images
+            >>> pred = torch.rand(1, 3, 256, 256).cuda()  # Batch of random RGB images
+            >>> target = torch.rand(1, 3, 256, 256).cuda()
+            >>>
+            >>> # Compute metrics individually
+            >>> psnr_value = metrics['psnr'](pred, target)
+            >>> ssim_value = metrics['ssim'](pred, target)
+            >>>
+            >>> # Or create a composite metric
+            >>> composite = MetricRegistry.create_composite_metric(metrics, weights={'psnr': 0.5, 'ssim': 0.5})
+            >>> score = composite(pred, target)
+        """
+        from .image import LPIPS, PSNR, SSIM, MultiScaleSSIM
 
-def create_composite_metric(metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None) -> BaseMetric:
-    """Create a composite metric that combines multiple metrics with weights.
+        metrics = {
+            "psnr": PSNR(data_range=data_range),
+            "ssim": SSIM(data_range=data_range),
+            "ms_ssim": MultiScaleSSIM(data_range=data_range),
+            "lpips": LPIPS(net_type=lpips_net_type),
+        }
 
-    This factory function creates a CompositeMetric instance that applies multiple
-    metrics to the same inputs and combines their results according to specified weights.
+        if device is not None:
+            for metric in metrics.values():
+                metric.to(device)
 
-    This is useful for:
-    - Creating custom evaluation criteria that balance multiple aspects
-    - Combining complementary metrics (e.g., pixel accuracy and perceptual quality)
-    - Building task-specific evaluation metrics that focus on relevant properties
+        return metrics
 
-    Args:
-        metrics (Dict[str, BaseMetric]): Dictionary mapping metric names to metric objects.
-            All provided metrics should follow the BaseMetric interface.
-        weights (Optional[Dict[str, float]]): Optional dictionary mapping metric names to
-            their relative weights. If None, metrics will be equally weighted.
+    @classmethod
+    def create_composite_metric(cls, metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None) -> BaseMetric:
+        """Create a composite metric that combines multiple metrics with weights.
 
-            Use negative weights for metrics where lower values are better (like LPIPS)
-            when combining with metrics where higher values are better (like PSNR/SSIM).
+        This factory function creates a CompositeMetric instance that applies multiple
+        metrics to the same inputs and combines their results according to specified weights.
 
-    Returns:
-        BaseMetric: A composite metric that combines the provided metrics according
-            to the specified weights. This metric follows the BaseMetric interface
-            and can be used like any other metric.
+        This is useful for:
+        - Creating custom evaluation criteria that balance multiple aspects
+        - Combining complementary metrics (e.g., pixel accuracy and perceptual quality)
+        - Building task-specific evaluation metrics that focus on relevant properties
 
-    Example:
-        >>> from kaira.metrics import PSNR, SSIM
-        >>> from kaira.metrics.registry import create_composite_metric
-        >>>
-        >>> # Create individual metrics
-        >>> psnr = PSNR(data_range=1.0)
-        >>> ssim = SSIM(data_range=1.0)
-        >>> lpips = LPIPS(net_type='alex')  # Lower values are better
-        >>>
-        >>> # Create a balanced composite metric (higher values = better)
-        >>> metrics = {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
-        >>> weights = {'psnr': 0.4, 'ssim': 0.4, 'lpips': -0.2}  # Negative weight for LPIPS
-        >>>
-        >>> balanced_metric = create_composite_metric(metrics, weights)
-    """
-    return CompositeMetric(metrics, weights)
+        Args:
+            metrics (Dict[str, BaseMetric]): Dictionary mapping metric names to metric objects.
+                All provided metrics should follow the BaseMetric interface.
+            weights (Optional[Dict[str, float]]): Optional dictionary mapping metric names to
+                their relative weights. If None, metrics will be equally weighted.
+
+                Use negative weights for metrics where lower values are better (like LPIPS)
+                when combining with metrics where higher values are better (like PSNR/SSIM).
+
+        Returns:
+            BaseMetric: A composite metric that combines the provided metrics according
+                to the specified weights. This metric follows the BaseMetric interface
+                and can be used like any other metric.
+
+        Example:
+            >>> from kaira.metrics import PSNR, SSIM
+            >>> from kaira.metrics.registry import MetricRegistry
+            >>>
+            >>> # Create individual metrics
+            >>> psnr = PSNR(data_range=1.0)
+            >>> ssim = SSIM(data_range=1.0)
+            >>> lpips = LPIPS(net_type='alex')  # Lower values are better
+            >>>
+            >>> # Create a balanced composite metric (higher values = better)
+            >>> metrics = {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
+            >>> weights = {'psnr': 0.4, 'ssim': 0.4, 'lpips': -0.2}  # Negative weight for LPIPS
+            >>>
+            >>> balanced_metric = MetricRegistry.create_composite_metric(metrics, weights)
+        """
+        return CompositeMetric(metrics, weights)
