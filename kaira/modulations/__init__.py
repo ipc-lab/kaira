@@ -51,6 +51,8 @@ from .utils import (
     plot_constellation,
 )
 
+from .registry import ModulationRegistry
+
 __all__ = [
     # Base classes
     "BaseModulator",
@@ -91,4 +93,6 @@ __all__ = [
     "plot_constellation",
     "calculate_theoretical_ber",
     "calculate_spectral_efficiency",
+    # Registry
+    "ModulationRegistry",
 ]
