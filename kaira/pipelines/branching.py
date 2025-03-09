@@ -1,8 +1,10 @@
 from typing import Any, Callable, Dict, Optional
 
 from .base import BasePipeline
+from .registry import PipelineRegistry
 
 
+@PipelineRegistry.register_pipeline()
 class BranchingPipeline(BasePipeline):
     """A pipeline that routes input to different branches based on conditions.
 

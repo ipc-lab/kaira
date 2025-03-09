@@ -4,11 +4,12 @@ This module contains the DeepJSCCPipeline, which is a pipeline for image compres
 transmission using Deep Joint Source-Channel Coding (DeepJSCC).
 """
 
-
 from .base import BaseChannel, BaseConstraint, BaseModel
+from .registry import PipelineRegistry
 from .sequential import SequentialPipeline
 
 
+@PipelineRegistry.register_pipeline("deepjscc")
 class DeepJSCCPipeline(SequentialPipeline):
     """A specialized pipeline for Deep Joint Source-Channel Coding (DeepJSCC).
 

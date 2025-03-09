@@ -10,8 +10,10 @@ import torch
 import torch.nn as nn
 
 from .base import BaseChannel, BaseModel, BasePipeline
+from .registry import PipelineRegistry
 
 
+@PipelineRegistry.register_pipeline("feedback_channel")
 class FeedbackChannelPipeline(BasePipeline):
     """A pipeline that models communication with a feedback channel.
 

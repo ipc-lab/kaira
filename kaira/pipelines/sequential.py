@@ -1,8 +1,10 @@
 from typing import Any, Callable, Optional, Sequence
 
 from .base import ConfigurablePipeline
+from .registry import PipelineRegistry
 
 
+@PipelineRegistry.register_pipeline()
 class SequentialPipeline(ConfigurablePipeline):
     """A pipeline that processes steps sequentially.
 
