@@ -2,7 +2,7 @@
 import pytest
 import torch
 
-from kaira.models.image.tung2022_deepjsccq2 import Tung2022DeepJSCCQ2Decoder, DeepJSCCQ2Encoder
+from kaira.models.image.tung2022_deepjscc_q2 import Tung2022DeepJSCCQ2Decoder, DeepJSCCQ2Encoder
 
 
 @pytest.fixture

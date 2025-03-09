@@ -563,7 +563,7 @@ class AdaptiveModulator(nn.Module):
         return self.fc(x)
 
 
-class Yang2024SwinJSCCEncoder(BaseModel):
+class Yang2024DeepJSCCSwinEncoder(BaseModel):
     """
     Swin Transformer-based Joint Source-Channel Coding Encoder :cite:`yang2024swinjscc`.
     
@@ -954,7 +954,7 @@ class Yang2024SwinJSCCEncoder(BaseModel):
         }
 
 
-class Yang2024SwinJSCCDecoder(BaseModel):
+class Yang2024DeepJSCCSwinDecoder(BaseModel):
     """
     Swin Transformer-based Joint Source-Channel Coding Decoder :cite:`yang2024swinjscc`.
     
@@ -1432,7 +1432,7 @@ def create_swin_jscc_models(
     config: SwinJSCCConfig, 
     channel_dim: int, 
     device: Optional[torch.device] = None
-) -> Tuple[Yang2024SwinJSCCEncoder, Yang2024SwinJSCCDecoder]:
+) -> Tuple[Yang2024DeepJSCCSwinEncoder, Yang2024DeepJSCCSwinDecoder]:
     """
     Create a pair of SwinJSCC encoder and decoder models.
     
@@ -1458,14 +1458,14 @@ def create_swin_jscc_models(
     return encoder, decoder
 
 
-def create_encoder(**kwargs) -> Yang2024SwinJSCCEncoder:
+def create_encoder(**kwargs) -> Yang2024DeepJSCCSwinEncoder:
     """Create a Swin JSCC encoder model with the given parameters"""
-    return Yang2024SwinJSCCEncoder(**kwargs)
+    return Yang2024DeepJSCCSwinEncoder(**kwargs)
 
 
-def create_decoder(**kwargs) -> Yang2024SwinJSCCDecoder:
+def create_decoder(**kwargs) -> Yang2024DeepJSCCSwinDecoder:
     """Create a Swin JSCC decoder model with the given parameters"""
-    return Yang2024SwinJSCCDecoder(**kwargs)
+    return Yang2024DeepJSCCSwinDecoder(**kwargs)
 
 
 def build_model(config):
