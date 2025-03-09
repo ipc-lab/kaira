@@ -2,3 +2,4 @@ torch>=1.8.0
 torchmetrics
 joblib
 torchvision
+compressai
