@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import binary_to_gray, plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator()
 class PAMModulator(BaseModulator):
     """Pulse Amplitude Modulation (PAM) modulator.
 
@@ -127,6 +129,7 @@ class PAMModulator(BaseModulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_demodulator()
 class PAMDemodulator(BaseDemodulator):
     """Pulse Amplitude Modulation (PAM) demodulator."""
 

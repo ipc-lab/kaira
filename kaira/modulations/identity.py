@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation as utils_plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator()
 class IdentityModulator(BaseModulator):
     """Identity modulator that passes input data through unchanged.
 
@@ -76,6 +78,7 @@ class IdentityModulator(BaseModulator):
         return utils_plot_constellation(self.constellation, title="Identity Constellation", labels=["0", "1"], **kwargs)
 
 
+@ModulationRegistry.register_demodulator()
 class IdentityDemodulator(BaseDemodulator):
     """Identity demodulator that passes input data through unchanged.
 

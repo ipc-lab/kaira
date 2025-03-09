@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import binary_to_gray, plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator()
 class QAMModulator(BaseModulator):
     """Quadrature Amplitude Modulation (QAM) modulator.
 
@@ -139,6 +141,7 @@ class QAMModulator(BaseModulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_demodulator()
 class QAMDemodulator(BaseDemodulator):
     """Quadrature Amplitude Modulation (QAM) demodulator."""
 

@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator()
 class BPSKModulator(BaseModulator):
     """Binary Phase-Shift Keying (BPSK) modulator.
 
@@ -56,6 +58,7 @@ class BPSKModulator(BaseModulator):
         return 1
 
 
+@ModulationRegistry.register_demodulator()
 class BPSKDemodulator(BaseDemodulator):
     """Binary Phase-Shift Keying (BPSK) demodulator."""
 
@@ -93,6 +96,7 @@ class BPSKDemodulator(BaseDemodulator):
         return 1
 
 
+@ModulationRegistry.register_modulator()
 class QPSKModulator(BaseModulator):
     """Quadrature Phase-Shift Keying (QPSK) modulator.
 
@@ -175,6 +179,7 @@ class QPSKModulator(BaseModulator):
         return 2
 
 
+@ModulationRegistry.register_demodulator()
 class QPSKDemodulator(BaseDemodulator):
     """Quadrature Phase-Shift Keying (QPSK) demodulator."""
 
@@ -231,6 +236,7 @@ class QPSKDemodulator(BaseDemodulator):
         return 2
 
 
+@ModulationRegistry.register_modulator()
 class PSKModulator(BaseModulator):
     """General M-ary Phase-Shift Keying (PSK) modulator.
 
@@ -343,6 +349,7 @@ class PSKModulator(BaseModulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_demodulator()
 class PSKDemodulator(BaseDemodulator):
     """General M-ary Phase-Shift Keying (PSK) demodulator.
 

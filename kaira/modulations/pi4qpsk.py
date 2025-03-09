@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator("pi4qpsk")
 class Pi4QPSKModulator(BaseModulator):
     """Π/4-QPSK (π/4 shifted QPSK) modulator.
 
@@ -127,6 +129,7 @@ class Pi4QPSKModulator(BaseModulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_demodulator("pi4qpsk")
 class Pi4QPSKDemodulator(BaseDemodulator):
     """Π/4-QPSK demodulator."""
 

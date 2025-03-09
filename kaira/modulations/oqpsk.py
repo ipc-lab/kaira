@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator("oqpsk")
 class OQPSKModulator(BaseModulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) modulator.
 
@@ -115,6 +117,7 @@ class OQPSKModulator(BaseModulator):
         return 2
 
 
+@ModulationRegistry.register_demodulator("oqpsk")
 class OQPSKDemodulator(BaseDemodulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) demodulator."""
 

@@ -8,8 +8,10 @@ import torch
 
 from .base import BaseDemodulator, BaseModulator
 from .utils import plot_constellation
+from .registry import ModulationRegistry
 
 
+@ModulationRegistry.register_modulator()
 class DPSKModulator(BaseModulator):
     """Differential Phase-Shift Keying (DPSK) modulator.
 
@@ -143,6 +145,7 @@ class DPSKModulator(BaseModulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_demodulator()
 class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
 
@@ -284,6 +287,7 @@ class DPSKDemodulator(BaseDemodulator):
         return self._bits_per_symbol
 
 
+@ModulationRegistry.register_modulator("dbpsk")
 class DBPSKModulator(DPSKModulator):
     """Differential Binary Phase-Shift Keying (DBPSK) modulator."""
 
@@ -292,6 +296,7 @@ class DBPSKModulator(DPSKModulator):
         super().__init__(order=2, gray_coding=True)
 
 
+@ModulationRegistry.register_demodulator("dbpsk")
 class DBPSKDemodulator(DPSKDemodulator):
     """Differential Binary Phase-Shift Keying (DBPSK) demodulator."""
 
@@ -300,6 +305,7 @@ class DBPSKDemodulator(DPSKDemodulator):
         super().__init__(order=2, gray_coding=True)
 
 
+@ModulationRegistry.register_modulator("dqpsk")
 class DQPSKModulator(DPSKModulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) modulator."""
 
@@ -308,6 +314,7 @@ class DQPSKModulator(DPSKModulator):
         super().__init__(order=4, gray_coding=True)
 
 
+@ModulationRegistry.register_demodulator("dqpsk")
 class DQPSKDemodulator(DPSKDemodulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) demodulator."""
 
