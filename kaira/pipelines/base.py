@@ -4,97 +4,10 @@ This module provides abstract base classes for building pipeline components in t
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Tuple, TypeVar, Union
+from typing import Any
 
 import torch
 from torch import nn
-
-# Type variables for better type hinting
-T = TypeVar("T")
-InputType = TypeVar("InputType")
-OutputType = TypeVar("OutputType")
-
-
-class BaseStep(nn.Module, ABC):
-    """Base class for a single processing step in a pipeline.
-
-    A step is a component that transforms input data in a pipeline.
-    """
-
-    @abstractmethod
-    def forward(self, x: Any) -> Any:
-        """Process the input data.
-
-        Args:
-            x: The input to process
-
-        Returns:
-            The processed output
-        """
-        pass
-
-
-class BaseModel(nn.Module, ABC):
-    """Base class for encoder/decoder models in communication systems.
-
-    This class defines the interface for models that can encode or decode data in communication
-    system pipelines.
-    """
-
-    @abstractmethod
-    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        """Process the input tensor.
-
-        Args:
-            x: Input tensor to process
-            **kwargs: Additional arguments specific to the model implementation
-
-        Returns:
-            Processed tensor
-        """
-        pass
-
-
-class BaseChannel(nn.Module, ABC):
-    """Base class for communication channel models.
-
-    Channel models simulate the effects of transmission through a physical medium, such as adding
-    noise, fading, or other distortions.
-    """
-
-    @abstractmethod
-    def forward(self, x: torch.Tensor, **kwargs) -> Union[torch.Tensor, Tuple[torch.Tensor, Any]]:
-        """Process a signal through the channel.
-
-        Args:
-            x: Input signal to transmit through the channel
-            **kwargs: Additional channel parameters or options
-
-        Returns:
-            Received signal after channel effects, optionally with channel state information
-        """
-        pass
-
-
-class BaseConstraint(nn.Module, ABC):
-    """Base class for signal constraints in communication systems.
-
-    Constraints enforce certain properties on signals, such as power limitations, bandwidth
-    constraints, or quantization.
-    """
-
-    @abstractmethod
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply constraints to the input signal.
-
-        Args:
-            x: Input signal to constrain
-
-        Returns:
-            Constrained version of the input signal
-        """
-        pass
-
 
 class BasePipeline(nn.Module, ABC):
     """Base Pipeline Module.

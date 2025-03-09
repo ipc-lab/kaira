@@ -68,6 +68,4 @@ __all__ = [
     # Utility functions
     "utils",
     "combine_constraints",
-    "create_ofdm_constraints",
-    "create_mimo_constraints",
 ]
