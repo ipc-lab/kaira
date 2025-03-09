@@ -10,10 +10,10 @@ import torch
 from torch import Tensor
 
 from ..base import BaseMetric
-from ..registry import register_metric
+from ..registry import MetricRegistry
 
 
-@register_metric("ber")
+@MetricRegistry.register_metric("ber")
 class BitErrorRate(BaseMetric):
     """Bit Error Rate (BER) metric.
 

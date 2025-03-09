@@ -12,10 +12,10 @@ from torch import Tensor
 from torchmetrics.functional.image.lpips import _lpips_compute, _lpips_update
 
 from ..base import BaseMetric
-from ..registry import register_metric
+from ..registry import MetricRegistry
 
 
-@register_metric("lpips")
+@MetricRegistry.register_metric("lpips")
 class LearnedPerceptualImagePatchSimilarity(BaseMetric):
     """Learned Perceptual Image Patch Similarity (LPIPS) Module.
 

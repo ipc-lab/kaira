@@ -11,10 +11,10 @@ import torchmetrics.image
 from torch import Tensor
 
 from ..base import BaseMetric
-from ..registry import register_metric
+from ..registry import MetricRegistry
 
 
-@register_metric("psnr")
+@MetricRegistry.register_metric("psnr")
 class PeakSignalNoiseRatio(BaseMetric):
     """Peak Signal-to-Noise Ratio (PSNR) Module.
 

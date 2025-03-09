@@ -13,10 +13,10 @@ from pytorch_msssim import ms_ssim
 from torch import Tensor
 
 from ..base import BaseMetric
-from ..registry import register_metric
+from ..registry import MetricRegistry
 
 
-@register_metric("ssim")
+@MetricRegistry.register_metric("ssim")
 class StructuralSimilarityIndexMeasure(BaseMetric):
     """Structural Similarity Index Measure (SSIM) Module.
 
@@ -63,7 +63,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         return values.mean(), values.std()
 
 
-@register_metric("ms_ssim")
+@MetricRegistry.register_metric("ms_ssim")
 class MultiScaleSSIM(BaseMetric):
     """Multi-Scale Structural Similarity Index Measure (MS-SSIM) Module.
 
