@@ -1,6 +1,6 @@
 """Feedback Channel module for Kaira.
 
-This module contains the FeedbackChannelPipeline, which models a communication system with a
+This module contains the FeedbackChannelModel, which models a communication system with a
 feedback path from the receiver to the transmitter.
 """
 
@@ -9,16 +9,17 @@ from typing import Any, Dict
 import torch
 import torch.nn as nn
 
-from .base import BaseChannel, BaseModel, BasePipeline
-from .registry import PipelineRegistry
+from kaira.channels import BaseChannel
+from .base import BaseModel
+from .registry import ModelRegistry
 
 
-@PipelineRegistry.register_pipeline("feedback_channel")
-class FeedbackChannelPipeline(BasePipeline):
-    """A pipeline that models communication with a feedback channel.
+@ModelRegistry.register_model("feedback_channel")
+class FeedbackChannelModel(BaseModel):
+    """A model that models communication with a feedback channel.
 
     In a feedback channel, the receiver can send information back to the transmitter,
-    allowing the transmitter to adapt its strategy based on feedback. This pipeline
+    allowing the transmitter to adapt its strategy based on feedback. This model
     models the iterative process of transmission, reception, feedback, and adaptation.
 
     Attributes:
@@ -41,7 +42,7 @@ class FeedbackChannelPipeline(BasePipeline):
         feedback_processor: nn.Module,
         max_iterations: int = 1,
     ):
-        """Initialize the feedback channel pipeline.
+        """Initialize the feedback channel model.
 
         Args:
             encoder (BaseModel): The encoder that processes input data

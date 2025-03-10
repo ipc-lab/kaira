@@ -7,17 +7,17 @@ composition for complex signal requirements.
 
 from typing import Sequence
 
-from kaira.pipelines.sequential import SequentialPipeline
+from kaira.models.generic.sequential import SequentialModel
 
 from .base import BaseConstraint
 
 
-class CompositeConstraint(BaseConstraint, SequentialPipeline):
+class CompositeConstraint(BaseConstraint, SequentialModel):
     """Applies multiple signal constraints in sequence as a single unified constraint.
 
     This class combines multiple BaseConstraint objects into a single constraint that applies
     each component constraint sequentially. It inherits from both BaseConstraint and
-    SequentialPipeline to provide constraint functionality with sequential processing
+    SequentialModel to provide constraint functionality with sequential processing
     capabilities.
 
     The composite pattern allows complex constraint combinations to be treated as a
@@ -50,7 +50,7 @@ class CompositeConstraint(BaseConstraint, SequentialPipeline):
         if not constraints:
             raise ValueError("CompositeConstraint requires at least one constraint")
 
-        # Convert to List[Callable] for SequentialPipeline compatibility
+        # Convert to List[Callable] for SequentialModel compatibility
         super().__init__(constraints)
 
     def add_constraint(self, constraint: BaseConstraint) -> None:

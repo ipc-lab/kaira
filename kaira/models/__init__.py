@@ -1,9 +1,30 @@
 """Models module for Kaira."""
 
 from . import components, image
-from .base import BaseModel
+from .base import BaseModel, ConfigurableModel
+from .branching import BranchingModel
+from .deepjscc import DeepJSCCModel
+from .feedback import FeedbackChannelModel
+from .identity import IdentityModel
+from .lambda_model import LambdaModel
+from .generic.parallel import ParallelModel
 from .registry import ModelRegistry
-from kaira.models.identity import IdentityModel
-from kaira.models.lambda_model import LambdaModel
+from .generic.sequential import SequentialModel
+from .wyner_ziv import WynerZivCorrelationModel, WynerZivModel
 
-__all__ = ["components", "image", "BaseModel", "ModelRegistry", "IdentityModel", "LambdaModel"]
+__all__ = [
+    "components", 
+    "image", 
+    "BaseModel", 
+    "ConfigurableModel",
+    "BranchingModel",
+    "DeepJSCCModel",
+    "FeedbackChannelModel",
+    "IdentityModel", 
+    "LambdaModel",
+    "ModelRegistry",
+    "ParallelModel",
+    "SequentialModel",
+    "WynerZivCorrelationModel",
+    "WynerZivModel"
+]

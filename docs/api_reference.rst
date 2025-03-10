@@ -20,9 +20,8 @@ several key modules that handle different aspects of communication systems:
 - **Channels**: Model transmission mediums with various noise and distortion characteristics
 - **Constraints**: Enforce practical limitations on transmitted signals
 - **Metrics**: Evaluate quality and performance of communication systems
-- **Models**: Implement neural network architectures for encoding and decoding
+- **Models**: Implement neural network architectures for encoding/decoding and end-to-end communication systems
 - **Modulations**: Implement digital modulation schemes for wireless transmission
-- **Pipelines**: Integrate components into end-to-end communication systems
 - **Losses**: Provide objective functions for training neural networks
 - **Utilities**: Helper functions and tools for common operations
 
@@ -43,7 +42,6 @@ These abstract classes establish the contract that derived classes must fulfill.
    constraints.BaseConstraint
    metrics.BaseMetric
    models.BaseModel
-   pipelines.BasePipeline
    modulations.BaseModulator
    modulations.BaseDemodulator
    losses.BaseLoss
@@ -84,7 +82,6 @@ They apply noise, distortion, fading, and other effects that impact signal quali
    BinaryZChannel
 
 .. seealso::
-   :class:`~kaira.pipelines.FadingChannelPipeline` for working with fading channels in a complete pipeline.
    :class:`~kaira.modulations.BaseModulator` for modulation schemes that prepare signals for channel transmission.
 
 Constraints
@@ -130,9 +127,6 @@ Helper functions to create and combine constraints for common scenarios.
    combine_constraints
    create_ofdm_constraints
    create_mimo_constraints
-
-.. seealso::
-   :class:`~kaira.pipelines.OFDMPipeline` and :class:`~kaira.pipelines.MIMOPipeline` for using these constraints in complete systems.
 
 Metrics
 -------------
@@ -387,48 +381,6 @@ Helper functions for working with modulation schemes and analyzing their propert
    plot_constellation
    calculate_theoretical_ber
    calculate_spectral_efficiency
-
-Pipelines
-------------------
-
-Pipelines integrate encoders, decoders, channels, and other components into end-to-end communication systems.
-They provide a high-level interface for running simulations and training models.
-
-.. currentmodule:: kaira.pipelines
-
-Generic Pipelines
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-General-purpose pipelines that can be used with any types of components.
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BasePipeline
-   SequentialPipeline
-   ParallelPipeline
-   BranchingPipeline
-
-Communication System Pipelines
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Specialized pipelines for specific communication scenarios and techniques.
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   DeepJSCCPipeline
-   WynerZivPipeline
-   WynerZivCorrelationModel
-   OFDMPipeline
-   MIMOPipeline
-   FadingChannelPipeline
-   FadingType
-   FeedbackChannelPipeline
 
 Utilities
 ------------------

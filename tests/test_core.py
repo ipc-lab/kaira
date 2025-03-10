@@ -4,7 +4,7 @@ import unittest
 import torch
 from torch import nn
 
-from .base import BaseChannel, BaseConstraint, BaseMetric, BaseModel, BasePipeline
+from .base import BaseChannel, BaseConstraint, BaseMetric, BaseModel
 
 
 class DummyModule(nn.Module):
@@ -77,22 +77,6 @@ class test_base_model_abstract_methods(unittest.TestCase):
         def bandwidth_ratio(self) -> float:
             """Returns 1.0."""
             return 1.0
-
-        def forward(self, x: torch.Tensor) -> torch.Tensor:
-            """Identity forward."""
-            return x
-
-
-class test_base_pipeline_abstract_methods(unittest.TestCase):
-    """Tests for BasePipeline abstract methods."""
-
-    def test_base_pipeline_abstract_methods(self):
-        """Tests that BasePipeline raises NotImplementedError for abstract methods."""
-        with self.assertRaises(TypeError):
-            BasePipeline()
-
-    class ConcretePipeline(BasePipeline):
-        """Concrete pipeline for testing."""
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             """Identity forward."""

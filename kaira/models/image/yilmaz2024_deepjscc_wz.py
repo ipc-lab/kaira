@@ -29,7 +29,6 @@ from typing import Dict
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
 from kaira.models.components.afmodule import AFModule
-from kaira.pipelines.base import BasePipeline
 from torch import nn
 from kaira.models.base import BaseModel
 from compressai.layers import (
@@ -763,10 +762,10 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
         return x
 
-class Yilmaz2024DeepJSCCWZ(BasePipeline):
-    """A specialized Wyner-Ziv pipeline for neural joint source-channel coding with side information.
+class Yilmaz2024DeepJSCCWZ(BaseModel):
+    """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
     
-    This pipeline implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
+    This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
     deep learning techniques to the Wyner-Ziv coding paradigm (lossy compression with decoder-side
     information). The system is designed specifically for wireless image transmission scenarios
     where correlated side information is available at the receiver.
@@ -782,7 +781,7 @@ class Yilmaz2024DeepJSCCWZ(BasePipeline):
     - Small: Parameter-efficient design with shared encoder components
     - Conditional: Side information available at both encoder and decoder (performance upper bound)
     
-    The pipeline automatically detects which variant is being used based on the encoder class.
+    The model automatically detects which variant is being used based on the encoder class.
     
     Technical details:
     - Compression ratio: determined by channel dimension M and spatial downsampling (16× by default)
@@ -810,7 +809,7 @@ class Yilmaz2024DeepJSCCWZ(BasePipeline):
         decoder: BaseModel,
         constraint: BaseConstraint,
     ):
-        """Initialize the Yilmaz2024DeepJSCCWZ pipeline.
+        """Initialize the Yilmaz2024DeepJSCCWZ model.
 
         Args:
             encoder: Neural encoder model that compresses the source image.
@@ -840,7 +839,7 @@ class Yilmaz2024DeepJSCCWZ(BasePipeline):
     ) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
-        This method implements the full DeepJSCC-WZ pipeline:
+        This method implements the full DeepJSCC-WZ model:
         1. Encodes the source image into a compact representation
            - For conditional models: utilizes side information during encoding
            - For non-conditional models: encodes without access to side information
@@ -874,10 +873,10 @@ class Yilmaz2024DeepJSCCWZ(BasePipeline):
         """
         # Validate parameters
         if side_info is None:
-            raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ pipeline")
+            raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")
             
         if csi is None:
-            raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ pipeline")
+            raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ model")
         
         # Source encoding - conditional models use side info during encoding
         if self.is_conditional:

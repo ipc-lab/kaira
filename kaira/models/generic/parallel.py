@@ -1,19 +1,19 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .base import ConfigurablePipeline
-from .registry import PipelineRegistry
+from ..base import BaseModel, ConfigurableModel
+from ..registry import ModelRegistry
 
 
-@PipelineRegistry.register_pipeline()
-class ParallelPipeline(ConfigurablePipeline):
-    """A pipeline that processes steps in parallel.
+@ModelRegistry.register_model()
+class ParallelModel(ConfigurableModel):
+    """A model that processes steps in parallel.
 
     All steps receive the same input data and process independently.
     """
 
     def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None):
-        """Initialize the parallel pipeline.
+        """Initialize the parallel model.
 
         Args:
             max_workers: Maximum number of worker threads (None uses default ThreadPoolExecutor behavior)
@@ -25,14 +25,14 @@ class ParallelPipeline(ConfigurablePipeline):
             self.steps = list(steps)
 
     def add_step(self, step: Callable, name: Optional[str] = None):
-        """Add a processing step to the pipeline with an optional name.
+        """Add a processing step to the model with an optional name.
 
         Args:
             step: A callable function or object that processes input data
             name: Optional name for the step (auto-generated if None)
 
         Returns:
-            The pipeline instance for method chaining
+            The model instance for method chaining
 
         Raises:
             TypeError: If step is not callable
@@ -46,13 +46,13 @@ class ParallelPipeline(ConfigurablePipeline):
         return self
 
     def remove_step(self, index: int):
-        """Remove a processing step from the pipeline.
+        """Remove a processing step from the model.
 
         Args:
             index: The index of the step to remove
 
         Returns:
-            The pipeline instance for method chaining
+            The model instance for method chaining
 
         Raises:
             IndexError: If the index is out of range
@@ -63,7 +63,7 @@ class ParallelPipeline(ConfigurablePipeline):
         return self
 
     def forward(self, input_data: Any) -> Dict[str, Any]:
-        """Execute the pipeline in parallel on the input data.
+        """Execute the model in parallel on the input data.
 
         Args:
             input_data: The data to process
