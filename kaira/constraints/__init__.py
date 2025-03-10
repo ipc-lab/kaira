@@ -41,6 +41,10 @@ from .base import BaseConstraint
 # Composite constraint
 from .composite import CompositeConstraint
 
+# Basic functional constraints
+from .identity import IdentityConstraint
+from .lambda_constraint import LambdaConstraint
+
 # Power constraints
 from .power import (
     AveragePowerConstraint,
@@ -58,6 +62,9 @@ __all__ = [
     # Base classes
     "BaseConstraint",
     "CompositeConstraint",
+    # Basic functional constraints
+    "IdentityConstraint",
+    "LambdaConstraint",
     # Power constraints
     "TotalPowerConstraint",
     "AveragePowerConstraint",
