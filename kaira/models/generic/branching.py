@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, Optional
 
-from .base import BaseModel
-from .registry import ModelRegistry
+from ..base import BaseModel
+from ..registry import ModelRegistry
 
 
 @ModelRegistry.register_model()

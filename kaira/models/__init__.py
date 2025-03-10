@@ -2,11 +2,11 @@
 
 from . import components, image
 from .base import BaseModel, ConfigurableModel
-from .branching import BranchingModel
+from .generic.branching import BranchingModel
 from .deepjscc import DeepJSCCModel
 from .feedback import FeedbackChannelModel
-from .identity import IdentityModel
-from .lambda_model import LambdaModel
+from .generic.identity import IdentityModel
+from .generic.lambda_model import LambdaModel
 from .generic.parallel import ParallelModel
 from .registry import ModelRegistry
 from .generic.sequential import SequentialModel
