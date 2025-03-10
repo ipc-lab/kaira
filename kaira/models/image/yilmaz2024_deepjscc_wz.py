@@ -1,5 +1,35 @@
+"""
+Implementation of DeepJSCC-WZ (Deep Joint Source-Channel Coding with Wyner-Ziv) models.
 
+This module contains the neural network implementations for DeepJSCC-WZ as proposed in
+Yilmaz et al. 2024. DeepJSCC-WZ is a deep learning-based joint source-channel coding
+approach that incorporates side information at the decoder using Wyner-Ziv coding principles
+for improved communication efficiency.
+
+The Wyner-Ziv coding principle refers to lossy compression with side information available
+at the decoder but not at the encoder. In this implementation, neural networks learn to
+exploit correlations between transmitted data and side information available at the receiver.
+
+The implementation includes different variants:
+- Standard DeepJSCC-WZ encoder/decoder: Full-featured implementation with separate networks
+  for encoding and decoding
+- Small (lightweight) DeepJSCC-WZ encoder/decoder: Parameter-efficient version with shared
+  parameters between encoder components
+- Conditional DeepJSCC-WZ encoder/decoder: Enhanced variant where side information is
+  available during both encoding and decoding (serves as performance upper bound)
+
+All variants use adaptive feature modules (AFModule) to incorporate channel conditions
+into the encoding/decoding process for channel-adaptive communication.
+
+Reference:
+    Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv", 2024
+"""
+
+from typing import Dict
+from kaira.channels.base import BaseChannel
+from kaira.constraints.base import BaseConstraint
 from kaira.models.components.afmodule import AFModule
+from kaira.pipelines.base import BasePipeline
 from torch import nn
 from kaira.models.base import BaseModel
 from compressai.layers import (
@@ -10,19 +40,33 @@ from compressai.layers import (
 )
 import torch
 
-# TODO: Improve docstrings
-# Implement Wyner Ziv Pipeline
-
 class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
     """DeepJSCC-WZ-sm Encoder Module :cite:`yilmaz2024deepjsccwz`.
-
+    
+    This is a lightweight version of the DeepJSCC-WZ encoder that transforms input images 
+    into a compressed latent representation suitable for transmission over noisy channels.
+    The encoder consists of a series of residual blocks with downsampling, attention modules,
+    and adaptive feature modules that incorporate channel state information (CSI).
+    
+    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and 
+    encoding side information at the receiver, resulting in a parameter-efficient design
+    while maintaining competitive performance.
+    
+    Architecture highlights:
+    - 4 stages of downsampling (factor of 16 total spatial reduction)
+    - Attention mechanisms to capture important features
+    - AFModule layers that adapt features based on channel conditions
+    - Progressive compression: 3×H×W → M×(H/16)×(W/16)
+    - Channel-aware design through CSI conditioning
     """
     def __init__(self, N: int, M: int) -> None:
-        """Initialize the DeepJSCCWZEncoder.
+        """Initialize the DeepJSCC-WZ-sm encoder.
 
         Args:
-            N (int): The number of output channels for the ResidualBlocks.
-            M (int): The number of output channels in the last convolutional layer of the network.
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of output channels in the final latent representation.
+                     Determines the compression rate and bandwidth usage.
         """
         super().__init__()
 
@@ -60,7 +104,19 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
             AttentionBlock(M),
         ])
     
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Process input image through the encoder.
+        
+        Args:
+            x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+                                Contains SNR or other channel quality indicators.
+            
+        Returns:
+            torch.Tensor: Encoded representation ready for transmission.
+                          Shape: [B, M, H/16, W/16], where M is the number of channels
+                          specified during initialization.
+        """
         
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
         
@@ -74,9 +130,38 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
 
 class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
+    
+    This lightweight decoder reconstructs the original image from the received noisy representation
+    and available side information. It employs a symmetric structure to the encoder
+    with upsampling operations and feature fusion with side information.
+    
+    The decoder follows a multi-scale fusion approach where the side information is
+    encoded using the same encoder as the main signal, and features are fused at 
+    multiple scales during decoding. This approach effectively exploits correlations
+    between the received signal and the side information.
+    
+    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and 
+    encoding side information at the receiver, providing parameter efficiency.
 
+    Key features:
+    - Progressive upsampling to restore spatial dimensions (H/16×W/16 → H×W)
+    - Multi-scale side information fusion at 5 different resolution levels
+    - Attention mechanisms to focus on important features
+    - Channel-adaptive processing through AFModule layers
+    - Residual connections for improved gradient flow
     """
     def __init__(self, N: int, M: int, encoder: BaseModel) -> None:
+        """Initialize the DeepJSCC-WZ-sm decoder.
+
+        Args:
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of input channels from the encoded representation.
+                     Matches the encoder's output channel count.
+            encoder (BaseModel): Reference to the encoder model for feature sharing.
+                                This enables the decoder to process side information
+                                using the same parameters as the main encoder.
+        """
         super().__init__()
 
         self.g_s = nn.ModuleList([
@@ -123,10 +208,24 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
     
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Decode the received representation into a reconstructed image.
+        
+        This method first processes the side information through the shared encoder,
+        then progressively decodes the received signal while fusing with side information
+        features at multiple scales.
+        
+        Args:
+            x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
+            x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            
+        Returns:
+            torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
+        """
         csi_sideinfo = torch.cat([csi, torch.ones_like(csi)], dim=1)
 
         xs_list = []
-        for idx, layer in enumerate(self.g_a):
+        for idx, layer in enumerate(self.encoder.g_a):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
             
@@ -150,15 +249,31 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
         return x
 
 class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
-    """DeepJSCC-WZ Encoder Module :cite:`yilmaz2024deepjsccwz`.
-
+    """DeepJSCC-WZ Encoder Module :cite=`yilmaz2024deepjsccwz`.
+    
+    The full-size encoder for the DeepJSCC-WZ model that compresses input images
+    into a compact latent representation. It includes two parallel encoding paths:
+    g_a for processing the main input and g_a2 for potential preprocessing of side information.
+    
+    Unlike the small variant, this encoder uses separate parameters for the main signal
+    and side information processing paths, potentially allowing for more specialized
+    feature extraction at the cost of increased parameter count.
+    
+    Architecture highlights:
+    - 4 stages of downsampling through residual blocks (16× spatial reduction)
+    - Channel state information adaptation via AFModule
+    - Attention mechanisms for feature refinement
+    - Sophisticated feature extraction with residual connections
+    - Progressive compression: 3×H×W → M×(H/16)×(W/16)
     """
     def __init__(self, N: int, M: int) -> None:
-        """Initialize the DeepJSCCWZEncoder.
+        """Initialize the full-size DeepJSCC-WZ encoder.
 
         Args:
-            N (int): The number of output channels for the ResidualBlocks.
-            M (int): The number of output channels in the last convolutional layer of the network.
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of output channels in the final latent representation.
+                     Determines the compression rate and bandwidth usage.
         """
         super().__init__()
 
@@ -230,8 +345,19 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
             AttentionBlock(M),
         ])
     
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
-
+    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Encode the input image into a compact representation.
+        
+        Args:
+            x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+                                Contains SNR or other channel quality indicators.
+            
+        Returns:
+            torch.Tensor: Encoded representation ready for transmission.
+                          Shape: [B, M, H/16, W/16], where M is the number of channels
+                          specified during initialization.
+        """
         csi_transmitter = csi
         
         for layer in self.g_a:
@@ -243,15 +369,31 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
         return x
 
 class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
-    """DeepJSCC-WZ Decoder Module :cite:`yilmaz2024deepjsccwz`.
-
+    """DeepJSCC-WZ Decoder Module :cite=`yilmaz2024deepjsccwz`.
+    
+    The full-size decoder for the DeepJSCC-WZ model that reconstructs the original image
+    from the received noisy representation and side information. It follows a symmetric
+    structure to the encoder with progressive upsampling and feature fusion mechanisms.
+    
+    Unlike the small variant, this decoder uses a dedicated set of parameters for processing
+    side information, potentially allowing for more specialized feature extraction at the
+    cost of increased parameter count.
+    
+    Key features:
+    - Multi-scale feature fusion with side information at 5 different resolution levels
+    - Progressive spatial resolution recovery (4 upsampling stages, H/16×W/16 → H×W)
+    - Attention-based feature refinement
+    - Channel-adaptive processing through AFModule layers
+    - Sophisticated feature reconstruction with residual connections
     """
     def __init__(self, N: int, M: int) -> None:
-        """Initialize the DeepJSCCWZDecoder.
+        """Initialize the full-size DeepJSCC-WZ decoder.
 
         Args:
-            N (int): The number of output channels for the ResidualBlocks.
-            M (int): The number of output channels in the last convolutional layer of the network.
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of input channels from the encoded representation.
+                     Matches the encoder's output channel count.
         """
         super().__init__()
 
@@ -297,6 +439,20 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
 
     
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Decode the received representation into a reconstructed image.
+        
+        This method first processes the side information through the g_a2 encoder path,
+        then progressively decodes the received signal while fusing with side information
+        features at multiple scales.
+        
+        Args:
+            x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
+            x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            
+        Returns:
+            torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
+        """
         csi_sideinfo = csi
         
         xs_list = []
@@ -324,15 +480,35 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
         return x
 
 class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
-    """DeepJSCC-WZ Encoder Module :cite:`yilmaz2024deepjsccwz`.
-
+    """DeepJSCC-WZ Conditional Encoder Module :cite=`yilmaz2024deepjsccwz`.
+    
+    This variant of the DeepJSCC-WZ encoder actively incorporates side information during 
+    the encoding process. This model is designed for scenarios where side information is available 
+    at both encoder and decoder, serving as an upper bound for performance comparison.
+    
+    The conditional encoder features three processing paths:
+    - g_a: Main encoding path that fuses the input with side information features
+    - g_a2: Processing path for side information for the decoder
+    - g_a3: Auxiliary path for feature extraction from side information for the encoder
+    
+    By leveraging correlations between the main signal and side information at encoding time,
+    this model achieves more efficient compression and better reconstruction quality compared
+    to the standard DeepJSCC-WZ model, at the cost of requiring side information during encoding.
+    
+    Architecture highlights:
+    - Early fusion of input and side information (6-channel input)
+    - Multi-scale feature fusion with side information
+    - 4 stages of downsampling (16× spatial reduction)
+    - Channel-adaptive processing with AFModule
     """
     def __init__(self, N: int, M: int) -> None:
-        """Initialize the DeepJSCCWZEncoder.
+        """Initialize the conditional DeepJSCC-WZ encoder.
 
         Args:
-            N (int): The number of output channels for the ResidualBlocks.
-            M (int): The number of output channels in the last convolutional layer of the network.
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of output channels in the final latent representation.
+                     Determines the compression rate and bandwidth usage.
         """
         super().__init__()
 
@@ -436,6 +612,23 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
         ])
     
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Encode the input image with conditional side information.
+        
+        This method processes both the main input image and side information in parallel,
+        fusing features from the side information stream into the main encoding path
+        at multiple scales. The side information is available at the encoder, allowing
+        for more efficient compression compared to the standard DeepJSCC-WZ model.
+        
+        Args:
+            x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
+            x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] used during encoding.
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            
+        Returns:
+            torch.Tensor: Encoded representation ready for transmission.
+                          Shape: [B, M, H/16, W/16], where M is the number of channels
+                          specified during initialization.
+        """
         xs_encoder = x_side
         
         csi_transmitter = csi
@@ -456,15 +649,33 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
         return x
 
 class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
-    """DeepJSCC-WZ Decoder Module :cite:`yilmaz2024deepjsccwz`.
-
+    """DeepJSCC-WZ Conditional Decoder Module :cite=`yilmaz2024deepjsccwz`.
+    
+    The decoder counterpart to the conditional encoder, designed to reconstruct images
+    from representations created by the conditional encoder. This decoder leverages
+    side information and received encoded representation to generate high-quality
+    reconstructions.
+    
+    DeepJSCC-WZ Conditional is designed for scenarios where side information is available 
+    at both the encoder and decoder, serving as a performance upper bound. The decoder's
+    architecture is optimized to work with the conditional encoder's output, where side
+    information correlations have already been exploited during encoding.
+    
+    Key features:
+    - Multi-scale feature fusion with side information at 5 different resolution levels
+    - Progressive upsampling to restore spatial dimensions (H/16×W/16 → H×W)
+    - Attention-based feature refinement
+    - Channel-adaptive processing through AFModule layers
+    - Optimized for conditionally encoded representations
     """
     def __init__(self, N: int, M: int) -> None:
-        """Initialize the DeepJSCCWZDecoder.
+        """Initialize the conditional DeepJSCC-WZ decoder.
 
         Args:
-            N (int): The number of output channels for the ResidualBlocks.
-            M (int): The number of output channels in the last convolutional layer of the network.
+            N (int): Number of intermediate channels in the residual blocks.
+                     Controls the network capacity and feature dimension.
+            M (int): Number of input channels from the encoded representation.
+                     Matches the encoder's output channel count.
         """
         super().__init__()
 
@@ -510,6 +721,22 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
     
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+        """Decode the conditionally encoded representation.
+        
+        This method first processes the side information through the g_a2 encoder path,
+        then progressively decodes the received signal while fusing with side information
+        features at multiple scales. Since the encoded representation already incorporates
+        knowledge of the side information, the decoding process can achieve higher quality
+        reconstruction.
+        
+        Args:
+            x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
+            x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            
+        Returns:
+            torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
+        """
         csi_sideinfo = csi
         
         xs_list = []
@@ -535,3 +762,137 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 x = layer(x)
 
         return x
+
+class Yilmaz2024DeepJSCCWZ(BasePipeline):
+    """A specialized Wyner-Ziv pipeline for neural joint source-channel coding with side information.
+    
+    This pipeline implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
+    deep learning techniques to the Wyner-Ziv coding paradigm (lossy compression with decoder-side
+    information). The system is designed specifically for wireless image transmission scenarios
+    where correlated side information is available at the receiver.
+    
+    Unlike traditional separate source and channel coding approaches, DeepJSCC-WZ:
+    1. Jointly optimizes source compression and channel coding in an end-to-end manner
+    2. Adapts to varying channel conditions through explicit CSI conditioning
+    3. Exploits correlations between the transmitted signal and side information at the decoder
+    4. Provides graceful degradation under challenging channel conditions
+    
+    Three model variants are supported:
+    - Standard: Separate encoder/decoder with independent parameters (highest parameter count)
+    - Small: Parameter-efficient design with shared encoder components
+    - Conditional: Side information available at both encoder and decoder (performance upper bound)
+    
+    The pipeline automatically detects which variant is being used based on the encoder class.
+    
+    Technical details:
+    - Compression ratio: determined by channel dimension M and spatial downsampling (16× by default)
+    - Channel adaptation: AFModule layers condition the network on current channel SNR
+    - Side information fusion: Multi-scale fusion at multiple network layers at the decoder
+    - Power normalization: Required constraint to ensure proper signal power scaling
+    
+    References:
+        Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv" (2024)
+        Wyner and Ziv, "The Rate-Distortion Function for Source Coding with Side Information
+                        at the Decoder" (1976)
+    
+    Attributes:
+        encoder (BaseModel): Encoder network (standard, small, or conditional variant)
+        channel (BaseChannel): Channel simulation model (e.g., AWGN, Rayleigh fading)
+        decoder (BaseModel): Decoder network that utilizes side information
+        constraint (BaseConstraint): Signal power normalization constraint
+        is_conditional (bool): Auto-detected flag indicating if using the conditional variant
+    """
+
+    def __init__(
+        self,
+        encoder: BaseModel,
+        channel: BaseChannel,
+        decoder: BaseModel,
+        constraint: BaseConstraint,
+    ):
+        """Initialize the Yilmaz2024DeepJSCCWZ pipeline.
+
+        Args:
+            encoder: Neural encoder model that compresses the source image.
+                     Must be one of the DeepJSCC-WZ encoder variants (standard, small, or conditional).
+            channel: Channel simulation model that applies noise and/or fading effects to the
+                     encoded representation during transmission.
+            decoder: Neural decoder model that reconstructs the image using received data and side
+                     information. Must match the encoder variant.
+            constraint: Power normalization constraint that ensures transmitted signals maintain
+                       appropriate power levels. This is crucial for fair comparisons across
+                       different models and transmission scenarios.
+        """
+        super().__init__()
+        self.encoder = encoder
+        self.channel = channel
+        self.decoder = decoder
+        self.constraint = constraint
+        
+        # Auto-detect if using conditional model based on encoder class
+        self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
+
+    def forward(
+        self, 
+        source: torch.Tensor, 
+        side_info: torch.Tensor,
+        csi: torch.Tensor,
+    ) -> torch.Tensor:
+        """Execute the complete Wyner-Ziv coding process on the source image.
+
+        This method implements the full DeepJSCC-WZ pipeline:
+        1. Encodes the source image into a compact representation
+           - For conditional models: utilizes side information during encoding
+           - For non-conditional models: encodes without access to side information
+        2. Applies power normalization to the encoded representation
+        3. Simulates transmission through a noisy channel
+        4. Reconstructs the image using the received data and side information
+        
+        All steps are differentiable, allowing for end-to-end training that jointly
+        optimizes the entire transmission system for a given distortion metric and
+        channel model.
+
+        Args:
+            source: Source image tensor to encode and transmit, shape [B, C, H, W].
+                   Typically RGB images with values normalized to [0,1].
+            side_info: Correlated side information available at the decoder, shape [B, C, H, W]. 
+                      This could be a previous frame in a video, a low-resolution version,
+                      or other correlated information that helps in reconstruction.
+            csi: Channel state information tensor of shape [B, 1, 1, 1].
+                 Contains the signal-to-noise ratio (SNR) or other channel quality indicators
+                 that allow the model to adapt to current channel conditions.
+
+        Returns:
+            torch.Tensor: Reconstructed image of the same shape as the input source [B, C, H, W].
+            
+        Raises:
+            ValueError: If side_info or csi is None, as these are required parameters.
+            
+        Note:
+            CSI values are typically provided in dB and should be normalized to an appropriate
+            range as expected by the model's training configuration.
+        """
+        # Validate parameters
+        if side_info is None:
+            raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ pipeline")
+            
+        if csi is None:
+            raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ pipeline")
+        
+        # Source encoding - conditional models use side info during encoding
+        if self.is_conditional:
+            encoded = self.encoder(source, side_info, csi)
+        else:
+            # For non-conditional models, don't pass the side_info parameter
+            encoded = self.encoder(source, csi)
+
+        # Apply mandatory power/rate constraint
+        constrained = self.constraint(encoded)
+
+        # Transmit through channel
+        received = self.channel(constrained)
+
+        # Decode using received representation and side information
+        decoded = self.decoder(received, side_info, csi)
+
+        return decoded
