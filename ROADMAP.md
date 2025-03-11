@@ -18,6 +18,9 @@ This document outlines the planned development trajectory for Kaira. Note that t
 - [ ] Add detailed tutorials for common use cases
 - [ ] Expand API documentation with more examples
 - [ ] Create interactive notebooks demonstrating key features
+- [ ] Automatically generate README.md instead of README.rst. Remove README_template.
+- [ ] Include Inheritance Diagrams to the docs.
+- [ ] Change logo
 
 ## Medium-term Goals (6-12 months)
 
