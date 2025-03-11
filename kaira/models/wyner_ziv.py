@@ -64,11 +64,11 @@ class WynerZivModel(BaseModel):
     def __init__(
         self,
         encoder: BaseModel,
-        quantizer: nn.Module,
-        syndrome_generator: nn.Module,
         channel: BaseChannel,
-        correlation_model: WynerZivCorrelationModel,
         decoder: BaseModel,
+        correlation_model: Optional[WynerZivCorrelationModel] = None,
+        quantizer: Optional[nn.Module] = None,
+        syndrome_generator: Optional[nn.Module] = None,
         constraint: Optional[BaseConstraint] = None,
     ):
         """Initialize the Wyner-Ziv model.
@@ -76,35 +76,57 @@ class WynerZivModel(BaseModel):
         Args:
             encoder: Model that encodes the source data into a latent representation
                 without knowledge of the side information
-            quantizer: Module that discretizes the encoded representation into
-                a finite set of indices or symbols
-            syndrome_generator: Module that generates syndromes (parity bits or
-                compressed representation) for error correction or compression
             channel: Channel model that simulates transmission effects such as
                 noise, fading, or packet loss on the syndromes
-            correlation_model: Model that generates or simulates the correlation
-                between the source and side information
             decoder: Model that reconstructs the source using received syndromes
                 and the side information available at the decoder
+            correlation_model: Model that generates or simulates the correlation
+                between the source and side information. Optional for subclasses that
+                always expect side_info to be provided.
+            quantizer: Module that discretizes the encoded representation into
+                a finite set of indices or symbols. Optional for subclasses that
+                don't require explicit quantization.
+            syndrome_generator: Module that generates syndromes (parity bits or
+                compressed representation) for error correction or compression.
+                Optional for subclasses that don't use explicit syndromes.
             constraint: Optional constraint (e.g., power, rate) applied to the
                 transmitted syndromes
         """
         super().__init__()
         self.encoder = encoder
+        self.channel = channel
+        self.decoder = decoder
+        self.correlation_model = correlation_model
         self.quantizer = quantizer
         self.syndrome_generator = syndrome_generator
-        self.channel = channel
-        self.correlation_model = correlation_model
-        self.decoder = decoder
         self.constraint = constraint
+
+    def validate_side_info(self, source: torch.Tensor, side_info: Optional[torch.Tensor]) -> torch.Tensor:
+        """Validate and/or generate side information if needed.
+        
+        Args:
+            source: The source data
+            side_info: Optional side information
+            
+        Returns:
+            Valid side information, either provided or generated
+            
+        Raises:
+            ValueError: If side_info is None and no correlation_model is available
+        """
+        if side_info is None:
+            if self.correlation_model is None:
+                raise ValueError("Side information must be provided when correlation_model is not available")
+            return self.correlation_model(source)
+        return side_info
 
     def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
         """Process source through the Wyner-Ziv coding system.
 
         Implements the full Wyner-Ziv coding model:
         1. Encodes source into a latent representation
-        2. Quantizes the latent representation
-        3. Generates syndromes (compressed representation)
+        2. Quantizes the latent representation (if quantizer is present)
+        3. Generates syndromes (if syndrome_generator is present)
         4. Applies optional constraints on syndromes
         5. Transmits syndromes through the channel
         6. Either uses provided side information or generates it through correlation model
@@ -120,44 +142,42 @@ class WynerZivModel(BaseModel):
         Returns:
             Dictionary containing intermediate and final outputs of the model:
                 - encoded: Latent representation from source encoder
-                - quantized: Discretized representation after quantization
-                - syndromes: Compressed representation for transmission
-                - constrained: Syndromes after applying optional constraints
-                - received: Syndromes after channel transmission (possibly corrupted)
+                - quantized: Discretized representation after quantization (if applicable)
+                - syndromes: Compressed representation for transmission (if applicable)
+                - constrained: Syndromes/encoded data after applying optional constraints
+                - received: Data after channel transmission (possibly corrupted)
                 - side_info: Side information available at decoder
-                - decoded: Final reconstruction of the source using syndromes and side info
+                - decoded: Final reconstruction of the source using received data and side info
         """
         # Source encoding
         encoded = self.encoder(source)
+        result = {"encoded": encoded}
 
-        # Quantization
-        quantized = self.quantizer(encoded)
+        # Quantization (if available)
+        if self.quantizer is not None:
+            result["quantized"] = self.quantizer(encoded)
+        else:
+            result["quantized"] = encoded
 
-        # Generate syndromes for error correction
-        syndromes = self.syndrome_generator(quantized)
+        # Generate syndromes for error correction (if available)
+        if self.syndrome_generator is not None:
+            result["syndromes"] = self.syndrome_generator(result["quantized"])
+        else:
+            result["syndromes"] = result["quantized"]
 
         # Apply optional power constraint on syndromes
         if self.constraint is not None:
-            constrained = self.constraint(syndromes)
+            result["constrained"] = self.constraint(result["syndromes"])
         else:
-            constrained = syndromes
+            result["constrained"] = result["syndromes"]
 
         # Transmit syndromes through channel
-        received = self.channel(constrained)
+        result["received"] = self.channel(result["constrained"])
 
-        # Generate side information if not provided
-        if side_info is None:
-            side_info = self.correlation_model(source)
+        # Validate/generate side information if needed
+        result["side_info"] = self.validate_side_info(source, side_info)
 
         # Decode using received syndromes and side information
-        decoded = self.decoder(received, side_info)
+        result["decoded"] = self.decoder(result["received"], result["side_info"])
 
-        return {
-            "encoded": encoded,
-            "quantized": quantized,
-            "syndromes": syndromes,
-            "constrained": constrained,
-            "received": received,
-            "side_info": side_info,
-            "decoded": decoded,
-        }
+        return result

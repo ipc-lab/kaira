@@ -25,12 +25,13 @@ Reference:
     Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv", 2024
 """
 
-from typing import Dict
+from typing import Dict, Optional
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
 from kaira.models.components.afmodule import AFModule
 from torch import nn
 from kaira.models.base import BaseModel
+from kaira.models.wyner_ziv import WynerZivModel
 from compressai.layers import (
     AttentionBlock,
     ResidualBlock,
@@ -762,7 +763,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
         return x
 
-class Yilmaz2024DeepJSCCWZ(BaseModel):
+class Yilmaz2024DeepJSCCWZ(WynerZivModel):
     """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
     
     This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
@@ -822,11 +823,18 @@ class Yilmaz2024DeepJSCCWZ(BaseModel):
                        appropriate power levels. This is crucial for fair comparisons across
                        different models and transmission scenarios.
         """
-        super().__init__()
-        self.encoder = encoder
-        self.channel = channel
-        self.decoder = decoder
-        self.constraint = constraint
+        # Initialize the parent class without quantizer and syndrome_generator
+        # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
+        super().__init__(
+            encoder=encoder,
+            channel=channel,
+            decoder=decoder,
+            constraint=constraint,
+            # No correlation model since side info must always be provided
+            correlation_model=None,
+            quantizer=None,
+            syndrome_generator=None
+        )
         
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
