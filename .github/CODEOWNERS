@@ -1,0 +1,28 @@
+# Global owners - fallback for everything
+*                       @selimfirat
+
+# Documentation 
+/docs/                  @selimfirat 
+*.md                    @selimfirat
+*.rst                   @selimfirat
+
+# Core modules
+/kaira/channels/        @selimfirat
+/kaira/constraints/     @selimfirat
+/kaira/losses/          @selimfirat
+/kaira/metrics/         @selimfirat
+/kaira/models/          @selimfirat
+/kaira/modulations/     @selimfirat
+/kaira/utils/           @selimfirat
+
+# Tests
+/tests/                 @selimfirat
+
+# Build system
+setup.py                @selimfirat
+pyproject.toml          @selimfirat
+requirements*.txt       @selimfirat
+
+# CI/CD
+/.github/workflows/     @selimfirat
+azure-pipelines.yml     @selimfirat
