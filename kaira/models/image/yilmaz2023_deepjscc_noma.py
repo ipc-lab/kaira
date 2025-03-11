@@ -110,19 +110,16 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         self.device_images.load_state_dict(img_dict)
         print("checkpoint loaded")
 
-    def forward(self, batch):
+    def forward(self, x, csi):
         """Forward pass of the DeepJSCC-NOMA model.
 
         Args:
-            batch: Tuple containing (input_data, channel_state_information)
-                input_data: Input images with shape [batch_size, num_devices, channels, height, width]
-                channel_state_information: CSI values for the channel
+            x: Input images with shape [batch_size, num_devices, channels, height, width]
+            csi: Channel state information values for the channel
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
-        x, csi = batch
-        
         if self.use_device_embedding:
             emb = torch.stack(
                 [self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, 32, 32)
@@ -161,30 +158,29 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         Returns:
             Reconstructed signals
         """
-        awgn = None
         transmissions = []
         
         # Apply encoders and channel with SIC
         for i in range(self.num_devices):
-            t = self.encoders[0]((x[:, i, ...], csi))
+            t = self.encoders[0 if self.shared_encoder else i]((x[:, i, ...], csi))
             t = self.power_constraint(
                 t[:, None, ...], 
                 mult=torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))
             ).sum(dim=1)
-
-            if awgn is None:
-                awgn = torch.randn_like(t) * torch.sqrt(10.0 ** (-csi[..., None, None] / 10.0))
-                # Using standard AWGN instead of ComplexAWGNMAC
-                if hasattr(self.channel, 'is_complex') and self.channel.is_complex:
-                    awgn = awgn * torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))
             
-            transmissions.append(t + awgn)
+            # Use the provided channel model for each transmission
+            # This ensures consistency with the channel model throughout the code
+            # t_channel = t.unsqueeze(1)  # Add dimension for compatibility with channel
+            t_channel = self.channel((t, csi)) #.squeeze(1)  # Pass through channel and remove dimension
+            
+            transmissions.append(t_channel)
 
         # Decode each transmission
         results = []
         for i in range(self.num_devices):
-            xi = self.decoders[0]((transmissions[i], csi))
-            xi = xi.view(xi.size(0), self.num_devices, 3, xi.size(2), xi.size(3))[:, i, ...]
+            xi = self.decoders[0 if self.shared_decoder else i]((transmissions[i], csi))
+            if self.shared_decoder:
+                xi = xi.view(xi.size(0), self.num_devices, 3, xi.size(2), xi.size(3))[:, i, ...]
             results.append(xi)
         
         return torch.stack(results, dim=1)
