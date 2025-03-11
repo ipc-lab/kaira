@@ -4,11 +4,13 @@ This module contains the ChannelCodeModel, which is a model for channel
 transmission using a conventional encoding/decoding pipeline.
 """
 
+from typing import Any, Dict
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
 from kaira.modulations import BaseModulator, BaseDemodulator
 from .base import BaseModel
 from .registry import ModelRegistry
+import torch
 
 
 @ModelRegistry.register_model("channelcode")
