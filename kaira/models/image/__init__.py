@@ -3,7 +3,7 @@
 from .tung2022_deepjscc_q import Tung2022DeepJSCCQDecoder, Tung2022DeepJSCCQEncoder
 from .tung2022_deepjscc_q2 import Tung2022DeepJSCCQ2Decoder, Tung2022DeepJSCCQ2Encoder
 from .yang2024_deepjcc_swin import Yang2024DeepJSCCSwinEncoder, Yang2024DeepJSCCSwinDecoder
-
+from .yilmaz2023_deepjscc_noma import Yilmaz2023DeepJSCCNOMA
 
 __all__ = [
     "Tung2022DeepJSCCQEncoder",
@@ -12,4 +12,5 @@ __all__ = [
     "Tung2022DeepJSCCQ2Decoder",
     "Yang2024DeepJSCCSwinEncoder",
     "Yang2024DeepJSCCSwinDecoder",
+    "Yilmaz2023DeepJSCCNOMA",
 ]

@@ -1,11 +1,40 @@
-from kaira.models.base import BaseModel
+"""DeepJSCC-NOMA module for Kaira.
+
+This module contains the Yilmaz2023DeepJSCCNOMA model, which implements 
+Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel 
+as described in the paper by Yilmaz et al. (2023).
+"""
+
 import torch
 from torch import nn
 
-from src.models.components.channels import ComplexAWGNMAC
+from kaira.channels import BaseChannel
+from kaira.constraints import BaseConstraint
+from kaira.models.base import BaseModel
+from kaira.models.registry import ModelRegistry
 
 
+@ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMA(BaseModel):
+    """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel :cite:`yilmaz2023distributed`.
+
+    This model implements the DeepJSCC-NOMA system from the paper by :cite:`yilmaz2023distributed`,
+    which enables multiple devices to transmit jointly encoded data over a shared
+    wireless channel using Non-Orthogonal Multiple Access (NOMA).
+
+    Attributes:
+        channel: The channel model for transmission
+        power_constraint: Power constraint applied to transmitted signals
+        encoders: List of encoder networks for each device
+        decoders: List of decoder networks for each device
+        M: Channel bandwidth expansion/compression factor
+        num_devices: Number of transmitting devices in the system
+        shared_encoder: Whether to use the same encoder for all devices
+        shared_decoder: Whether to use the same decoder for all devices
+        use_perfect_sic: Whether to use perfect successive interference cancellation
+        use_device_embedding: Whether to use device embeddings
+    """
+
     def __init__(
         self, 
         channel, 
@@ -20,8 +49,20 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         use_device_embedding=None,
         ckpt_path=None
     ):
-        """
-        Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel implementation from :cite:`yilmaz2023distributed`.
+        """Initialize the DeepJSCC-NOMA model.
+
+        Args:
+            channel: Channel model for transmission
+            power_constraint: Power constraint to apply to transmitted signals
+            encoder: Encoder network class or constructor
+            decoder: Decoder network class or constructor
+            num_devices: Number of transmitting devices
+            M: Channel bandwidth expansion/compression factor
+            shared_encoder: Whether to use a shared encoder across devices
+            shared_decoder: Whether to use a shared decoder across devices
+            use_perfect_sic: Whether to use perfect successive interference cancellation
+            use_device_embedding: Whether to use device embeddings
+            ckpt_path: Path to checkpoint file for loading pre-trained weights
         """
         super().__init__()
 
@@ -48,6 +89,11 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
                 self._load_checkpoint(ckpt_path)
 
     def _load_checkpoint(self, ckpt_path):
+        """Load model weights from a checkpoint file.
+        
+        Args:
+            ckpt_path: Path to the checkpoint file
+        """
         state_dict = torch.load(ckpt_path)["state_dict"]
         
         enc_dict, dec_dict, img_dict = {}, {}, {}
@@ -65,6 +111,16 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         print("checkpoint loaded")
 
     def forward(self, batch):
+        """Forward pass of the DeepJSCC-NOMA model.
+
+        Args:
+            batch: Tuple containing (input_data, channel_state_information)
+                input_data: Input images with shape [batch_size, num_devices, channels, height, width]
+                channel_state_information: CSI values for the channel
+
+        Returns:
+            Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
+        """
         x, csi = batch
         
         if self.use_device_embedding:
@@ -96,6 +152,15 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         return x
     
     def _forward_perfect_sic(self, x, csi):
+        """Forward pass with perfect successive interference cancellation.
+        
+        Args:
+            x: Input data
+            csi: Channel state information
+            
+        Returns:
+            Reconstructed signals
+        """
         awgn = None
         transmissions = []
         
@@ -109,7 +174,8 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
 
             if awgn is None:
                 awgn = torch.randn_like(t) * torch.sqrt(10.0 ** (-csi[..., None, None] / 10.0))
-                if isinstance(self.channel, ComplexAWGNMAC):
+                # Using standard AWGN instead of ComplexAWGNMAC
+                if hasattr(self.channel, 'is_complex') and self.channel.is_complex:
                     awgn = awgn * torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))
             
             transmissions.append(t + awgn)
