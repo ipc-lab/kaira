@@ -148,18 +148,15 @@ class OQPSKDemodulator(BaseDemodulator):
 
         if noise_var is None:
             # Hard decision: independent decisions for I and Q
-            bits_real = (y_real >= 0).float() * (-1.0) + (y_real < 0).float() * 1.0
-            bits_real = bits_real * (-0.5) + 0.5  # Convert -1/1 to 0/1
-
-            bits_imag = (y_imag >= 0).float() * (-1.0) + (y_imag < 0).float() * 1.0
-            bits_imag = bits_imag * (-0.5) + 0.5  # Convert -1/1 to 0/1
-
+            bits_real = (y_real >= 0).float()  # 1 if positive, 0 if negative
+            bits_imag = (y_imag >= 0).float()  # 1 if positive, 0 if negative
+            
             return torch.cat([bits_real.reshape(*batch_shape, 1), bits_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
         else:
             # Soft decision: LLRs
             if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
-
+            
             # Handle broadcasting dimensions for noise_var
             if noise_var.dim() == 0:  # scalar
                 noise_var = noise_var.expand(*batch_shape)
@@ -168,7 +165,7 @@ class OQPSKDemodulator(BaseDemodulator):
             # since I and Q are orthogonal
             llr_real = 2 * y_real * self._normalization / noise_var
             llr_imag = 2 * y_imag * self._normalization / noise_var
-
+            
             return torch.cat([llr_real.reshape(*batch_shape, 1), llr_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
 
     @property
