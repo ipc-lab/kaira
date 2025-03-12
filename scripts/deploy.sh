@@ -26,7 +26,7 @@ VERSION=$(python3 -c "import re; print(re.search(r'version=[\"\'](.*?)[\"\']', o
 echo "Preparing to deploy version: $VERSION"
 
 # Check if this version already exists on PyPI
-if pip install --quiet kaira==$VERSION 2>/dev/null; then
+if pip install --quiet kaira=="$VERSION" 2>/dev/null; then
     echo "Error: Version $VERSION already exists on PyPI!"
     echo "Please update the version number in setup.py before deploying."
     exit 1
@@ -44,7 +44,7 @@ fi
 cd ..
 
 echo "Cleaning previous build artifacts..."
-rm -rf build/ dist/ *.egg-info/
+rm -rf build/ dist/ ./*.egg-info/
 
 echo "Building distribution packages..."
 python3 setup.py sdist bdist_wheel
