@@ -10,7 +10,8 @@ from kaira.modulations import BaseModulator, BaseDemodulator
 from .base import BaseModel
 from .registry import ModelRegistry
 from .generic.sequential import SequentialModel
-
+import torch
+from typing import Any, Dict
 
 @ModelRegistry.register_model("transcoder")
 class TransCoderModel(SequentialModel):
