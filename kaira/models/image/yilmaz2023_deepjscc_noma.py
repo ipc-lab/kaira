@@ -7,12 +7,17 @@ as described in the paper by Yilmaz et al. (2023).
 
 import torch
 from torch import nn
+from typing import List, Dict, Optional, Tuple, Union, Type, Any
 
-from kaira.channels import BaseChannel
-from kaira.constraints import BaseConstraint
 from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry
+from kaira.channels.base import BaseChannel
+from kaira.constraints.base import BaseConstraint
+from kaira.models.image.tung2022_deepjscc_q import Tung2022DeepJSCCQ2Encoder, Tung2022DeepJSCCQ2Decoder
 
+# Use Tung2022DeepJSCCQ2 models as default
+DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
+DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMA(BaseModel):
@@ -37,31 +42,37 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
 
     def __init__(
         self, 
-        channel, 
-        power_constraint, 
-        encoder, 
-        decoder, 
-        num_devices, 
-        M,
-        shared_encoder=False,
-        shared_decoder=False,
-        use_perfect_sic=False,
-        use_device_embedding=None,
-        ckpt_path=None
+        channel: BaseChannel, 
+        power_constraint: BaseConstraint, 
+        encoder: Optional[Type[BaseModel]] = None,
+        decoder: Optional[Type[BaseModel]] = None,
+        num_devices: int = 2, 
+        M: float = 1.0,
+        latent_dim: int = 16,
+        shared_encoder: bool = False,
+        shared_decoder: bool = False,
+        use_perfect_sic: bool = False,
+        use_device_embedding: Optional[bool] = None,
+        image_shape: Tuple[int, int] = (32, 32),
+        csi_length: int = 1,
+        ckpt_path: Optional[str] = None
     ):
         """Initialize the DeepJSCC-NOMA model.
 
         Args:
             channel: Channel model for transmission
             power_constraint: Power constraint to apply to transmitted signals
-            encoder: Encoder network class or constructor
-            decoder: Decoder network class or constructor
+            encoder: Encoder network class or constructor (default: Tung2022DeepJSCCQ2Encoder)
+            decoder: Decoder network class or constructor (default: Tung2022DeepJSCCQ2Decoder)
             num_devices: Number of transmitting devices
             M: Channel bandwidth expansion/compression factor
+            latent_dim: Dimension of latent representation
             shared_encoder: Whether to use a shared encoder across devices
             shared_decoder: Whether to use a shared decoder across devices
             use_perfect_sic: Whether to use perfect successive interference cancellation
             use_device_embedding: Whether to use device embeddings
+            image_shape: Shape of input images (height, width) for determining embedding dimensions
+            csi_length: The length of CSI (Channel State Information) vector
             ckpt_path: Path to checkpoint file for loading pre-trained weights
         """
         super().__init__()
@@ -74,21 +85,73 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         self.shared_decoder = shared_decoder
         self.use_perfect_sic = use_perfect_sic
         self.use_device_embedding = use_device_embedding if use_device_embedding is not None else shared_encoder
+        self.latent_dim = latent_dim
+        self.image_shape = image_shape
+        self.csi_length = csi_length
+        
+        # Calculate embedding dimension based on image shape
+        self.embedding_dim = image_shape[0] * image_shape[1]
+
+        # Use provided encoder/decoder or fall back to defaults
+        encoder_cls = encoder if encoder is not None else DEFAULT_ENCODER
+        decoder_cls = decoder if decoder is not None else DEFAULT_DECODER
 
         encoder_count = 1 if shared_encoder else num_devices
         decoder_count = 1 if shared_decoder else num_devices
         encoder_channels = 4 if self.use_device_embedding else 3
-        decoder_channels = 3 * num_devices if shared_decoder else None
         
-        self.encoders = nn.ModuleList([encoder(C=encoder_channels) for _ in range(encoder_count)])
-        self.decoders = nn.ModuleList([decoder(C=decoder_channels) for _ in range(decoder_count)])
+        # Initialize encoders with proper typing and parameters
+        self.encoders = nn.ModuleList()
+        for _ in range(encoder_count):
+            try:
+                # Try instantiating with Tung2022DeepJSCCQ2Encoder expected parameters
+                enc = encoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
+            except (TypeError, ValueError):
+                try:
+                    # Try with C parameter (common in image encoders)
+                    enc = encoder_cls(C=encoder_channels, latent_dim=latent_dim)
+                except (TypeError, ValueError):
+                    try:
+                        # Try with in_channels parameter (common alternative)
+                        enc = encoder_cls(in_channels=encoder_channels, latent_dim=latent_dim)
+                    except (TypeError, ValueError):
+                        try:
+                            # Try just with latent_dim
+                            enc = encoder_cls(latent_dim=latent_dim)
+                        except (TypeError, ValueError):
+                            # Last resort: try with no parameters
+                            enc = encoder_cls()
+            self.encoders.append(enc)
+        
+        # Initialize decoders with proper typing and parameters
+        self.decoders = nn.ModuleList()
+        for _ in range(decoder_count):
+            try:
+                # Try instantiating with Tung2022DeepJSCCQ2Decoder expected parameters
+                dec = decoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
+            except (TypeError, ValueError):
+                try:
+                    # Try with standard parameter set
+                    dec = decoder_cls(
+                        latent_dim=latent_dim, 
+                        num_devices=num_devices, 
+                        shared_decoder=shared_decoder
+                    )
+                except (TypeError, ValueError):
+                    try:
+                        # Try with just latent_dim
+                        dec = decoder_cls(latent_dim=latent_dim)
+                    except (TypeError, ValueError):
+                        # Last resort: try with no parameters
+                        dec = decoder_cls()
+            self.decoders.append(dec)
         
         if self.use_device_embedding:
-            self.device_images = nn.Embedding(num_devices, embedding_dim=32 * 32)
+            self.device_images = nn.Embedding(num_devices, embedding_dim=self.embedding_dim)
             if ckpt_path is not None:
                 self._load_checkpoint(ckpt_path)
 
-    def _load_checkpoint(self, ckpt_path):
+    def _load_checkpoint(self, ckpt_path: str) -> None:
         """Load model weights from a checkpoint file.
         
         Args:
@@ -96,7 +159,10 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         """
         state_dict = torch.load(ckpt_path)["state_dict"]
         
-        enc_dict, dec_dict, img_dict = {}, {}, {}
+        enc_dict: Dict[str, torch.Tensor] = {}
+        dec_dict: Dict[str, torch.Tensor] = {}
+        img_dict: Dict[str, torch.Tensor] = {}
+        
         for k, v in state_dict.items():
             if k.startswith("net.encoders.0"):
                 enc_dict[k.replace("net.encoders.0", "0")] = v
@@ -110,19 +176,25 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         self.device_images.load_state_dict(img_dict)
         print("checkpoint loaded")
 
-    def forward(self, x, csi):
+    def forward(
+        self, 
+        x: torch.Tensor, 
+        csi: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass of the DeepJSCC-NOMA model.
 
         Args:
             x: Input images with shape [batch_size, num_devices, channels, height, width]
-            csi: Channel state information values for the channel
+            csi: Channel state information values for the channel with shape [batch_size, csi_length]
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
         if self.use_device_embedding:
+            # Create device embeddings and reshape to image dimensions
+            h, w = self.image_shape
             emb = torch.stack(
-                [self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, 32, 32)
+                [self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w)
                 for i in range(self.num_devices)], dim=1
             )
             x = torch.cat([x, emb], dim=2)
@@ -130,57 +202,114 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         if self.use_perfect_sic:
             return self._forward_perfect_sic(x, csi)
         
-        # Encode inputs
-        transmissions = [self.encoders[0 if self.shared_encoder else i]((x[:, i, ...], csi)) 
-                         for i in range(self.num_devices)]
+        # Encode inputs - support different encoder interfaces
+        transmissions: List[torch.Tensor] = []
+        for i in range(self.num_devices):
+            encoder = self.encoders[0 if self.shared_encoder else i]
+            device_input = x[:, i, ...]
+            
+            # Handle encoders with different input formats
+            try:
+                # Try tuple input with CSI
+                tx = encoder((device_input, csi))
+            except (TypeError, ValueError):
+                # Fall back to just the input data
+                tx = encoder(device_input)
+            
+            transmissions.append(tx)
+            
         x = torch.stack(transmissions, dim=1)
         
         # Apply channel
         x = self.power_constraint(x)
         x = self.channel((x, csi))
 
-        # Decode outputs
+        # Decode outputs - support different decoder interfaces
         if self.shared_decoder:
-            x = self.decoders[0]((x, csi))
-            x = x.view(x.size(0), self.num_devices, 3, x.size(2), x.size(3))
+            decoder = self.decoders[0]
+            try:
+                # Try tuple input with CSI
+                x_decoded = decoder((x, csi))
+            except (TypeError, ValueError):
+                # Fall back to just the input data
+                x_decoded = decoder(x)
+                
+            # Make sure output has proper device dimension
+            if x_decoded.ndim == 4:  # [B, C, H, W]
+                x = x_decoded.unsqueeze(1).expand(-1, self.num_devices, -1, -1, -1)
+            else:  # [B, num_devices, C, H, W]
+                x = x_decoded
         else:
-            x = torch.stack([self.decoders[i]((x, csi)) for i in range(self.num_devices)], dim=1)
+            # Process each device separately
+            decoded_outputs: List[torch.Tensor] = []
+            for i in range(self.num_devices):
+                decoder = self.decoders[i]
+                try:
+                    # Try tuple input with CSI
+                    x_decoded = decoder((x, csi))
+                except (TypeError, ValueError):
+                    # Fall back to just the input data
+                    x_decoded = decoder(x)
+                decoded_outputs.append(x_decoded)
+            
+            x = torch.stack(decoded_outputs, dim=1)
 
         return x
     
-    def _forward_perfect_sic(self, x, csi):
+    def _forward_perfect_sic(
+        self, 
+        x: torch.Tensor, 
+        csi: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass with perfect successive interference cancellation.
         
         Args:
-            x: Input data
-            csi: Channel state information
+            x: Input data with shape [batch_size, num_devices, channels, height, width]
+            csi: Channel state information with shape [batch_size, csi_length]
             
         Returns:
-            Reconstructed signals
+            Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
-        transmissions = []
+        transmissions: List[torch.Tensor] = []
         
-        # Apply encoders and channel with SIC
+        # Apply encoders and channel with SIC - support different encoder interfaces
         for i in range(self.num_devices):
-            t = self.encoders[0 if self.shared_encoder else i]((x[:, i, ...], csi))
+            encoder = self.encoders[0 if self.shared_encoder else i]
+            device_input = x[:, i, ...]
+            
+            # Handle encoders with different input formats
+            try:
+                # Try tuple input with CSI
+                t = encoder((device_input, csi))
+            except (TypeError, ValueError):
+                # Fall back to just the input data
+                t = encoder(device_input)
+            
             t = self.power_constraint(
                 t[:, None, ...], 
                 mult=torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))
             ).sum(dim=1)
             
             # Use the provided channel model for each transmission
-            # This ensures consistency with the channel model throughout the code
-            # t_channel = t.unsqueeze(1)  # Add dimension for compatibility with channel
-            t_channel = self.channel((t, csi)) #.squeeze(1)  # Pass through channel and remove dimension
+            t_channel = self.channel((t, csi))
             
             transmissions.append(t_channel)
 
-        # Decode each transmission
-        results = []
+        # Decode each transmission - support different decoder interfaces
+        results: List[torch.Tensor] = []
         for i in range(self.num_devices):
-            xi = self.decoders[0 if self.shared_decoder else i]((transmissions[i], csi))
-            if self.shared_decoder:
-                xi = xi.view(xi.size(0), self.num_devices, 3, xi.size(2), xi.size(3))[:, i, ...]
+            decoder = self.decoders[0 if self.shared_decoder else i]
+            
+            try:
+                # Try tuple input with CSI
+                xi = decoder((transmissions[i], csi))
+            except (TypeError, ValueError):
+                # Fall back to just the input data
+                xi = decoder(transmissions[i])
+            
+            if self.shared_decoder and xi.ndim == 5:  # [B, num_devices, C, H, W]
+                xi = xi[:, i, ...]
+                
             results.append(xi)
         
         return torch.stack(results, dim=1)

@@ -10,8 +10,7 @@ from .generic.lambda_model import LambdaModel
 from .generic.parallel import ParallelModel
 from .registry import ModelRegistry
 from .generic.sequential import SequentialModel
-from .wyner_ziv import WynerZivCorrelationModel, WynerZivModel
-from .image import Yilmaz2023DeepJSCCNOMA
+from .wyner_ziv import WynerZivModel
 
 __all__ = [
     "components", 
@@ -26,7 +25,5 @@ __all__ = [
     "ModelRegistry",
     "ParallelModel",
     "SequentialModel",
-    "WynerZivCorrelationModel",
     "WynerZivModel",
-    "Yilmaz2023DeepJSCCNOMA"
 ]
