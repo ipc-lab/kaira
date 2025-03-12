@@ -7,14 +7,14 @@ transmission using TransCoder pipeline.
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
 from kaira.modulations import BaseModulator, BaseDemodulator
-from .base import BaseModel
-from .registry import ModelRegistry
-from .generic.sequential import SequentialModel
+from ..base import BaseModel
+from ..registry import ModelRegistry
+from ..generic import SequentialModel
 import torch
 from typing import Any, Dict
 
 @ModelRegistry.register_model("transcoder")
-class TransCoderModel(SequentialModel):
+class Kurmukova2025TransCoderModel(SequentialModel):
     """A specialized model for TransCoder.
 
     TransCoder is a neural network-based approach that enhances the channel coding performance and 

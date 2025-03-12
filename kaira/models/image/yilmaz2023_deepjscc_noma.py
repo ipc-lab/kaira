@@ -13,6 +13,7 @@ from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
+from kaira.models.multiple_access_channel import MultipleAccessChannelModel
 from kaira.models.image.tung2022_deepjscc_q import Tung2022DeepJSCCQ2Encoder, Tung2022DeepJSCCQ2Decoder
 
 # Use Tung2022DeepJSCCQ2 models as default
@@ -20,24 +21,20 @@ DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
 DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 
 @ModelRegistry.register_model("deepjscc_noma")
-class Yilmaz2023DeepJSCCNOMA(BaseModel):
+class Yilmaz2023DeepJSCCNOMA(MultipleAccessChannelModel):
     """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel :cite:`yilmaz2023distributed`.
 
-    This model implements the DeepJSCC-NOMA system from the paper by :cite:`yilmaz2023distributed`,
+    This model implements the DeepJSCC-NOMA system from the paper by Yilmaz et al. (2023),
     which enables multiple devices to transmit jointly encoded data over a shared
     wireless channel using Non-Orthogonal Multiple Access (NOMA).
 
     Attributes:
-        channel: The channel model for transmission
-        power_constraint: Power constraint applied to transmitted signals
-        encoders: List of encoder networks for each device
-        decoders: List of decoder networks for each device
         M: Channel bandwidth expansion/compression factor
-        num_devices: Number of transmitting devices in the system
-        shared_encoder: Whether to use the same encoder for all devices
-        shared_decoder: Whether to use the same decoder for all devices
+        latent_dim: Dimension of latent representation
         use_perfect_sic: Whether to use perfect successive interference cancellation
         use_device_embedding: Whether to use device embeddings
+        image_shape: Shape of the input images used for embedding
+        device_images: Embedding table for device-specific embeddings
     """
 
     def __init__(
@@ -75,17 +72,22 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
             csi_length: The length of CSI (Channel State Information) vector
             ckpt_path: Path to checkpoint file for loading pre-trained weights
         """
-        super().__init__()
+        # Initialize the base class
+        super().__init__(
+            channel=channel,
+            power_constraint=power_constraint,
+            encoder=encoder,
+            decoder=decoder,
+            num_devices=num_devices,
+            shared_encoder=shared_encoder,
+            shared_decoder=shared_decoder
+        )
 
-        self.channel = channel
-        self.power_constraint = power_constraint
+        # Initialize DeepJSCC-NOMA specific attributes
         self.M = M
-        self.num_devices = num_devices
-        self.shared_encoder = shared_encoder
-        self.shared_decoder = shared_decoder
+        self.latent_dim = latent_dim
         self.use_perfect_sic = use_perfect_sic
         self.use_device_embedding = use_device_embedding if use_device_embedding is not None else shared_encoder
-        self.latent_dim = latent_dim
         self.image_shape = image_shape
         self.csi_length = csi_length
         
@@ -101,7 +103,6 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
         encoder_channels = 4 if self.use_device_embedding else 3
         
         # Initialize encoders with proper typing and parameters
-        self.encoders = nn.ModuleList()
         for _ in range(encoder_count):
             try:
                 # Try instantiating with Tung2022DeepJSCCQ2Encoder expected parameters
@@ -124,7 +125,6 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
             self.encoders.append(enc)
         
         # Initialize decoders with proper typing and parameters
-        self.decoders = nn.ModuleList()
         for _ in range(decoder_count):
             try:
                 # Try instantiating with Tung2022DeepJSCCQ2Decoder expected parameters
@@ -216,12 +216,12 @@ class Yilmaz2023DeepJSCCNOMA(BaseModel):
                 # Fall back to just the input data
                 tx = encoder(device_input)
             
+            tx = self.power_constraint(tx)
             transmissions.append(tx)
             
         x = torch.stack(transmissions, dim=1)
         
         # Apply channel
-        x = self.power_constraint(x)
         x = self.channel((x, csi))
 
         # Decode outputs - support different decoder interfaces
