@@ -16,6 +16,7 @@ We take the security of Kaira seriously. If you believe you've found a security 
 2. **Do Not** create a public GitHub issue
 
 Instead, please email us directly at:
+
 - `yilmazselimfirat (at) gmail.com`
 
 Please include the following information:

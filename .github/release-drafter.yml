@@ -1,53 +1,53 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 categories:
-  - title: '🚀 Features'
+  - title: "🚀 Features"
     labels:
-      - 'feature'
-      - 'enhancement'
-  - title: '🐛 Bug Fixes'
+      - "feature"
+      - "enhancement"
+  - title: "🐛 Bug Fixes"
     labels:
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-  - title: '📚 Documentation'
+      - "fix"
+      - "bugfix"
+      - "bug"
+  - title: "📚 Documentation"
     labels:
-      - 'documentation'
-      - 'docs'
-  - title: '⚙️ Maintenance'
+      - "documentation"
+      - "docs"
+  - title: "⚙️ Maintenance"
     labels:
-      - 'chore'
-      - 'maintenance'
-      - 'refactor'
-  - title: '🧪 Testing'
+      - "chore"
+      - "maintenance"
+      - "refactor"
+  - title: "🧪 Testing"
     labels:
-      - 'test'
-      - 'testing'
-  - title: '🔧 Dependency Updates'
+      - "test"
+      - "testing"
+  - title: "🔧 Dependency Updates"
     labels:
-      - 'dependencies'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+      - "dependencies"
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
   major:
     labels:
-      - 'major'
-      - 'breaking-change'
+      - "major"
+      - "breaking-change"
   minor:
     labels:
-      - 'minor'
-      - 'feature'
-      - 'enhancement'
+      - "minor"
+      - "feature"
+      - "enhancement"
   patch:
     labels:
-      - 'patch'
-      - 'bug'
-      - 'bugfix'
-      - 'fix'
-      - 'documentation'
-      - 'docs'
-      - 'chore'
-      - 'dependencies'
+      - "patch"
+      - "bug"
+      - "bugfix"
+      - "fix"
+      - "documentation"
+      - "docs"
+      - "chore"
+      - "dependencies"
   default: patch
 template: |
   ## What's Changed in Kaira v$RESOLVED_VERSION
@@ -59,5 +59,5 @@ template: |
   ## Thank You
 
   Special thanks to all contributors who made this release possible!
-  
+
   $CONTRIBUTORS

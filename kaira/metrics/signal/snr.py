@@ -19,7 +19,7 @@ class SignalToNoiseRatio(BaseMetric):
 
     SNR measures the ratio of signal power to noise power, expressed in decibels (dB). Higher
     values indicate better signal quality :cite:`sklar2001digital`. This metric is fundamental
-    in determining the performance limits of communication systems as discussed in 
+    in determining the performance limits of communication systems as discussed in
     :cite:`shannon1948mathematical`.
     """
 

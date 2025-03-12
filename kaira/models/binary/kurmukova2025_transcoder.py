@@ -1,30 +1,34 @@
 """TransCoder module for Kaira.
 
-This module contains the TransCoderModel, which is a model for channel
-transmission using TransCoder pipeline.
+This module contains the TransCoderModel, which is a model for channel transmission using
+TransCoder pipeline.
 """
+
+from typing import Any, Dict
+
+import torch
 
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
-from kaira.modulations import BaseModulator, BaseDemodulator
+from kaira.modulations import BaseDemodulator, BaseModulator
+
 from ..base import BaseModel
-from ..registry import ModelRegistry
 from ..generic import SequentialModel
-import torch
-from typing import Any, Dict
+from ..registry import ModelRegistry
+
 
 @ModelRegistry.register_model("transcoder")
 class Kurmukova2025TransCoder(SequentialModel):
     """A specialized model for TransCoder.
 
-    TransCoder is a neural network-based approach that enhances the channel coding performance and 
-    this model pipeline combines both transformer-based coding and channel coding. This scheme connects 
-    neural and channel encoders, power constraint, channel simulator, and neural and channel decoders 
+    TransCoder is a neural network-based approach that enhances the channel coding performance and
+    this model pipeline combines both transformer-based coding and channel coding. This scheme connects
+    neural and channel encoders, power constraint, channel simulator, and neural and channel decoders
     in a sequential manner to enhance an information transmission system.
 
     The typical workflow is:
     1. Input data is encoded into a codeword with channel encoder
-    2. If TransCoder neural encoder is enabled, then the codeword is encoded into 
+    2. If TransCoder neural encoder is enabled, then the codeword is encoded into
     2. The encoded representation is power-constrained
     3. The constrained representation passes through a simulated channel
     4. The decoder reconstructs the original image from the channel output
@@ -61,9 +65,7 @@ class Kurmukova2025TransCoder(SequentialModel):
             decoder_ec (BaseModel): Channel code decoder for recovering the original input
             n_iterations (int): Number of consecutive decoding iterations: TransCoder and channel decoder (default: 1)
         """
-        super().__init__(steps=[encoder_tc, encoder_ec, modulator, constraint,
-                                channel, demodulator, decoder_tc, decoder_ec,
-                                n_iterations])
+        super().__init__(steps=[encoder_tc, encoder_ec, modulator, constraint, channel, demodulator, decoder_tc, decoder_ec, n_iterations])
         self.encoder_tc = encoder_tc
         self.encoder_ec = encoder_ec
         self.modulator = modulator
@@ -79,7 +81,7 @@ class Kurmukova2025TransCoder(SequentialModel):
 
         Performs an iterative transmission process where:
         1. The input data is encoded with a channel encoder
-        2. If the TransCoder neural encoder is enabled, the encoded data is further encoded into a sequence of power-constrained symbols, 
+        2. If the TransCoder neural encoder is enabled, the encoded data is further encoded into a sequence of power-constrained symbols,
         else the encoded data is modulated and power-constrained before transmission
         3. The constrained data is transmitted over the channel
         4. The received data is passed to TransCoder neural decoder (in case the TransCoder decoder is used) or to demodulator (otherwise)
@@ -95,8 +97,7 @@ class Kurmukova2025TransCoder(SequentialModel):
                 - iterations: List of per-iteration results
                 - history: History of transmitted signals
         """
-        batch_size = input_data.shape[0]
-        device = input_data.device
+        input_data.shape[0]
 
         # Storage for results
         iterations = []
@@ -112,18 +113,18 @@ class Kurmukova2025TransCoder(SequentialModel):
             modulated = self.modulator(encoded_ec)
             # Power constraint
             constrained = self.constraint(modulated)
-        
+
         # Transmit through channel
         received = self.channel(constrained)
 
         history.append(
-                {
-                    "encoded": encoded,
-                    "constrained": constrained,
-                    "received": received,
-                }
-            )
-        
+            {
+                "encoded": encoded,
+                "constrained": constrained,
+                "received": received,
+            }
+        )
+
         # Iterative decoding process
         for i in range(self.n_iterations):
             if self.decoder_tc is not None:

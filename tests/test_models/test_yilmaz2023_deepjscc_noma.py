@@ -1,14 +1,12 @@
 """Tests for the Yilmaz2023DeepJSCCNOMA model."""
-import pytest
 import torch
-import torch.nn as nn
 
 from kaira.channels import AWGNChannel
 from kaira.constraints import TotalPowerConstraint
 from kaira.models.image import (
-    Yilmaz2023DeepJSCCNOMAModel,
+    Yilmaz2023DeepJSCCNOMADecoder,
     Yilmaz2023DeepJSCCNOMAEncoder,
-    Yilmaz2023DeepJSCCNOMADecoder
+    Yilmaz2023DeepJSCCNOMAModel,
 )
 from kaira.models.registry import ModelRegistry
 
@@ -18,9 +16,9 @@ def test_yilmaz2023_deepjscc_noma_encoder():
     encoder = Yilmaz2023DeepJSCCNOMAEncoder(C=3, latent_dim=16)
     x = torch.randn(4, 3, 32, 32)
     csi = torch.ones(4)
-    
+
     output = encoder((x, csi))
-    
+
     # Output should be [batch_size, 2, sqrt(latent_dim), sqrt(latent_dim)]
     assert output.shape == (4, 2, 4, 4)
 
@@ -30,19 +28,19 @@ def test_yilmaz2023_deepjscc_noma_decoder():
     decoder = Yilmaz2023DeepJSCCNOMADecoder(latent_dim=16)
     x = torch.randn(4, 2, 4, 4)  # [batch_size, 2, sqrt(latent_dim), sqrt(latent_dim)]
     csi = torch.ones(4)
-    
+
     output = decoder((x, csi))
-    
+
     # Output should be [batch_size, 3, height, width]
     assert output.shape == (4, 3, 32, 32)
-    
+
     # Test shared decoder
     shared_decoder = Yilmaz2023DeepJSCCNOMADecoder(latent_dim=16, num_devices=2, shared_decoder=True)
     # The input for shared decoder would combine signals from all devices
     x = torch.randn(4, 4, 4, 4)  # [batch_size, 2*num_devices, sqrt(latent_dim), sqrt(latent_dim)]
-    
+
     output = shared_decoder((x, csi))
-    
+
     # Output should include channels for all devices
     assert output.shape == (4, 6, 32, 32)  # [batch_size, 3*num_devices, height, width]
 
@@ -59,7 +57,7 @@ def test_yilmaz2023_deepjscc_noma_instantiation():
     )
     assert isinstance(model, Yilmaz2023DeepJSCCNOMAModel)
     assert model.num_devices == 2
-    
+
     # Check that encoders and decoders are properly instantiated
     assert len(model.encoders) == 2  # Default is not shared
     assert len(model.decoders) == 2  # Default is not shared
@@ -78,14 +76,14 @@ def test_yilmaz2023_deepjscc_noma_forward():
         M=0.5,
         latent_dim=16,
     )
-    
+
     # Create dummy input: [batch_size, num_devices, channels, height, width]
     x = torch.randn(4, 2, 3, 32, 32)
     csi = torch.ones(4)  # SNR values
-    
+
     # Run forward pass
     output = model(x, csi)
-    
+
     # Check output shape
     assert output.shape == (4, 2, 3, 32, 32)
 
@@ -93,11 +91,11 @@ def test_yilmaz2023_deepjscc_noma_forward():
 def test_yilmaz2023_deepjscc_noma_registry():
     """Test that Yilmaz2023DeepJSCCNOMA is properly registered."""
     assert "deepjscc_noma" in ModelRegistry._models
-    
+
     # Check model can be created from registry
     channel = AWGNChannel()
     constraint = TotalPowerConstraint(total_power=1.0)
-    
+
     model = ModelRegistry.create(
         "deepjscc_noma",
         channel=channel,
@@ -105,7 +103,7 @@ def test_yilmaz2023_deepjscc_noma_registry():
         num_devices=3,
         M=0.5,
     )
-    
+
     assert isinstance(model, Yilmaz2023DeepJSCCNOMAModel)
     assert model.num_devices == 3
 
@@ -123,18 +121,18 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
         shared_encoder=True,
         shared_decoder=True,
     )
-    
+
     # Check that we only have one encoder and one decoder
     assert len(model.encoders) == 1
     assert len(model.decoders) == 1
-    
+
     # Create dummy input
     x = torch.randn(2, 3, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
     csi = torch.ones(2)  # SNR values
-    
+
     # Run forward pass
     output = model(x, csi)
-    
+
     # Check output shape
     assert output.shape == (2, 3, 3, 32, 32)
 
@@ -151,13 +149,13 @@ def test_yilmaz2023_deepjscc_noma_perfect_sic():
         latent_dim=16,
         use_perfect_sic=True,
     )
-    
+
     # Create dummy input
     x = torch.randn(2, 2, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
     csi = torch.ones(2)  # SNR values
-    
+
     # Run forward pass
     output = model(x, csi)
-    
+
     # Check output shape
     assert output.shape == (2, 2, 3, 32, 32)

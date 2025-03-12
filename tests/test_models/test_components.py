@@ -2,10 +2,7 @@
 import pytest
 import torch
 
-from kaira.constraints import (
-    AveragePowerConstraint,
-    TotalPowerConstraint,
-)
+from kaira.constraints import AveragePowerConstraint, TotalPowerConstraint
 from kaira.models.components import AFModule
 
 

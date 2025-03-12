@@ -39,6 +39,7 @@ from .psk import (
 
 # QAM schemes
 from .qam import QAMDemodulator, QAMModulator
+from .registry import ModulationRegistry
 
 # Utility functions
 from .utils import (
@@ -50,8 +51,6 @@ from .utils import (
     gray_to_binary,
     plot_constellation,
 )
-
-from .registry import ModulationRegistry
 
 __all__ = [
     # Base classes

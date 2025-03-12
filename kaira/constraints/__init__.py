@@ -46,17 +46,12 @@ from .identity import IdentityConstraint
 from .lambda_constraint import LambdaConstraint
 
 # Power constraints
-from .power import (
-    AveragePowerConstraint,
-    PAPRConstraint,
-    TotalPowerConstraint,
-)
+from .power import AveragePowerConstraint, PAPRConstraint, TotalPowerConstraint
+from .registry import ConstraintRegistry
 
 # Signal constraints
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
 from .utils import combine_constraints, create_mimo_constraints, create_ofdm_constraints
-
-from .registry import ConstraintRegistry
 
 __all__ = [
     # Base classes

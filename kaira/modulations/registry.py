@@ -2,22 +2,21 @@
 
 from typing import Callable, Dict, Literal, Optional, Type, Union
 
-from .base import BaseModulation, BaseModulator, BaseDemodulator
+from .base import BaseDemodulator, BaseModulation, BaseModulator
 
 
 class ModulationRegistry:
     """A registry for modulations in Kaira.
 
-    This class provides a centralized registry for all modulators and demodulators, making it easier to instantiate them
-    by name with appropriate parameters.
+    This class provides a centralized registry for all modulators and demodulators, making it
+    easier to instantiate them by name with appropriate parameters.
     """
 
     _modulators: Dict[str, Type[BaseModulator]] = {}
     _demodulators: Dict[str, Type[BaseDemodulator]] = {}
 
     @classmethod
-    def register(cls, name: str, modulation_class: Type[BaseModulation], 
-                 mode: Literal["modulator", "demodulator"]) -> None:
+    def register(cls, name: str, modulation_class: Type[BaseModulation], mode: Literal["modulator", "demodulator"]) -> None:
         """Register a new modulation in the registry.
 
         Args:

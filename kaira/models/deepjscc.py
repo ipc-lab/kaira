@@ -1,14 +1,15 @@
 """DeepJSCC module for Kaira.
 
-This module contains the DeepJSCCModel, which is a model for image compression and
-transmission using Deep Joint Source-Channel Coding (DeepJSCC).
+This module contains the DeepJSCCModel, which is a model for image compression and transmission
+using Deep Joint Source-Channel Coding (DeepJSCC).
 """
 
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
+
 from .base import BaseModel
-from .registry import ModelRegistry
 from .generic.sequential import SequentialModel
+from .registry import ModelRegistry
 
 
 @ModelRegistry.register_model("deepjscc")

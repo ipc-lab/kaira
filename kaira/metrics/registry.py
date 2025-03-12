@@ -61,8 +61,8 @@ from .composite import CompositeMetric
 class MetricRegistry:
     """A registry for metrics in Kaira.
 
-    This class provides a centralized registry for all metrics, making it easier to instantiate them
-    by name with appropriate parameters.
+    This class provides a centralized registry for all metrics, making it easier to instantiate
+    them by name with appropriate parameters.
     """
 
     _metrics: Dict[str, Type[BaseMetric]] = {}

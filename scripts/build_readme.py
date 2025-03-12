@@ -1,7 +1,7 @@
 import os
 
 # Change working directory to the root project directory
-os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 output_text = ""
 template_file_path = "README_template.rst"
@@ -15,11 +15,11 @@ try:
                 try:
                     with open(include_file_path) as included_file:
                         included_text = included_file.read()
-                        
+
                         if include_file_path == "docs/license.rst":
                             included_text = "\n".join(included_text.split("\n")[:4])
                             included_text += "\n"
-                            
+
                         output_text += included_text.replace(":class:", " ")
                 except FileNotFoundError:
                     print(f"Error: Included file '{include_file_path}' not found.")

@@ -8,8 +8,8 @@ from .base import BaseChannel
 class ChannelRegistry:
     """A registry for channels in Kaira.
 
-    This class provides a centralized registry for all channels, making it easier to instantiate them
-    by name with appropriate parameters.
+    This class provides a centralized registry for all channels, making it easier to instantiate
+    them by name with appropriate parameters.
     """
 
     _channels: Dict[str, Type[BaseChannel]] = {}

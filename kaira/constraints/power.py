@@ -61,13 +61,13 @@ class TotalPowerConstraint(BaseConstraint):
         """
         dims = self.get_dimensions(x)
         x_norm = torch.norm(x, dim=dims, keepdim=True)
-        
+
         # Adjust power factor for complex signals
         power_factor = self.total_power_factor
         if torch.is_complex(x):
             # For complex signals, distribute power between real/imaginary components
             power_factor = self.total_power_factor * torch.sqrt(torch.tensor(0.5))
-        
+
         x = x * power_factor / (x_norm + 1e-8)
         return x
 
@@ -122,13 +122,13 @@ class AveragePowerConstraint(BaseConstraint):
         """
         dims = self.get_dimensions(x)
         x_norm = torch.norm(x, dim=dims, keepdim=True)
-        
+
         # Calculate scaling factor for average power
         power_factor = self.power_avg_factor
         if torch.is_complex(x):
             # For complex signals, distribute power between real/imaginary components
             power_factor = self.power_avg_factor * torch.sqrt(torch.tensor(0.5))
-            
+
         avg_power_sqrt = power_factor * torch.sqrt(torch.prod(torch.tensor(x.shape[1:]), 0))
         x = x * avg_power_sqrt / (x_norm + 1e-8)
         return x

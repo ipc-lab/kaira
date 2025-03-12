@@ -1,7 +1,7 @@
 """Feedback Channel module for Kaira.
 
-This module contains the FeedbackChannelModel, which models a communication system with a
-feedback path from the receiver to the transmitter.
+This module contains the FeedbackChannelModel, which models a communication system with a feedback
+path from the receiver to the transmitter.
 """
 
 from typing import Any, Dict
@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 from kaira.channels import BaseChannel
+
 from .base import BaseModel
 from .registry import ModelRegistry
 

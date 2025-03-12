@@ -1,6 +1,6 @@
 """Structural Similarity Index Measure (SSIM) metrics.
 
-SSIM is a perceptual metric that quantifies image quality degradation caused by 
+SSIM is a perceptual metric that quantifies image quality degradation caused by
 processing such as data compression or by losses in data transmission :cite:`wang2004image`.
 MS-SSIM extends this concept to multiple scales :cite:`wang2003multiscale`.
 """

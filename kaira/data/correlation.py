@@ -1,10 +1,11 @@
 """Correlation models for data generation and simulation.
 
-This module contains models for simulating statistical correlations between data sources,
-which is particularly useful for distributed source coding scenarios.
+This module contains models for simulating statistical correlations between data sources, which is
+particularly useful for distributed source coding scenarios.
 """
 
 from typing import Any, Dict, Optional
+
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset

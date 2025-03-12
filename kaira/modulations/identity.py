@@ -7,8 +7,8 @@ modification. These are useful as placeholders or for testing pipelines without 
 import torch
 
 from .base import BaseDemodulator, BaseModulator
-from .utils import plot_constellation as utils_plot_constellation
 from .registry import ModulationRegistry
+from .utils import plot_constellation as utils_plot_constellation
 
 
 @ModulationRegistry.register_modulator()

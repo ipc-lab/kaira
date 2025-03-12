@@ -9,10 +9,10 @@ class AFModule(nn.Module):
     """
     AFModule: Attention-Feature Module :cite:`xu2021wireless`.
 
-    This module implements a an attention mechanism that recalibrates feature maps 
+    This module implements a an attention mechanism that recalibrates feature maps
     by explicitly modeling interdependencies between channel state information and
-    the input features. This module allows the same model to be used during training 
-    and testing across channels with different signal-to-noise ratio without significant 
+    the input features. This module allows the same model to be used during training
+    and testing across channels with different signal-to-noise ratio without significant
     performance degradation.
     """
 

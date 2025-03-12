@@ -7,8 +7,8 @@ import numpy as np
 import torch
 
 from .base import BaseDemodulator, BaseModulator
-from .utils import plot_constellation
 from .registry import ModulationRegistry
+from .utils import plot_constellation
 
 
 @ModulationRegistry.register_modulator("pi4qpsk")

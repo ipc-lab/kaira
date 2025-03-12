@@ -1,23 +1,26 @@
 """Channel coding module for Kaira.
 
-This module contains the ChannelCodeModel, which is a model for channel
-transmission using a conventional encoding/decoding pipeline.
+This module contains the ChannelCodeModel, which is a model for channel transmission using a
+conventional encoding/decoding pipeline.
 """
 
 from typing import Any, Dict
+
+import torch
+
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
-from kaira.modulations import BaseModulator, BaseDemodulator
+from kaira.modulations import BaseDemodulator, BaseModulator
+
 from .base import BaseModel
 from .registry import ModelRegistry
-import torch
 
 
 @ModelRegistry.register_model("channel_code")
 class ChannelCodeModel(BaseModel):
     """A specialized model for Channel Code.
 
-    Channel Code is an information transmission approach that performs encoding and decoding using given channel code. 
+    Channel Code is an information transmission approach that performs encoding and decoding using given channel code.
     This model connects an encoder, power constraint, channel simulator, and decoder in an information transmission system.
 
     The typical workflow is:
@@ -54,8 +57,7 @@ class ChannelCodeModel(BaseModel):
             demodulator (BaseDemodulator): Module for demodulating the received signal
             decoder (BaseModel): Channel code decoder for decoding the demodulated channel output
         """
-        super().__init__(steps=[encoder, modulator, constraint, channel, 
-                                demodulator, decoder])
+        super().__init__(steps=[encoder, modulator, constraint, channel, demodulator, decoder])
         self.encoder = encoder
         self.modulator = modulator
         self.constraint = constraint
@@ -79,8 +81,7 @@ class ChannelCodeModel(BaseModel):
                 - final_output: The final decoded output
                 - history: The history of encoded, received and decoded results
         """
-        batch_size = input_data.shape[0]
-        device = input_data.device
+        input_data.shape[0]
 
         # Storage for results
         history = []
@@ -102,7 +103,7 @@ class ChannelCodeModel(BaseModel):
         # Demodulate and decode the received signal
         decoded, soft_estimate = self.decoder(self.demodulator(received))
 
-        # Store results 
+        # Store results
         history.append(
             {
                 "encoded": encoded,
@@ -116,4 +117,3 @@ class ChannelCodeModel(BaseModel):
             "final_output": decoded,
             "history": history,
         }
-

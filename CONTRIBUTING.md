@@ -22,15 +22,18 @@ There are many ways to contribute to Kaira:
 ### Setting Up Your Development Environment
 
 1. **Fork the repository**:
+
    - Visit [https://github.com/ipc-lab/kaira](https://github.com/ipc-lab/kaira) and click the "Fork" button
 
 2. **Clone your fork**:
+
    ```bash
    git clone https://github.com/YOUR-USERNAME/kaira.git
    cd kaira
    ```
 
 3. **Set up the development environment**:
+
    ```bash
    # Create a virtual environment
    python -m venv venv
@@ -46,21 +49,25 @@ There are many ways to contribute to Kaira:
 ### Making Changes
 
 1. **Create a feature branch**:
+
    ```bash
    git checkout -b feature-name
    ```
 
-2. **Make your changes**: 
+2. **Make your changes**:
+
    - Write code that follows our style guidelines
    - Add or update tests as appropriate
    - Update documentation if necessary
 
 3. **Run tests locally**:
+
    ```bash
    pytest
    ```
 
 4. **Check code style**:
+
    ```bash
    bash scripts/lint.sh
    ```
@@ -68,15 +75,18 @@ There are many ways to contribute to Kaira:
 ### Submitting a Pull Request
 
 1. **Push your changes**:
+
    ```bash
    git push origin feature-name
    ```
 
-2. **Open a pull request**: 
+2. **Open a pull request**:
+
    - Go to your fork on GitHub and click "New pull request"
    - Follow the PR template provided
 
 3. **Code review process**:
+
    - Maintainers will review your code
    - Address any feedback or requested changes
    - Once approved, your PR will be merged

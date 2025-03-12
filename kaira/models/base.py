@@ -8,6 +8,7 @@ from typing import Any
 
 from torch import nn
 
+
 class BaseModel(nn.Module, ABC):
     """Base Model Module.
 
@@ -39,8 +40,8 @@ class BaseModel(nn.Module, ABC):
 class ConfigurableModel(BaseModel):
     """Model that supports dynamically adding and removing steps.
 
-    This class extends the basic model functionality with methods to add, remove, and manage
-    model steps during runtime.
+    This class extends the basic model functionality with methods to add, remove, and manage model
+    steps during runtime.
     """
 
     def add_step(self, step: Any) -> "ConfigurableModel":

@@ -1,10 +1,11 @@
 """Data generation utilities for Kaira.
 
-This module provides functions for generating various types of data tensors
-commonly used in communication systems and information theory experiments.
+This module provides functions for generating various types of data tensors commonly used in
+communication systems and information theory experiments.
 """
 
 from typing import List, Optional, Union
+
 import torch
 from torch.utils.data import Dataset
 

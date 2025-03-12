@@ -1,11 +1,9 @@
-from .correlation import WynerZivCorrelationModel, WynerZivCorrelationDataset
-from .generation import create_binary_tensor, create_uniform_tensor, BinaryTensorDataset, UniformTensorDataset
+from .correlation import WynerZivCorrelationDataset, WynerZivCorrelationModel
+from .generation import (
+    BinaryTensorDataset,
+    UniformTensorDataset,
+    create_binary_tensor,
+    create_uniform_tensor,
+)
 
-__all__ = [
-    'WynerZivCorrelationModel',
-    'create_binary_tensor',
-    'create_uniform_tensor',
-    'BinaryTensorDataset',
-    'UniformTensorDataset',
-    'WynerZivCorrelationDataset'
-]
+__all__ = ["WynerZivCorrelationModel", "create_binary_tensor", "create_uniform_tensor", "BinaryTensorDataset", "UniformTensorDataset", "WynerZivCorrelationDataset"]

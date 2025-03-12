@@ -1,28 +1,34 @@
 """DeepJSCC-NOMA module for Kaira.
 
-This module contains the Yilmaz2023DeepJSCCNOMA model, which implements 
-Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel 
-as described in the paper by Yilmaz et al. (2023).
+This module contains the Yilmaz2023DeepJSCCNOMA model, which implements Distributed Deep Joint
+Source-Channel Coding over a Multiple Access Channel as described in the paper by Yilmaz et al.
+(2023).
 """
+
+from typing import Dict, List, Optional, Tuple, Type
 
 import torch
 from torch import nn
-from typing import List, Dict, Optional, Tuple, Union, Type, Any
 
-from kaira.models.base import BaseModel
-from kaira.models.registry import ModelRegistry
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
+from kaira.models.base import BaseModel
+from kaira.models.image.tung2022_deepjscc_q import (
+    Tung2022DeepJSCCQ2Decoder,
+    Tung2022DeepJSCCQ2Encoder,
+)
 from kaira.models.multiple_access_channel import MultipleAccessChannelModel
-from kaira.models.image.tung2022_deepjscc_q import Tung2022DeepJSCCQ2Encoder, Tung2022DeepJSCCQ2Decoder
+from kaira.models.registry import ModelRegistry
 
 # Use Tung2022DeepJSCCQ2 models as default
 DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
 DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 
+
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
-    """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel :cite:`yilmaz2023distributed`.
+    """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel
+    :cite:`yilmaz2023distributed`.
 
     This model implements the DeepJSCC-NOMA system from the paper by Yilmaz et al. (2023),
     which enables multiple devices to transmit jointly encoded data over a shared
@@ -38,12 +44,12 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
     """
 
     def __init__(
-        self, 
-        channel: BaseChannel, 
-        power_constraint: BaseConstraint, 
+        self,
+        channel: BaseChannel,
+        power_constraint: BaseConstraint,
         encoder: Optional[Type[BaseModel]] = None,
         decoder: Optional[Type[BaseModel]] = None,
-        num_devices: int = 2, 
+        num_devices: int = 2,
         M: float = 1.0,
         latent_dim: int = 16,
         shared_encoder: bool = False,
@@ -52,7 +58,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         use_device_embedding: Optional[bool] = None,
         image_shape: Tuple[int, int] = (32, 32),
         csi_length: int = 1,
-        ckpt_path: Optional[str] = None
+        ckpt_path: Optional[str] = None,
     ):
         """Initialize the DeepJSCC-NOMA model.
 
@@ -73,15 +79,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             ckpt_path: Path to checkpoint file for loading pre-trained weights
         """
         # Initialize the base class
-        super().__init__(
-            channel=channel,
-            power_constraint=power_constraint,
-            encoder=encoder,
-            decoder=decoder,
-            num_devices=num_devices,
-            shared_encoder=shared_encoder,
-            shared_decoder=shared_decoder
-        )
+        super().__init__(channel=channel, power_constraint=power_constraint, encoder=encoder, decoder=decoder, num_devices=num_devices, shared_encoder=shared_encoder, shared_decoder=shared_decoder)
 
         # Initialize DeepJSCC-NOMA specific attributes
         self.M = M
@@ -90,7 +88,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self.use_device_embedding = use_device_embedding if use_device_embedding is not None else shared_encoder
         self.image_shape = image_shape
         self.csi_length = csi_length
-        
+
         # Calculate embedding dimension based on image shape
         self.embedding_dim = image_shape[0] * image_shape[1]
 
@@ -101,7 +99,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         encoder_count = 1 if shared_encoder else num_devices
         decoder_count = 1 if shared_decoder else num_devices
         encoder_channels = 4 if self.use_device_embedding else 3
-        
+
         # Initialize encoders with proper typing and parameters
         for _ in range(encoder_count):
             try:
@@ -123,7 +121,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                             # Last resort: try with no parameters
                             enc = encoder_cls()
             self.encoders.append(enc)
-        
+
         # Initialize decoders with proper typing and parameters
         for _ in range(decoder_count):
             try:
@@ -132,11 +130,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 try:
                     # Try with standard parameter set
-                    dec = decoder_cls(
-                        latent_dim=latent_dim, 
-                        num_devices=num_devices, 
-                        shared_decoder=shared_decoder
-                    )
+                    dec = decoder_cls(latent_dim=latent_dim, num_devices=num_devices, shared_decoder=shared_decoder)
                 except (TypeError, ValueError):
                     try:
                         # Try with just latent_dim
@@ -145,7 +139,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                         # Last resort: try with no parameters
                         dec = decoder_cls()
             self.decoders.append(dec)
-        
+
         if self.use_device_embedding:
             self.device_images = nn.Embedding(num_devices, embedding_dim=self.embedding_dim)
             if ckpt_path is not None:
@@ -153,16 +147,16 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
     def _load_checkpoint(self, ckpt_path: str) -> None:
         """Load model weights from a checkpoint file.
-        
+
         Args:
             ckpt_path: Path to the checkpoint file
         """
         state_dict = torch.load(ckpt_path)["state_dict"]
-        
+
         enc_dict: Dict[str, torch.Tensor] = {}
         dec_dict: Dict[str, torch.Tensor] = {}
         img_dict: Dict[str, torch.Tensor] = {}
-        
+
         for k, v in state_dict.items():
             if k.startswith("net.encoders.0"):
                 enc_dict[k.replace("net.encoders.0", "0")] = v
@@ -176,11 +170,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self.device_images.load_state_dict(img_dict)
         print("checkpoint loaded")
 
-    def forward(
-        self, 
-        x: torch.Tensor, 
-        csi: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Forward pass of the DeepJSCC-NOMA model.
 
         Args:
@@ -193,21 +183,18 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         if self.use_device_embedding:
             # Create device embeddings and reshape to image dimensions
             h, w = self.image_shape
-            emb = torch.stack(
-                [self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w)
-                for i in range(self.num_devices)], dim=1
-            )
+            emb = torch.stack([self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w) for i in range(self.num_devices)], dim=1)
             x = torch.cat([x, emb], dim=2)
-        
+
         if self.use_perfect_sic:
             return self._forward_perfect_sic(x, csi)
-        
+
         # Encode inputs - support different encoder interfaces
         transmissions: List[torch.Tensor] = []
         for i in range(self.num_devices):
             encoder = self.encoders[0 if self.shared_encoder else i]
             device_input = x[:, i, ...]
-            
+
             # Handle encoders with different input formats
             try:
                 # Try tuple input with CSI
@@ -215,12 +202,12 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 tx = encoder(device_input)
-            
+
             tx = self.power_constraint(tx)
             transmissions.append(tx)
-            
+
         x = torch.stack(transmissions, dim=1)
-        
+
         # Apply channel
         x = self.channel((x, csi))
 
@@ -233,7 +220,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 x_decoded = decoder(x)
-                
+
             # Make sure output has proper device dimension
             if x_decoded.ndim == 4:  # [B, C, H, W]
                 x = x_decoded.unsqueeze(1).expand(-1, self.num_devices, -1, -1, -1)
@@ -251,32 +238,28 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                     # Fall back to just the input data
                     x_decoded = decoder(x)
                 decoded_outputs.append(x_decoded)
-            
+
             x = torch.stack(decoded_outputs, dim=1)
 
         return x
-    
-    def _forward_perfect_sic(
-        self, 
-        x: torch.Tensor, 
-        csi: torch.Tensor
-    ) -> torch.Tensor:
+
+    def _forward_perfect_sic(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Forward pass with perfect successive interference cancellation.
-        
+
         Args:
             x: Input data with shape [batch_size, num_devices, channels, height, width]
             csi: Channel state information with shape [batch_size, csi_length]
-            
+
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
         transmissions: List[torch.Tensor] = []
-        
+
         # Apply encoders and channel with SIC - support different encoder interfaces
         for i in range(self.num_devices):
             encoder = self.encoders[0 if self.shared_encoder else i]
             device_input = x[:, i, ...]
-            
+
             # Handle encoders with different input formats
             try:
                 # Try tuple input with CSI
@@ -284,32 +267,29 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 t = encoder(device_input)
-            
-            t = self.power_constraint(
-                t[:, None, ...], 
-                mult=torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))
-            ).sum(dim=1)
-            
+
+            t = self.power_constraint(t[:, None, ...], mult=torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))).sum(dim=1)
+
             # Use the provided channel model for each transmission
             t_channel = self.channel((t, csi))
-            
+
             transmissions.append(t_channel)
 
         # Decode each transmission - support different decoder interfaces
         results: List[torch.Tensor] = []
         for i in range(self.num_devices):
             decoder = self.decoders[0 if self.shared_decoder else i]
-            
+
             try:
                 # Try tuple input with CSI
                 xi = decoder((transmissions[i], csi))
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 xi = decoder(transmissions[i])
-            
+
             if self.shared_decoder and xi.ndim == 5:  # [B, num_devices, C, H, W]
                 xi = xi[:, i, ...]
-                
+
             results.append(xi)
-        
+
         return torch.stack(results, dim=1)

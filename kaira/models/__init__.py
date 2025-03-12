@@ -1,5 +1,5 @@
 """Models module for Kaira."""
-from . import components, image, generic, binary
+from . import binary, components, generic, image
 from .base import BaseModel, ConfigurableModel
 from .deepjscc import DeepJSCCModel
 from .feedback_channel import FeedbackChannelModel
@@ -9,19 +9,16 @@ from .wyner_ziv import WynerZivModel
 __all__ = [
     # Modules
     "generic",
-    "components", 
+    "components",
     "binary",
     "image",
-    
     # Base classes
-    "BaseModel", 
+    "BaseModel",
     "ConfigurableModel",
-    
     # Specialized models
     "DeepJSCCModel",
     "FeedbackChannelModel",
     "WynerZivModel",
-    
     # Registry
     "ModelRegistry",
 ]

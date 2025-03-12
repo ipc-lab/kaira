@@ -8,8 +8,8 @@ from .base import BaseLoss
 class LossRegistry:
     """A registry for loss functions in Kaira.
 
-    This class provides a centralized registry for all loss functions, making it easier to instantiate them
-    by name with appropriate parameters.
+    This class provides a centralized registry for all loss functions, making it easier to
+    instantiate them by name with appropriate parameters.
     """
 
     _losses: Dict[str, Type[BaseLoss]] = {}

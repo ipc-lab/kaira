@@ -7,9 +7,10 @@ from compressai.layers import (
     ResidualBlockWithStride,
 )
 
+from kaira.models.components.afmodule import AFModule
+
 from ..base import BaseModel
 from ..registry import ModelRegistry
-from kaira.models.components.afmodule import AFModule
 
 
 @ModelRegistry.register_model()
@@ -106,11 +107,13 @@ class Tung2022DeepJSCCQDecoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Tung2022DeepJSCCQ2Encoder(BaseModel):
     """DeepJSCCQ2 Encoder Module :cite:`tung2022deepjsccq2`.
-    
-    This module is from the conference paper, not the journal version. Note that this module is different than DeepJSCCQ, which contains 4 strided layers and does not contain the AFModule.
+
+    This module is from the conference paper, not the journal version. Note that this module is
+    different than DeepJSCCQ, which contains 4 strided layers and does not contain the AFModule.
 
     This module encodes an image into a latent representation using a series of convolutional
     layers and AFModules.
@@ -182,7 +185,8 @@ class Tung2022DeepJSCCQ2Encoder(BaseModel):
 class Tung2022DeepJSCCQ2Decoder(BaseModel):
     """DeepJSCCQ2 Decoder Module :cite:`tung2022deepjsccq2`.
 
-    This module is from the conference paper, not the journal version. Note that this module is different than DeepJSCCQ, which contains 4 strided layers and does not contain the AFModule.
+    This module is from the conference paper, not the journal version. Note that this module is
+    different than DeepJSCCQ, which contains 4 strided layers and does not contain the AFModule.
 
     This module decodes a latent representation into an image using a series of convolutional
     layers and AFModules.

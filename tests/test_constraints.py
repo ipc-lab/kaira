@@ -2,10 +2,7 @@
 import pytest
 import torch
 
-from kaira.constraints import (
-    AveragePowerConstraint,
-    TotalPowerConstraint,
-)
+from kaira.constraints import AveragePowerConstraint, TotalPowerConstraint
 
 
 @pytest.mark.parametrize("power", [0.5, 1.0, 2.0])

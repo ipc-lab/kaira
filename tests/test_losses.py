@@ -2,14 +2,7 @@
 import pytest
 import torch
 
-from kaira.utils.losses import (
-    CombinedLoss,
-    LPIPSLoss,
-    MSELoss,
-    MSELPIPSLoss,
-    MSSSIMLoss,
-    SSIMLoss,
-)
+from kaira.utils.losses import CombinedLoss, LPIPSLoss, MSELoss, MSELPIPSLoss, MSSSIMLoss, SSIMLoss
 
 
 @pytest.fixture

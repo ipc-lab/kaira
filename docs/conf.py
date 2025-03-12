@@ -100,7 +100,7 @@ autosummary_template_mapping = {
 bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "plain"  # Use the built-in plain style which is more tolerant
 bibtex_reference_style = "author_year"
-bibtex_tooltips = False # disable default tooltips
+bibtex_tooltips = False  # disable default tooltips
 # Remove other bibtex settings that might be incompatible
 bibtex_cite_id = "cite-{key}"
 # bibtex_bibliography_header = "<h2>References</h2>"

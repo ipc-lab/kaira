@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 100
-exclude = 
+exclude =
     .git,
     __pycache__,
     build,
@@ -13,7 +13,7 @@ exclude =
     venv
 
 # Ignore specific errors/warnings
-ignore = 
+ignore =
     E203,  # whitespace before ':' (black formatting style)
     W503,  # line break before binary operator (black formatting style)
     E501   # line too long (handled by black)

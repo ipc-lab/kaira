@@ -1,8 +1,8 @@
 # Global owners - fallback for everything
 *                       @selimfirat
 
-# Documentation 
-/docs/                  @selimfirat 
+# Documentation
+/docs/                  @selimfirat
 *.md                    @selimfirat
 *.rst                   @selimfirat
 

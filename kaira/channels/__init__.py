@@ -20,10 +20,10 @@ from .base import BaseChannel
 
 # Digital channel models
 from .digital import BinaryErasureChannel, BinarySymmetricChannel, BinaryZChannel
+from .identity import IdealChannel, IdentityChannel, PerfectChannel
 
 # Perfect/Identity channel
 from .lambda_channel import LambdaChannel
-from .identity import IdealChannel, IdentityChannel, PerfectChannel
 
 # Channel registry
 from .registry import ChannelRegistry

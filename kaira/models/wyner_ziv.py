@@ -17,7 +17,7 @@ The implementation follows the key principles of Wyner-Ziv coding:
 4. Reconstruction at decoder using both received syndromes and side information
 """
 
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -25,6 +25,7 @@ import torch.nn as nn
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
 from kaira.data.correlation import WynerZivCorrelationModel
+
 from .base import BaseModel
 from .registry import ModelRegistry
 
@@ -103,14 +104,14 @@ class WynerZivModel(BaseModel):
 
     def validate_side_info(self, source: torch.Tensor, side_info: Optional[torch.Tensor]) -> torch.Tensor:
         """Validate and/or generate side information if needed.
-        
+
         Args:
             source: The source data
             side_info: Optional side information
-            
+
         Returns:
             Valid side information, either provided or generated
-            
+
         Raises:
             ValueError: If side_info is None and no correlation_model is available
         """

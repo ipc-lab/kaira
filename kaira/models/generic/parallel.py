@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from ..base import BaseModel, ConfigurableModel
+from ..base import ConfigurableModel
 from ..registry import ModelRegistry
 
 

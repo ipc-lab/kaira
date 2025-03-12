@@ -8,8 +8,8 @@ from .base import BaseConstraint
 class ConstraintRegistry:
     """A registry for constraints in Kaira.
 
-    This class provides a centralized registry for all constraints, making it easier to instantiate them
-    by name with appropriate parameters.
+    This class provides a centralized registry for all constraints, making it easier to instantiate
+    them by name with appropriate parameters.
     """
 
     _constraints: Dict[str, Type[BaseConstraint]] = {}

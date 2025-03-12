@@ -1,6 +1,6 @@
 """Perfect Channel Implementation.
 
-The perfect (identity) channel represents the theoretical ideal case in information theory 
+The perfect (identity) channel represents the theoretical ideal case in information theory
 where information is transmitted without any error or loss :cite:`shannon1948mathematical`.
 """
 
@@ -45,6 +45,7 @@ class PerfectChannel(BaseChannel):
             torch.Tensor: The input tensor without any modification.
         """
         return x
+
 
 IdentityChannel = PerfectChannel
 IdealChannel = PerfectChannel

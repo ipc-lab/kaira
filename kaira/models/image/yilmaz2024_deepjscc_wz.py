@@ -1,5 +1,4 @@
-"""
-Implementation of DeepJSCC-WZ (Deep Joint Source-Channel Coding with Wyner-Ziv) models.
+"""Implementation of DeepJSCC-WZ (Deep Joint Source-Channel Coding with Wyner-Ziv) models.
 
 This module contains the neural network implementations for DeepJSCC-WZ as proposed in
 Yilmaz et al. 2024. DeepJSCC-WZ is a deep learning-based joint source-channel coding
@@ -25,35 +24,37 @@ Reference:
     Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv", 2024
 """
 
-from typing import Dict, Optional
-from kaira.channels.base import BaseChannel
-from kaira.constraints.base import BaseConstraint
-from kaira.models.components.afmodule import AFModule
-from kaira.models.registry import ModelRegistry
-from torch import nn
-from kaira.models.base import BaseModel
-from kaira.models.wyner_ziv import WynerZivModel
+
+import torch
 from compressai.layers import (
     AttentionBlock,
     ResidualBlock,
     ResidualBlockUpsample,
     ResidualBlockWithStride,
 )
-import torch
+from torch import nn
+
+from kaira.channels.base import BaseChannel
+from kaira.constraints.base import BaseConstraint
+from kaira.models.base import BaseModel
+from kaira.models.components.afmodule import AFModule
+from kaira.models.registry import ModelRegistry
+from kaira.models.wyner_ziv import WynerZivModel
+
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
     """DeepJSCC-WZ-sm Encoder Module :cite:`yilmaz2024deepjsccwz`.
-    
-    This is a lightweight version of the DeepJSCC-WZ encoder that transforms input images 
+
+    This is a lightweight version of the DeepJSCC-WZ encoder that transforms input images
     into a compressed latent representation suitable for transmission over noisy channels.
     The encoder consists of a series of residual blocks with downsampling, attention modules,
     and adaptive feature modules that incorporate channel state information (CSI).
-    
-    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and 
+
+    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and
     encoding side information at the receiver, resulting in a parameter-efficient design
     while maintaining competitive performance.
-    
+
     Architecture highlights:
     - 4 stages of downsampling (factor of 16 total spatial reduction)
     - Attention mechanisms to capture important features
@@ -61,6 +62,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
     - Progressive compression: 3×H×W → M×(H/16)×(W/16)
     - Channel-aware design through CSI conditioning
     """
+
     def __init__(self, N: int, M: int) -> None:
         """Initialize the DeepJSCC-WZ-sm encoder.
 
@@ -72,56 +74,40 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
         """
         super().__init__()
 
-        self.g_a = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=3,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 2),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 2),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 2),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=M,
-                stride=2), 
-            AFModule(M, 2),
-            AttentionBlock(M),
-        ])
-    
+        self.g_a = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                AFModule(N, 2),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 2),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 2),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=M, stride=2),
+                AFModule(M, 2),
+                AttentionBlock(M),
+            ]
+        )
+
     def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Process input image through the encoder.
-        
+
         Args:
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
-            
+
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
                           Shape: [B, M, H/16, W/16], where M is the number of channels
                           specified during initialization.
         """
-        
+
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
-        
+
         for layer in self.g_a:
             if isinstance(layer, AFModule):
                 x = layer((x, csi_transmitter))
@@ -130,20 +116,21 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
-    
+
     This lightweight decoder reconstructs the original image from the received noisy representation
     and available side information. It employs a symmetric structure to the encoder
     with upsampling operations and feature fusion with side information.
-    
+
     The decoder follows a multi-scale fusion approach where the side information is
-    encoded using the same encoder as the main signal, and features are fused at 
+    encoded using the same encoder as the main signal, and features are fused at
     multiple scales during decoding. This approach effectively exploits correlations
     between the received signal and the side information.
-    
-    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and 
+
+    DeepJSCC-WZ-sm shares encoder parameters for encoding image at the transmitter and
     encoding side information at the receiver, providing parameter efficiency.
 
     Key features:
@@ -153,6 +140,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     - Channel-adaptive processing through AFModule layers
     - Residual connections for improved gradient flow
     """
+
     def __init__(self, N: int, M: int, encoder: BaseModel) -> None:
         """Initialize the DeepJSCC-WZ-sm decoder.
 
@@ -167,61 +155,40 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
         """
         super().__init__()
 
-        self.g_s = nn.ModuleList([
-            AttentionBlock(2 * M),
-            ResidualBlock(
-                in_ch=2 * M,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            AttentionBlock(2 * N),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2 * N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=3,
-                upsample=2),
-            AFModule(3*2, 1),
-            ResidualBlock(
-                in_ch=3*2,
-                out_ch=3),
-        ])
-        
+        self.g_s = nn.ModuleList(
+            [
+                AttentionBlock(2 * M),
+                ResidualBlock(in_ch=2 * M, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                AttentionBlock(2 * N),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=3, upsample=2),
+                AFModule(3 * 2, 1),
+                ResidualBlock(in_ch=3 * 2, out_ch=3),
+            ]
+        )
+
         self.encoder = encoder
 
-    
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Decode the received representation into a reconstructed image.
-        
+
         This method first processes the side information through the shared encoder,
         then progressively decodes the received signal while fusing with side information
         features at multiple scales.
-        
+
         Args:
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            
+
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
         """
@@ -231,19 +198,19 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
         for idx, layer in enumerate(self.encoder.g_a):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
-            
+
             if isinstance(layer, AFModule):
                 x_side = layer((x_side, csi_sideinfo))
             else:
                 x_side = layer(x_side)
-        
+
         xs_list.append(x_side)
-        
+
         for idx, layer in enumerate(self.g_s):
             if idx in [0, 3, 6, 10, 13]:
                 last_xs = xs_list.pop()
                 x = torch.cat([x, last_xs], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi))
             else:
@@ -251,18 +218,19 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
     """DeepJSCC-WZ Encoder Module :cite=`yilmaz2024deepjsccwz`.
-    
+
     The full-size encoder for the DeepJSCC-WZ model that compresses input images
     into a compact latent representation. It includes two parallel encoding paths:
     g_a for processing the main input and g_a2 for potential preprocessing of side information.
-    
+
     Unlike the small variant, this encoder uses separate parameters for the main signal
     and side information processing paths, potentially allowing for more specialized
     feature extraction at the cost of increased parameter count.
-    
+
     Architecture highlights:
     - 4 stages of downsampling through residual blocks (16× spatial reduction)
     - Channel state information adaptation via AFModule
@@ -270,6 +238,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
     - Sophisticated feature extraction with residual connections
     - Progressive compression: 3×H×W → M×(H/16)×(W/16)
     """
+
     def __init__(self, N: int, M: int) -> None:
         """Initialize the full-size DeepJSCC-WZ encoder.
 
@@ -281,89 +250,57 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
         """
         super().__init__()
 
-        self.g_a = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=3,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=M,
-                stride=2), 
-            AFModule(M, 1),
-            AttentionBlock(M),
-        ])
-        
-        self.g_a2 = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=3,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=M,
-                stride=2), 
-            AFModule(M, 1),
-            AttentionBlock(M),
-        ])
-    
+        self.g_a = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=M, stride=2),
+                AFModule(M, 1),
+                AttentionBlock(M),
+            ]
+        )
+
+        self.g_a2 = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=M, stride=2),
+                AFModule(M, 1),
+                AttentionBlock(M),
+            ]
+        )
+
     def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Encode the input image into a compact representation.
-        
+
         Args:
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
-            
+
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
                           Shape: [B, M, H/16, W/16], where M is the number of channels
                           specified during initialization.
         """
         csi_transmitter = csi
-        
+
         for layer in self.g_a:
             if isinstance(layer, AFModule):
                 x = layer((x, csi_transmitter))
@@ -372,18 +309,19 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
     """DeepJSCC-WZ Decoder Module :cite=`yilmaz2024deepjsccwz`.
-    
+
     The full-size decoder for the DeepJSCC-WZ model that reconstructs the original image
     from the received noisy representation and side information. It follows a symmetric
     structure to the encoder with progressive upsampling and feature fusion mechanisms.
-    
+
     Unlike the small variant, this decoder uses a dedicated set of parameters for processing
     side information, potentially allowing for more specialized feature extraction at the
     cost of increased parameter count.
-    
+
     Key features:
     - Multi-scale feature fusion with side information at 5 different resolution levels
     - Progressive spatial resolution recovery (4 upsampling stages, H/16×W/16 → H×W)
@@ -391,6 +329,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
     - Channel-adaptive processing through AFModule layers
     - Sophisticated feature reconstruction with residual connections
     """
+
     def __init__(self, N: int, M: int) -> None:
         """Initialize the full-size DeepJSCC-WZ decoder.
 
@@ -402,81 +341,60 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
         """
         super().__init__()
 
-        self.g_s = nn.ModuleList([
-            AttentionBlock(2 * M),
-            ResidualBlock(
-                in_ch=2 * M,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            AttentionBlock(2 * N),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2 * N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=3,
-                upsample=2),
-            AFModule(3*2, 1),
-            ResidualBlock(
-                in_ch=3*2,
-                out_ch=3),
-        ])
+        self.g_s = nn.ModuleList(
+            [
+                AttentionBlock(2 * M),
+                ResidualBlock(in_ch=2 * M, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                AttentionBlock(2 * N),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=3, upsample=2),
+                AFModule(3 * 2, 1),
+                ResidualBlock(in_ch=3 * 2, out_ch=3),
+            ]
+        )
 
-    
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Decode the received representation into a reconstructed image.
-        
+
         This method first processes the side information through the g_a2 encoder path,
         then progressively decodes the received signal while fusing with side information
         features at multiple scales.
-        
+
         Args:
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            
+
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
         """
         csi_sideinfo = csi
-        
+
         xs_list = []
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
-            
+
             if isinstance(layer, AFModule):
                 xs = layer((x_side, csi_sideinfo))
             else:
                 xs = layer(xs)
-        
+
         xs_list.append(xs)
-        
+
         for idx, layer in enumerate(self.g_s):
             if idx in [0, 3, 6, 10, 13]:
                 last_xs = xs_list.pop()
                 x = torch.cat([x, last_xs], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi))
             else:
@@ -484,29 +402,31 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
     """DeepJSCC-WZ Conditional Encoder Module :cite=`yilmaz2024deepjsccwz`.
-    
-    This variant of the DeepJSCC-WZ encoder actively incorporates side information during 
-    the encoding process. This model is designed for scenarios where side information is available 
+
+    This variant of the DeepJSCC-WZ encoder actively incorporates side information during
+    the encoding process. This model is designed for scenarios where side information is available
     at both encoder and decoder, serving as an upper bound for performance comparison.
-    
+
     The conditional encoder features three processing paths:
     - g_a: Main encoding path that fuses the input with side information features
     - g_a2: Processing path for side information for the decoder
     - g_a3: Auxiliary path for feature extraction from side information for the encoder
-    
+
     By leveraging correlations between the main signal and side information at encoding time,
     this model achieves more efficient compression and better reconstruction quality compared
     to the standard DeepJSCC-WZ model, at the cost of requiring side information during encoding.
-    
+
     Architecture highlights:
     - Early fusion of input and side information (6-channel input)
     - Multi-scale feature fusion with side information
     - 4 stages of downsampling (16× spatial reduction)
     - Channel-adaptive processing with AFModule
     """
+
     def __init__(self, N: int, M: int) -> None:
         """Initialize the conditional DeepJSCC-WZ encoder.
 
@@ -518,131 +438,86 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
         """
         super().__init__()
 
-        self.g_a = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=6,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=2*N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=2*N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=2*N,
-                out_ch=M,
-                stride=2), 
-            AFModule(M, 1),
-            AttentionBlock(M),
-        ])
-        
-        self.g_a2 = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=3,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=M,
-                stride=2), 
-            AFModule(M, 1),
-            AttentionBlock(M),
-        ])
-        
-        self.g_a3 = nn.ModuleList([
-            ResidualBlockWithStride(
-                in_ch=3,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            AttentionBlock(N),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            ResidualBlockWithStride(
-                in_ch=N,
-                out_ch=N,
-                stride=2),
-            AFModule(N, 1),
-            ResidualBlock(
-                in_ch=N,
-                out_ch=N),
-            None,
-            None,
-            None
-        ])
-    
+        self.g_a = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=6, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=2 * N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=2 * N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=2 * N, out_ch=M, stride=2),
+                AFModule(M, 1),
+                AttentionBlock(M),
+            ]
+        )
+
+        self.g_a2 = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=M, stride=2),
+                AFModule(M, 1),
+                AttentionBlock(M),
+            ]
+        )
+
+        self.g_a3 = nn.ModuleList(
+            [
+                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                AttentionBlock(N),
+                ResidualBlock(in_ch=N, out_ch=N),
+                ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
+                AFModule(N, 1),
+                ResidualBlock(in_ch=N, out_ch=N),
+                None,
+                None,
+                None,
+            ]
+        )
+
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Encode the input image with conditional side information.
-        
+
         This method processes both the main input image and side information in parallel,
         fusing features from the side information stream into the main encoding path
         at multiple scales. The side information is available at the encoder, allowing
         for more efficient compression compared to the standard DeepJSCC-WZ model.
-        
+
         Args:
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] used during encoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            
+
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
                           Shape: [B, M, H/16, W/16], where M is the number of channels
                           specified during initialization.
         """
         xs_encoder = x_side
-        
+
         csi_transmitter = csi
 
         for layer, layer_s in zip(self.g_a, self.g_a3):
             if isinstance(layer, ResidualBlockWithStride):
                 x = torch.cat([x, xs_encoder], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi_transmitter))
                 if layer_s is not None:
@@ -654,20 +529,21 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
     """DeepJSCC-WZ Conditional Decoder Module :cite=`yilmaz2024deepjsccwz`.
-    
+
     The decoder counterpart to the conditional encoder, designed to reconstruct images
     from representations created by the conditional encoder. This decoder leverages
     side information and received encoded representation to generate high-quality
     reconstructions.
-    
-    DeepJSCC-WZ Conditional is designed for scenarios where side information is available 
+
+    DeepJSCC-WZ Conditional is designed for scenarios where side information is available
     at both the encoder and decoder, serving as a performance upper bound. The decoder's
     architecture is optimized to work with the conditional encoder's output, where side
     information correlations have already been exploited during encoding.
-    
+
     Key features:
     - Multi-scale feature fusion with side information at 5 different resolution levels
     - Progressive upsampling to restore spatial dimensions (H/16×W/16 → H×W)
@@ -675,6 +551,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
     - Channel-adaptive processing through AFModule layers
     - Optimized for conditionally encoded representations
     """
+
     def __init__(self, N: int, M: int) -> None:
         """Initialize the conditional DeepJSCC-WZ decoder.
 
@@ -686,83 +563,62 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
         """
         super().__init__()
 
-        self.g_s = nn.ModuleList([
-            AttentionBlock(2 * M),
-            ResidualBlock(
-                in_ch=2 * M,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2*N, 1),
-            AttentionBlock(2 * N),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=N,
-                upsample=2),
-            AFModule(2 * N, 1),
-            ResidualBlock(
-                in_ch=2 * N,
-                out_ch=N),
-            ResidualBlockUpsample(
-                in_ch=N,
-                out_ch=3,
-                upsample=2),
-            AFModule(3*2, 1),
-            ResidualBlock(
-                in_ch=3*2,
-                out_ch=3),
-        ])
+        self.g_s = nn.ModuleList(
+            [
+                AttentionBlock(2 * M),
+                ResidualBlock(in_ch=2 * M, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                AttentionBlock(2 * N),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
+                AFModule(2 * N, 1),
+                ResidualBlock(in_ch=2 * N, out_ch=N),
+                ResidualBlockUpsample(in_ch=N, out_ch=3, upsample=2),
+                AFModule(3 * 2, 1),
+                ResidualBlock(in_ch=3 * 2, out_ch=3),
+            ]
+        )
 
-    
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
         """Decode the conditionally encoded representation.
-        
+
         This method first processes the side information through the g_a2 encoder path,
         then progressively decodes the received signal while fusing with side information
         features at multiple scales. Since the encoded representation already incorporates
         knowledge of the side information, the decoding process can achieve higher quality
         reconstruction.
-        
+
         Args:
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            
+
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
         """
         csi_sideinfo = csi
-        
+
         xs_list = []
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
-            
+
             if isinstance(layer, AFModule):
                 xs = layer((x_side, csi_sideinfo))
             else:
                 xs = layer(xs)
-        
+
         xs_list.append(xs)
-        
+
         for idx, layer in enumerate(self.g_s):
             if idx in [0, 3, 6, 10, 13]:
                 last_xs = xs_list.pop()
                 x = torch.cat([x, last_xs], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi))
             else:
@@ -770,39 +626,40 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
         return x
 
+
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
     """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
-    
+
     This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
     deep learning techniques to the Wyner-Ziv coding paradigm (lossy compression with decoder-side
     information). The system is designed specifically for wireless image transmission scenarios
     where correlated side information is available at the receiver.
-    
+
     Unlike traditional separate source and channel coding approaches, DeepJSCC-WZ:
     1. Jointly optimizes source compression and channel coding in an end-to-end manner
     2. Adapts to varying channel conditions through explicit CSI conditioning
     3. Exploits correlations between the transmitted signal and side information at the decoder
     4. Provides graceful degradation under challenging channel conditions
-    
+
     Three model variants are supported:
     - Standard: Separate encoder/decoder with independent parameters (highest parameter count)
     - Small: Parameter-efficient design with shared encoder components
     - Conditional: Side information available at both encoder and decoder (performance upper bound)
-    
+
     The model automatically detects which variant is being used based on the encoder class.
-    
+
     Technical details:
     - Compression ratio: determined by channel dimension M and spatial downsampling (16× by default)
     - Channel adaptation: AFModule layers condition the network on current channel SNR
     - Side information fusion: Multi-scale fusion at multiple network layers at the decoder
     - Power normalization: Required constraint to ensure proper signal power scaling
-    
+
     References:
         Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv" (2024)
         Wyner and Ziv, "The Rate-Distortion Function for Source Coding with Side Information
                         at the Decoder" (1976)
-    
+
     Attributes:
         encoder (BaseModel): Encoder network (standard, small, or conditional variant)
         channel (BaseChannel): Channel simulation model (e.g., AWGN, Rayleigh fading)
@@ -841,15 +698,15 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             # No correlation model since side info must always be provided
             correlation_model=None,
             quantizer=None,
-            syndrome_generator=None
+            syndrome_generator=None,
         )
-        
+
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
     def forward(
-        self, 
-        source: torch.Tensor, 
+        self,
+        source: torch.Tensor,
         side_info: torch.Tensor,
         csi: torch.Tensor,
     ) -> torch.Tensor:
@@ -862,7 +719,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         2. Applies power normalization to the encoded representation
         3. Simulates transmission through a noisy channel
         4. Reconstructs the image using the received data and side information
-        
+
         All steps are differentiable, allowing for end-to-end training that jointly
         optimizes the entire transmission system for a given distortion metric and
         channel model.
@@ -870,7 +727,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         Args:
             source: Source image tensor to encode and transmit, shape [B, C, H, W].
                    Typically RGB images with values normalized to [0,1].
-            side_info: Correlated side information available at the decoder, shape [B, C, H, W]. 
+            side_info: Correlated side information available at the decoder, shape [B, C, H, W].
                       This could be a previous frame in a video, a low-resolution version,
                       or other correlated information that helps in reconstruction.
             csi: Channel state information tensor of shape [B, 1, 1, 1].
@@ -879,10 +736,10 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
 
         Returns:
             torch.Tensor: Reconstructed image of the same shape as the input source [B, C, H, W].
-            
+
         Raises:
             ValueError: If side_info or csi is None, as these are required parameters.
-            
+
         Note:
             CSI values are typically provided in dB and should be normalized to an appropriate
             range as expected by the model's training configuration.
@@ -890,10 +747,10 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Validate parameters
         if side_info is None:
             raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")
-            
+
         if csi is None:
             raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ model")
-        
+
         # Source encoding - conditional models use side info during encoding
         if self.is_conditional:
             encoded = self.encoder(source, side_info, csi)

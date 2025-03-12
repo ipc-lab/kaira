@@ -3,12 +3,7 @@ import numpy as np
 import pytest
 import torch
 
-from kaira.utils import (
-    calculate_num_filters_image,
-    snr_db_to_linear,
-    snr_linear_to_db,
-    to_tensor,
-)
+from kaira.utils import calculate_num_filters_image, snr_db_to_linear, snr_linear_to_db, to_tensor
 
 
 @pytest.mark.parametrize("snr_linear", [1.0, 10.0, 100.0])

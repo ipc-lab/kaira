@@ -13,10 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models  # type: ignore
 
-from kaira.metrics import (
-    LearnedPerceptualImagePatchSimilarity,
-    StructuralSimilarityIndexMeasure,
-)
+from kaira.metrics import LearnedPerceptualImagePatchSimilarity, StructuralSimilarityIndexMeasure
 
 from .base import BaseLoss
 from .registry import LossRegistry

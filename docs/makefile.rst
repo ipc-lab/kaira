@@ -23,7 +23,7 @@ For example:
 
     # Display help information
     make help
-    
+
     # Run the test suite
     make test
 

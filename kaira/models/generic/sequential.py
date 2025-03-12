@@ -1,6 +1,6 @@
 from typing import Any, Callable, Optional, Sequence
 
-from ..base import BaseModel, ConfigurableModel
+from ..base import ConfigurableModel
 from ..registry import ModelRegistry
 
 
