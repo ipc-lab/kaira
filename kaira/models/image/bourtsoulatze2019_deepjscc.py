@@ -1,4 +1,6 @@
 from typing import Optional, Union, Tuple
+
+from kaira.models.registry import ModelRegistry
 from ..base import BaseModel
 from torch import nn
 import torch
@@ -57,6 +59,7 @@ class _TransConvWithPReLU(nn.Module):
         return self.activate(self.transconv(x))
 
 
+@ModelRegistry.register_model()
 class Bourtsoulatze2019DeepJSCCEncoder(BaseModel):
     """DeepJSCC encoder model from :cite:`bourtsoulatze2019deep`.
     
@@ -88,6 +91,7 @@ class Bourtsoulatze2019DeepJSCCEncoder(BaseModel):
         return self.model(x)
 
 
+@ModelRegistry.register_model()
 class Bourtsoulatze2019DeepJSCCDecoder(BaseModel):
     """DeepJSCC decoder model from :cite:`bourtsoulatze2019deep`.
     

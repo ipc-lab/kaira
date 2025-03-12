@@ -1,3 +1,4 @@
+from kaira.models.registry import ModelRegistry
 import torch.nn as nn
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import torch
@@ -7,7 +8,7 @@ from kaira.models.base import BaseModel
 import logging
 
 
-class Mlp(nn.Module):
+class _Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
@@ -26,7 +27,7 @@ class Mlp(nn.Module):
         return x
 
 
-def window_partition(x, window_size):
+def _window_partition(x, window_size):
     """
     Args:
         x: (B, H, W, C)
@@ -40,7 +41,7 @@ def window_partition(x, window_size):
     return windows
 
 
-def window_reverse(windows, window_size, H, W):
+def _window_reverse(windows, window_size, H, W):
     """
     Args:
         windows: (num_windows*B, window_size, window_size, C)
@@ -56,7 +57,7 @@ def window_reverse(windows, window_size, H, W):
     return x
 
 
-class WindowAttention(nn.Module):
+class _WindowAttention(nn.Module):
     r""" Window based multi-head self attention (W-MSA) module with relative position bias.
     It supports both of shifted and non-shifted window.
     Args:
@@ -162,7 +163,7 @@ class WindowAttention(nn.Module):
         return flops
 
 
-class PatchMerging(nn.Module):
+class _PatchMerging(nn.Module):
     r""" Patch Merging Layer.
     Args:
         input_resolution (tuple[int]): Resolution of input feature.
@@ -217,12 +218,12 @@ class PatchMerging(nn.Module):
         return flops
 
 
-class PatchMerging4x(nn.Module):
+class _PatchMerging4x(nn.Module):
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm, use_conv=False):
         super().__init__()
         H, W = input_resolution
-        self.patch_merging1 = PatchMerging((H, W), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
-        self.patch_merging2 = PatchMerging((H // 2, W // 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
+        self.patch_merging1 = _PatchMerging((H, W), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
+        self.patch_merging2 = _PatchMerging((H // 2, W // 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
 
     def forward(self, x, H=None, W=None):
         if H is None:
@@ -232,7 +233,7 @@ class PatchMerging4x(nn.Module):
         return x
 
 
-class PatchReverseMerging(nn.Module):
+class _PatchReverseMerging(nn.Module):
     r""" Patch Merging Layer.
     Args:
         input_resolution (tuple[int]): Resolution of input feature.
@@ -279,15 +280,15 @@ class PatchReverseMerging(nn.Module):
         return flops
 
 
-class PatchReverseMerging4x(nn.Module):
+class _PatchReverseMerging4x(nn.Module):
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm, use_conv=False):
         super().__init__()
         self.use_conv = use_conv
         self.input_resolution = input_resolution
         self.dim = dim
         H, W = input_resolution
-        self.patch_reverse_merging1 = PatchReverseMerging((H, W), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
-        self.patch_reverse_merging2 = PatchReverseMerging((H * 2, W * 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
+        self.patch_reverse_merging1 = _PatchReverseMerging((H, W), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
+        self.patch_reverse_merging2 = _PatchReverseMerging((H * 2, W * 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
 
     def forward(self, x, H=None, W=None):
         if H is None:
@@ -306,7 +307,7 @@ class PatchReverseMerging4x(nn.Module):
         return flops
 
 
-class PatchEmbed(nn.Module):
+class _PatchEmbed(nn.Module):
     def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
         img_size = to_2tuple(img_size)
@@ -343,7 +344,7 @@ class PatchEmbed(nn.Module):
         return flops
 
 
-class SwinTransformerBlock(nn.Module):
+class _SwinTransformerBlock(nn.Module):
 
     def __init__(self, dim, input_resolution, num_heads, window_size=7,
 
@@ -363,13 +364,13 @@ class SwinTransformerBlock(nn.Module):
         assert 0 <= self.shift_size < self.window_size, "shift_size must in 0-window_size"
 
         self.norm1 = norm_layer(dim)
-        self.attn = WindowAttention(
+        self.attn = _WindowAttention(
             dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
             qkv_bias=qkv_bias, qk_scale=qk_scale)
 
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer)
+        self.mlp = _Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer)
 
         if self.shift_size > 0:
             # calculate attention mask for SW-MSA
@@ -387,7 +388,7 @@ class SwinTransformerBlock(nn.Module):
                     img_mask[:, h, w, :] = cnt
                     cnt += 1
 
-            mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
+            mask_windows = _window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
             attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
             attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
@@ -413,7 +414,7 @@ class SwinTransformerBlock(nn.Module):
             shifted_x = x
 
         # partition windows
-        x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
+        x_windows = _window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
         B_, N, C = x_windows.shape
 
@@ -422,7 +423,7 @@ class SwinTransformerBlock(nn.Module):
                                  add_token=False,
                                  mask=self.attn_mask)
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
-        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+        shifted_x = _window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
 
         # reverse cyclic shift
         if self.shift_size > 0:
@@ -472,7 +473,7 @@ class SwinTransformerBlock(nn.Module):
                     img_mask[:, h, w, :] = cnt
                     cnt += 1
 
-            mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
+            mask_windows = _window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
             attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
             attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
@@ -481,7 +482,7 @@ class SwinTransformerBlock(nn.Module):
             pass
 
 
-class BasicLayer(nn.Module):
+class _BasicLayer(nn.Module):
     def __init__(self, dim, out_dim, input_resolution, depth, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, norm_layer=nn.LayerNorm,
                  downsample=None):
@@ -491,7 +492,7 @@ class BasicLayer(nn.Module):
         self.input_resolution = input_resolution
         self.depth = depth
         self.blocks = nn.ModuleList([
-            SwinTransformerBlock(dim=out_dim,
+            _SwinTransformerBlock(dim=out_dim,
                                  input_resolution=(input_resolution[0] // 2, input_resolution[1] // 2),
                                  num_heads=num_heads, window_size=window_size,
                                  shift_size=0 if (i % 2 == 0) else window_size // 2,
@@ -531,7 +532,7 @@ class BasicLayer(nn.Module):
         if self.downsample is not None:
             self.downsample.input_resolution = (H * 2, W * 2)
 
-class AdaptiveModulator(nn.Module):
+class _AdaptiveModulator(nn.Module):
     """
     Adaptive modulator for rate and SNR adaptation.
     
@@ -539,7 +540,7 @@ class AdaptiveModulator(nn.Module):
         hidden_dim: Hidden dimension size for the modulator
     """
     def __init__(self, hidden_dim: int):
-        super(AdaptiveModulator, self).__init__()
+        super(_AdaptiveModulator, self).__init__()
         self.fc = nn.Sequential(
             nn.Linear(1, hidden_dim),
             nn.ReLU(),
@@ -562,6 +563,7 @@ class AdaptiveModulator(nn.Module):
         return self.fc(x)
 
 
+@ModelRegistry.register_model()
 class Yang2024DeepJSCCSwinEncoder(BaseModel):
     """
     Swin Transformer-based Joint Source-Channel Coding Encoder :cite:`yang2024swinjscc`.
@@ -636,7 +638,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         self.W = img_size[1] // (2 ** self.num_layers)
         
         # Patch embedding layer
-        self.patch_embed = PatchEmbed(
+        self.patch_embed = _PatchEmbed(
             img_size=img_size, 
             patch_size=patch_size, 
             in_chans=in_chans, 
@@ -678,7 +680,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         """Build the transformer layers of the encoder"""
         layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
-            layer = BasicLayer(
+            layer = _BasicLayer(
                 dim=int(embed_dims[i_layer - 1]) if i_layer != 0 else self.in_chans,
                 out_dim=int(embed_dims[i_layer]),
                 input_resolution=(self.patches_resolution[0] // (2 ** i_layer),
@@ -690,7 +692,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
                 qkv_bias=qkv_bias, 
                 qk_scale=qk_scale,
                 norm_layer=norm_layer,
-                downsample=PatchMerging if i_layer != 0 else None
+                downsample=_PatchMerging if i_layer != 0 else None
             )
             
             self.logger.info(f"Encoder layer {i_layer}: {layer.extra_repr()}")
@@ -709,7 +711,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         # Build layers for adaptation
         for i in range(self.layer_num):
             out_dim = self.embed_dims[-1] if i == self.layer_num - 1 else self.hidden_dim
-            modulators.append(AdaptiveModulator(self.hidden_dim))
+            modulators.append(_AdaptiveModulator(self.hidden_dim))
             linears.append(nn.Linear(self.hidden_dim, out_dim))
         
         return {
@@ -953,6 +955,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         }
 
 
+@ModelRegistry.register_model()
 class Yang2024DeepJSCCSwinDecoder(BaseModel):
     """
     Swin Transformer-based Joint Source-Channel Coding Decoder :cite:`yang2024swinjscc`.
@@ -1061,7 +1064,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         """Build the transformer layers of the decoder"""
         layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
-            layer = BasicLayer(
+            layer = _BasicLayer(
                 dim=int(embed_dims[i_layer]),
                 out_dim=int(embed_dims[i_layer + 1]) if (i_layer < self.num_layers - 1) else 3,
                 input_resolution=(self.patches_resolution[0] * (2 ** i_layer),
@@ -1073,7 +1076,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
                 norm_layer=norm_layer,
-                upsample=PatchReverseMerging
+                upsample=_PatchReverseMerging
             )
             
             self.logger.info(f"Decoder layer {i_layer}: {layer.extra_repr()}")
@@ -1092,7 +1095,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         # Build layers for adaptation
         for i in range(self.layer_num):
             out_dim = self.embed_dims[0] if i == self.layer_num - 1 else self.hidden_dim
-            modulators.append(AdaptiveModulator(self.hidden_dim))
+            modulators.append(_AdaptiveModulator(self.hidden_dim))
             linears.append(nn.Linear(self.hidden_dim, out_dim))
         
         return {

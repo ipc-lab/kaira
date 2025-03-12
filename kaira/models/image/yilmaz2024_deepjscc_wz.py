@@ -29,6 +29,7 @@ from typing import Dict, Optional
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
 from kaira.models.components.afmodule import AFModule
+from kaira.models.registry import ModelRegistry
 from torch import nn
 from kaira.models.base import BaseModel
 from kaira.models.wyner_ziv import WynerZivModel
@@ -40,6 +41,7 @@ from compressai.layers import (
 )
 import torch
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
     """DeepJSCC-WZ-sm Encoder Module :cite:`yilmaz2024deepjsccwz`.
     
@@ -128,6 +130,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
 
         return x
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
     
@@ -248,6 +251,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
         return x
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
     """DeepJSCC-WZ Encoder Module :cite=`yilmaz2024deepjsccwz`.
     
@@ -368,6 +372,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
         return x
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
     """DeepJSCC-WZ Decoder Module :cite=`yilmaz2024deepjsccwz`.
     
@@ -479,6 +484,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
 
         return x
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
     """DeepJSCC-WZ Conditional Encoder Module :cite=`yilmaz2024deepjsccwz`.
     
@@ -648,6 +654,7 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
 
         return x
 
+@ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
     """DeepJSCC-WZ Conditional Decoder Module :cite=`yilmaz2024deepjsccwz`.
     
@@ -763,7 +770,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
         return x
 
-class Yilmaz2024DeepJSCCWZ(WynerZivModel):
+@ModelRegistry.register_model()
+class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
     """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
     
     This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies

@@ -1,8 +1,10 @@
+from kaira.models.registry import ModelRegistry
 import torch
 
 from kaira.models.base import BaseModel
 
 
+@ModelRegistry.register_model()
 class IdentityModel(BaseModel):
     """Identity Model.
     

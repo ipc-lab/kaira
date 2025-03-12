@@ -6,7 +6,7 @@ import torch.nn as nn
 from kaira.channels import AWGNChannel
 from kaira.constraints import TotalPowerConstraint
 from kaira.models.image import (
-    Yilmaz2023DeepJSCCNOMA,
+    Yilmaz2023DeepJSCCNOMAModel,
     Yilmaz2023DeepJSCCNOMAEncoder,
     Yilmaz2023DeepJSCCNOMADecoder
 )
@@ -51,13 +51,13 @@ def test_yilmaz2023_deepjscc_noma_instantiation():
     """Test that Yilmaz2023DeepJSCCNOMA can be instantiated with default components."""
     channel = AWGNChannel()
     constraint = TotalPowerConstraint(total_power=1.0)
-    model = Yilmaz2023DeepJSCCNOMA(
+    model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
         power_constraint=constraint,
         num_devices=2,
         M=0.5,
     )
-    assert isinstance(model, Yilmaz2023DeepJSCCNOMA)
+    assert isinstance(model, Yilmaz2023DeepJSCCNOMAModel)
     assert model.num_devices == 2
     
     # Check that encoders and decoders are properly instantiated
@@ -71,7 +71,7 @@ def test_yilmaz2023_deepjscc_noma_forward():
     """Test the forward pass of Yilmaz2023DeepJSCCNOMA with default components."""
     channel = AWGNChannel()
     constraint = TotalPowerConstraint(total_power=1.0)
-    model = Yilmaz2023DeepJSCCNOMA(
+    model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
         power_constraint=constraint,
         num_devices=2,
@@ -106,7 +106,7 @@ def test_yilmaz2023_deepjscc_noma_registry():
         M=0.5,
     )
     
-    assert isinstance(model, Yilmaz2023DeepJSCCNOMA)
+    assert isinstance(model, Yilmaz2023DeepJSCCNOMAModel)
     assert model.num_devices == 3
 
 
@@ -114,7 +114,7 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
     """Test Yilmaz2023DeepJSCCNOMA with shared encoder/decoder."""
     channel = AWGNChannel()
     constraint = TotalPowerConstraint(total_power=1.0)
-    model = Yilmaz2023DeepJSCCNOMA(
+    model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
         power_constraint=constraint,
         num_devices=3,
@@ -143,7 +143,7 @@ def test_yilmaz2023_deepjscc_noma_perfect_sic():
     """Test Yilmaz2023DeepJSCCNOMA with perfect successive interference cancellation."""
     channel = AWGNChannel()
     constraint = TotalPowerConstraint(total_power=1.0)
-    model = Yilmaz2023DeepJSCCNOMA(
+    model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
         power_constraint=constraint,
         num_devices=2,

@@ -1,10 +1,12 @@
 from typing import Callable, Optional, Any
 
+from kaira.models.registry import ModelRegistry
 import torch
 
 from kaira.models.base import BaseModel
 
 
+@ModelRegistry.register_model()
 class LambdaModel(BaseModel):
     """Lambda Model.
     

@@ -18,6 +18,7 @@ from kaira.models.registry import ModelRegistry
 from kaira.channels.base import BaseChannel
 
 
+@ModelRegistry.register_model()
 class DeepJSCCFeedbackEncoder(nn.Module):
     """Encoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
     
@@ -63,6 +64,7 @@ class DeepJSCCFeedbackEncoder(nn.Module):
         return x
 
 
+@ModelRegistry.register_model()
 class DeepJSCCFeedbackDecoder(nn.Module):
     """Decoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
     

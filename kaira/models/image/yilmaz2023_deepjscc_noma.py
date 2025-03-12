@@ -21,7 +21,7 @@ DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
 DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 
 @ModelRegistry.register_model("deepjscc_noma")
-class Yilmaz2023DeepJSCCNOMA(MultipleAccessChannelModel):
+class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
     """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel :cite:`yilmaz2023distributed`.
 
     This model implements the DeepJSCC-NOMA system from the paper by Yilmaz et al. (2023),
