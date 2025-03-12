@@ -4,6 +4,7 @@ This module contains the abstract base class for Multiple Access Channel (MAC) m
 which enable multiple devices to transmit data over a shared wireless channel.
 """
 
+from kaira.models.registry import ModelRegistry
 import torch
 from torch import nn
 from typing import List, Dict, Optional, Tuple, Union, Type, Any, Callable
@@ -12,7 +13,7 @@ from kaira.models.base import BaseModel
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
 
-
+@ModelRegistry.register_model("mac")
 class MultipleAccessChannelModel(BaseModel):
     """Abstract base class for Multiple Access Channel (MAC) models.
     

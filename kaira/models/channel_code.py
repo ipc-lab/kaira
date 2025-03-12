@@ -13,7 +13,7 @@ from .registry import ModelRegistry
 import torch
 
 
-@ModelRegistry.register_model("channelcode")
+@ModelRegistry.register_model("channel_code")
 class ChannelCodeModel(BaseModel):
     """A specialized model for Channel Code.
 
