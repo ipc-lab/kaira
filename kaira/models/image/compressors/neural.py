@@ -1,6 +1,6 @@
 import time
 import warnings
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 
 import compressai.zoo
 import torch
@@ -63,7 +63,7 @@ class NeuralCompressor(BaseModel):
         self.return_bits = return_bits
         self.collect_stats = collect_stats
         self.return_compressed_data = return_compressed_data
-        self.stats = {}
+        self.stats: Dict[str, Any] = {}
         self._models_cache = {}
 
         # Initialize models - either load them all or prepare for lazy loading
@@ -170,12 +170,12 @@ class NeuralCompressor(BaseModel):
         best_qualities = torch.zeros(x.shape[0], dtype=torch.int64, device=x.device)
         x_hat = torch.empty_like(x)
         output_bits = torch.zeros(x.shape[0], device=x.device)
-        compressed_data = [None] * x.shape[0] if self.return_compressed_data else None
+        compressed_data: Optional[List[Any]] = [None] * x.shape[0] if self.return_compressed_data else None
 
         # For stats collection
         if self.collect_stats:
             original_size = x.shape[1] * x.shape[2] * x.shape[3] * 8  # Original size in bits (8 bits per channel)
-            img_stats = [{} for _ in range(x.shape[0])]
+            img_stats: List[Dict[str, Any]] = [{} for _ in range(x.shape[0])]
 
         # Start with best quality for all images
         current_quality_idx = 0
