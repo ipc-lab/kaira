@@ -6,6 +6,7 @@
 import datetime
 import os
 import sys
+from typing import List
 
 # Add the project root to sys.path
 sys.path.insert(0, os.path.abspath("../kaira"))
@@ -159,7 +160,7 @@ html_css_files = [
 ]
 
 # Add custom JavaScript file - ensure correct format
-html_js_files = []
+html_js_files: List[str] = []
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
