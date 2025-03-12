@@ -14,7 +14,7 @@ import torch
 from typing import Any, Dict
 
 @ModelRegistry.register_model("transcoder")
-class Kurmukova2025TransCoderModel(SequentialModel):
+class Kurmukova2025TransCoder(SequentialModel):
     """A specialized model for TransCoder.
 
     TransCoder is a neural network-based approach that enhances the channel coding performance and 

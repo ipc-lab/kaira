@@ -3,8 +3,8 @@
 This module provides models specifically designed for binary data transmission.
 """
 
-from .kurmukova2025_transcoder import Kurmukova2025TransCoderModel
+from .kurmukova2025_transcoder import Kurmukova2025TransCoder
 
 __all__ = [
-    "Kurmukova2025TransCoderModel",
+    "Kurmukova2025TransCoder",
 ]
