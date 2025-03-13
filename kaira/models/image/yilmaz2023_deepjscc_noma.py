@@ -5,7 +5,7 @@ Source-Channel Coding over a Multiple Access Channel as described in the paper b
 (2023).
 """
 
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import torch
 from torch import nn

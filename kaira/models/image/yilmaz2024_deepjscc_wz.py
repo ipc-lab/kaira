@@ -25,6 +25,7 @@ Reference:
 """
 
 
+from typing import Any
 import torch
 from compressai.layers import (
     AttentionBlock,

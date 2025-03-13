@@ -17,7 +17,7 @@ The implementation follows the key principles of Wyner-Ziv coding:
 4. Reconstruction at decoder using both received syndromes and side information
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import torch
 import torch.nn as nn
