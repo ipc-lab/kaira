@@ -103,8 +103,9 @@ class MultipleAccessChannelModel(BaseModel):
             IndexError: If any device index is invalid
         """
         if device_indices is None:
-            device_indices = range(self.num_devices)
+            device_indices = list(range(self.num_devices))
 
+        # At this point device_indices is guaranteed to be a list, not None
         if len(inputs) != len(device_indices):
             raise ValueError(f"Number of inputs ({len(inputs)}) must match number of " f"device indices ({len(device_indices)})")
 
@@ -130,7 +131,7 @@ class MultipleAccessChannelModel(BaseModel):
             IndexError: If any device index is invalid
         """
         if device_indices is None:
-            device_indices = range(self.num_devices)
+            device_indices = list(range(self.num_devices))
 
         decoded = []
         for i in device_indices:
