@@ -1,7 +1,8 @@
 """Data generation utilities for Kaira.
 
 This module provides functions for generating various types of data tensors commonly used in
-communication systems and information theory experiments.
+communication systems and information theory experiments. It includes utilities for creating binary
+and uniformly distributed tensors, as well as dataset classes for batch processing.
 """
 
 from typing import List, Optional, Union
@@ -71,9 +72,22 @@ class BinaryTensorDataset(Dataset):
         self.data = create_binary_tensor(size, prob, device)
 
     def __len__(self):
+        """Return the number of samples in the dataset.
+
+        Returns:
+            int: The number of samples, corresponding to the first dimension of data
+        """
         return self.data.size(0)
 
     def __getitem__(self, idx):
+        """Retrieve a sample from the dataset at the specified index.
+
+        Args:
+            idx: Index or slice object to index into the dataset
+
+        Returns:
+            torch.Tensor: The binary tensor at the specified index/indices
+        """
         return self.data[idx]
 
 
@@ -101,7 +115,20 @@ class UniformTensorDataset(Dataset):
         self.data = create_uniform_tensor(size, low, high, device)
 
     def __len__(self):
+        """Return the number of samples in the dataset.
+
+        Returns:
+            int: The number of samples, corresponding to the first dimension of data
+        """
         return self.data.size(0)
 
     def __getitem__(self, idx):
+        """Retrieve a sample from the dataset at the specified index.
+
+        Args:
+            idx: Index or slice object to index into the dataset
+
+        Returns:
+            torch.Tensor: The uniform random tensor at the specified index/indices
+        """
         return self.data[idx]

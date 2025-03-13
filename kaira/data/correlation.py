@@ -125,7 +125,22 @@ class WynerZivCorrelationDataset(Dataset):
         self.correlated_data = self.model(source)
 
     def __len__(self):
+        """Return the number of samples in the dataset.
+
+        Returns:
+            int: The number of samples, corresponding to the first dimension of data
+        """
         return self.data.size(0)
 
     def __getitem__(self, idx):
+        """Retrieve a source-side information pair from the dataset at the specified index.
+
+        Args:
+            idx: Index or slice object to index into the dataset
+
+        Returns:
+            tuple: A pair of tensors (source, side_information) representing the
+                  source data and its correlated side information at the specified
+                  index/indices
+        """
         return self.data[idx], self.correlated_data[idx]

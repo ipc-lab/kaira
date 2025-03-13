@@ -2,6 +2,8 @@
 
 This module implements the Deep Joint Source-Channel Coding (DeepJSCC)
 with feedback architecture proposed in :cite:p:`kurka2020deepjscc`.
+The implementation supports both base layer transmission and refinement
+layers for iterative image quality improvement.
 """
 
 
@@ -9,7 +11,7 @@ import torch
 import torch.nn as nn
 from compressai.layers import GDN
 
-from kaira.models.base import FeedbackChannelModel
+from kaira.models.feedback_channel import FeedbackChannelModel
 from kaira.models.registry import ModelRegistry
 
 
@@ -18,10 +20,13 @@ class DeepJSCCFeedbackEncoder(nn.Module):
     """Encoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
 
     This encoder compresses the input image into a latent representation
-    that can be transmitted through a noisy channel.
+    that can be transmitted through a noisy channel. The architecture uses
+    a series of convolutional layers with GDN activations to efficiently
+    encode visual information.
 
     Args:
-        conv_depth (int): Depth of the output convolutional features.
+        conv_depth (int): Depth of the output convolutional features, which
+            determines the channel bandwidth usage.
     """
 
     def __init__(self, conv_depth):
@@ -53,6 +58,14 @@ class DeepJSCCFeedbackEncoder(nn.Module):
         )
 
     def forward(self, x):
+        """Forward pass through the encoder.
+
+        Args:
+            x (torch.Tensor): Input image tensor of shape [B, C, H, W].
+
+        Returns:
+            torch.Tensor: Encoded representation ready for channel transmission.
+        """
         for layer in self.layers:
             x = layer(x)
         return x
@@ -63,6 +76,8 @@ class DeepJSCCFeedbackDecoder(nn.Module):
     """Decoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
 
     This decoder reconstructs the image from the received noisy channel output.
+    The architecture uses transposed convolutions with inverse GDN activations
+    to convert the channel signal back into an image.
 
     Args:
         n_channels (int): Number of channels in the output image (typically 3 for RGB).
@@ -98,6 +113,14 @@ class DeepJSCCFeedbackDecoder(nn.Module):
         )
 
     def forward(self, x):
+        """Forward pass through the decoder.
+
+        Args:
+            x (torch.Tensor): Channel output tensor to be decoded.
+
+        Returns:
+            torch.Tensor: Reconstructed image in range [0, 1].
+        """
         for layer in self.layers:
             x = layer(x)
         return x
@@ -107,7 +130,8 @@ class OutputsCombiner(nn.Module):
     """Combines previous outputs with residuals for iterative refinement :cite:`kurka2020deepjscc`.
 
     This module is used both for feedback generation and for processing feedback to improve image
-    reconstruction quality.
+    reconstruction quality. It takes a previous reconstruction and a residual signal, then produces
+    an enhanced reconstruction through a small neural network.
     """
 
     def __init__(self):
@@ -118,6 +142,16 @@ class OutputsCombiner(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, inputs):
+        """Combines previous reconstruction with residual information.
+
+        Args:
+            inputs (tuple): Contains:
+                - img_prev (torch.Tensor): Previous reconstruction image
+                - residual (torch.Tensor): Residual information for refinement
+
+        Returns:
+            torch.Tensor: Enhanced reconstruction after combining inputs.
+        """
         img_prev, residual = inputs
 
         # Concatenate previous image and residual
@@ -138,18 +172,22 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
 
     This model implements the DeepJSCC with feedback architecture from Kurka et al. 2020,
     which uses channel feedback to enhance image transmission quality in wireless channels.
+    The model supports multiple iterations of feedback to progressively refine the
+    reconstruction quality at the receiver.
 
     Args:
         channel_snr (float): Signal-to-noise ratio of the forward channel in dB.
-        conv_depth (int): Depth of the convolutional features.
+        conv_depth (int): Depth of the convolutional features, controls bandwidth usage.
         channel_type (str): Type of channel ('awgn', 'fading', etc.).
         feedback_snr (float): Signal-to-noise ratio of the feedback channel in dB.
-        refinement_layer (bool): Whether this is a refinement layer.
-        layer_id (int): ID of the current layer.
-        forward_channel (BaseChannel): The forward channel model.
-        feedback_channel (BaseChannel): The feedback channel model.
-        target_analysis (bool): Whether to perform target analysis.
-        max_iterations (int): Maximum number of feedback iterations.
+            If None, assumes perfect feedback.
+        refinement_layer (bool): Whether this is a refinement layer (True) or
+            base layer (False).
+        layer_id (int): ID of the current layer for multi-layer configurations.
+        forward_channel (BaseChannel, optional): The forward channel model. Defaults to None.
+        feedback_channel (BaseChannel, optional): The feedback channel model. Defaults to None.
+        target_analysis (bool, optional): Whether to perform target analysis. Defaults to False.
+        max_iterations (int, optional): Maximum number of feedback iterations. Defaults to 3.
     """
 
     def __init__(
@@ -197,15 +235,23 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         """Forward pass of the DeepJSCC Feedback model.
 
         Processes the input through the encoder, channel, and decoder,
-        potentially with multiple rounds of feedback.
+        potentially with multiple rounds of feedback. Handles both base layer
+        and refinement layer cases.
 
         Args:
-            inputs: Either the input image (for base layer) or a tuple containing
-                   the input image and previous feedback information.
+            inputs: Either:
+                - For base layer: the input image tensor of shape [B, C, H, W]
+                - For refinement layer: a tuple containing (input_image, previous_feedback_image,
+                  previous_feedback_channel_output, previous_decoded_image,
+                  previous_decoded_channel_output, previous_channel_gain)
 
         Returns:
-            tuple: Contains the decoded image, feedback image, channel outputs,
-                  feedback channel outputs, and channel gain.
+            tuple: Contains:
+                - decoded_img (torch.Tensor): Reconstructed image
+                - decoded_img_fb (torch.Tensor): Reconstructed image using feedback
+                - chn_out_exp (torch.Tensor): Channel output used for decoding
+                - chn_out_exp_fb (torch.Tensor): Feedback channel output
+                - chn_gain (torch.Tensor or None): Channel gain if applicable
         """
         if self.refinement_layer:
             (
