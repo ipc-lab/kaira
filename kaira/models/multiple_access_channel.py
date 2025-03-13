@@ -5,7 +5,7 @@ transmit data simultaneously over a shared wireless channel. It provides base cl
 for implementing various MAC protocols and studying their performance.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, List, Optional, Type
 
 import torch
 from torch import nn
@@ -140,50 +140,52 @@ class MultipleAccessChannelModel(BaseModel):
             decoded.append(self.decoders[i](received))
         return decoded
 
-    def forward(self, inputs: List[torch.Tensor], csi: Optional[torch.Tensor] = None, noise: Optional[torch.Tensor] = None, device_indices: Optional[List[int]] = None) -> Union[List[torch.Tensor], Tuple[List[torch.Tensor], Dict[str, Any]]]:
+    def forward(self, *args: Any, **kwargs: Any) -> Any:
         """Process inputs through the complete MAC system.
 
-        The forward pass consists of:
-        1. Encoding inputs from each device
-        2. Applying power constraints
-        3. Transmitting through the channel (with optional CSI/noise)
-        4. Decoding received signals
+        The default implementation expects:
+        - inputs: List of input tensors, one per device
+        - csi: Optional channel state information
+        - noise: Optional explicit noise tensor
+        - device_indices: Optional list of specific devices to process
 
-        Args:
-            inputs: List of input tensors, one per device
-            csi: Optional channel state information
-            noise: Optional explicit noise tensor
-            device_indices: Optional list of specific devices to process
+        Child classes may override this with different parameter structures.
 
         Returns:
-            - List of decoded outputs if no intermediate values requested
-            - Tuple of (outputs, intermediate_values) if return_intermediate=True
-
-        Raises:
-            ValueError: If inputs/indices don't match or components missing
+            Output signals, format depends on implementation.
+            Default implementation returns a list of decoded tensors.
         """
-        # Input validation
-        if len(inputs) == 0:
-            raise ValueError("No inputs provided")
-        if device_indices is not None and len(inputs) != len(device_indices):
-            raise ValueError("Number of inputs must match number of device indices")
-        if not self.encoders or not self.decoders:
-            raise ValueError("Encoders and decoders must be initialized")
+        # Handle the case when called with positional arguments per original signature
+        if len(args) > 0 and isinstance(args[0], list):
+            inputs = args[0]
+            csi = kwargs.get("csi", None)
+            noise = kwargs.get("noise", None)
+            device_indices = kwargs.get("device_indices", None)
 
-        # Encode
-        encoded = self.encode(inputs, device_indices)
+            # Input validation
+            if len(inputs) == 0:
+                raise ValueError("No inputs provided")
+            if device_indices is not None and len(inputs) != len(device_indices):
+                raise ValueError("Number of inputs must match number of device indices")
+            if not self.encoders or not self.decoders:
+                raise ValueError("Encoders and decoders must be initialized")
 
-        # Apply power constraint
-        constrained = [self.power_constraint(x) for x in encoded]
+            # Encode
+            encoded = self.encode(inputs, device_indices)
 
-        # Combine signals and transmit through channel
-        combined = sum(constrained)  # Simple superposition
-        received = self.channel(combined, csi=csi, noise=noise)
+            # Apply power constraint
+            constrained = [self.power_constraint(x) for x in encoded]
 
-        # Decode
-        outputs = self.decode(received, device_indices)
+            # Combine signals and transmit through channel
+            combined = sum(constrained)  # Simple superposition
+            received = self.channel(combined, csi=csi, noise=noise)
 
-        return outputs
+            # Decode
+            outputs = self.decode(received, device_indices)
+
+            return outputs
+        else:
+            raise ValueError("Invalid arguments. Expected a list of inputs as the first argument.")
 
     def set_encoder(self, encoder: Type[BaseModel], device_index: Optional[int] = None, **kwargs: Any) -> None:
         """Set or replace encoder for specific device(s).

@@ -13,12 +13,11 @@ from kaira.constraints import BaseConstraint
 from kaira.modulations import BaseDemodulator, BaseModulator
 
 from ..base import BaseModel
-from ..generic import SequentialModel
 from ..registry import ModelRegistry
 
 
 @ModelRegistry.register_model("transcoder")
-class Kurmukova2025TransCoder(SequentialModel):
+class Kurmukova2025TransCoder(BaseModel):
     """A specialized model for TransCoder.
 
     TransCoder is a neural network-based approach that enhances the channel coding performance and
@@ -65,7 +64,7 @@ class Kurmukova2025TransCoder(SequentialModel):
             decoder_ec (BaseModel): Channel code decoder for recovering the original input
             n_iterations (int): Number of consecutive decoding iterations: TransCoder and channel decoder (default: 1)
         """
-        super().__init__(steps=[encoder_tc, encoder_ec, modulator, constraint, channel, demodulator, decoder_tc, decoder_ec, n_iterations])
+        super().__init__()
         self.encoder_tc = encoder_tc
         self.encoder_ec = encoder_ec
         self.modulator = modulator
@@ -73,7 +72,7 @@ class Kurmukova2025TransCoder(SequentialModel):
         self.channel = channel
         self.demodulator = demodulator
         self.decoder_tc = decoder_tc
-        self.decoder_ec = encoder_ec
+        self.decoder_ec = decoder_ec
         self.n_iterations = n_iterations
 
     def forward(self, input_data: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, Any]:

@@ -239,7 +239,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         # Store parameters
         self.target_analysis = target_analysis
 
-    def forward(self, inputs, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def forward(self, input_data, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Forward pass of the DeepJSCC Feedback model.
 
         Processes the input through the encoder, channel, and decoder,
@@ -247,7 +247,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         and refinement layer cases.
 
         Args:
-            inputs: Either:
+            input_data: Either:
                 - For base layer: the input image tensor of shape [B, C, H, W]
                 - For refinement layer: a tuple containing (input_image, previous_feedback_image,
                   previous_feedback_channel_output, previous_decoded_image,
@@ -271,12 +271,12 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 prev_img_out_dec,
                 prev_chn_out_dec,
                 prev_chn_gain,
-            ) = inputs
+            ) = input_data
             # Concatenate previous feedback image with original image
             img_in = torch.cat([prev_img_out_fb, img], dim=1)
         else:  # base layer
-            # inputs is just the original image
-            img_in = img = inputs
+            # input_data is just the original image
+            img_in = img = input_data
             prev_chn_gain = None
 
         # Encode the input

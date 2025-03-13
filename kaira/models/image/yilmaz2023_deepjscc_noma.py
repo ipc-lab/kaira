@@ -79,7 +79,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             ckpt_path: Path to checkpoint file for loading pre-trained weights
         """
         # Initialize the base class
-        super().__init__(channel=channel, power_constraint=power_constraint, encoder=encoder, decoder=decoder, num_devices=num_devices, shared_encoder=shared_encoder, shared_decoder=shared_decoder)
+        super().__init__(channel=channel, power_constraint=power_constraint, num_devices=num_devices, shared_encoder=shared_encoder, shared_decoder=shared_decoder)
 
         # Initialize DeepJSCC-NOMA specific attributes
         self.M = M
@@ -100,44 +100,54 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         decoder_count = 1 if shared_decoder else num_devices
         encoder_channels = 4 if self.use_device_embedding else 3
 
-        # Initialize encoders with proper typing and parameters
+        # Initialize encoders
         for _ in range(encoder_count):
-            try:
-                # Try instantiating with Tung2022DeepJSCCQ2Encoder expected parameters
-                enc = encoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
-            except (TypeError, ValueError):
+            # Create new encoder instance based on whether encoder_cls is a class or object instance
+            if isinstance(encoder_cls, type):  # It's a class
                 try:
-                    # Try with C parameter (common in image encoders)
-                    enc = encoder_cls(C=encoder_channels, latent_dim=latent_dim)
+                    # Try instantiating with Tung2022DeepJSCCQ2Encoder expected parameters
+                    enc = encoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
                 except (TypeError, ValueError):
                     try:
-                        # Try with in_channels parameter (common alternative)
-                        enc = encoder_cls(in_channels=encoder_channels, latent_dim=latent_dim)
+                        # Try with C parameter (common in image encoders)
+                        enc = encoder_cls(C=encoder_channels, latent_dim=latent_dim)
                     except (TypeError, ValueError):
                         try:
-                            # Try just with latent_dim
-                            enc = encoder_cls(latent_dim=latent_dim)
+                            # Try with in_channels parameter (common alternative)
+                            enc = encoder_cls(in_channels=encoder_channels, latent_dim=latent_dim)
                         except (TypeError, ValueError):
-                            # Last resort: try with no parameters
-                            enc = encoder_cls()
+                            try:
+                                # Try just with latent_dim
+                                enc = encoder_cls(latent_dim=latent_dim)
+                            except (TypeError, ValueError):
+                                # Last resort: try with no parameters
+                                enc = encoder_cls()
+            else:  # It's already an instance
+                enc = encoder_cls
+
             self.encoders.append(enc)
 
-        # Initialize decoders with proper typing and parameters
+        # Initialize decoders
         for _ in range(decoder_count):
-            try:
-                # Try instantiating with Tung2022DeepJSCCQ2Decoder expected parameters
-                dec = decoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
-            except (TypeError, ValueError):
+            # Create new decoder instance based on whether decoder_cls is a class or object instance
+            if isinstance(decoder_cls, type):  # It's a class
                 try:
-                    # Try with standard parameter set
-                    dec = decoder_cls(latent_dim=latent_dim, num_devices=num_devices, shared_decoder=shared_decoder)
+                    # Try instantiating with Tung2022DeepJSCCQ2Decoder expected parameters
+                    dec = decoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
                 except (TypeError, ValueError):
                     try:
-                        # Try with just latent_dim
-                        dec = decoder_cls(latent_dim=latent_dim)
+                        # Try with standard parameter set
+                        dec = decoder_cls(latent_dim=latent_dim, num_devices=num_devices, shared_decoder=shared_decoder)
                     except (TypeError, ValueError):
-                        # Last resort: try with no parameters
-                        dec = decoder_cls()
+                        try:
+                            # Try with just latent_dim
+                            dec = decoder_cls(latent_dim=latent_dim)
+                        except (TypeError, ValueError):
+                            # Last resort: try with no parameters
+                            dec = decoder_cls()
+            else:  # It's already an instance
+                dec = decoder_cls
+
             self.decoders.append(dec)
 
         if self.use_device_embedding:
