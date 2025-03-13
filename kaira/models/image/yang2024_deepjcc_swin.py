@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import torch
 import torch.nn as nn
@@ -979,20 +979,20 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         # Use mixed precision if enabled
         with torch.cuda.amp.autocast() if self.use_mixed_precision and torch.cuda.is_available() else nullcontext():
             # Store intermediate features if requested
-            intermediate_features = {} if return_intermediate_features else None
+            intermediate_features: Optional[Dict[str, torch.Tensor]] = {} if return_intermediate_features else None
 
             # Patch embedding and feature extraction
             x = self.patch_embed(x)
-            if return_intermediate_features:
+            if intermediate_features is not None:
                 intermediate_features["patch_embed"] = x.detach().clone()
 
             for i, layer in enumerate(self.layers):
                 x = layer(x)
-                if return_intermediate_features:
+                if intermediate_features is not None:
                     intermediate_features[f"layer_{i}"] = x.detach().clone()
 
             x = self.norm(x)
-            if return_intermediate_features:
+            if intermediate_features is not None:
                 intermediate_features["norm"] = x.detach().clone()
 
             # Apply the specified adaptation strategy
@@ -1348,7 +1348,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         # Use mixed precision if enabled
         with torch.cuda.amp.autocast() if self.use_mixed_precision and torch.cuda.is_available() else nullcontext():
             # Store intermediate features if requested
-            intermediate_features = {} if return_intermediate_features else None
+            intermediate_features: Optional[Dict[str, torch.Tensor]] = {} if return_intermediate_features else None
 
             if model_mode == "SwinJSCC_w/o_SAandRA":
                 result = self._forward_base(x, intermediate_features)
@@ -1365,7 +1365,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
             return result, intermediate_features
         return result
 
-    def _forward_base(self, x: torch.Tensor, intermediate_features: Optional[Dict] = None) -> torch.Tensor:
+    def _forward_base(self, x: torch.Tensor, intermediate_features: Optional[Dict[str, torch.Tensor]] = None) -> torch.Tensor:
         """Base forward pass without adaptation.
 
         Processes input features through the decoder layers without applying SNR adaptation.
@@ -1396,7 +1396,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
 
         return x
 
-    def _forward_with_snr(self, x: torch.Tensor, snr: float, intermediate_features: Optional[Dict] = None) -> torch.Tensor:
+    def _forward_with_snr(self, x: torch.Tensor, snr: float, intermediate_features: Optional[Dict[str, torch.Tensor]] = None) -> torch.Tensor:
         """Forward pass with SNR adaptation.
 
         Applies SNR-dependent modulation before processing features through decoder layers.
@@ -1604,7 +1604,7 @@ class SwinJSCCConfig:
         self.adaptation_hidden_factor = adaptation_hidden_factor
         self.adaptation_layers = adaptation_layers
 
-    def get_encoder_kwargs(self, C: int = None) -> Dict[str, Any]:
+    def get_encoder_kwargs(self, C: Optional[int] = None) -> Dict[str, Any]:
         """Get keyword arguments for encoder constructor."""
         return {
             "img_size": self.img_size,
@@ -1626,7 +1626,7 @@ class SwinJSCCConfig:
             "memory_efficient": self.memory_efficient,
         }
 
-    def get_decoder_kwargs(self, C: int = None) -> Dict[str, Any]:
+    def get_decoder_kwargs(self, C: Optional[int] = None) -> Dict[str, Any]:
         """Get keyword arguments for decoder constructor."""
         return {
             "img_size": self.img_size,
@@ -1650,7 +1650,8 @@ class SwinJSCCConfig:
     @classmethod
     def from_preset(cls, preset: str = "tiny") -> "SwinJSCCConfig":
         """Create a configuration from a preset name."""
-        presets = {
+        # Define preset specific parameters with proper type annotations
+        presets: Dict[str, Dict[str, Union[List[int], int]]] = {
             "tiny": {"embed_dims": [96, 192, 384, 768], "depths": [2, 2, 6, 2], "num_heads": [3, 6, 12, 24], "window_size": 7},
             "small": {"embed_dims": [96, 192, 384, 768], "depths": [2, 2, 18, 2], "num_heads": [3, 6, 12, 24], "window_size": 7},
             "base": {"embed_dims": [128, 256, 512, 1024], "depths": [2, 2, 18, 2], "num_heads": [4, 8, 16, 32], "window_size": 7},
@@ -1660,7 +1661,29 @@ class SwinJSCCConfig:
         if preset not in presets:
             raise ValueError(f"Unknown preset: {preset}. Available presets: {list(presets.keys())}")
 
-        return cls(**presets[preset])
+        # Get the selected preset
+        selected_preset = presets[preset]
+
+        # Create the configuration with explicit type casting
+        return cls(
+            img_size=224,
+            patch_size=4,
+            in_chans=3,
+            embed_dims=cast(List[int], selected_preset["embed_dims"]),
+            depths=cast(List[int], selected_preset["depths"]),
+            num_heads=cast(List[int], selected_preset["num_heads"]),
+            bottleneck_dim=16,
+            window_size=cast(int, selected_preset["window_size"]),
+            mlp_ratio=4.0,
+            qkv_bias=True,
+            qk_scale=None,
+            patch_norm=True,
+            ape=False,
+            use_mixed_precision=False,
+            memory_efficient=False,
+            adaptation_hidden_factor=1.5,
+            adaptation_layers=7,
+        )
 
 
 def create_swin_jscc_models(config: SwinJSCCConfig, channel_dim: int, device: Optional[torch.device] = None) -> Tuple[Yang2024DeepJSCCSwinEncoder, Yang2024DeepJSCCSwinDecoder]:
@@ -1672,7 +1695,7 @@ def create_swin_jscc_models(config: SwinJSCCConfig, channel_dim: int, device: Op
     Args:
         config: Configuration object for the models
         channel_dim: Dimension of the bottleneck/channel
-        device: Device to create the models on (default: None)
+        device: Optional torch.device for model placement (default: None)
 
     Returns:
         A tuple containing the encoder and decoder models
