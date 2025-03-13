@@ -13,11 +13,12 @@ from kaira.constraints import BaseConstraint
 from kaira.modulations import BaseDemodulator, BaseModulator
 
 from .base import BaseModel
+from .generic import SequentialModel
 from .registry import ModelRegistry
 
 
 @ModelRegistry.register_model("channel_code")
-class ChannelCodeModel(BaseModel):
+class ChannelCodeModel(SequentialModel):
     """A specialized model for Channel Code.
 
     Channel Code is an information transmission approach that performs encoding and decoding using given channel code.

@@ -1,6 +1,6 @@
 import time
 import warnings
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import compressai.zoo
 import torch

@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from joblib import Parallel, delayed
@@ -27,7 +27,7 @@ class BPGCompressor(BaseModel):
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
     """
 
-    def __init__(self, max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, bpg_encoder_path: str = "bpgenc", bpg_decoder_path: str = "bpgdec", n_jobs: int = None, collect_stats: bool = False, return_bits: bool = True, return_compressed_data: bool = False):
+    def __init__(self, max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, bpg_encoder_path: str = "bpgenc", bpg_decoder_path: str = "bpgdec", n_jobs: Optional[int] = None, collect_stats: bool = False, return_bits: bool = True, return_compressed_data: bool = False):
         """Initialize the BPG Compressor.
 
         Args:
@@ -60,7 +60,7 @@ class BPGCompressor(BaseModel):
         self.collect_stats = collect_stats
         self.return_bits = return_bits
         self.return_compressed_data = return_compressed_data
-        self.stats = {}
+        self.stats: Dict[str, Any] = {}
 
         # Check if BPG tools are available
         try:
@@ -98,18 +98,18 @@ class BPGCompressor(BaseModel):
 
         # Unpack results
         images = []
-        bits_per_image = [] if self.return_bits or self.collect_stats else None
-        compressed_data = [] if self.return_compressed_data else None
+        bits_per_image: List[int] = [] if self.return_bits or self.collect_stats else None
+        compressed_data: List[bytes] = [] if self.return_compressed_data else None
 
         for result in results:
             if collect_info:
                 img, info = result
                 images.append(img)
 
-                if self.return_bits or self.collect_stats:
+                if (self.return_bits or self.collect_stats) and bits_per_image is not None:
                     bits_per_image.append(int(info.get("bits", 0)))
 
-                if self.return_compressed_data:
+                if self.return_compressed_data and compressed_data is not None:
                     compressed_data.append(info.get("compressed_data", b""))
 
                 # Update full stats if requested

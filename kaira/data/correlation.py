@@ -94,12 +94,12 @@ class WynerZivCorrelationModel(nn.Module):
 
 class WynerZivCorrelationDataset(Dataset):
     """Dataset for Wyner-Ziv coding scenarios with correlated sources.
-    
+
     This dataset pairs source data with correlated side information according to a
     specified correlation model. It's particularly useful for simulating and evaluating
     Wyner-Ziv coding scenarios where the decoder has access to side information that is
     statistically correlated with the source.
-    
+
     Attributes:
         model: The correlation model used to generate side information
         data: The source data tensor with shape (n_samples, *feature_dims)
@@ -108,7 +108,7 @@ class WynerZivCorrelationDataset(Dataset):
 
     def __init__(self, source: torch.Tensor, correlation_type: str = "gaussian", correlation_params: Optional[Dict[str, Any]] = None):
         """Initialize the Wyner-Ziv correlated dataset.
-        
+
         Args:
             source: Source data tensor where the first dimension represents the number of samples
             correlation_type: Type of correlation model:
