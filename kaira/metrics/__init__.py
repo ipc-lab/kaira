@@ -14,19 +14,13 @@ from .image import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from .registry import (
-    create_composite_metric,
-    create_image_quality_metrics,
-    create_metric,
-    list_metrics,
-    register_metric,
-)
 from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio
 from .utils import compute_multiple_metrics, format_metric_results
 
 __all__ = [
     # Base classes
     "BaseMetric",
+    "CompositeMetric",
     # Image metrics
     "PeakSignalNoiseRatio",
     "PSNR",
@@ -43,13 +37,7 @@ __all__ = [
     "BlockErrorRate",
     "BLER",
     # Registry
-    "register_metric",
-    "create_metric",
-    "list_metrics",
-    # Factories
-    "create_image_quality_metrics",
-    "create_composite_metric",
-    "CompositeMetric",
+    "MetricRegistry",
     # Utils
     "compute_multiple_metrics",
     "format_metric_results",

@@ -170,7 +170,7 @@ class NeuralCompressor(BaseModel):
         best_qualities = torch.zeros(x.shape[0], dtype=torch.int64, device=x.device)
         x_hat = torch.empty_like(x)
         output_bits = torch.zeros(x.shape[0], device=x.device)
-        compressed_data: Optional[List[Any]] = [None] * x.shape[0] if self.return_compressed_data else None
+        optimal_compressed_data: Optional[List[Any]] = [None] * x.shape[0] if self.return_compressed_data else None
 
         # For stats collection
         if self.collect_stats:
@@ -204,7 +204,7 @@ class NeuralCompressor(BaseModel):
                         temp_comp_data = model.compress(current_batch[i : i + 1])
                         # We'll only keep it if the constraint is satisfied
                         if bits[i] <= self.max_bits_per_image:
-                            compressed_data[orig_idx.item()] = temp_comp_data
+                            optimal_compressed_data[orig_idx.item()] = temp_comp_data
 
                 # Continue with existing code for selecting images that meet the constraint
                 # ...
@@ -271,11 +271,11 @@ class NeuralCompressor(BaseModel):
 
         # Determine what to return based on flags
         if self.return_bits and self.return_compressed_data:
-            return x_hat, output_bits, compressed_data
+            return x_hat, output_bits, optimal_compressed_data
         elif self.return_bits:
             return x_hat, output_bits
         elif self.return_compressed_data:
-            return x_hat, compressed_data
+            return x_hat, optimal_compressed_data
         else:
             return x_hat
 
