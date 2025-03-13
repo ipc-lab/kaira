@@ -955,7 +955,7 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
 
         return {"modulators": modulators, "linears": linears, "sigmoid": nn.Sigmoid()}
 
-    def forward(self, x: torch.Tensor, snr: Optional[float] = None, rate: Optional[int] = None, model_mode: str = "SwinJSCC_w/o_SAandRA", return_intermediate_features: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Dict[str, torch.Tensor]]:
+    def forward(self, x: torch.Tensor, snr: Optional[float] = None, rate: Optional[int] = None, model_mode: str = "SwinJSCC_w/o_SAandRA", return_intermediate_features: bool = False, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Dict[str, torch.Tensor]]:
         """Forward pass through the encoder.
 
         Args:
@@ -968,6 +968,8 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
                 - 'SwinJSCC_w/_RA': With rate adaptation
                 - 'SwinJSCC_w/_SAandRA': With both SNR and rate adaptation
             return_intermediate_features: Whether to return intermediate feature maps
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Output features, and optionally mask for rate adaptation and/or intermediate features
@@ -1325,7 +1327,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
 
         return {"modulators": modulators, "linears": linears, "sigmoid": nn.Sigmoid()}
 
-    def forward(self, x: torch.Tensor, snr: Optional[float] = None, model_mode: str = "SwinJSCC_w/o_SAandRA", return_intermediate_features: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
+    def forward(self, x: torch.Tensor, snr: Optional[float] = None, model_mode: str = "SwinJSCC_w/o_SAandRA", return_intermediate_features: bool = False, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
         """Forward pass through the decoder.
 
         Args:
@@ -1337,6 +1339,8 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
                 - 'SwinJSCC_w/_RA': With rate adaptation (no SNR adaptation needed)
                 - 'SwinJSCC_w/_SAandRA': With both SNR and rate adaptation
             return_intermediate_features: Whether to return intermediate feature maps
+            *args: Additional positional arguments            
+            **kwargs: Additional keyword arguments
 
         Returns:
             Output images [B, 3, H, W] and optionally intermediate features
