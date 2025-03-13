@@ -7,7 +7,6 @@ composition for complex signal requirements.
 
 from typing import Sequence
 
-from kaira.models.generic.sequential import SequentialModel
 
 from .base import BaseConstraint
 
