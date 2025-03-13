@@ -98,8 +98,8 @@ class BPGCompressor(BaseModel):
 
         # Unpack results
         images = []
-        bits_per_image: List[int] = [] if self.return_bits or self.collect_stats else None
-        compressed_data: List[bytes] = [] if self.return_compressed_data else None
+        bits_per_image: Optional[List[int]] = [] if self.return_bits or self.collect_stats else None
+        compressed_data: Optional[List[bytes]] = [] if self.return_compressed_data else None
 
         for result in results:
             if collect_info:
