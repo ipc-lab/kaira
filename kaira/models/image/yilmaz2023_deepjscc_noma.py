@@ -196,7 +196,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         for i in range(self.num_devices):
             encoder = self.encoders[0 if self.shared_encoder else i]
             device_input = x[:, i, ...]
-            
+
             # Handle encoders with different input formats
             try:
                 # Try tuple input with CSI
@@ -204,15 +204,15 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 tx = encoder(device_input, *args, **kwargs)
-            
+
             tx = self.power_constraint(tx)
             transmissions.append(tx)
-            
+
         x = torch.stack(transmissions, dim=1)
-        
+
         # Apply channel
         x = self.channel((x, csi))
-        
+
         # Decode outputs - support different decoder interfaces
         if self.shared_decoder:
             decoder = self.decoders[0]
@@ -222,7 +222,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             except (TypeError, ValueError):
                 # Fall back to just the input data
                 x_decoded = decoder(x, *args, **kwargs)
-                
+
             # Make sure output has proper device dimension
             if x_decoded.ndim == 4:  # [B, C, H, W]
                 x = x_decoded.unsqueeze(1).expand(-1, self.num_devices, -1, -1, -1)
@@ -239,11 +239,11 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                 except (TypeError, ValueError):
                     # Fall back to just the input data
                     x_decoded = decoder(x, *args, **kwargs)
-                    
+
                 decoded_outputs.append(x_decoded)
-                
+
             x = torch.stack(decoded_outputs, dim=1)
-            
+
         return x
 
     def _forward_perfect_sic(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:

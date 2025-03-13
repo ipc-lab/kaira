@@ -1,9 +1,9 @@
 """DeepJSCC module for Kaira.
 
-This module implements Deep Joint Source-Channel Coding (DeepJSCC), a deep learning
-approach that jointly optimizes source compression and channel coding for efficient
-transmission over noisy channels. The implementation is based on the seminal work
-by Bourtsoulatze et al. and subsequent extensions.
+This module implements Deep Joint Source-Channel Coding (DeepJSCC), a deep learning approach that
+jointly optimizes source compression and channel coding for efficient transmission over noisy
+channels. The implementation is based on the seminal work by Bourtsoulatze et al. and subsequent
+extensions.
 """
 
 from kaira.channels import BaseChannel
@@ -47,7 +47,6 @@ class DeepJSCCModel(SequentialModel):
         constraint (BaseConstraint): Module that applies power constraints to the encoded signal
         channel (BaseChannel): Simulates the communication channel effects
         decoder (BaseModel): Neural network that reconstructs the input from the received signal
-
     """
 
     def __init__(

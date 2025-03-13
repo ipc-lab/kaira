@@ -1339,7 +1339,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
                 - 'SwinJSCC_w/_RA': With rate adaptation (no SNR adaptation needed)
                 - 'SwinJSCC_w/_SAandRA': With both SNR and rate adaptation
             return_intermediate_features: Whether to return intermediate feature maps
-            *args: Additional positional arguments            
+            *args: Additional positional arguments
             **kwargs: Additional keyword arguments
 
         Returns:

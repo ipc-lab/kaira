@@ -1,8 +1,8 @@
 """Multiple Access Channel models for Kaira.
 
-This module implements models for Multiple Access Channel (MAC) scenarios, where multiple
-devices transmit data simultaneously over a shared wireless channel. It provides base classes
-and utilities for implementing various MAC protocols and studying their performance.
+This module implements models for Multiple Access Channel (MAC) scenarios, where multiple devices
+transmit data simultaneously over a shared wireless channel. It provides base classes and utilities
+for implementing various MAC protocols and studying their performance.
 """
 
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -45,17 +45,7 @@ class MultipleAccessChannelModel(BaseModel):
         shared_decoder (bool): Whether devices share the same decoder
     """
 
-    def __init__(
-        self, 
-        channel: BaseChannel,
-        power_constraint: BaseConstraint,
-        encoder: Optional[Type[BaseModel]] = None,
-        decoder: Optional[Type[BaseModel]] = None,
-        num_devices: int = 2,
-        shared_encoder: bool = False,
-        shared_decoder: bool = False,
-        **kwargs: Any
-    ):
+    def __init__(self, channel: BaseChannel, power_constraint: BaseConstraint, encoder: Optional[Type[BaseModel]] = None, decoder: Optional[Type[BaseModel]] = None, num_devices: int = 2, shared_encoder: bool = False, shared_decoder: bool = False, **kwargs: Any):
         """Initialize the MAC model.
 
         Args:
@@ -69,7 +59,7 @@ class MultipleAccessChannelModel(BaseModel):
             **kwargs: Additional arguments passed to encoder/decoder constructors
         """
         super().__init__()
-        
+
         # Basic components
         self.channel = channel
         self.power_constraint = power_constraint
@@ -95,11 +85,7 @@ class MultipleAccessChannelModel(BaseModel):
             else:
                 self.decoders.extend([decoder(**kwargs) for _ in range(num_devices)])
 
-    def encode(
-        self, 
-        inputs: List[torch.Tensor],
-        device_indices: Optional[List[int]] = None
-    ) -> List[torch.Tensor]:
+    def encode(self, inputs: List[torch.Tensor], device_indices: Optional[List[int]] = None) -> List[torch.Tensor]:
         """Encode input signals for transmission.
 
         Applies the corresponding encoder to each device's input signal.
@@ -118,12 +104,9 @@ class MultipleAccessChannelModel(BaseModel):
         """
         if device_indices is None:
             device_indices = range(self.num_devices)
-        
+
         if len(inputs) != len(device_indices):
-            raise ValueError(
-                f"Number of inputs ({len(inputs)}) must match number of "
-                f"device indices ({len(device_indices)})"
-            )
+            raise ValueError(f"Number of inputs ({len(inputs)}) must match number of " f"device indices ({len(device_indices)})")
 
         encoded = []
         for i, x in zip(device_indices, inputs):
@@ -132,11 +115,7 @@ class MultipleAccessChannelModel(BaseModel):
             encoded.append(self.encoders[i](x))
         return encoded
 
-    def decode(
-        self,
-        received: torch.Tensor,
-        device_indices: Optional[List[int]] = None
-    ) -> List[torch.Tensor]:
+    def decode(self, received: torch.Tensor, device_indices: Optional[List[int]] = None) -> List[torch.Tensor]:
         """Decode received signals for each device.
 
         Args:
@@ -160,13 +139,7 @@ class MultipleAccessChannelModel(BaseModel):
             decoded.append(self.decoders[i](received))
         return decoded
 
-    def forward(
-        self,
-        inputs: List[torch.Tensor],
-        csi: Optional[torch.Tensor] = None,
-        noise: Optional[torch.Tensor] = None,
-        device_indices: Optional[List[int]] = None
-    ) -> Union[List[torch.Tensor], Tuple[List[torch.Tensor], Dict[str, Any]]]:
+    def forward(self, inputs: List[torch.Tensor], csi: Optional[torch.Tensor] = None, noise: Optional[torch.Tensor] = None, device_indices: Optional[List[int]] = None) -> Union[List[torch.Tensor], Tuple[List[torch.Tensor], Dict[str, Any]]]:
         """Process inputs through the complete MAC system.
 
         The forward pass consists of:
@@ -211,12 +184,7 @@ class MultipleAccessChannelModel(BaseModel):
 
         return outputs
 
-    def set_encoder(
-        self,
-        encoder: Type[BaseModel],
-        device_index: Optional[int] = None,
-        **kwargs: Any
-    ) -> None:
+    def set_encoder(self, encoder: Type[BaseModel], device_index: Optional[int] = None, **kwargs: Any) -> None:
         """Set or replace encoder for specific device(s).
 
         Args:
@@ -238,12 +206,7 @@ class MultipleAccessChannelModel(BaseModel):
             else:
                 self.encoders = nn.ModuleList([encoder(**kwargs) for _ in range(self.num_devices)])
 
-    def set_decoder(
-        self,
-        decoder: Type[BaseModel],
-        device_index: Optional[int] = None,
-        **kwargs: Any
-    ) -> None:
+    def set_decoder(self, decoder: Type[BaseModel], device_index: Optional[int] = None, **kwargs: Any) -> None:
         """Set or replace decoder for specific device(s).
 
         Args:

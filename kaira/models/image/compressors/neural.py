@@ -172,7 +172,7 @@ class NeuralCompressor(BaseModel):
         best_qualities = torch.zeros(x.shape[0], dtype=torch.int64, device=x.device)
         x_hat = torch.empty_like(x)
         output_bits = torch.zeros(x.shape[0], device=x.device)
-        
+
         # Modified line: Use separate variables instead of Optional type
         optimal_compressed_data = None
         if self.return_compressed_data:

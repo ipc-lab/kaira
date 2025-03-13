@@ -26,6 +26,7 @@ Reference:
 
 
 from typing import Any
+
 import torch
 from compressai.layers import (
     AttentionBlock,
@@ -638,7 +639,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
-    """A specialized Wyner-Ziv model for neural joint source-channel coding with side information. :cite:`yilmaz2024deepjsccwz,wyner1976rate`.
+    """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
+    :cite:`yilmaz2024deepjsccwz,wyner1976rate`.
 
     This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
     deep learning techniques to the Wyner-Ziv coding paradigm (lossy compression with decoder-side
@@ -708,14 +710,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(
-        self,
-        source: torch.Tensor,
-        side_info: torch.Tensor,
-        csi: torch.Tensor,
-        *args: Any,
-        **kwargs: Any
-    ) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:

@@ -1,10 +1,10 @@
 """Branching model for conditional processing paths.
 
-This module provides the BranchingModel class which enables dynamic routing of inputs
-through different processing paths based on runtime conditions.
+This module provides the BranchingModel class which enables dynamic routing of inputs through
+different processing paths based on runtime conditions.
 """
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Tuple
 
 from ..base import BaseModel
 from ..registry import ModelRegistry
@@ -49,12 +49,7 @@ class BranchingModel(BaseModel):
         self.branches = {}  # Dict mapping names to (condition, model) tuples
         self.default_branch = None
 
-    def add_branch(
-        self,
-        name: str,
-        condition: Callable[[Any], bool],
-        model: BaseModel
-    ) -> None:
+    def add_branch(self, name: str, condition: Callable[[Any], bool], model: BaseModel) -> None:
         """Add a new conditional branch.
 
         Args:
@@ -93,13 +88,7 @@ class BranchingModel(BaseModel):
             raise KeyError(f"Branch '{name}' not found")
         del self.branches[name]
 
-    def forward(
-        self,
-        x: Any,
-        return_branch: bool = False,
-        *args: Any,
-        **kwargs: Any
-    ) -> Any:
+    def forward(self, x: Any, return_branch: bool = False, *args: Any, **kwargs: Any) -> Any:
         """Process input through the appropriate branch.
 
         Evaluates branch conditions in registration order and processes input
@@ -130,9 +119,7 @@ class BranchingModel(BaseModel):
             output = self.default_branch(x, *args, **kwargs)
             return (output, "default") if return_branch else output
 
-        raise RuntimeError(
-            "No matching branch conditions and no default branch set"
-        )
+        raise RuntimeError("No matching branch conditions and no default branch set")
 
     def get_branch(self, name: str) -> Tuple[Callable[[Any], bool], BaseModel]:
         """Get a branch's condition and model.

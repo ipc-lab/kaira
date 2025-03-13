@@ -1,4 +1,4 @@
-from typing import Any, Union, Tuple
+from typing import Any, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -166,7 +166,7 @@ class Tung2022DeepJSCCQ2Encoder(BaseModel):
         """Forward pass through the encoder.
 
         Args:
-            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the input image tensor 
+            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the input image tensor
                 or a tuple of (input tensor, SNR tensor)
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
@@ -242,7 +242,7 @@ class Tung2022DeepJSCCQ2Decoder(BaseModel):
         """Forward pass through the decoder.
 
         Args:
-            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the encoded latent representation tensor 
+            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the encoded latent representation tensor
                 or a tuple of (encoded tensor, SNR tensor)
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments

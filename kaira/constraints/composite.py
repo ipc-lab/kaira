@@ -12,13 +12,11 @@ from kaira.models.generic.sequential import SequentialModel
 from .base import BaseConstraint
 
 
-class CompositeConstraint(BaseConstraint, SequentialModel):
+class CompositeConstraint(BaseConstraint):
     """Applies multiple signal constraints in sequence as a single unified constraint.
 
     This class combines multiple BaseConstraint objects into a single constraint that applies
-    each component constraint sequentially. It inherits from both BaseConstraint and
-    SequentialModel to provide constraint functionality with sequential processing
-    capabilities.
+    each component constraint sequentially. It inherits from both BaseConstraint to provide constraint functionality.
 
     The composite pattern allows complex constraint combinations to be treated as a
     single constraint object, enabling modular constraint creation and reuse.
@@ -63,3 +61,14 @@ class CompositeConstraint(BaseConstraint, SequentialModel):
             raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
 
         self.add_step(constraint)
+
+    def forward(self, x):
+        """Apply the composite constraint to the input signal.
+
+        Args:
+            x: Input signal to constrain
+
+        Returns:
+            Constrained signal after applying all component constraints
+        """
+        return super().forward(x)

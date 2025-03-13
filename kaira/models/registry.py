@@ -1,8 +1,8 @@
 """Model registry for Kaira.
 
-This module provides a central registry for all models in the Kaira framework.
-It enables dynamic registration and creation of models by name, making it easier
-to configure and instantiate models at runtime.
+This module provides a central registry for all models in the Kaira framework. It enables dynamic
+registration and creation of models by name, making it easier to configure and instantiate models
+at runtime.
 """
 
 from typing import Callable, Dict, Optional, Type
@@ -81,10 +81,12 @@ class ModelRegistry:
             >>> class GenericNameThatNeedsBetterRegistryKey(BaseModel):
             ...     # implementation
         """
+
         def decorator(model_class: Type[BaseModel]) -> Type[BaseModel]:
             model_name = name if name is not None else model_class.__name__.lower()
             cls.register(model_name, model_class)
             return model_class
+
         return decorator
 
     @classmethod
@@ -101,10 +103,7 @@ class ModelRegistry:
             KeyError: If no model is registered under the given name
         """
         if name not in cls._models:
-            raise KeyError(
-                f"Model '{name}' not found in registry. "
-                f"Available models: {list(cls._models.keys())}"
-            )
+            raise KeyError(f"Model '{name}' not found in registry. " f"Available models: {list(cls._models.keys())}")
         return cls._models[name]
 
     @classmethod

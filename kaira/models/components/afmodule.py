@@ -1,6 +1,7 @@
+from typing import Any
+
 import torch
 from torch import nn
-from typing import Any, Tuple
 
 from ..registry import ModelRegistry
 

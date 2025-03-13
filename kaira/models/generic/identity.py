@@ -1,5 +1,6 @@
-import torch
 from typing import Any
+
+import torch
 
 from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry

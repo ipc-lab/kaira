@@ -1,12 +1,12 @@
 """Base model definitions for deep learning architectures.
 
-This module provides the foundation for all model implementations in the Kaira framework.
-The BaseModel class implements common functionality and enforces a consistent interface
-across different model types.
+This module provides the foundation for all model implementations in the Kaira framework. The
+BaseModel class implements common functionality and enforces a consistent interface across
+different model types.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, List, Optional
+from typing import Any
 
 from torch import nn
 
@@ -14,13 +14,12 @@ from torch import nn
 class BaseModel(nn.Module, ABC):
     """Abstract base class for all models in the Kaira framework.
 
-    This class extends PyTorch's nn.Module and adds framework-specific functionality.
-    All models should inherit from this class to ensure compatibility with the framework's
-    training, evaluation, and inference pipelines.
+    This class extends PyTorch's nn.Module and adds framework-specific functionality. All models
+    should inherit from this class to ensure compatibility with the framework's training,
+    evaluation, and inference pipelines.
 
-    The class provides a consistent interface for model implementation while allowing
-    flexibility in architecture design. It enforces proper initialization and
-    forward pass implementation.
+    The class provides a consistent interface for model implementation while allowing flexibility
+    in architecture design. It enforces proper initialization and forward pass implementation.
     """
 
     def __init__(self):
@@ -29,14 +28,13 @@ class BaseModel(nn.Module, ABC):
         self.steps = []
 
     @abstractmethod
-    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
+    def forward(self, *args: Any, **kwargs: Any) -> Any:
         """Define the forward pass computation.
 
         This method should be implemented by all subclasses to define how input data
         is processed through the model to produce output.
 
         Args:
-            input_data: The input to process through the model
             *args: Variable positional arguments for flexible input handling
             **kwargs: Variable keyword arguments for optional parameters
 

@@ -8,6 +8,7 @@ layers for iterative image quality improvement.
 
 
 from typing import Any, Optional, Tuple
+
 import torch
 import torch.nn as nn
 from compressai.layers import GDN
