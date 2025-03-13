@@ -11,6 +11,16 @@ from kaira.models.registry import ModelRegistry
 
 
 class _Mlp(nn.Module):
+    """Multilayer perceptron implementation with two fully connected layers.
+
+    Args:
+        in_features: Number of input features
+        hidden_features: Number of hidden features (defaults to in_features)
+        out_features: Number of output features (defaults to in_features)
+        act_layer: Activation layer (defaults to GELU)
+        drop: Dropout probability (defaults to 0.0)
+    """
+
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.0):
         super().__init__()
         out_features = out_features or in_features
@@ -21,6 +31,17 @@ class _Mlp(nn.Module):
         self.drop = nn.Dropout(drop)
 
     def forward(self, x):
+        """Forward pass of the MLP module.
+
+        Applies the sequence of operations: linear transformation, activation,
+        dropout, second linear transformation, and final dropout.
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            Processed tensor after applying all MLP operations
+        """
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
@@ -30,12 +51,14 @@ class _Mlp(nn.Module):
 
 
 def _window_partition(x, window_size):
-    """
+    """Partition the input tensor into non-overlapping windows.
+
     Args:
-        x: (B, H, W, C)
-        window_size (int): window size
+        x: Input tensor of shape (B, H, W, C)
+        window_size: Size of each window (both height and width)
+
     Returns:
-        windows: (num_windows*B, window_size, window_size, C)
+        windows: Partitioned windows of shape (num_windows*B, window_size, window_size, C)
     """
     B, H, W, C = x.shape
     x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
@@ -44,14 +67,16 @@ def _window_partition(x, window_size):
 
 
 def _window_reverse(windows, window_size, H, W):
-    """
+    """Reverse the window partition operation.
+
     Args:
-        windows: (num_windows*B, window_size, window_size, C)
-        window_size (int): Window size
-        H (int): Height of image
-        W (int): Width of image
+        windows: Window tensor of shape (num_windows*B, window_size, window_size, C)
+        window_size: Size of each window (both height and width)
+        H: Height of the original input
+        W: Width of the original input
+
     Returns:
-        x: (B, H, W, C)
+        x: Reconstructed tensor of shape (B, H, W, C)
     """
     B = int(windows.shape[0] / (H * W / window_size / window_size))
     x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
@@ -63,14 +88,15 @@ class _WindowAttention(nn.Module):
     r"""Window based multi-head self attention (W-MSA) module with relative position bias.
 
     It supports both of shifted and non-shifted window.
+
     Args:
-        dim (int): Number of input channels.
-        window_size (tuple[int]): The height and width of the window.
-        num_heads (int): Number of attention heads.
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
-        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
-        proj_drop (float, optional): Dropout ratio of output. Default: 0.0
+        dim: Number of input channels
+        window_size: The height and width of the window
+        num_heads: Number of attention heads
+        qkv_bias: If True, add a learnable bias to query, key, value (default: True)
+        qk_scale: Override default qk scale of head_dim ** -0.5 if set (default: None)
+        attn_drop: Dropout ratio of attention weight (default: 0.0)
+        proj_drop: Dropout ratio of output (default: 0.0)
     """
 
     def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0.0, proj_drop=0.0):
@@ -95,7 +121,7 @@ class _WindowAttention(nn.Module):
         relative_coords[:, :, 1] += self.window_size[1] - 1
         relative_coords[:, :, 0] *= 2 * self.window_size[1] - 1
         relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
-        self.register_buffer("relative_position_index", relative_position_index)
+        self.registerBuffer("relative_position_index", relative_position_index)
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
@@ -106,10 +132,16 @@ class _WindowAttention(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, add_token=True, token_num=0, mask=None):
-        """
+        """Forward pass for window-based multi-head self-attention.
+
         Args:
-            x: input features with shape of (num_windows*B, N, C)
-            mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
+            x: Input features with shape (num_windows*B, N, C)
+            add_token: Whether to add token-wise position bias (default: True)
+            token_num: Number of tokens to offset when applying position bias (default: 0)
+            mask: Optional attention mask with shape (num_windows, Wh*Ww, Wh*Ww) (default: None)
+
+        Returns:
+            Tensor with same shape as input after self-attention
         """
         B_, N, C = x.shape
 
@@ -146,9 +178,25 @@ class _WindowAttention(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return a string containing extra representation of the module.
+
+        This is used when printing the module details, showing key parameters
+        such as dimension, window size, and number of heads.
+
+        Returns:
+            String with formatted module parameters
+        """
         return f"dim={self.dim}, window_size={self.window_size}, num_heads={self.num_heads}"
 
     def flops(self, N):
+        """Calculate floating point operations (FLOPs) for this module.
+
+        Args:
+            N: Number of tokens in the window
+
+        Returns:
+            Total FLOPs required for one attention operation with N tokens
+        """
         # calculate flops for 1 window with token length of N
         flops = 0
         # qkv = self.qkv(x)
@@ -165,10 +213,14 @@ class _WindowAttention(nn.Module):
 class _PatchMerging(nn.Module):
     r"""Patch Merging Layer.
 
+    This layer merges 2x2 neighboring patches into one, halving the spatial resolution
+    and increasing the channel dimension.
+
     Args:
-        input_resolution (tuple[int]): Resolution of input feature.
-        dim (int): Number of input channels.
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        dim: Number of input channels
+        out_dim: Number of output channels (defaults to dim*2)
+        norm_layer: Normalization layer (default: nn.LayerNorm)
     """
 
     def __init__(self, input_resolution, dim, out_dim=None, norm_layer=nn.LayerNorm):
@@ -208,9 +260,24 @@ class _PatchMerging(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return extra representation string for the module.
+
+        Includes information about input resolution and dimension.
+
+        Returns:
+            String representation with module parameters
+        """
         return f"input_resolution={self.input_resolution}, dim={self.dim}"
 
     def flops(self):
+        """Calculate FLOPs for patch merging operation.
+
+        Computes the total floating point operations for the downsampling
+        and dimension change operations.
+
+        Returns:
+            Total FLOPs required for patch merging
+        """
         H, W = self.input_resolution
         flops = H * W * self.dim
         flops += (H // 2) * (W // 2) * 4 * self.dim * 2 * self.dim
@@ -218,6 +285,17 @@ class _PatchMerging(nn.Module):
 
 
 class _PatchMerging4x(nn.Module):
+    """Patch Merging for 4x downsampling.
+
+    Applies patch merging twice to achieve 4x downsampling of spatial dimensions.
+
+    Args:
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        dim: Number of input channels
+        norm_layer: Normalization layer (default: nn.LayerNorm)
+        use_conv: Whether to use convolution for downsampling (default: False)
+    """
+
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm, use_conv=False):
         super().__init__()
         H, W = input_resolution
@@ -225,6 +303,16 @@ class _PatchMerging4x(nn.Module):
         self.patch_merging2 = _PatchMerging((H // 2, W // 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
 
     def forward(self, x, H=None, W=None):
+        """Forward pass for 4x patch merging.
+
+        Args:
+            x: Input tensor
+            H: Optional override for height resolution (default: None)
+            W: Optional override for width resolution (default: None)
+
+        Returns:
+            Downsampled feature map with 1/4 spatial dimensions
+        """
         if H is None:
             H, W = self.input_resolution
         x = self.patch_merging1(x, H, W)
@@ -233,12 +321,16 @@ class _PatchMerging4x(nn.Module):
 
 
 class _PatchReverseMerging(nn.Module):
-    r"""Patch Merging Layer.
+    r"""Patch Reverse Merging Layer.
+
+    This layer performs the reverse operation of PatchMerging, expanding spatial dimensions
+    by 2x while reducing channel dimensions.
 
     Args:
-        input_resolution (tuple[int]): Resolution of input feature.
-        dim (int): Number of input channels.
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        dim: Number of input channels
+        out_dim: Number of output channels
+        norm_layer: Normalization layer (default: nn.LayerNorm)
     """
 
     def __init__(self, input_resolution, dim, out_dim, norm_layer=nn.LayerNorm):
@@ -270,9 +362,24 @@ class _PatchReverseMerging(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return extra representation string for the module.
+
+        Includes information about input resolution and dimension.
+
+        Returns:
+            String representation with module parameters
+        """
         return f"input_resolution={self.input_resolution}, dim={self.dim}"
 
     def flops(self):
+        """Calculate FLOPs for patch reverse merging operation.
+
+        Computes the total floating point operations for the upsampling
+        and dimension change operations.
+
+        Returns:
+            Total FLOPs required for patch reverse merging
+        """
         H, W = self.input_resolution
         flops = H * 2 * W * 2 * self.dim // 4
         flops += (H * 2) * (W * 2) * self.dim // 4 * self.dim
@@ -280,6 +387,17 @@ class _PatchReverseMerging(nn.Module):
 
 
 class _PatchReverseMerging4x(nn.Module):
+    """Patch Reverse Merging for 4x upsampling.
+
+    Applies patch reverse merging twice to achieve 4x upsampling of spatial dimensions.
+
+    Args:
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        dim: Number of input channels
+        norm_layer: Normalization layer (default: nn.LayerNorm)
+        use_conv: Whether to use transposed convolution for upsampling (default: False)
+    """
+
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm, use_conv=False):
         super().__init__()
         self.use_conv = use_conv
@@ -290,6 +408,16 @@ class _PatchReverseMerging4x(nn.Module):
         self.patch_reverse_merging2 = _PatchReverseMerging((H * 2, W * 2), dim, norm_layer=nn.LayerNorm, use_conv=use_conv)
 
     def forward(self, x, H=None, W=None):
+        """Forward pass for 4x patch reverse merging.
+
+        Args:
+            x: Input tensor
+            H: Optional override for height resolution (default: None)
+            W: Optional override for width resolution (default: None)
+
+        Returns:
+            Upsampled feature map with 4x spatial dimensions
+        """
         if H is None:
             H, W = self.input_resolution
         x = self.patch_reverse_merging1(x, H, W)
@@ -297,9 +425,24 @@ class _PatchReverseMerging4x(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return extra representation string for the module.
+
+        Includes information about input resolution and dimension.
+
+        Returns:
+            String representation with module parameters
+        """
         return f"input_resolution={self.input_resolution}, dim={self.dim}"
 
     def flops(self):
+        """Calculate FLOPs for 4x patch reverse merging operation.
+
+        Computes the total floating point operations for the 4x upsampling
+        and dimension change operations.
+
+        Returns:
+            Total FLOPs required for 4x patch reverse merging
+        """
         H, W = self.input_resolution
         flops = H * 2 * W * 2 * self.dim // 4
         flops += (H * 2) * (W * 2) * self.dim // 4 * self.dim
@@ -307,6 +450,18 @@ class _PatchReverseMerging4x(nn.Module):
 
 
 class _PatchEmbed(nn.Module):
+    """Image to Patch Embedding.
+
+    Splits an image into non-overlapping patches and then projects each patch into an embedding vector.
+
+    Args:
+        img_size: Size of input image (default: 224)
+        patch_size: Size of each patch (default: 4)
+        in_chans: Number of input channels (default: 3)
+        embed_dim: Dimension of the embedding vector (default: 96)
+        norm_layer: Normalization layer (default: None)
+    """
+
     def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
         img_size = to_2tuple(img_size)
@@ -327,6 +482,17 @@ class _PatchEmbed(nn.Module):
             self.norm = None
 
     def forward(self, x):
+        """Forward pass for patch embedding.
+
+        Takes an image tensor and embeds it into patch-wise tokens with
+        projected dimensions.
+
+        Args:
+            x: Input image tensor [B, C, H, W]
+
+        Returns:
+            Patch embedding tensor [B, num_patches, embed_dim]
+        """
         B, C, H, W = x.shape
         # assert H == self.img_size[0] and W == self.img_size[1], \
         #     f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
@@ -336,6 +502,14 @@ class _PatchEmbed(nn.Module):
         return x
 
     def flops(self):
+        """Calculate FLOPs for patch embedding operation.
+
+        Computes the total floating point operations for projecting
+        image patches to embedding vectors.
+
+        Returns:
+            Total FLOPs required for patch embedding
+        """
         Ho, Wo = self.patches_resolution
         flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
         if self.norm is not None:
@@ -344,6 +518,24 @@ class _PatchEmbed(nn.Module):
 
 
 class _SwinTransformerBlock(nn.Module):
+    """Swin Transformer Block.
+
+    This block consists of a window-based multi-head self-attention module and a
+    feed-forward network, with layer normalization applied before each module.
+
+    Args:
+        dim: Number of input channels
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        num_heads: Number of attention heads
+        window_size: Size of attention window (default: 7)
+        shift_size: Size of shifting for SW-MSA (default: 0)
+        mlp_ratio: Ratio of mlp hidden dim to embedding dim (default: 4.0)
+        qkv_bias: If True, add a learnable bias to query, key, value (default: True)
+        qk_scale: Override default qk scale of head_dim ** -0.5 if set (default: None)
+        act_layer: Activation layer (default: nn.GELU)
+        norm_layer: Normalization layer (default: nn.LayerNorm)
+    """
+
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0, mlp_ratio=4.0, qkv_bias=True, qk_scale=None, act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.dim = dim
@@ -384,9 +576,24 @@ class _SwinTransformerBlock(nn.Module):
         else:
             attn_mask = None
 
-        self.register_buffer("attn_mask", attn_mask)
+        self.registerBuffer("attn_mask", attn_mask)
 
     def forward(self, x):
+        """Forward pass of the Swin Transformer block.
+
+        Applies the following operations:
+        1. Layer normalization and shortcut connection
+        2. Window partitioning (with optional cyclic shift)
+        3. Self-attention within windows
+        4. Window reverse and cyclic shift reversal if applied
+        5. Feed-forward network with second normalization
+
+        Args:
+            x: Input tensor [B, H*W, C]
+
+        Returns:
+            Output tensor with same shape after self-attention and FFN
+        """
         H, W = self.input_resolution
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
@@ -425,9 +632,24 @@ class _SwinTransformerBlock(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return extra representation string for the block.
+
+        Includes key parameters like dimensions, resolution, and attention settings.
+
+        Returns:
+            String representation with block parameters
+        """
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " f"window_size={self.window_size}, shift_size={self.shift_size}, mlp_ratio={self.mlp_ratio}"
 
     def flops(self):
+        """Calculate FLOPs for the entire Swin Transformer block.
+
+        Computes the total floating point operations for normalization,
+        window attention, and feed-forward network.
+
+        Returns:
+            Total FLOPs required for one block
+        """
         flops = 0
         H, W = self.input_resolution
         # norm1
@@ -442,6 +664,11 @@ class _SwinTransformerBlock(nn.Module):
         return flops
 
     def update_mask(self):
+        """Update the attention mask based on current input resolution.
+
+        This is necessary when the input resolution changes, as the attention mask needs to be
+        recomputed for the new dimensions.
+        """
         if self.shift_size > 0:
             # calculate attention mask for SW-MSA
             H, W = self.input_resolution
@@ -464,6 +691,25 @@ class _SwinTransformerBlock(nn.Module):
 
 
 class _BasicLayer(nn.Module):
+    """A basic Swin Transformer layer for one stage.
+
+    This layer consists of a series of Swin Transformer blocks followed by an optional
+    patch merging (downsampling) layer.
+
+    Args:
+        dim: Number of input channels
+        out_dim: Number of output channels
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        depth: Number of blocks in this layer
+        num_heads: Number of attention heads
+        window_size: Size of attention window
+        mlp_ratio: Ratio of mlp hidden dim to embedding dim (default: 4.0)
+        qkv_bias: If True, add a learnable bias to query, key, value (default: True)
+        qk_scale: Override default qk scale of head_dim ** -0.5 if set (default: None)
+        norm_layer: Normalization layer (default: nn.LayerNorm)
+        downsample: Downsampling layer at the end of the layer (default: None)
+    """
+
     def __init__(self, dim, out_dim, input_resolution, depth, num_heads, window_size, mlp_ratio=4.0, qkv_bias=True, qk_scale=None, norm_layer=nn.LayerNorm, downsample=None):
         super().__init__()
         self.dim = dim
@@ -485,6 +731,16 @@ class _BasicLayer(nn.Module):
             self.downsample = None
 
     def forward(self, x):
+        """Forward pass of the basic Swin Transformer layer.
+
+        Applies optional downsampling followed by a series of transformer blocks.
+
+        Args:
+            x: Input feature tensor
+
+        Returns:
+            Processed feature tensor after all blocks
+        """
         if self.downsample is not None:
             x = self.downsample(x)
         for _, blk in enumerate(self.blocks):
@@ -492,9 +748,24 @@ class _BasicLayer(nn.Module):
         return x
 
     def extra_repr(self) -> str:
+        """Return extra representation string for the layer.
+
+        Includes information about dimension, resolution, and depth.
+
+        Returns:
+            String representation with layer parameters
+        """
         return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
 
     def flops(self):
+        """Calculate FLOPs for the entire layer.
+
+        Computes the total floating point operations for all blocks
+        and the optional downsampling operation.
+
+        Returns:
+            Total FLOPs required for the layer
+        """
         flops = 0
         for blk in self.blocks:
             flops += blk.flops()
@@ -503,6 +774,12 @@ class _BasicLayer(nn.Module):
         return flops
 
     def update_resolution(self, H, W):
+        """Update the resolution of each block in the layer.
+
+        Args:
+            H: New height resolution
+            W: New width resolution
+        """
         for _, blk in enumerate(self.blocks):
             blk.input_resolution = (H, W)
             blk.update_mask()
@@ -513,8 +790,11 @@ class _BasicLayer(nn.Module):
 class _AdaptiveModulator(nn.Module):
     """Adaptive modulator for rate and SNR adaptation.
 
+    This module learns to generate modulation coefficients based on input SNR or rate values.
+    These coefficients are used to adaptively scale features for different channel conditions.
+
     Args:
-        hidden_dim: Hidden dimension size for the modulator
+        hidden_dim: Hidden dimension size for the modulator network
     """
 
     def __init__(self, hidden_dim: int):
@@ -538,7 +818,8 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
     """Swin Transformer-based Joint Source-Channel Coding Encoder :cite:`yang2024swinjscc`.
 
     This encoder uses a Swin Transformer architecture with adaptive modulation capabilities for
-    signal-to-noise ratio (SNR) and rate adaptation.
+    signal-to-noise ratio (SNR) and rate adaptation. It transforms input images into a latent
+    representation optimized for transmission over noisy channels.
     """
 
     def __init__(
@@ -748,7 +1029,21 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         return result
 
     def _apply_adaptation(self, x: torch.Tensor, value: float, network: Dict, batch_size: int, spatial_dim: int) -> torch.Tensor:
-        """Common adaptation logic for SNR or rate adaptation."""
+        """Common adaptation logic for SNR or rate adaptation.
+
+        This method applies the adaptive modulation network to scale features based on
+        an input value (SNR or rate).
+
+        Args:
+            x: Feature tensor to modulate
+            value: The adaptation value (SNR in dB or rate in bits)
+            network: Dictionary containing the adaptation network modules
+            batch_size: Batch size for processing
+            spatial_dim: Spatial dimension of features
+
+        Returns:
+            Tuple containing modulated features and modulation values
+        """
         device = x.device
         value_tensor = torch.tensor(value, dtype=torch.float).to(device)
         value_batch = value_tensor.unsqueeze(0).expand(batch_size, -1)
@@ -898,8 +1193,8 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
 class Yang2024DeepJSCCSwinDecoder(BaseModel):
     """Swin Transformer-based Joint Source-Channel Coding Decoder :cite:`yang2024swinjscc`.
 
-    This decoder takes the encoded representation from Yang2024SwinJSCCEncoder and reconstructs the
-    original image. It supports SNR adaptation for robust performance across varying channel
+    This decoder takes the encoded representation from Yang2024DeepJSCCSwinEncoder and reconstructs
+    the original image. It supports SNR adaptation for robust performance across varying channel
     conditions.
     """
 
@@ -1067,7 +1362,17 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         return result
 
     def _forward_base(self, x: torch.Tensor, intermediate_features: Optional[Dict] = None) -> torch.Tensor:
-        """Base forward pass without adaptation."""
+        """Base forward pass without adaptation.
+
+        Processes input features through the decoder layers without applying SNR adaptation.
+
+        Args:
+            x: Input features from encoder
+            intermediate_features: Optional dictionary to store intermediate activations
+
+        Returns:
+            Decoded image tensor of shape [B, 3, H, W]
+        """
         if self.head is not None:
             x = self.head(x)
             if intermediate_features is not None:
@@ -1088,7 +1393,18 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         return x
 
     def _forward_with_snr(self, x: torch.Tensor, snr: float, intermediate_features: Optional[Dict] = None) -> torch.Tensor:
-        """Forward pass with SNR adaptation."""
+        """Forward pass with SNR adaptation.
+
+        Applies SNR-dependent modulation before processing features through decoder layers.
+
+        Args:
+            x: Input features from encoder
+            snr: Signal-to-noise ratio value in dB
+            intermediate_features: Optional dictionary to store intermediate activations
+
+        Returns:
+            Decoded image tensor of shape [B, 3, H, W]
+        """
         B, L, C = x.size()
         device = x.device
 
@@ -1191,18 +1507,39 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
 class nullcontext:
     """A context manager that does nothing.
 
-    Used as a placeholder.
+    Used as a placeholder when no context manager is needed but the code structure expects one.
+    This is particularly useful for conditional context management.
     """
 
     def __enter__(self):
+        """Enter the context, returning None.
+
+        This method is called when executing the `with` statement.
+        Since this is a null context manager, it performs no action.
+        """
         pass
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context, always returning False to propagate exceptions.
+
+        Args:
+            exc_type: Exception type if an exception occurred, otherwise None
+            exc_val: Exception value if an exception occurred, otherwise None
+            exc_tb: Exception traceback if an exception occurred, otherwise None
+
+        Returns:
+            False implicitly (None), which means any exceptions will be propagated
+        """
         pass
 
 
 class SwinJSCCConfig:
-    """Configuration object for SwinJSCC encoder and decoder."""
+    """Configuration object for SwinJSCC encoder and decoder.
+
+    This class provides a centralized way to manage configuration parameters for both the encoder
+    and decoder models, with methods to generate the appropriate keyword arguments for model
+    initialization.
+    """
 
     def __init__(
         self,
@@ -1325,13 +1662,16 @@ class SwinJSCCConfig:
 def create_swin_jscc_models(config: SwinJSCCConfig, channel_dim: int, device: Optional[torch.device] = None) -> Tuple[Yang2024DeepJSCCSwinEncoder, Yang2024DeepJSCCSwinDecoder]:
     """Create a pair of SwinJSCC encoder and decoder models.
 
+    This is a convenience function that creates and initializes both encoder and decoder
+    models from the same configuration, ensuring compatibility between them.
+
     Args:
         config: Configuration object for the models
         channel_dim: Dimension of the bottleneck/channel
-        device: Device to create the models on
+        device: Device to create the models on (default: None)
 
     Returns:
-        Encoder and decoder models
+        A tuple containing the encoder and decoder models
     """
     # Create encoder
     encoder = create_encoder(**config.get_encoder_kwargs(channel_dim))
@@ -1348,24 +1688,47 @@ def create_swin_jscc_models(config: SwinJSCCConfig, channel_dim: int, device: Op
 
 
 def create_encoder(**kwargs) -> Yang2024DeepJSCCSwinEncoder:
-    """Create a Swin JSCC encoder model with the given parameters."""
+    """Create a Swin JSCC encoder model with the given parameters.
+
+    This is a simple factory function to instantiate an encoder model.
+
+    Args:
+        **kwargs: Keyword arguments to pass to the encoder constructor
+
+    Returns:
+        An initialized Yang2024DeepJSCCSwinEncoder instance
+    """
     return Yang2024DeepJSCCSwinEncoder(**kwargs)
 
 
 def create_decoder(**kwargs) -> Yang2024DeepJSCCSwinDecoder:
-    """Create a Swin JSCC decoder model with the given parameters."""
+    """Create a Swin JSCC decoder model with the given parameters.
+
+    This is a simple factory function to instantiate a decoder model.
+
+    Args:
+        **kwargs: Keyword arguments to pass to the decoder constructor
+
+    Returns:
+        An initialized Yang2024DeepJSCCSwinDecoder instance
+    """
     return Yang2024DeepJSCCSwinDecoder(**kwargs)
 
 
 def build_model(config):
-    """Build and initialize SwinJSCC models based on config. Validates the model by running a test
-    input and reports stats.
+    """Build and initialize SwinJSCC models based on config.
+
+    Validates the model by running a test input and reports statistics. This function
+    handles the entire process of creating and initializing the model with error handling.
 
     Args:
         config: Configuration object with encoder_kwargs and device
 
     Returns:
         The built encoder model
+
+    Raises:
+        Exception: If model building fails
     """
     logger = logging.getLogger(__name__)
 
