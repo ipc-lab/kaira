@@ -80,6 +80,9 @@ They apply noise, distortion, fading, and other effects that impact signal quali
    BinarySymmetricChannel
    BinaryErasureChannel
    BinaryZChannel
+   
+   # Registry
+   ChannelRegistry
 
 .. seealso::
    :class:`~kaira.modulations.BaseModulator` for modulation schemes that prepare signals for channel transmission.
@@ -111,6 +114,13 @@ These include power limitations, hardware restrictions, and regulatory requireme
    # Signal constraints
    PeakAmplitudeConstraint
    SpectralMaskConstraint
+   
+   # Basic functional constraints
+   IdentityConstraint
+   LambdaConstraint
+   
+   # Registry
+   ConstraintRegistry
 
 Constraint Utilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -160,6 +170,9 @@ They quantify performance in terms of accuracy, fidelity, and perceptual quality
    BER
    BlockErrorRate
    BLER
+   
+   # Registry
+   MetricRegistry
 
 Metric Utilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -175,42 +188,6 @@ Helper functions for working with metrics and formatting results.
 
    compute_multiple_metrics
    format_metric_results
-   visualize_metrics_comparison
-   benchmark_metrics
-   batch_metrics_to_table
-   print_metric_table
-   summarize_metrics_over_batches
-
-Metric Factories
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Factory functions to simplify creation of commonly used metric combinations.
-
-.. currentmodule:: kaira.metrics
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   create_image_quality_metrics
-   create_composite_metric
-
-Metric Registry
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Registry system for dynamic metric creation and discovery.
-
-.. currentmodule:: kaira.metrics
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   register_metric
-   create_metric
-   list_metrics
 
 Models
 ------------
@@ -226,7 +203,29 @@ These form the core of learning-based communication systems.
    :nosignatures:
 
    BaseModel
+   ConfigurableModel
+   DeepJSCCModel
+   FeedbackChannelModel
+   WynerZivModel
    ModelRegistry
+
+Generic Models
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Generic model implementations that serve as building blocks for more complex architectures.
+
+.. currentmodule:: kaira.models.generic
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   IdentityModel
+   SequentialModel
+   ParallelModel
+   BranchingModel
+   LambdaModel
 
 Model Components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -240,8 +239,21 @@ Reusable neural network building blocks for constructing communication models.
    :template: class.rst
    :nosignatures:
 
-   # Common neural network components for building models
    AFModule
+
+Binary Models
+^^^^^^^^^^^^^^^^^^^^
+
+Models specialized for binary data transmission.
+
+.. currentmodule:: kaira.models.binary
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   Kurmukova2025TransCoder
 
 Image Models
 ^^^^^^^^^^^^^^^^^^^^
@@ -255,11 +267,27 @@ Models specialized for image transmission and reconstruction.
    :template: class.rst
    :nosignatures:
 
-   # Image-specific neural network models
-   DeepJSCCQEncoder
-   DeepJSCCQDecoder
-   DeepJSCCQ2Encoder
-   DeepJSCCQ2Decoder
+   Tung2022DeepJSCCQEncoder
+   Tung2022DeepJSCCQDecoder
+   Tung2022DeepJSCCQ2Encoder
+   Tung2022DeepJSCCQ2Decoder
+   Yang2024DeepJSCCSwinEncoder
+   Yang2024DeepJSCCSwinDecoder
+   Yilmaz2023DeepJSCCNOMAModel
+
+Image Compressors
+'''''''''''''''''''''''''''''
+
+Specialized image compression components.
+
+.. currentmodule:: kaira.models.image.compressors
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BPGCompressor
 
 Losses
 ------------
@@ -275,11 +303,7 @@ Loss functions used for training neural network models with different optimizati
 
    BaseLoss
    CompositeLoss
-   adversarial
-   audio
-   text
-   image
-   multimodal
+   LossRegistry
 
 
 Modulations
@@ -302,6 +326,7 @@ Base classes and simple modulation schemes.
 
    BaseModulator
    BaseDemodulator
+   ModulationRegistry
 
    # Identity schemes
    IdentityModulator
@@ -382,6 +407,38 @@ Helper functions for working with modulation schemes and analyzing their propert
    calculate_theoretical_ber
    calculate_spectral_efficiency
 
+Data
+--------------
+
+Datasets and data generation utilities for training and evaluation.
+
+.. currentmodule:: kaira.data
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   WynerZivCorrelationModel
+   WynerZivCorrelationDataset
+   BinaryTensorDataset
+   UniformTensorDataset
+
+Data Generation Functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Functions for creating synthetic datasets.
+
+.. currentmodule:: kaira.data
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   create_binary_tensor
+   create_uniform_tensor
+
 Utilities
 ------------------
 
@@ -395,12 +452,12 @@ General utility functions for data manipulation, visualization, and configuratio
    :nosignatures:
 
    seed_everything
-    to_tensor
-    calculate_num_filters_image
-    snr_db_to_linear
-    snr_linear_to_db
-    snr_to_noise_power
-    noise_power_to_snr
-    calculate_snr
-    add_noise_for_snr
-    estimate_signal_power
+   to_tensor
+   calculate_num_filters_image
+   snr_db_to_linear
+   snr_linear_to_db
+   snr_to_noise_power
+   noise_power_to_snr
+   calculate_snr
+   add_noise_for_snr
+   estimate_signal_power

@@ -15,7 +15,6 @@ from .image import (
     StructuralSimilarityIndexMeasure,
 )
 from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio
-from .utils import compute_multiple_metrics, format_metric_results
 
 __all__ = [
     # Base classes
@@ -39,6 +38,5 @@ __all__ = [
     # Registry
     "MetricRegistry",
     # Utils
-    "compute_multiple_metrics",
-    "format_metric_results",
+    "utils"
 ]

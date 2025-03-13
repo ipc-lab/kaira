@@ -71,9 +71,6 @@ __all__ = [
     "SpectralMaskConstraint",
     # Utility functions
     "utils",
-    "combine_constraints",
-    "create_mimo_constraints",
-    "create_ofdm_constraints",
     # Registry
     "ConstraintRegistry",
 ]
