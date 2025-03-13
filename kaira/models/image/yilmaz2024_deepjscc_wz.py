@@ -638,7 +638,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
-    """A specialized Wyner-Ziv model for neural joint source-channel coding with side information.
+    """A specialized Wyner-Ziv model for neural joint source-channel coding with side information. :cite:`yilmaz2024deepjsccwz,wyner1976rate`.
 
     This model implements the DeepJSCC-WZ architecture from Yilmaz et al. 2024, which applies
     deep learning techniques to the Wyner-Ziv coding paradigm (lossy compression with decoder-side
@@ -663,11 +663,6 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
     - Channel adaptation: AFModule layers condition the network on current channel SNR
     - Side information fusion: Multi-scale fusion at multiple network layers at the decoder
     - Power normalization: Required constraint to ensure proper signal power scaling
-
-    References:
-        Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv" (2024)
-        Wyner and Ziv, "The Rate-Distortion Function for Source Coding with Side Information
-                        at the Decoder" (1976)
 
     Attributes:
         encoder (BaseModel): Encoder network (standard, small, or conditional variant)
@@ -718,6 +713,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         source: torch.Tensor,
         side_info: torch.Tensor,
         csi: torch.Tensor,
+        *args: Any,
+        **kwargs: Any
     ) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
@@ -742,6 +739,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             csi: Channel state information tensor of shape [B, 1, 1, 1].
                  Contains the signal-to-noise ratio (SNR) or other channel quality indicators
                  that allow the model to adapt to current channel conditions.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Reconstructed image of the same shape as the input source [B, C, H, W].

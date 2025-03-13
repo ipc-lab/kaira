@@ -22,30 +22,35 @@ class LambdaModel(BaseModel):
     """
 
     def __init__(self, func: Callable[[torch.Tensor], torch.Tensor], name: Optional[str] = None):
-        """Initialize the LambdaModel.
+        """Initialize the Lambda model.
 
         Args:
-            func (callable): A function to be applied to the input tensor.
-            name (Optional[str]): A name for the lambda function, used in __repr__.
-                                 If None, uses the function's __name__ attribute.
+            func (Callable[[torch.Tensor], torch.Tensor]): Function to apply to input tensors.
+                Should take a torch.Tensor as input and return a torch.Tensor.
+            name (Optional[str], optional): Name for the model. If None, uses the function's name.
+                Defaults to None.
         """
         super().__init__()
         self.func = func
-        self.name = name if name is not None else getattr(func, "__name__", "anonymous_function")
+        self.name = name or func.__name__
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """Forward pass through the model.
+        """Apply the lambda function to the input tensor.
 
         Args:
-            x (torch.Tensor): The input tensor.
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            x (torch.Tensor): Input tensor
+            *args: Additional positional arguments (ignored)
+            **kwargs: Additional keyword arguments (ignored)
 
         Returns:
-            torch.Tensor: The result of applying the provided function to the input tensor.
+            torch.Tensor: Result of applying the lambda function to the input
         """
         return self.func(x)
 
     def __repr__(self) -> str:
-        """String representation of the model."""
-        return f"{self.__class__.__name__}(func={self.name})"
+        """Get string representation of the model.
+
+        Returns:
+            str: Description including model name and function
+        """
+        return f"{self.__class__.__name__}(name={self.name}, func={self.func})"

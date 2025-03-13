@@ -24,18 +24,22 @@ class BaseConstraint(nn.Module, ABC):
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the constraint.
+        """Apply the constraint to the input tensor.
 
-        Applies the constraint to the input tensor and returns the constrained output.
-        This method must be implemented by all subclasses.
+        This abstract method must be implemented by all constraint classes. The implementation
+        should apply the specific constraint logic to the input tensor while preserving its
+        essential dimensions.
 
         Args:
-            x (torch.Tensor): The input signal tensor
+            x (torch.Tensor): Input tensor to apply the constraint to
 
         Returns:
-            torch.Tensor: The output signal tensor after applying the constraint
+            torch.Tensor: The constrained tensor with the same essential dimensions as the input
+
+        Raises:
+            NotImplementedError: If the subclass does not implement this method
         """
-        pass
+        raise NotImplementedError("Subclasses must implement forward method")
 
     @staticmethod
     def get_dimensions(x: torch.Tensor, exclude_batch: bool = True) -> Tuple[int, ...]:

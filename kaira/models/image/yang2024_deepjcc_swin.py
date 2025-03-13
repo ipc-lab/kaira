@@ -1706,33 +1706,60 @@ def create_encoder(**kwargs) -> Yang2024DeepJSCCSwinEncoder:
 
 
 def create_decoder(**kwargs) -> Yang2024DeepJSCCSwinDecoder:
-    """Create a Swin JSCC decoder model with the given parameters.
+    """Create and initialize a new Swin JSCC decoder model.
 
-    This is a simple factory function to instantiate a decoder model.
+    This factory function instantiates a decoder model with the provided configuration parameters.
+    It provides a clean interface for model creation and ensures consistent initialization.
 
     Args:
-        **kwargs: Keyword arguments to pass to the decoder constructor
+        **kwargs: Configuration parameters for the decoder model, which may include:
+            - img_size: Input image dimensions (int or tuple)
+            - embed_dims: List of embedding dimensions for each layer
+            - depths: List of transformer block depths
+            - num_heads: List of attention heads per layer
+            - window_size: Size of the local attention window
+            - bottleneck_dim: Dimension of the bottleneck features
+            - adaptation_layers: Number of adaptation network layers
+            And other parameters defined in Yang2024DeepJSCCSwinDecoder.
 
     Returns:
-        An initialized Yang2024DeepJSCCSwinDecoder instance
+        Yang2024DeepJSCCSwinDecoder: An initialized decoder model instance.
+
+    Example:
+        >>> config = SwinJSCCConfig.from_preset("tiny")
+        >>> decoder = create_decoder(**config.get_decoder_kwargs(channel_dim=16))
     """
     return Yang2024DeepJSCCSwinDecoder(**kwargs)
 
 
 def build_model(config):
-    """Build and initialize SwinJSCC models based on config.
+    """Build and validate a complete Swin JSCC model setup.
 
-    Validates the model by running a test input and reports statistics. This function
-    handles the entire process of creating and initializing the model with error handling.
+    This function handles the end-to-end process of creating, initializing, and validating
+    a Swin JSCC model. It includes:
+    1. Setting up the device (CUDA if available, CPU otherwise)
+    2. Creating and initializing the model with given configuration
+    3. Running a test forward pass with dummy input
+    4. Reporting model statistics (parameters, FLOPs)
 
     Args:
-        config: Configuration object with encoder_kwargs and device
+        config: A configuration object containing:
+            - encoder_kwargs: Dictionary of encoder configuration parameters
+            - device: Optional torch.device for model placement (default: CUDA if available)
+            The encoder_kwargs should contain parameters like img_size, embed_dims, depths, etc.
 
     Returns:
-        The built encoder model
+        Yang2024DeepJSCCSwinEncoder: A fully initialized and validated encoder model.
 
     Raises:
-        Exception: If model building fails
+        Exception: If model initialization or validation fails, with detailed error message.
+
+    Example:
+        >>> config = SwinJSCCConfig.from_preset("tiny")
+        >>> config.encoder_kwargs = config.get_encoder_kwargs(channel_dim=16)
+        >>> model = build_model(config)
+        Created SwinJSCC encoder with 28.35M parameters
+        Estimated FLOPs: 4.56G
     """
     logger = logging.getLogger(__name__)
 
