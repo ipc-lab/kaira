@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 import torch
 from torch import nn
@@ -18,11 +18,13 @@ class _ConvWithPReLU(nn.Module):
 
         nn.init.kaiming_normal_(self.conv.weight, mode="fan_out", nonlinearity="leaky_relu")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through convolutional layer and PReLU activation.
 
         Args:
             x: Input tensor
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Activated output tensor
@@ -45,11 +47,13 @@ class _TransConvWithPReLU(nn.Module):
         else:
             nn.init.xavier_normal_(self.transconv.weight)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through transposed convolutional layer and activation.
 
         Args:
             x: Input tensor
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Activated output tensor
@@ -77,11 +81,13 @@ class Bourtsoulatze2019DeepJSCCEncoder(BaseModel):
             _ConvWithPReLU(in_channels=32, out_channels=num_transmitted_filters, kernel_size=5, padding=2),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the encoder.
 
         Args:
             x: Input image tensor of shape (B, 3, H, W)
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Encoded representation of shape (B, num_transmitted_filters, H//4, W//4)
@@ -109,11 +115,13 @@ class Bourtsoulatze2019DeepJSCCDecoder(BaseModel):
             _TransConvWithPReLU(in_channels=16, out_channels=3, kernel_size=5, stride=2, padding=2, output_padding=1, activate=nn.Sigmoid()),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the decoder.
 
         Args:
             x: Encoded representation of shape (B, num_transmitted_filters, H//4, W//4)
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Decoded image tensor of shape (B, 3, H, W)

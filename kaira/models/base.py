@@ -25,11 +25,13 @@ class BaseModel(nn.Module, ABC):
         self.steps = []
 
     @abstractmethod
-    def forward(self, input_data: Any) -> Any:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model on the input data.
 
         Args:
             input_data: The input to process through the model
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             The output after processing

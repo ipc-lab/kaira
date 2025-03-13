@@ -170,12 +170,14 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self.device_images.load_state_dict(img_dict)
         print("checkpoint loaded")
 
-    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the DeepJSCC-NOMA model.
 
         Args:
             x: Input images with shape [batch_size, num_devices, channels, height, width]
             csi: Channel state information values for the channel with shape [batch_size, csi_length]
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
@@ -187,40 +189,40 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             x = torch.cat([x, emb], dim=2)
 
         if self.use_perfect_sic:
-            return self._forward_perfect_sic(x, csi)
+            return self._forward_perfect_sic(x, csi, *args, **kwargs)
 
         # Encode inputs - support different encoder interfaces
         transmissions: List[torch.Tensor] = []
         for i in range(self.num_devices):
             encoder = self.encoders[0 if self.shared_encoder else i]
             device_input = x[:, i, ...]
-
+            
             # Handle encoders with different input formats
             try:
                 # Try tuple input with CSI
-                tx = encoder((device_input, csi))
+                tx = encoder((device_input, csi), *args, **kwargs)
             except (TypeError, ValueError):
                 # Fall back to just the input data
-                tx = encoder(device_input)
-
+                tx = encoder(device_input, *args, **kwargs)
+            
             tx = self.power_constraint(tx)
             transmissions.append(tx)
-
+            
         x = torch.stack(transmissions, dim=1)
-
+        
         # Apply channel
         x = self.channel((x, csi))
-
+        
         # Decode outputs - support different decoder interfaces
         if self.shared_decoder:
             decoder = self.decoders[0]
             try:
                 # Try tuple input with CSI
-                x_decoded = decoder((x, csi))
+                x_decoded = decoder((x, csi), *args, **kwargs)
             except (TypeError, ValueError):
                 # Fall back to just the input data
-                x_decoded = decoder(x)
-
+                x_decoded = decoder(x, *args, **kwargs)
+                
             # Make sure output has proper device dimension
             if x_decoded.ndim == 4:  # [B, C, H, W]
                 x = x_decoded.unsqueeze(1).expand(-1, self.num_devices, -1, -1, -1)
@@ -233,22 +235,25 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                 decoder = self.decoders[i]
                 try:
                     # Try tuple input with CSI
-                    x_decoded = decoder((x, csi))
+                    x_decoded = decoder((x, csi), *args, **kwargs)
                 except (TypeError, ValueError):
                     # Fall back to just the input data
-                    x_decoded = decoder(x)
+                    x_decoded = decoder(x, *args, **kwargs)
+                    
                 decoded_outputs.append(x_decoded)
-
+                
             x = torch.stack(decoded_outputs, dim=1)
-
+            
         return x
 
-    def _forward_perfect_sic(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def _forward_perfect_sic(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass with perfect successive interference cancellation.
 
         Args:
             x: Input data with shape [batch_size, num_devices, channels, height, width]
             csi: Channel state information with shape [batch_size, csi_length]
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
@@ -263,10 +268,10 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Handle encoders with different input formats
             try:
                 # Try tuple input with CSI
-                t = encoder((device_input, csi))
+                t = encoder((device_input, csi), *args, **kwargs)
             except (TypeError, ValueError):
                 # Fall back to just the input data
-                t = encoder(device_input)
+                t = encoder(device_input, *args, **kwargs)
 
             t = self.power_constraint(t[:, None, ...], mult=torch.sqrt(torch.tensor(0.5, dtype=t.dtype, device=t.device))).sum(dim=1)
 
@@ -282,10 +287,10 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
             try:
                 # Try tuple input with CSI
-                xi = decoder((transmissions[i], csi))
+                xi = decoder((transmissions[i], csi), *args, **kwargs)
             except (TypeError, ValueError):
                 # Fall back to just the input data
-                xi = decoder(transmissions[i])
+                xi = decoder(transmissions[i], *args, **kwargs)
 
             if self.shared_decoder and xi.ndim == 5:  # [B, num_devices, C, H, W]
                 xi = xi[:, i, ...]

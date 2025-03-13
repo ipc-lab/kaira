@@ -57,11 +57,13 @@ class DeepJSCCFeedbackEncoder(nn.Module):
             ]
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the encoder.
 
         Args:
             x (torch.Tensor): Input image tensor of shape [B, C, H, W].
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Encoded representation ready for channel transmission.
@@ -112,11 +114,13 @@ class DeepJSCCFeedbackDecoder(nn.Module):
             ]
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the decoder.
 
         Args:
             x (torch.Tensor): Channel output tensor to be decoded.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Reconstructed image in range [0, 1].
@@ -141,13 +145,15 @@ class OutputsCombiner(nn.Module):
         self.conv2 = nn.Conv2d(48, 3, kernel_size=3, stride=1, padding=1)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, inputs):
+    def forward(self, inputs, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Combines previous reconstruction with residual information.
 
         Args:
             inputs (tuple): Contains:
                 - img_prev (torch.Tensor): Previous reconstruction image
                 - residual (torch.Tensor): Residual information for refinement
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Enhanced reconstruction after combining inputs.
@@ -231,7 +237,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         # Store parameters
         self.target_analysis = target_analysis
 
-    def forward(self, inputs):
+    def forward(self, inputs, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         """Forward pass of the DeepJSCC Feedback model.
 
         Processes the input through the encoder, channel, and decoder,
@@ -244,6 +250,8 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 - For refinement layer: a tuple containing (input_image, previous_feedback_image,
                   previous_feedback_channel_output, previous_decoded_image,
                   previous_decoded_channel_output, previous_channel_gain)
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             tuple: Contains:
@@ -268,11 +276,13 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             # inputs is just the original image
             img_in = img = inputs
             prev_chn_gain = None
+
         # Encode the input
         chn_in = self.encoder(img_in)
 
         # Pass through the channel
         chn_out, avg_power, chn_gain = self.forward_channel((chn_in, prev_chn_gain))
+
         # Add feedback noise to channel output
         if self.feedback_snr is None:  # No feedback noise
             chn_out_fb = chn_out
@@ -286,6 +296,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             residual_img = self.decoder(chn_out_exp)
             # Combine residual with previous stored image reconstruction
             decoded_img = self.feedback_processor((prev_img_out_dec, residual_img))
+
             # Feedback estimation
             chn_out_exp_fb = torch.cat([chn_out_fb, prev_chn_out_fb], dim=1)
             residual_img_fb = self.decoder(chn_out_exp_fb)

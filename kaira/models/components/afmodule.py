@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from typing import Any, Tuple
 
 from ..registry import ModelRegistry
 
@@ -34,11 +35,13 @@ class AFModule(nn.Module):
             nn.Sigmoid(),
         )
 
-    def forward(self, x):
+    def forward(self, x, *args: Any, **kwargs: Any):
         """Forward pass through the AFModule.
 
         Args:
-            x (torch.Tensor): The input tensor.
+            x (torch.Tensor or Tuple[torch.Tensor, torch.Tensor]): The input tensor or tuple of (tensor, side_info).
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             torch.Tensor: The output tensor after passing through the linear layer,

@@ -88,12 +88,14 @@ class MultipleAccessChannelModel(BaseModel):
             except Exception as e:
                 raise ValueError(f"Failed to initialize decoder: {str(e)}")
 
-    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the Multiple Access Channel model.
 
         Args:
             x: Input data with shape [batch_size, num_devices, channels, height, width]
             csi: Channel state information with shape [batch_size, csi_length]
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]

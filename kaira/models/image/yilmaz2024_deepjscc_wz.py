@@ -92,34 +92,33 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
             ]
         )
 
-    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Process input image through the encoder.
 
         Args:
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
                           Shape: [B, M, H/16, W/16], where M is the number of channels
                           specified during initialization.
         """
-
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
-
         for layer in self.g_a:
             if isinstance(layer, AFModule):
                 x = layer((x, csi_transmitter))
             else:
                 x = layer(x)
-
         return x
 
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
-    """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ-sm Decoder Module :cite=`yilmaz2024deepjsccwz`.
 
     This lightweight decoder reconstructs the original image from the received noisy representation
     and available side information. It employs a symmetric structure to the encoder
@@ -177,7 +176,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
         self.encoder = encoder
 
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decode the received representation into a reconstructed image.
 
         This method first processes the side information through the shared encoder,
@@ -188,6 +187,8 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
@@ -286,13 +287,15 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
             ]
         )
 
-    def forward(self, x: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input image into a compact representation.
 
         Args:
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -361,7 +364,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
             ]
         )
 
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decode the received representation into a reconstructed image.
 
         This method first processes the side information through the g_a2 encoder path,
@@ -372,6 +375,8 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
@@ -492,7 +497,7 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
             ]
         )
 
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input image with conditional side information.
 
         This method processes both the main input image and side information in parallel,
@@ -504,6 +509,8 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] used during encoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -511,7 +518,6 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
                           specified during initialization.
         """
         xs_encoder = x_side
-
         csi_transmitter = csi
 
         for layer, layer_s in zip(self.g_a, self.g_a3):
@@ -583,7 +589,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
             ]
         )
 
-    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decode the conditionally encoded representation.
 
         This method first processes the side information through the g_a2 encoder path,
@@ -596,6 +602,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].

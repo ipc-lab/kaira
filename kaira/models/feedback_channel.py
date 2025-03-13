@@ -63,7 +63,7 @@ class FeedbackChannelModel(BaseModel):
         self.feedback_processor = feedback_processor
         self.max_iterations = max_iterations
 
-    def forward(self, input_data: torch.Tensor) -> Dict[str, Any]:
+    def forward(self, input_data: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """Process input through the feedback channel system.
 
         Performs an iterative transmission process where:
@@ -75,6 +75,8 @@ class FeedbackChannelModel(BaseModel):
 
         Args:
             input_data (torch.Tensor): The input data to transmit
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dict[str, Any]: A dictionary containing:
@@ -99,15 +101,15 @@ class FeedbackChannelModel(BaseModel):
 
             # Encode the input (with adaptation if not first iteration)
             if encoder_state is not None:
-                encoded = self.encoder(input_data, state=encoder_state)
+                encoded = self.encoder(input_data, state=encoder_state, *args, **kwargs)
             else:
-                encoded = self.encoder(input_data)
+                encoded = self.encoder(input_data, *args, **kwargs)
 
             # Transmit through forward channel
             received = self.forward_channel(encoded)
 
             # Decode the received signal
-            decoded = self.decoder(received)
+            decoded = self.decoder(received, *args, **kwargs)
 
             # Generate feedback
             feedback = self.feedback_generator(decoded, input_data)

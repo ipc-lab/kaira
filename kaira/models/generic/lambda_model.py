@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import torch
 
@@ -33,11 +33,13 @@ class LambdaModel(BaseModel):
         self.func = func
         self.name = name if name is not None else getattr(func, "__name__", "anonymous_function")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the model.
 
         Args:
             x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: The result of applying the provided function to the input tensor.

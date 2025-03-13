@@ -69,7 +69,7 @@ class BPGCompressor(BaseModel):
             logger.error(f"BPG encoder not found at '{self.bpg_encoder_path}'. Please install BPG tools.")
             raise RuntimeError(f"BPG encoder not found at '{self.bpg_encoder_path}'")
 
-    def forward(self, x) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
+    def forward(self, x, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
         """Process a batch of images through BPG compression.
 
         The compression method depends on initialization parameters:
@@ -78,6 +78,8 @@ class BPGCompressor(BaseModel):
 
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             If no additional returns: Just the reconstructed image tensor

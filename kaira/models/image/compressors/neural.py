@@ -105,11 +105,13 @@ class NeuralCompressor(BaseModel):
 
         return all_num_bits
 
-    def forward(self, x: torch.Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, List[Dict]]]:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, List[Dict]]]:
         """Forward pass of the neural compressor.
 
         Args:
             x: Input image tensor
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             If no additional returns: Just the reconstructed image

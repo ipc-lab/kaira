@@ -1,4 +1,5 @@
 import torch
+from typing import Any
 
 from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry
@@ -22,11 +23,13 @@ class IdentityModel(BaseModel):
         """Initialize the IdentityModel."""
         super().__init__()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the model.
 
         Args:
             x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             torch.Tensor: The input tensor (unchanged).

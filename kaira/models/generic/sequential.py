@@ -34,11 +34,13 @@ class SequentialModel(ConfigurableModel):
             raise TypeError("Step must be callable")
         return super().add_step(step)
 
-    def forward(self, input_data: Any) -> Any:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model sequentially on the input data.
 
         Args:
             input_data: The initial data to process
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             The final result after passing through all steps

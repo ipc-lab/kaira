@@ -76,7 +76,7 @@ class Kurmukova2025TransCoder(SequentialModel):
         self.decoder_ec = encoder_ec
         self.n_iterations = n_iterations
 
-    def forward(self, input_data: torch.Tensor) -> Dict[str, Any]:
+    def forward(self, input_data: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """Process input through the feedback channel system.
 
         Performs an iterative transmission process where:
@@ -90,6 +90,8 @@ class Kurmukova2025TransCoder(SequentialModel):
 
         Args:
             input_data (torch.Tensor): The input data to transmit
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dict[str, Any]: A dictionary containing:
@@ -98,48 +100,49 @@ class Kurmukova2025TransCoder(SequentialModel):
                 - history: History of transmitted signals
         """
         input_data.shape[0]
-
+        
         # Storage for results
         iterations = []
         history = []
-
+        
         # Channel encoding
-        encoded_ec = self.encoder_ec(input_data)
+        encoded_ec = self.encoder_ec(input_data, *args, **kwargs)
+        
         if self.encoder_tc is not None:
             # TransCoder encoding
-            constrained = self.encoder_tc(encoded_ec)
+            constrained = self.encoder_tc(encoded_ec, *args, **kwargs)
         else:
             # Modulation
             modulated = self.modulator(encoded_ec)
             # Power constraint
             constrained = self.constraint(modulated)
-
+        
         # Transmit through channel
         received = self.channel(constrained)
-
+        
         history.append(
             {
-                "encoded": encoded,
+                "encoded": encoded_ec,
                 "constrained": constrained,
                 "received": received,
             }
         )
-
+        
         # Iterative decoding process
         for i in range(self.n_iterations):
             if self.decoder_tc is not None:
                 # TransCoder decoding
                 if i == 0:
-                    demodulated = self.decoder_tc(received)
+                    demodulated = self.decoder_tc(received, *args, **kwargs)
                 else:
-                    demodulated = self.decoder_tc([received, soft_estimate])
+                    demodulated = self.decoder_tc([received, soft_estimate], *args, **kwargs)
             else:
                 # Demodulation
                 demodulated = self.demodulator(received)
-
+            
             # Channel decoding
-            decoded, soft_estimate = self.decoder_ec(demodulated)
-
+            decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)
+            
             # Store results for this iteration
             iterations.append(
                 {
@@ -148,7 +151,7 @@ class Kurmukova2025TransCoder(SequentialModel):
                     "soft_estimate": soft_estimate,
                 }
             )
-
+        
         return {
             "final_output": decoded,
             "iterations": iterations,

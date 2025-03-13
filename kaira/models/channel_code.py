@@ -66,7 +66,7 @@ class ChannelCodeModel(SequentialModel):
         self.demodulator = demodulator
         self.decoder = decoder
 
-    def forward(self, input_data: torch.Tensor) -> Dict[str, Any]:
+    def forward(self, input_data: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """Process input through the feedback channel system.
 
         Performs an iterative transmission process where:
@@ -76,6 +76,8 @@ class ChannelCodeModel(SequentialModel):
 
         Args:
             input_data (torch.Tensor): The input data to transmit
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dict[str, Any]: A dictionary containing:
@@ -90,7 +92,7 @@ class ChannelCodeModel(SequentialModel):
         # Transmission process
 
         # Encode the input
-        encoded = self.encoder(input_data)
+        encoded = self.encoder(input_data, *args, **kwargs)
 
         # Modulation of the encoded data
         modulated = self.modulator(encoded)
@@ -102,7 +104,7 @@ class ChannelCodeModel(SequentialModel):
         received = self.channel(constrained)
 
         # Demodulate and decode the received signal
-        decoded, soft_estimate = self.decoder(self.demodulator(received))
+        decoded, soft_estimate = self.decoder(self.demodulator(received), *args, **kwargs)
 
         # Store results
         history.append(

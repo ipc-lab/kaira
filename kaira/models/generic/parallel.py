@@ -62,11 +62,13 @@ class ParallelModel(ConfigurableModel):
         self.steps.pop(index)
         return self
 
-    def forward(self, input_data: Any) -> Dict[str, Any]:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """Execute the model in parallel on the input data.
 
         Args:
             input_data: The data to process
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dictionary mapping step names to their respective outputs

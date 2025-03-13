@@ -76,11 +76,13 @@ class BranchingModel(BaseModel):
         del self.branches[name]
         return self
 
-    def forward(self, input_data: Any) -> Dict[str, Any]:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """Execute the appropriate branch based on the conditions.
 
         Args:
             input_data: The data to process
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dictionary with a single key-value pair containing the name of the
@@ -91,11 +93,11 @@ class BranchingModel(BaseModel):
         # Check each branch condition
         for name, (condition, model) in self.branches.items():
             if condition(input_data):
-                results[name] = model.forward(input_data)
+                results[name] = model.forward(input_data, *args, **kwargs)
                 return results
 
         # Use default branch if no condition matched
         if self.default_branch:
-            results["default"] = self.default_branch.forward(input_data)
+            results["default"] = self.default_branch.forward(input_data, *args, **kwargs)
 
         return results

@@ -121,7 +121,7 @@ class WynerZivModel(BaseModel):
             return self.correlation_model(source)
         return side_info
 
-    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None) -> Dict[str, torch.Tensor]:
+    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
         """Process source through the Wyner-Ziv coding system.
 
         Implements the full Wyner-Ziv coding model:
@@ -139,6 +139,8 @@ class WynerZivModel(BaseModel):
                 If None, side information is generated using the correlation_model,
                 simulating a real-world scenario where side info is independently
                 available at the decoder
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dictionary containing intermediate and final outputs of the model:
@@ -151,7 +153,7 @@ class WynerZivModel(BaseModel):
                 - decoded: Final reconstruction of the source using received data and side info
         """
         # Source encoding
-        encoded = self.encoder(source)
+        encoded = self.encoder(source, *args, **kwargs)
         result = {"encoded": encoded}
 
         # Quantization (if available)
@@ -179,6 +181,6 @@ class WynerZivModel(BaseModel):
         result["side_info"] = self.validate_side_info(source, side_info)
 
         # Decode using received syndromes and side information
-        result["decoded"] = self.decoder(result["received"], result["side_info"])
+        result["decoded"] = self.decoder(result["received"], result["side_info"], *args, **kwargs)
 
         return result
