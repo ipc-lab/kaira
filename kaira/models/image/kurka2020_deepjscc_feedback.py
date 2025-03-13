@@ -7,7 +7,7 @@ layers for iterative image quality improvement.
 """
 
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -239,7 +239,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         # Store parameters
         self.target_analysis = target_analysis
 
-    def forward(self, inputs, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    def forward(self, inputs, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Forward pass of the DeepJSCC Feedback model.
 
         Processes the input through the encoder, channel, and decoder,
@@ -256,12 +256,12 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             **kwargs: Additional keyword arguments
 
         Returns:
-            tuple: Contains:
-                - decoded_img (torch.Tensor): Reconstructed image
-                - decoded_img_fb (torch.Tensor): Reconstructed image using feedback
-                - chn_out_exp (torch.Tensor): Channel output used for decoding
-                - chn_out_exp_fb (torch.Tensor): Feedback channel output
-                - chn_gain (torch.Tensor or None): Channel gain if applicable
+            dict[str, Any]: Dictionary containing:
+                - 'decoded_img': Reconstructed image
+                - 'decoded_img_fb': Reconstructed image using feedback
+                - 'channel_output': Channel output used for decoding
+                - 'feedback_channel_output': Feedback channel output
+                - 'channel_gain': Channel gain if applicable
         """
         if self.refinement_layer:
             (
@@ -309,4 +309,4 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             chn_out_exp_fb = chn_out_fb
             decoded_img_fb = self.decoder(chn_out_exp_fb)
 
-        return (decoded_img, decoded_img_fb, chn_out_exp, chn_out_exp_fb, chn_gain)
+        return {"decoded_img": decoded_img, "decoded_img_fb": decoded_img_fb, "channel_output": chn_out_exp, "feedback_channel_output": chn_out_exp_fb, "channel_gain": chn_gain}
