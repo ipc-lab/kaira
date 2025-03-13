@@ -57,7 +57,7 @@ class BinaryTensorDataset(Dataset):
     communication systems experiments.
 
     Attributes:
-        data: The generated binary tensor data with shape (n_samples, *feature_dims)
+        data: The generated binary tensor data with shape (n_samples, \*feature_dims)
     """
 
     def __init__(self, size: Union[List[int], torch.Size], prob: float = 0.5, device: Optional[torch.device] = None):
@@ -99,7 +99,7 @@ class UniformTensorDataset(Dataset):
     in communication systems and information theory experiments.
 
     Attributes:
-        data: The generated uniform tensor data with shape (n_samples, *feature_dims)
+        data: The generated uniform tensor data with shape (n_samples, \*feature_dims)
     """
 
     def __init__(self, size: Union[List[int], torch.Size], low: float = 0.0, high: float = 1.0, device: Optional[torch.device] = None):

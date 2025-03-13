@@ -9,7 +9,6 @@ Prerequisites
 -------------
 - Python 3.8 or higher
 - pip (Python package installer)
-- 2GB+ of free disk space
 - (Optional) CUDA-compatible GPU for accelerated processing
 
 Installation Methods

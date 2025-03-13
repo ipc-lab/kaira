@@ -7,11 +7,38 @@ import datetime
 import os
 import sys
 from typing import List
+import importlib.util
 
-# Add the project root to sys.path
-sys.path.insert(0, os.path.abspath("../kaira"))
+# Improve module path setup for proper imports
+# First, add the root directory containing the kaira package
+sys.path.insert(0, os.path.abspath('..'))
 
-print(os.path.abspath("../kaira"))
+# Debug information - print the current path
+print("Python sys.path:")
+for p in sys.path:
+    print(f"  - {p}")
+
+# Verify we can import kaira modules
+try:
+    import kaira
+    print(f"Successfully imported kaira version {kaira.__version__}")
+    
+    # Check if data module exists
+    if importlib.util.find_spec("kaira.data") is not None:
+        print("kaira.data module found")
+    else:
+        print("WARNING: kaira.data module not found")
+        
+    # List available kaira modules
+    print("Available kaira modules:")
+    for module_name in dir(kaira):
+        if not module_name.startswith('_'):
+            print(f"  - {module_name}")
+            
+except ImportError as e:
+    print(f"Error importing kaira: {e}")
+    print("Documentation may not build correctly")
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -278,3 +305,14 @@ def setup(app):
     """
     app.connect("autodoc-skip-member", skip_member)
     app.add_config_value("current_date", get_current_date(), "env")
+
+# Mock imports for modules that might not be installed
+# This prevents build failures due to missing dependencies
+autodoc_mock_imports = []
+
+# Check if we need to mock kaira modules that failed to import
+try:
+    import kaira.data
+except ImportError:
+    print("Adding kaira.data to mock imports")
+    autodoc_mock_imports.append('kaira.data')

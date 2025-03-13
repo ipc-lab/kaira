@@ -14,6 +14,22 @@ class ModulationRegistry:
 
     _modulators: Dict[str, Type[BaseModulator]] = {}
     _demodulators: Dict[str, Type[BaseDemodulator]] = {}
+    
+    @classmethod
+    def register(cls, name: str, modulation_class: Union[Type[BaseModulator], Type[BaseDemodulator]], mode: Literal["modulator", "demodulator"]) -> None:
+        """Register a modulation class in the registry.
+
+        Args:
+            name (str): The name to register the modulation under.
+            modulation_class (Union[Type[BaseModulator], Type[BaseDemodulator]]): The modulation class to register.
+            mode (Literal["modulator", "demodulator"]): Whether the class is a modulator or demodulator.
+        """
+        if mode == "modulator":
+            cls._modulators[name] = modulation_class
+        elif mode == "demodulator":
+            cls._demodulators[name] = modulation_class
+        else:
+            raise ValueError(f"Invalid mode: {mode}. Must be either 'modulator' or 'demodulator'.")
 
     @classmethod
     def register_modulator(cls, name: Optional[str] = None) -> Callable:

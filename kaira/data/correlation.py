@@ -102,7 +102,7 @@ class WynerZivCorrelationDataset(Dataset):
 
     Attributes:
         model: The correlation model used to generate side information
-        data: The source data tensor with shape (n_samples, *feature_dims)
+        data: The source data tensor with shape (n_samples, \*feature_dims)
         correlated_data: The correlated side information with same shape as source data
     """
 

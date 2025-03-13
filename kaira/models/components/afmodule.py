@@ -1,5 +1,6 @@
 from typing import Any
 
+from kaira.models.base import BaseModel
 import torch
 from torch import nn
 
@@ -7,7 +8,7 @@ from ..registry import ModelRegistry
 
 
 @ModelRegistry.register_model()
-class AFModule(nn.Module):
+class AFModule(BaseModel):
     """
     AFModule: Attention-Feature Module :cite:`xu2021wireless`.
 

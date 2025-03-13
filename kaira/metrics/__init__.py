@@ -5,6 +5,8 @@ This module contains various metrics for evaluating the performance of communica
 
 from .base import BaseMetric
 from .composite import CompositeMetric
+from .registry import MetricRegistry
+from . import utils
 from .image import (
     LPIPS,
     PSNR,
