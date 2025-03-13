@@ -1,22 +1,26 @@
-"""Base Model Module for Kaira.
+"""Base model definitions for deep learning architectures.
 
-This module provides abstract base classes for building model components in the Kaira framework.
+This module provides the foundation for all model implementations in the Kaira framework.
+The BaseModel class implements common functionality and enforces a consistent interface
+across different model types.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable, List, Optional
 
 from torch import nn
 
 
 class BaseModel(nn.Module, ABC):
-    """Base Model Module.
+    """Abstract base class for all models in the Kaira framework.
 
-    Abstract base class for defining communication system models.
-    It provides the foundation for building various model types.
+    This class extends PyTorch's nn.Module and adds framework-specific functionality.
+    All models should inherit from this class to ensure compatibility with the framework's
+    training, evaluation, and inference pipelines.
 
-    Attributes:
-        steps: List of processing steps or components in the model.
+    The class provides a consistent interface for model implementation while allowing
+    flexibility in architecture design. It enforces proper initialization and
+    forward pass implementation.
     """
 
     def __init__(self):
@@ -26,17 +30,23 @@ class BaseModel(nn.Module, ABC):
 
     @abstractmethod
     def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
-        """Execute the model on the input data.
+        """Define the forward pass computation.
+
+        This method should be implemented by all subclasses to define how input data
+        is processed through the model to produce output.
 
         Args:
             input_data: The input to process through the model
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Variable positional arguments for flexible input handling
+            **kwargs: Variable keyword arguments for optional parameters
 
         Returns:
-            The output after processing
+            Any: Model output, type depends on specific implementation
+
+        Raises:
+            NotImplementedError: If the subclass does not implement this method
         """
-        pass
+        raise NotImplementedError("Subclasses must implement forward method")
 
 
 class ConfigurableModel(BaseModel):
@@ -50,7 +60,8 @@ class ConfigurableModel(BaseModel):
         """Add a processing step to the model.
 
         Args:
-            step: The processing step to add
+            step: A callable that will be added to the processing pipeline.
+                Must accept and return tensor-like objects.
 
         Returns:
             Self for method chaining
