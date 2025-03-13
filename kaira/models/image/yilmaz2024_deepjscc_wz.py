@@ -25,7 +25,7 @@ Reference:
 """
 
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 import torch
 from compressai.layers import (
@@ -386,6 +386,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
         csi_sideinfo = csi
 
         xs_list = []
+        xs = x_side  # Initialize xs with x_side before the loop
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
@@ -613,6 +614,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
         csi_sideinfo = csi
 
         xs_list = []
+        xs = x_side  # Initialize xs with x_side before the loop
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(x_side)
@@ -694,6 +696,10 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
                        appropriate power levels. This is crucial for fair comparisons across
                        different models and transmission scenarios.
         """
+        # Ensure constraint is not None as it's required
+        if constraint is None:
+            raise ValueError("A constraint must be provided for Yilmaz2024DeepJSCCWZ model")
+
         # Initialize the parent class without quantizer and syndrome_generator
         # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
         super().__init__(
@@ -707,10 +713,13 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             syndrome_generator=None,
         )
 
+        # Explicitly set constraint to ensure it's properly initialized
+        self.constraint = constraint
+
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:
@@ -731,14 +740,15 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             side_info: Correlated side information available at the decoder, shape [B, C, H, W].
                       This could be a previous frame in a video, a low-resolution version,
                       or other correlated information that helps in reconstruction.
-            csi: Channel state information tensor of shape [B, 1, 1, 1].
-                 Contains the signal-to-noise ratio (SNR) or other channel quality indicators
-                 that allow the model to adapt to current channel conditions.
             *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            **kwargs: Additional keyword arguments including:
+                csi: Channel state information tensor of shape [B, 1, 1, 1].
+                     Contains the signal-to-noise ratio (SNR) or other channel quality indicators
+                     that allow the model to adapt to current channel conditions.
 
         Returns:
-            torch.Tensor: Reconstructed image of the same shape as the input source [B, C, H, W].
+            Dict[str, torch.Tensor]: Dictionary containing intermediate results and the final
+                                    reconstructed image under the 'decoded' key.
 
         Raises:
             ValueError: If side_info or csi is None, as these are required parameters.
@@ -747,12 +757,21 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             CSI values are typically provided in dB and should be normalized to an appropriate
             range as expected by the model's training configuration.
         """
+        # Extract CSI from kwargs or args
+        csi = kwargs.get("csi", None)
+        if csi is None and len(args) > 0:
+            csi = args[0]  # Try to get csi from the first positional arg
+            args = args[1:]  # Remove csi from args to avoid duplicate passing
+
         # Validate parameters
         if side_info is None:
             raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")
 
         if csi is None:
             raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ model")
+
+        # Create result dictionary
+        result = {}
 
         # Source encoding - conditional models use side info during encoding
         if self.is_conditional:
@@ -761,13 +780,26 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             # For non-conditional models, don't pass the side_info parameter
             encoded = self.encoder(source, csi)
 
-        # Apply mandatory power/rate constraint
+        result["encoded"] = encoded
+        result["quantized"] = encoded  # No explicit quantization in DeepJSCC-WZ
+
+        # Apply mandatory power/rate constraint - add safety check
+        if self.constraint is None:
+            raise RuntimeError("Constraint is unexpectedly None. This should not happen if __init__ validation is working.")
         constrained = self.constraint(encoded)
+
+        result["constrained"] = constrained
+        result["syndromes"] = constrained  # No explicit syndrome generation in DeepJSCC-WZ
 
         # Transmit through channel
         received = self.channel(constrained)
+        result["received"] = received
+
+        # Record side information
+        result["side_info"] = side_info
 
         # Decode using received representation and side information
         decoded = self.decoder(received, side_info, csi)
+        result["decoded"] = decoded
 
-        return decoded
+        return result
