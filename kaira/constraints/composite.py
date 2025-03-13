@@ -7,7 +7,6 @@ composition for complex signal requirements.
 
 from typing import Sequence
 
-
 from .base import BaseConstraint
 
 
@@ -70,4 +69,7 @@ class CompositeConstraint(BaseConstraint):
         Returns:
             Constrained signal after applying all component constraints
         """
-        return super().forward(x)
+        for step in self.steps:
+            x = step(x)
+
+        return x

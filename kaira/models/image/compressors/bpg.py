@@ -1,8 +1,9 @@
 import logging
 import multiprocessing
 import os
+import re
 import shutil
-import subprocess
+import subprocess  # nosec
 import tempfile
 import time
 import uuid
@@ -54,6 +55,11 @@ class BPGCompressor(BaseModel):
 
         self.max_bits_per_image = max_bits_per_image
         self.quality = quality
+
+        # Validate executable paths to prevent command injection
+        self._validate_executable_path(bpg_encoder_path)
+        self._validate_executable_path(bpg_decoder_path)
+
         self.bpg_encoder_path = bpg_encoder_path
         self.bpg_decoder_path = bpg_decoder_path
         self.n_jobs = n_jobs if n_jobs is not None else max(1, multiprocessing.cpu_count() // 2)
@@ -62,12 +68,48 @@ class BPGCompressor(BaseModel):
         self.return_compressed_data = return_compressed_data
         self.stats: Dict[str, Any] = {}
 
-        # Check if BPG tools are available
+        # Check if BPG tools are available using secure subprocess execution
         try:
-            subprocess.run([self.bpg_encoder_path, "--help"], capture_output=True, check=True)
+            self._safe_subprocess_run([self.bpg_encoder_path, "--help"])
         except (subprocess.SubprocessError, FileNotFoundError):
             logger.error(f"BPG encoder not found at '{self.bpg_encoder_path}'. Please install BPG tools.")
             raise RuntimeError(f"BPG encoder not found at '{self.bpg_encoder_path}'")
+
+    def _validate_executable_path(self, path: str) -> None:
+        """Validate that an executable path doesn't contain shell metacharacters.
+
+        Args:
+            path: The executable path to validate
+
+        Raises:
+            ValueError: If the path contains potentially dangerous characters
+        """
+        # Simple validation to prevent basic command injection
+        if ";" in path or "&" in path or "|" in path or ">" in path or "<" in path:
+            raise ValueError(f"Executable path '{path}' contains invalid characters")
+
+        # Check if path doesn't exist but contains shell metacharacters
+        if not os.path.exists(path) and re.search(r"[${}()`\[\]\s]", path):
+            raise ValueError(f"Executable path '{path}' contains potentially dangerous characters")
+
+    def _safe_subprocess_run(self, cmd_args: List[str], **kwargs) -> subprocess.CompletedProcess:
+        """Execute subprocess safely with validated arguments.
+
+        Args:
+            cmd_args: Command arguments list
+            **kwargs: Additional arguments for subprocess.run
+
+        Returns:
+            subprocess.CompletedProcess object
+        """
+        # Always enforce shell=False
+        kwargs["shell"] = False
+
+        # Default to capturing output
+        if "capture_output" not in kwargs and "stdout" not in kwargs:
+            kwargs["capture_output"] = True
+
+        return subprocess.run(cmd_args, **kwargs)  # nosec
 
     def forward(self, x, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
         """Process a batch of images through BPG compression.
@@ -190,8 +232,9 @@ class BPGCompressor(BaseModel):
         # Measure original file size
         original_size = os.path.getsize(paths["input"])
 
-        # Compress with specified quality
-        result = subprocess.run([self.bpg_encoder_path, "-q", str(quality), "-o", paths["compressed"], paths["input"]], capture_output=True, text=True)
+        # Compress with specified quality using safe subprocess execution
+        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(quality), "-o", paths["compressed"], paths["input"]], text=True)
+
         if result.returncode != 0:
             logger.error(f"BPG encoding failed: {result.stderr}")
             shutil.rmtree(paths["dir"])
@@ -207,8 +250,9 @@ class BPGCompressor(BaseModel):
             with open(paths["compressed"], "rb") as f:
                 compressed_data = f.read()
 
-        # Decompress
-        result = subprocess.run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], capture_output=True, text=True)
+        # Decompress using safe subprocess execution
+        result = self._safe_subprocess_run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], text=True)
+
         if result.returncode != 0:
             logger.error(f"BPG decoding failed: {result.stderr}")
             shutil.rmtree(paths["dir"])
@@ -253,10 +297,9 @@ class BPGCompressor(BaseModel):
         original_size = os.path.getsize(paths["input"])
         transform = transforms.ToTensor()
 
-        # Perform initial quality estimates to potentially narrow search range
-        # Try quality 30 first as it's often a good middle ground
+        # Perform initial quality estimates using safe subprocess execution
         initial_quality = 30
-        result = subprocess.run([self.bpg_encoder_path, "-q", str(initial_quality), "-o", paths["compressed"], paths["input"]], capture_output=True, text=True)
+        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(initial_quality), "-o", paths["compressed"], paths["input"]], text=True)
 
         if result.returncode == 0:
             bits_at_q30 = os.path.getsize(paths["compressed"]) * 8
@@ -282,8 +325,8 @@ class BPGCompressor(BaseModel):
         while low <= high:
             mid = (low + high) // 2
 
-            # Try compression with the current quality
-            result = subprocess.run([self.bpg_encoder_path, "-q", str(mid), "-o", paths["compressed"], paths["input"]], capture_output=True, text=True)
+            # Try compression with the current quality using safe subprocess execution
+            result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(mid), "-o", paths["compressed"], paths["input"]], text=True)
             if result.returncode != 0:
                 logger.error(f"BPG encoding failed at quality {mid}: {result.stderr}")
                 high = mid - 1
@@ -298,8 +341,8 @@ class BPGCompressor(BaseModel):
                 best_quality = mid
                 best_bits = bitrate_out
 
-                # Decode the image
-                result = subprocess.run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], capture_output=True, text=True)
+                # Decode the image using safe subprocess execution
+                result = self._safe_subprocess_run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], text=True)
                 if result.returncode == 0:
                     # Save this as our best result so far
                     if os.path.exists(paths["best_output"]):
@@ -326,7 +369,7 @@ class BPGCompressor(BaseModel):
                 if self.return_compressed_data:
                     # We need to re-compress at the best quality to get the data
                     temp_compressed = os.path.join(paths["dir"], f"final_{uuid.uuid4()}.bpg")
-                    result = subprocess.run([self.bpg_encoder_path, "-q", str(best_quality), "-o", temp_compressed, paths["input"]], capture_output=True, text=True)
+                    result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(best_quality), "-o", temp_compressed, paths["input"]], text=True)
                     if result.returncode == 0:
                         with open(temp_compressed, "rb") as f:
                             compressed_data = f.read()

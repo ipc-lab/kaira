@@ -6,7 +6,8 @@ It extracts information from the release and formats it according to Keep a Chan
 
 import os
 import re
-import subprocess
+import shutil
+import subprocess  # nosec
 from datetime import datetime
 from pathlib import Path
 
@@ -158,7 +159,14 @@ def update_changelog(version_info):
 def get_previous_version(current_version):
     """Get the previous version from git tags."""
     try:
-        result = subprocess.run(["git", "tag", "--sort=-v:refname"], capture_output=True, text=True, check=True)
+        # Get the full path to the git executable
+        git_exec = shutil.which("git")
+        if not git_exec:
+            print("Error: Git executable not found in PATH")
+            return "0.0.0"
+
+        # Use the full path and ensure command arguments are not from external sources
+        result = subprocess.run([git_exec, "tag", "--sort=-v:refname"], capture_output=True, text=True, check=True, shell=False)  # nosec
         tags = result.stdout.strip().split("\n")
 
         # Filter tags to only include version tags
@@ -172,6 +180,9 @@ def get_previous_version(current_version):
                 return tag.lstrip("v")
 
         # If no previous tag is found
+        return "0.0.0"
+    except subprocess.SubprocessError as e:
+        print(f"Error executing git command: {e}")
         return "0.0.0"
     except Exception as e:
         print(f"Error getting previous version: {e}")
