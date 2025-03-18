@@ -40,6 +40,9 @@ body {
     display: flex;
     flex-direction: column;
 }
+.sphx-glr-script-out .highlight pre {
+    color: #1a2a3a;
+}
 .container {
     width: 90%;
     max-width: 1200px;

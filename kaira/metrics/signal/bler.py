@@ -166,5 +166,9 @@ class BlockErrorRate(BaseMetric):
 
 # Alias for backward compatibility and convenience
 BLER = BlockErrorRate
+SymbolErrorRate = BlockErrorRate
+FrameErrorRate = BlockErrorRate
 FER = BlockErrorRate
+SER = BlockErrorRate
 MetricRegistry.register_metric("fer")(BlockErrorRate)  # Register FER (Frame Error Rate) as another alias
+MetricRegistry.register_metric("ser")(BlockErrorRate)  # Register SER (Frame Error Rate) as another alias

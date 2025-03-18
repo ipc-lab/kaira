@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.000** total execution time for 0 files **from all galleries**:
+**00:12.433** total execution time for 8 files **from all galleries**:
 
 .. container::
 
@@ -32,6 +32,27 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - N/A
-     - N/A
-     - N/A
+   * - :ref:`sphx_glr_auto_examples_plot_composite_channels.py` (``../examples/plot_composite_channels.py``)
+     - 00:03.838
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_poisson_channel.py` (``../examples/plot_poisson_channel.py``)
+     - 00:02.807
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_laplacian_channel.py` (``../examples/plot_laplacian_channel.py``)
+     - 00:02.582
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_fading_channels.py` (``../examples/plot_fading_channels.py``)
+     - 00:02.137
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_binary_channels.py` (``../examples/plot_binary_channels.py``)
+     - 00:00.989
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_awgn_channel.py` (``../examples/plot_awgn_channel.py``)
+     - 00:00.069
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_phase_noise_channel.py` (``../examples/plot_phase_noise_channel.py``)
+     - 00:00.008
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_plot_nonlinear_channel.py` (``../examples/plot_nonlinear_channel.py``)
+     - 00:00.003
+     - 0.0

@@ -16,7 +16,7 @@ from .image import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio
+from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio, FER, FrameErrorRate, SER, SymbolErrorRate
 
 __all__ = [
     # Base classes
@@ -37,6 +37,10 @@ __all__ = [
     "BER",
     "BlockErrorRate",
     "BLER",
+    "FrameErrorRate",
+    "FER",
+    "SymbolErrorRate",
+    "SER",
     # Registry
     "MetricRegistry",
     # Utils

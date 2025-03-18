@@ -170,6 +170,10 @@ They quantify performance in terms of accuracy, fidelity, and perceptual quality
    BER
    BlockErrorRate
    BLER
+   FrameErrorRate
+   FER
+   SymbolErrorRate
+   SER
    
    # Registry
    MetricRegistry
