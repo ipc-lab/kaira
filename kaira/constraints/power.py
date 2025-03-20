@@ -184,8 +184,12 @@ class PAPRConstraint(BaseConstraint):
         # Calculate average power
         avg_power = torch.mean(torch.abs(x) ** 2, dim=dims, keepdim=True)
 
-        # Find peak power
-        peak_power = torch.max(torch.abs(x) ** 2, dim=dims, keepdim=True)[0]
+        # Find peak power - iterate over dimensions to find max value
+        # since torch.max only supports one dimension at a time
+        power_values = torch.abs(x) ** 2
+        for dim in sorted(dims, reverse=True):  # Process from innermost dimension outward
+            power_values, _ = torch.max(power_values, dim=dim, keepdim=True)
+        peak_power = power_values
 
         # Calculate current PAPR
         current_papr = peak_power / (avg_power + 1e-8)

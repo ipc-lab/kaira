@@ -6,21 +6,19 @@ composition for complex signal requirements.
 """
 
 from typing import Sequence
-
+import torch
 from .base import BaseConstraint
-
+from torch import nn
 
 class CompositeConstraint(BaseConstraint):
-    """Applies multiple signal constraints in sequence as a single unified constraint.
-
-    This class combines multiple BaseConstraint objects into a single constraint that applies
-    each component constraint sequentially. It inherits from both BaseConstraint to provide constraint functionality.
-
-    The composite pattern allows complex constraint combinations to be treated as a
-    single constraint object, enabling modular constraint creation and reuse.
-
+    """Applies multiple constraints in sequence.
+    
+    This constraint combines multiple independent constraints and applies them
+    in sequence to the input tensor. This allows for more complex constraint
+    compositions like applying both power and spectral constraints together.
+    
     Attributes:
-        constraints (list): List of BaseConstraint objects to apply in sequence
+        constraints (nn.ModuleList): List of constraint modules to apply in sequence
 
     Example:
         >>> power_constraint = TotalPowerConstraint(1.0)
@@ -34,20 +32,14 @@ class CompositeConstraint(BaseConstraint):
         final result, as constraints may interact with each other.
     """
 
-    def __init__(self, constraints: Sequence[BaseConstraint]) -> None:
-        """Initialize a composite constraint with a list of component constraints.
-
+    def __init__(self, constraints: Sequence[BaseConstraint] | nn.ModuleList) -> None:
+        """Initialize the composite constraint with a list of constraints.
+        
         Args:
-            constraints (Sequence[BaseConstraint]): List of constraint objects to apply in sequence
-
-        Raises:
-            ValueError: If constraints list is empty
+            constraints (Sequence[BaseConstraint] | nn.ModuleList): List of constraint modules to apply in sequence
         """
-        if not constraints:
-            raise ValueError("CompositeConstraint requires at least one constraint")
-
-        # Convert to List[Callable] for SequentialModel compatibility
-        super().__init__(constraints)
+        super().__init__()  # Call parent constructor with no arguments
+        self.constraints = constraints if isinstance(constraints, torch.nn.ModuleList) else torch.nn.ModuleList(constraints)
 
     def add_constraint(self, constraint: BaseConstraint) -> None:
         """Add a new constraint to the composite.
@@ -69,7 +61,7 @@ class CompositeConstraint(BaseConstraint):
         Returns:
             Constrained signal after applying all component constraints
         """
-        for step in self.steps:
+        for step in self.constraints:
             x = step(x)
 
         return x

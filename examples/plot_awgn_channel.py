@@ -1,7 +1,7 @@
 """
-==========================================================================================================================================================================
+===========================================
 Simulating AWGN Channels with Kaira
-==========================================================================================================================================================================
+===========================================
 
 This example demonstrates the usage of Additive White Gaussian Noise (AWGN) channel
 in the Kaira library. AWGN is one of the most common communication channel models,
@@ -12,7 +12,7 @@ We'll visualize how different noise levels (SNR) affect signal transmission.
 
 # %%
 # Imports and Setup
-# ----------------------------------------------------------
+# -------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
 import numpy as np
@@ -30,7 +30,7 @@ np.random.seed(42)
 
 # %%
 # Create Sample Signal
-# ------------------------------------------------------------------------
+# ------------------------------------
 # Let's create a sample signal to pass through our AWGN channels.
 # We'll use a sine wave as our input signal.
 
@@ -47,7 +47,7 @@ print(f"Input signal shape: {input_signal.shape}")
 
 # %%
 # Create AWGN Channels with Different SNR Levels
-# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 # We'll create multiple AWGN channels with different Signal-to-Noise Ratio (SNR) levels 
 # to observe how noise affects our signal.
 
@@ -68,7 +68,7 @@ for snr_db in snr_levels_db:
 
 # %%
 # Pass Signal Through AWGN Channels
-# -------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------
 # Now we'll pass our input signal through each AWGN channel and collect the outputs.
 
 # Initialize Kaira SNR and PSNR metrics
@@ -100,7 +100,7 @@ for snr_db, channel in awgn_channels:
 
 # %%
 # Visualize the Results
-# -------------------------------------------------------------------------
+# -------------------------------------
 # Let's visualize how different SNR levels affect the transmitted signal.
 
 plt.figure(figsize=(10, 8))
@@ -130,7 +130,7 @@ plt.show()
 
 # %%
 # Compare Theoretical and Measured SNR Values
-# ------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Let's compare the target SNR values with what we actually measured.
 
 plt.figure(figsize=(10, 5))
@@ -162,7 +162,7 @@ plt.show()
 
 # %%
 # Calculate Mean Squared Error (MSE)
-# --------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------
 # Let's calculate the MSE between the original and the noisy signals.
 
 mse_values = []
@@ -173,7 +173,7 @@ for snr_db, output in outputs:
 
 # %%
 # Plot SNR vs MSE
-# -------------------------------------------
+# -------------------------
 # Let's plot the relationship between SNR and MSE.
 
 plt.figure(figsize=(8, 5))
@@ -198,7 +198,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ------------------------------------
+# ------------------
 # This example demonstrated how to use the AWGNChannel in Kaira to simulate noisy 
 # signal transmission with different SNR levels. We also used Kaira's metrics to evaluate
 # the actual SNR and PSNR of the transmitted signals.
