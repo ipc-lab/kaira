@@ -32,7 +32,10 @@ class PeakSignalNoiseRatio(BaseMetric):
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="PSNR")
-        self.psnr = torchmetrics.image.PeakSignalNoiseRatio(data_range=data_range, reduction=None, dim=[1, 2, 3], **kwargs)
+        if "dim" not in kwargs:
+            kwargs["dim"] = [1, 2, 3]
+
+        self.psnr = torchmetrics.image.PeakSignalNoiseRatio(data_range=data_range, reduction=None, **kwargs)
 
     def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
         """Calculate PSNR between predicted and target images.

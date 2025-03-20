@@ -14,7 +14,7 @@ magnitude of fading.
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -35,7 +35,7 @@ np.random.seed(42)
 
 # %%
 # Generate QPSK Signal
-# ------------------
+# ------------------------------------
 # Let's use Kaira's QPSKModulator to generate QPSK symbols.
 
 # Create a QPSK modulator
@@ -78,7 +78,7 @@ plt.show()
 
 # %%
 # Define Channel Scenarios
-# ---------------------
+# ------------------------------------------
 # We'll compare a perfect channel (no distortion), an AWGN channel (noise only), 
 # and a flat fading channel (fading + noise).
 
@@ -102,7 +102,7 @@ print(f"Fading Channel configuration: {fading_channel.get_config()}")
 
 # %%
 # Pass Signal Through Channels
-# -------------------------
+# -------------------------------------------------
 # Now we'll pass our QPSK signal through each channel type.
 
 with torch.no_grad():
@@ -122,7 +122,7 @@ fading_complex = fading_output.squeeze(0).cpu().numpy().view(np.complex128)
 
 # %%
 # Visualize Channel Effects on Constellation
-# --------------------------------------
+# --------------------------------------------------------------------------
 # Let's visualize how each channel affects the QPSK constellation.
 
 # Take a subset for clearer visualization
@@ -173,7 +173,7 @@ plt.show()
 
 # %%
 # Symbol Amplitude Distribution
-# --------------------------
+# --------------------------------------------------
 # Let's analyze how fading affects the amplitude distribution of the symbols.
 
 # Calculate amplitudes
@@ -213,7 +213,7 @@ plt.show()
 
 # %%
 # Effect of SNR on Symbol Error Rate in Fading Channels
-# -------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # Let's examine how SNR affects symbol error rates in AWGN vs. fading channels.
 
 # Define a range of SNR values
@@ -279,7 +279,7 @@ for snr_db in snr_range_db:
 
 # %%
 # Plot SER vs. SNR
-# --------------
+# --------------------------
 
 plt.figure(figsize=(10, 6))
 plt.semilogy(snr_range_db, awgn_ser, 'bo-', linewidth=2, label='AWGN Channel')
@@ -307,7 +307,7 @@ plt.show()
 
 # %%
 # Visualizing Time-Varying Fading
-# ----------------------------
+# -------------------------------------------------------
 # Let's simulate and visualize time-varying fading effects.
 
 # Generate a longer sequence of symbols for better visualization
@@ -354,7 +354,7 @@ plt.show()
 
 # %%
 # Power Spectral Density of Fading Process
-# -------------------------------------
+# -------------------------------------------------------------------------
 # Let's analyze the frequency characteristics of the fading process.
 
 # Calculate PSD using FFT
@@ -377,7 +377,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------
 # This example demonstrated the use of fading channels in Kaira, with a focus on
 # the FlatFadingChannel model. We observed:
 #

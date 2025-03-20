@@ -1,7 +1,7 @@
 """
-===========================================
+==========================================================================================================================================================================
 Poisson Channel for Signal-Dependent Noise
-===========================================
+==========================================================================================================================================================================
 
 This example demonstrates the PoissonChannel in Kaira, which models signal-dependent
 noise commonly found in optical systems and photon-counting detectors. Unlike AWGN
@@ -12,7 +12,7 @@ and imaging systems.
 
 # %%
 # Imports and Setup
-# ----------------
+# ----------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -28,7 +28,7 @@ np.random.seed(42)
 
 # %%
 # Create Test Images
-# ---------------
+# ---------------------------------------------------------
 # Let's create some simple test images with varying intensities to observe
 # the signal-dependent nature of Poisson noise.
 
@@ -54,7 +54,7 @@ print(f"Signal range: [{input_signal.min().item():.4f}, {input_signal.max().item
 
 # %%
 # Define Channel Models
-# ------------------
+# ------------------------------------------------------------------------
 # We'll compare the Poisson channel with AWGNChannel at equivalent SNR levels.
 
 # Define different rate factors for the Poisson channel
@@ -86,7 +86,7 @@ for rate in rate_factors:
 
 # %%
 # Process Test Image Through Channels
-# -------------------------------
+# -------------------------------------------------------------------------------------------------------------------
 # Pass our test image through each channel model and visualize the results.
 
 # Function to process through a channel and collect results
@@ -108,7 +108,7 @@ for rate, channel in awgn_channels:
 
 # %%
 # Visualize Noise Characteristics
-# ----------------------------
+# -------------------------------------------------------------------------------------------------------------
 # Let's visualize how Poisson noise differs from Gaussian (AWGN) noise.
 
 plt.figure(figsize=(15, 12))
@@ -142,7 +142,7 @@ plt.show()
 
 # %%
 # Analyze Signal-Dependent Noise
-# --------------------------
+# -----------------------------------------------------------------------------------------------
 # Let's extract noise patterns from both channels and analyze 
 # how noise varies with signal intensity.
 
@@ -189,7 +189,7 @@ for rate, output in awgn_outputs:
 
 # %%
 # Plot Signal Profiles and Noise
-# ---------------------------
+# ------------------------------------------------------------------------------------------------------------
 # Let's visualize the horizontal profiles to see how noise varies with signal intensity.
 
 plt.figure(figsize=(15, 10))
@@ -301,7 +301,7 @@ plt.show()
 
 # %%
 # Signal-to-Noise Ratio Analysis
-# ----------------------------
+# -------------------------------------------------------------------------------------------------------------
 # Let's compare the effective SNR across different signal intensities.
 
 plt.figure(figsize=(10, 6))
@@ -371,7 +371,7 @@ plt.show()
 
 # %%
 # Application to Digital Transmission
-# --------------------------------
+# --------------------------------------------------------------------------------------------------------------------
 # Let's demonstrate how Poisson noise impacts digital signal transmission.
 
 # Create a binary signal (0s and 1s)
@@ -459,7 +459,7 @@ plt.show()
 
 # %%
 # Bit Error Rate Analysis
-# ---------------------
+# ------------------------------------------------------------------------------
 # Calculate and compare BER for Poisson and AWGN channels using Kaira's BitErrorRate metric.
 
 # Create a Kaira BitErrorRate metric
@@ -523,7 +523,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------------------------
 # This example demonstrates several key characteristics of the Poisson channel:
 #
 # - Poisson noise is signal-dependent, with stronger signals experiencing larger 

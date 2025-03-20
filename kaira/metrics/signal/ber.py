@@ -46,11 +46,11 @@ class BitErrorRate(BaseMetric):
             Tensor: BER values
         """
         # Threshold received values to get binary decisions
-        transmitted_bits = (transmitted > self.threshold).float()
-        received_bits = (received > self.threshold).float()
+        transmitted_bits = (transmitted > self.threshold).bool()
+        received_bits = (received > self.threshold).bool()
 
-        # Count errors (XOR will be 1 where bits differ)
-        errors = (transmitted_bits ^ received_bits).float()
+        # Count errors (using not equal comparison instead of XOR)
+        errors = (transmitted_bits != received_bits).float()
 
         # Calculate error rates per sample
         error_rate = errors.mean(dim=-1)
@@ -64,11 +64,11 @@ class BitErrorRate(BaseMetric):
             transmitted (Tensor): Original transmitted bits
             received (Tensor): Received bits
         """
-        transmitted_bits = (transmitted > self.threshold).float()
-        received_bits = (received > self.threshold).float()
+        transmitted_bits = (transmitted > self.threshold).bool()
+        received_bits = (received > self.threshold).bool()
 
-        # Count errors
-        errors = (transmitted_bits ^ received_bits).float()
+        # Count errors using not equal comparison
+        errors = (transmitted_bits != received_bits).float()
 
         # Update cumulative statistics
         self.total_bits += torch.prod(torch.tensor(transmitted.shape))

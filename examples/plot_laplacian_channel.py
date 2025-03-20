@@ -11,7 +11,7 @@ with occasional large noise spikes.
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -26,7 +26,7 @@ np.random.seed(42)
 
 # %%
 # Generate Sample Signal
-# ------------------
+# ------------------------------------
 # Let's create a sample signal to test our noise models.
 
 # Generate time points
@@ -42,7 +42,7 @@ print(f"Input signal shape: {input_signal.shape}")
 
 # %%
 # Create Channels with Different Noise Distributions
-# ----------------------------------------------
+# -------------------------------------------------------------------------------------------
 # We'll compare Gaussian noise (AWGNChannel) with Laplacian noise 
 # at equivalent SNR levels.
 
@@ -67,7 +67,7 @@ for snr_db in snr_levels_db:
 
 # %%
 # Pass Signal Through Channels
-# ---------------------------
+# ------------------------------------------------------
 # Now we'll pass our signal through each channel and collect the outputs.
 
 awgn_outputs = []
@@ -87,7 +87,7 @@ for snr_db, awgn_channel, laplacian_channel in channels:
 
 # %%
 # Visualize Noise Distribution Differences
-# ---------------------------------------
+# ------------------------------------------------------------------------------
 # Let's compare the effect of Gaussian vs. Laplacian noise on our signal.
 
 plt.figure(figsize=(15, 12))
@@ -131,7 +131,7 @@ plt.show()
 
 # %%
 # Analyze Noise Distribution
-# ------------------------
+# ------------------------------------------------
 # To better understand the difference between Gaussian and Laplacian noise,
 # let's extract the noise components and visualize their distributions.
 
@@ -190,7 +190,7 @@ plt.show()
 
 # %%
 # Impact on Error Metrics
-# -----------------------
+# --------------------------------------------
 # Let's analyze how the different noise distributions impact common error metrics.
 
 plt.figure(figsize=(10, 6))
@@ -239,7 +239,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ----------
+# -------------------
 # This example demonstrates the key differences between Gaussian noise (AWGN) and
 # Laplacian noise when applied to signals:
 #

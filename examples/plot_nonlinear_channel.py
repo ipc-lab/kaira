@@ -1,7 +1,7 @@
 """
-===========================================
+==========================================================================================================================================================================
 Nonlinear Channel Distortion Effects
-===========================================
+==========================================================================================================================================================================
 
 This example demonstrates the NonlinearChannel in Kaira, which allows modeling
 various nonlinear signal distortions commonly encountered in communication systems.
@@ -11,7 +11,7 @@ and can significantly impact system performance.
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -28,7 +28,7 @@ np.random.seed(42)
 
 # %%
 # Define Nonlinear Transfer Functions
-# ---------------------------------
+# ------------------------------------------------------------
 # We'll define several common nonlinear distortion functions.
 
 def soft_clipping(x, alpha=1.0):
@@ -72,7 +72,7 @@ def polynomial_nonlinearity(x, coeffs=[1.0, 0.2, -0.1]):
 
 # %%
 # Generate Test Signals
-# ------------------
+# ------------------------------------
 # Let's create test signals to observe nonlinear distortion effects.
 
 # Generate time points
@@ -95,7 +95,7 @@ print(f"Generated single-tone and two-tone test signals")
 
 # %%
 # Apply Different Nonlinear Distortions
-# ----------------------------------
+# -------------------------------------------------------------
 # Now we'll pass our test signals through various nonlinear channels.
 
 # Create different nonlinear channels
@@ -125,7 +125,7 @@ for name, channel in nonlinear_channels:
 
 # %%
 # Visualize Time-Domain Distortion Effects
-# -------------------------------------
+# -------------------------------------------------------------------------
 # Let's visualize how nonlinearities affect signals in the time domain.
 
 plt.figure(figsize=(15, 10))
@@ -157,7 +157,7 @@ plt.show()
 
 # %%
 # Frequency-Domain Analysis
-# -----------------------
+# -----------------------------------------
 # Let's analyze the spectral effects of nonlinear distortion.
 
 def calculate_spectrum(signal_data, fs=1000):
@@ -202,7 +202,7 @@ plt.show()
 
 # %%
 # AM/AM and AM/PM Characteristics
-# -----------------------------
+# --------------------------------------------------------
 # Now let's examine the amplitude and phase distortion characteristics
 # of the Saleh model commonly used for modeling power amplifiers.
 
@@ -275,7 +275,7 @@ plt.show()
 
 # %%
 # Effect of Nonlinearities on Digital Modulation
-# -------------------------------------------
+# -------------------------------------------------------------------------------
 # Let's examine how nonlinear distortion affects a 16-QAM constellation.
 
 # Use Kaira's QAMModulator to generate QAM symbols
@@ -336,12 +336,12 @@ for name, channel in qam_channels:
     detected_symbols = []
     for symbol in output:
         # Find the closest constellation point
-        distances = torch.abs(symbol - constellation_points)
+        distances = torch.abs(symbol.unsqueeze(1) - constellation_points.unsqueeze(0))  # Shape becomes [10000, 16]
         _, idx = torch.min(distances, dim=0)
         detected_symbols.append(idx)
     
     # Convert to tensor
-    detected_indices = torch.stack(detected_symbols)
+    detected_indices = torch.argmin(distances, dim=1)  # Shape will be [10000]
     
     # Calculate and store SER
     ser = (detected_indices != symbol_labels).float().mean().item()
@@ -376,7 +376,7 @@ plt.show()
 
 # %%
 # Predistortion to Compensate Nonlinearities
-# ---------------------------------------
+# ---------------------------------------------------------------------------
 # Let's demonstrate how predistortion can mitigate nonlinear effects.
 
 # Define a nonlinearity and its inverse (predistorter)
@@ -439,7 +439,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------
 # This example demonstrates several key aspects of nonlinear channels in communication systems:
 #
 # - Nonlinearities introduce harmonic distortion in single-tone signals and

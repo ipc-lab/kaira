@@ -11,6 +11,7 @@ from .tung2022_deepjscc_q import (
 )
 from .yang2024_deepjcc_swin import Yang2024DeepJSCCSwinDecoder, Yang2024DeepJSCCSwinEncoder
 from .yilmaz2023_deepjscc_noma import Yilmaz2023DeepJSCCNOMAModel
+from .yilmaz2024_deepjscc_wz import Yilmaz2024DeepJSCCWZModel, Yilmaz2024DeepJSCCWZConditionalDecoder, Yilmaz2024DeepJSCCWZConditionalEncoder, Yilmaz2024DeepJSCCWZDecoder, Yilmaz2024DeepJSCCWZEncoder, Yilmaz2024DeepJSCCWZSmallEncoder, Yilmaz2024DeepJSCCWZSmallDecoder
 
 __all__ = [
     "Tung2022DeepJSCCQEncoder",
@@ -20,4 +21,11 @@ __all__ = [
     "Yang2024DeepJSCCSwinEncoder",
     "Yang2024DeepJSCCSwinDecoder",
     "Yilmaz2023DeepJSCCNOMAModel",
+    "Yilmaz2024DeepJSCCWZSmallEncoder",
+    "Yilmaz2024DeepJSCCWZSmallDecoder",
+    "Yilmaz2024DeepJSCCWZEncoder",
+    "Yilmaz2024DeepJSCCWZDecoder",
+    "Yilmaz2024DeepJSCCWZConditionalEncoder",
+    "Yilmaz2024DeepJSCCWZConditionalDecoder",
+    "Yilmaz2024DeepJSCCWZModel"
 ]

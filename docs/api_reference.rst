@@ -292,6 +292,7 @@ Specialized image compression components.
    :nosignatures:
 
    BPGCompressor
+   NeuralCompressor
 
 Losses
 ------------

@@ -12,7 +12,7 @@ effects together for realistic simulations.
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -33,7 +33,7 @@ np.random.seed(42)
 
 # %%
 # Channel Composition in Kaira
-# -------------------------
+# -------------------------------------------------
 # Communication signals often traverse multiple channel impairments. For example:
 # 1. RF signals experience nonlinear distortion in amplifiers
 # 2. Then undergo fading due to multipath propagation
@@ -44,7 +44,7 @@ np.random.seed(42)
 
 # %%
 # Generate a QAM Signal for Testing
-# ------------------------------
+# ------------------------------------------------------------
 # Let's create a 16-QAM constellation to illustrate channel effects.
 
 def generate_qam_constellation(M=16):
@@ -88,7 +88,7 @@ print(f"Created {len(qam_complex)} total QAM symbols with shape {qam_complex.sha
 
 # %%
 # Define Individual Channel Effects
-# -----------------------------
+# --------------------------------------------------------
 # Let's create individual channels for each impairment type.
 
 # 1. Nonlinear distortion (soft limiter / saturation)
@@ -125,7 +125,7 @@ print("Created individual channel impairment models")
 
 # %%
 # Compose Channel Effects
-# --------------------
+# --------------------------------------
 # Let's create different channel compositions to see their combined effects.
 # Note: order of application matters!
 
@@ -157,7 +157,7 @@ print("Processed signals through various channel combinations")
 
 # %%
 # Visualize Channel Effects on Constellation
-# --------------------------------------
+# --------------------------------------------------------------------------
 # Let's visualize how each channel and their combinations affect the constellation.
 
 def plot_constellation(ax, symbols, title):
@@ -224,7 +224,7 @@ plt.show()
 
 # %%
 # Analyze Symbol Error Rate
-# ----------------------
+# -------------------------------------------
 # Let's analyze how different channel impairments affect symbol error rate.
 
 def calculate_ser(received, original_points):
@@ -296,7 +296,7 @@ plt.show()
 
 # %%
 # Sweep Parameter Combinations
-# ------------------------
+# ------------------------------------------------
 # Let's explore how performance changes as we vary parameters of combined impairments.
 # We'll focus on phase noise + AWGN as an example.
 
@@ -333,7 +333,7 @@ for phase_std, snr_db in param_grid:
 
 # %%
 # Create a heatmap of SER vs. parameters
-# -----------------------------------
+# --------------------------------------------------------------------
 
 # Prepare data for heatmap
 ser_matrix = np.zeros((len(phase_noise_levels), len(snr_db_levels)))
@@ -361,7 +361,7 @@ plt.show()
 
 # %%
 # Time-Varying Channel Example
-# ------------------------
+# ------------------------------------------------
 # Let's demonstrate a time-varying channel where parameters change over time.
 # This simulates scenarios like mobile communications with changing conditions.
 
@@ -409,7 +409,7 @@ with torch.no_grad():
 
 # %%
 # Analyze Time-Varying Effects
-# ------------------------
+# ------------------------------------------------
 # Let's analyze how performance varies over time with changing conditions.
 
 # Calculate error rate in sliding windows
@@ -481,7 +481,7 @@ plt.show()
 
 # %%
 # Creating a Custom Composite Channel Class
-# -------------------------------------
+# -------------------------------------------------------------------------
 # For repeated use, you can create a custom composite channel class.
 
 class SatelliteChannel(torch.nn.Module):
@@ -540,7 +540,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------
 # This example demonstrates several key aspects of channel composition in Kaira:
 #
 # - Individual channel effects can be combined in sequence to model complex

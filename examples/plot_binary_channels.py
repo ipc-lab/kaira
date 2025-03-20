@@ -15,7 +15,7 @@ We'll explore the three main binary channel models:
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
 import numpy as np
@@ -35,7 +35,7 @@ np.random.seed(42)
 
 # %%
 # Generate Binary Data
-# ------------------
+# ------------------------------------
 # Let's generate a random binary sequence to transmit through our channels.
 
 # Generate 1000 random binary values (0 or 1)
@@ -47,7 +47,7 @@ print(f"First 20 bits: {binary_data[0, :20].int().tolist()}")
 
 # %%
 # Binary Symmetric Channel (BSC)
-# ----------------------------
+# -------------------------------------------------------
 # The BSC flips bits with probability p. Both 0→1 and 1→0 transitions occur with the same probability.
 
 # Create BSC with different error probabilities
@@ -71,7 +71,7 @@ for p in error_probs:
 
 # %%
 # Binary Erasure Channel (BEC)
-# --------------------------
+# --------------------------------------------------
 # The BEC erases bits with probability p, replacing them with a special "erasure" symbol (here represented by -1).
 
 # Create BEC with different erasure probabilities
@@ -95,7 +95,7 @@ for p in erasure_probs:
 
 # %%
 # Binary Z-Channel
-# --------------
+# --------------------------
 # The Z-Channel has asymmetric error probabilities. Only 1→0 transitions occur with probability p.
 
 # Create Z-Channel with different error probabilities
@@ -121,7 +121,7 @@ for p in z_error_probs:
 
 # %%
 # Visualizing Channel Effects
-# -------------------------
+# -------------------------------------------------
 # Let's visualize a small segment of the data to see how each channel affects the binary transmission.
 
 # Take a small segment of the data for visualization
@@ -183,7 +183,7 @@ plot_binary_data(axes[3], z_output, f"Z-Channel (p={z_p})", 0)
 
 # %%
 # Comparing Error Rates Across Channels
-# ----------------------------------
+# -------------------------------------------------------------------
 # Now let's compare the theoretical vs. observed error rates for each channel type.
 
 # Add horizontal lines for bit positions
@@ -232,7 +232,7 @@ plt.show()
 
 # %%
 # Channel Transition Matrices
-# ------------------------
+# ------------------------------------------------
 # Visualize the transition matrices for each channel type.
 
 def plot_transition_matrix(ax, matrix, title):
@@ -271,7 +271,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------
 # This example demonstrated the use of different binary channel models in Kaira:
 #
 # - The **Binary Symmetric Channel** randomly flips bits with probability p,

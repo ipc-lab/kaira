@@ -1,7 +1,7 @@
 """
-===========================================
+=============================================================================
 Phase Noise Effects on Signal Constellations
-===========================================
+=============================================================================
 
 This example demonstrates the PhaseNoiseChannel in Kaira, which simulates phase
 noise commonly encountered in oscillators and frequency synthesizers. Phase noise
@@ -11,7 +11,7 @@ degrade performance even when signal amplitude remains intact.
 
 # %%
 # Imports and Setup
-# ----------------
+# -------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -27,7 +27,7 @@ np.random.seed(42)
 
 # %%
 # Generate QAM Constellation
-# ------------------------
+# ------------------------------------------------
 # We'll use a 16-QAM constellation to demonstrate phase noise effects.
 
 # Create a 16-QAM modulator
@@ -39,7 +39,7 @@ print(f"Generated 16-QAM constellation with {len(qam_constellation)} points")
 
 # %%
 # Create Transmission with Multiple Phase Noise Levels
-# -------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # We'll transmit the constellation through channels with increasing phase noise.
 
 # Define phase noise levels (standard deviation in radians)
@@ -55,22 +55,32 @@ for phase_std in phase_std_levels:
 
 # %%
 # Simulate Transmission with Phase Noise
-# -----------------------------------
+# --------------------------------------------------------------------
 # Pass our constellation points through the phase noise channels.
 
 # Prepare input signals - repeat constellation points many times
 num_symbols_per_point = 500
 input_points = []
 
-for point in qam_constellation:
-    # Repeat each constellation point multiple times
-    repeated_point = point.repeat(num_symbols_per_point, 1)
-    input_points.append(repeated_point)
-
-input_signal = torch.cat(input_points, dim=0)
-
-# Complex version for easier processing
-input_complex = torch.complex(input_signal[:, 0], input_signal[:, 1])
+# First check the shape of the constellation
+if qam_constellation.ndim == 1 or (hasattr(qam_constellation, 'shape') and qam_constellation.shape[1] == 1):
+    # If constellation is complex or has only one dimension
+    if torch.is_complex(qam_constellation):
+        # Work with complex numbers directly
+        input_complex = torch.concat([point.repeat(num_symbols_per_point) for point in qam_constellation])
+    else:
+        # It's a 1D real tensor - convert to complex
+        input_complex = torch.concat([point.repeat(num_symbols_per_point) for point in qam_constellation])
+else:
+    # The constellation has separate I/Q components
+    for point in qam_constellation:
+        # Repeat each constellation point multiple times
+        repeated_point = point.repeat(num_symbols_per_point, 1)
+        input_points.append(repeated_point)
+    
+    input_signal = torch.cat(input_points, dim=0)
+    # Create complex tensor from the separate I/Q components
+    input_complex = torch.complex(input_signal[:, 0], input_signal[:, 1])
 
 # Pass through channels
 outputs = []
@@ -83,7 +93,7 @@ for phase_std, phase_channel in phase_noise_channels:
 
 # %%
 # Visualize Phase Noise Effects
-# --------------------------
+# --------------------------------------------------
 # Let's visualize how phase noise distorts the QAM constellation.
 
 # Custom colormap for better visualization
@@ -104,8 +114,13 @@ for i, (phase_std, output) in enumerate(outputs):
     plt.hist2d(x, y, bins=100, range=[[-2, 2], [-2, 2]], cmap=cmap)
     
     # Plot original constellation points for reference
-    orig_x = qam_constellation[:, 0].cpu().numpy()
-    orig_y = qam_constellation[:, 1].cpu().numpy()
+    if qam_constellation.ndim == 1:  # 1D complex tensor
+        orig_x = torch.real(qam_constellation).cpu().numpy()
+        orig_y = torch.imag(qam_constellation).cpu().numpy()
+    else:  # 2D tensor with separate I/Q components
+        orig_x = qam_constellation[:, 0].cpu().numpy()
+        orig_y = qam_constellation[:, 1].cpu().numpy()
+    
     plt.scatter(orig_x, orig_y, color='red', marker='x', s=50)
     
     plt.title(f'Phase Noise σ = {phase_std} rad')
@@ -119,7 +134,7 @@ plt.show()
 
 # %%
 # Analyze Phase Error Statistics
-# ---------------------------
+# ------------------------------------------------------
 # Let's analyze how phase noise affects the phase error distribution.
 
 # Calculate phase error for each point
@@ -130,7 +145,10 @@ ref_indices = np.repeat(np.arange(len(qam_constellation)), num_symbols_per_point
 
 for phase_std, output in outputs:
     # Calculate original phase of constellation points
-    original_phases = torch.angle(torch.complex(qam_constellation[ref_indices, 0], 
+    if qam_constellation.ndim == 1:  # 1D complex tensor
+        original_phases = torch.angle(qam_constellation[ref_indices])
+    else:  # 2D tensor with separate I/Q components
+        original_phases = torch.angle(torch.complex(qam_constellation[ref_indices, 0], 
                                                qam_constellation[ref_indices, 1]))
     
     # Calculate received phase
@@ -179,18 +197,23 @@ plt.show()
 
 # %%
 # Symbol Error Rate Analysis
-# ------------------------
+# ------------------------------------------------
 # Let's analyze how phase noise affects the symbol error rate (SER).
 
 # Function to detect the closest constellation point
 def detect_symbol(received_points, constellation):
     # Calculate distances to each constellation point
     distances = []
-    for point in constellation:
-        # Convert to complex for easier distance calculation
-        point_complex = torch.complex(point[0], point[1])
-        dist = torch.abs(received_points - point_complex)
-        distances.append(dist)
+    if constellation.ndim == 1:  # 1D complex tensor
+        for point in constellation:
+            dist = torch.abs(received_points - point)
+            distances.append(dist)
+    else:  # 2D tensor with separate I/Q components
+        for point in constellation:
+            # Convert to complex for easier distance calculation
+            point_complex = torch.complex(point[0], point[1])
+            dist = torch.abs(received_points - point_complex)
+            distances.append(dist)
     
     # Stack distances and find minimum
     distances = torch.stack(distances, dim=1)  # [num_points, num_constellation_points]
@@ -229,7 +252,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------
+# ------------------
 # This example demonstrates the effect of phase noise on digital communications:
 #
 # - Phase noise causes constellation points to spread in a circular pattern

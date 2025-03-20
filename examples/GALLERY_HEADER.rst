@@ -1,8 +1,8 @@
 Examples and Tutorials
-======================
+==========================================================================
 
 Welcome to the Kaira Examples and Tutorials Gallery
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------
 
 This gallery provides a comprehensive collection of examples demonstrating Kaira's capabilities for communications, signal processing, and machine learning applications. Each example includes:
 
@@ -12,14 +12,14 @@ This gallery provides a comprehensive collection of examples demonstrating Kaira
 * Tips for adapting the examples to your specific use cases
 
 Getting Started
----------------
+------------------------
 
 * **New to Kaira?** Start with the basic examples to understand core concepts
 * **Seeking specific features?** Use the categories below to find relevant examples
 * **Want to learn more?** Each example links to related documentation topics
 
 Example Categories
-------------------
+------------------------------------
 
 * **Channel Models** - Explore various communication channel implementations
 * **Modulation** - Examples of digital modulation schemes and constellation analysis
