@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="section examples-gallery">
+  <h1>{{ title }}</h1>
+
+  <div class="gallery-intro">
+    {{ content }}
+  </div>
+
+  <div class="gallery-categories">
+    {% for category in gallery_categories %}
+      <div class="gallery-category">
+        <h2 id="{{ category.name }}">{{ category.name }}</h2>
+        <p>{{ category.description }}</p>
+        <div class="examples-grid">
+          {% for example in category.examples %}
+            <div class="example-card">
+              <a href="{{ example.url }}" class="example-link">
+                {% if example.thumbnail %}
+                  <img src="{{ example.thumbnail }}" alt="{{ example.title }} thumbnail" class="example-thumb" loading="lazy" />
+                {% else %}
+                  <div class="example-thumb-placeholder">
+                    <i class="fa fa-file-code-o" aria-hidden="true"></i>
+                  </div>
+                {% endif %}
+                <div class="example-info">
+                  <h3 class="example-title">{{ example.title }}</h3>
+                  <p class="example-description">{{ example.description|truncate(100) }}</p>
+                </div>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

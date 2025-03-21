@@ -73,13 +73,29 @@ extensions = [
     # "hoverxref.extension"
 ]
 
-# Remove the duplicated and restrictive sphinx_gallery_conf
-# and replace with a more comprehensive one
+# Enhanced sphinx-gallery configuration with better organization and structure
 sphinx_gallery_conf = {
-    "examples_dirs": "../examples",  # path to your example scripts
-    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    # Directory paths - now using a list of tuples for multiple directories
+    "examples_dirs": [
+        "../examples/channel_models",
+        "../examples/constraints",
+        "../examples/modulation",
+        "../examples/deep_jscc",
+        "../examples/performance_analysis",
+    ],
+    "gallery_dirs": [
+        "auto_examples/channel_models",
+        "auto_examples/constraints",
+        "auto_examples/modulation",
+        "auto_examples/deep_jscc",
+        "auto_examples/performance_analysis",
+    ],
+    
+    # File patterns and organization
     "filename_pattern": r"\.py$",  # Include all Python files
-    "ignore_pattern": r"__init__\.py",  # Ignore __init__.py files
+    "ignore_pattern": r"__init__\.py|utils\.py",  # Ignore __init__.py and utility files
+    
+    # Content display options
     "line_numbers": True,  # Show line numbers in code blocks
     "download_all_examples": True,  # Option to download all examples
     "plot_gallery": True,  # Generate plots from examples
@@ -88,13 +104,39 @@ sphinx_gallery_conf = {
     "min_reported_time": 1,  # Minimum time to report in examples
     "show_memory": False,  # Don't show memory usage
     "matplotlib_animations": True,  # Enable matplotlib animations
+    
+    # Documentation integration
     "doc_module": ("kaira",),  # Document this module
     "default_thumb_file": "_static/logo.png",  # Default thumbnail image
     "show_signature": True,  # Show function signatures
+    
+    # Reference configurations
     "reference_url": {
         "kaira": None,  # The module has no reference URL
     },
     "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
+    
+    # Gallery organization
+    "subsection_order": None,  # Let the filesystem order dictate subsections
+    
+    # First cell in generated notebooks
+    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}",
+    
+    # Add title with backreferences to gallery homepage
+    "backreferences_dir": "gen_modules/backreferences",
+    
+    # Enable backreferences HTML sections to be included in docs
+    "binder": {
+        "org": "ipc-lab",
+        "repo": "kaira",
+        "branch": "main",
+        "binderhub_url": "https://mybinder.org",
+        "dependencies": "../requirements.txt",
+    },
+    "inspect_global_variables": True,
+    
+    # Image scrapers
+    "image_scrapers": ("matplotlib"),
 }
 
 # Configure autodoc

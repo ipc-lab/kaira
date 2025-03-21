@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 docs/sg_execution_times.rst
+docs/gen_modules
 
 # C extensions
 *.so

@@ -539,3 +539,121 @@ blockquote {
     background-color: #f9f9f9;
     border-radius: 4px;
 }
+
+/* Gallery improvements */
+.examples-gallery {
+    margin: 2rem 0;
+}
+
+.gallery-intro {
+    margin-bottom: 2rem;
+}
+
+.gallery-category {
+    margin-bottom: 3rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eaecef;
+}
+
+.examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.example-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: white;
+}
+
+.example-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.example-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.example-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.example-thumb-placeholder {
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f6f8fa;
+    color: #586069;
+    font-size: 3rem;
+}
+
+.example-info {
+    padding: 1rem;
+}
+
+.example-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1a2a3a;
+}
+
+.example-description {
+    margin: 0;
+    color: #586069;
+    font-size: 0.9rem;
+}
+
+/* Category Grid for Examples Gallery */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.category-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.category-card a {
+    display: block;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.category-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #2563eb;
+    font-size: 1.3rem;
+}
+
+.category-card p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+}

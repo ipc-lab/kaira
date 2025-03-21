@@ -36,7 +36,7 @@ Kaira Documentation
 
    introduction
    installation
-   auto_examples/index
+   examples_index
 
 .. toctree::
    :maxdepth: 2
