@@ -8,6 +8,8 @@ import os
 import sys
 from typing import List
 import importlib.util
+# Import sphinx gallery components
+from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
 
 # Improve module path setup for proper imports
 # First, add the root directory containing the kaira package
@@ -70,10 +72,11 @@ extensions = [
     "sphinx.ext.todo",  # Add support for TODOs
     "sphinx.ext.ifconfig",  # Add support for conditional content
     "sphinx_design",  # Add sphinx-design for better UI components
+    #"sphinx_copybutton",  # Add copy button to code blocks
     # "hoverxref.extension"
 ]
 
-# Enhanced sphinx-gallery configuration with better organization and structure
+# Enhanced sphinx-gallery configuration
 sphinx_gallery_conf = {
     # Directory paths - now using a list of tuples for multiple directories
     "examples_dirs": [
@@ -96,18 +99,14 @@ sphinx_gallery_conf = {
     "ignore_pattern": r"__init__\.py|utils\.py",  # Ignore __init__.py and utility files
     
     # Content display options
-    "line_numbers": True,  # Show line numbers in code blocks
+    #"line_numbers": True,  # Show line numbers in code blocks
     "download_all_examples": True,  # Option to download all examples
     "plot_gallery": True,  # Generate plots from examples
-    "thumbnail_size": (320, 224),  # Size for gallery thumbnails
+    "thumbnail_size": (400, 280),  # Larger thumbnails for better visibility
     "remove_config_comments": True,  # Remove config comments in examples
     "min_reported_time": 1,  # Minimum time to report in examples
     "show_memory": False,  # Don't show memory usage
     "matplotlib_animations": True,  # Enable matplotlib animations
-    
-    # Documentation integration
-    "doc_module": ("kaira",),  # Document this module
-    "default_thumb_file": "_static/logo.png",  # Default thumbnail image
     "show_signature": True,  # Show function signatures
     
     # Reference configurations
@@ -117,26 +116,30 @@ sphinx_gallery_conf = {
     "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
     
     # Gallery organization
-    "subsection_order": None,  # Let the filesystem order dictate subsections
+    "within_subsection_order": FileNameSortKey,  # Sort by filename within subsections
     
     # First cell in generated notebooks
-    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}",
+    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*",
     
     # Add title with backreferences to gallery homepage
     "backreferences_dir": "gen_modules/backreferences",
     
-    # Enable backreferences HTML sections to be included in docs
+    # Enable Binder integration with JupyterLab interface
     "binder": {
         "org": "ipc-lab",
         "repo": "kaira",
         "branch": "main",
         "binderhub_url": "https://mybinder.org",
         "dependencies": "../requirements.txt",
+        "use_jupyter_lab": True,
     },
-    "inspect_global_variables": True,
     
     # Image scrapers
-    "image_scrapers": ("matplotlib"),
+    "image_scrapers": ("matplotlib",),
+    
+    # Execution settings
+    "junit": "_build/junit-results.xml",  # Save test results
+    "inspect_global_variables": True,  # Inspect global variables
 }
 
 # Configure autodoc
@@ -228,8 +231,12 @@ html_css_files = [
     "plot_directive.css",  # Add the plot directive CSS file
 ]
 
-# Add custom JavaScript file - ensure correct format
-html_js_files: List[str] = []
+# Add custom JavaScript files
+html_js_files = [
+    "gallery-custom.js",
+    ("https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js", {"defer": "defer"}),
+    ("https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js", {"defer": "defer"}),
+]
 
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"

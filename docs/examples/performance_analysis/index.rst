@@ -1,12 +1,15 @@
 :orphan:
 
 Performance Analysis
-====================
+===========================================
 
-Tools for measuring and optimizing system performance.
+Examples demonstrating tools for measuring and optimizing system performance.
 
-.. toctree::
+.. note::
+   Examples for this section are coming soon. Please check back later for updates!
+
+.. .. toctree::
    :maxdepth: 1
    :caption: Examples:
 
-   # No examples available yet
+   (Examples will be added in future releases)

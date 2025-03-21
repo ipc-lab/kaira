@@ -1,12 +1,15 @@
 :orphan:
 
 Deep JSCC
-=========
+==============
 
-End-to-end deep learning for joint source-channel coding.
+Examples demonstrating deep joint source-channel coding techniques.
 
-.. toctree::
+.. note::
+   Examples for this section are coming soon. Please check back later for updates!
+
+.. .. toctree::
    :maxdepth: 1
    :caption: Examples:
 
-   # No examples available yet
+   (Examples will be added in future releases)

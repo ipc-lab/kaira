@@ -40,5 +40,4 @@
 
    {% block backreferences %}
    .. include:: ../gen_modules/backreferences/{{module}}.{{objname}}.examples
-      :literal:
    {% endblock %}

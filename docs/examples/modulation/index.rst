@@ -1,12 +1,15 @@
 :orphan:
 
 Modulation
-==========
+==============
 
-Digital modulation schemes and constellation analysis.
+Examples demonstrating various digital modulation schemes and constellation analysis.
 
-.. toctree::
+.. note::
+   Examples for this section are coming soon. Please check back later for updates!
+
+.. .. toctree::
    :maxdepth: 1
    :caption: Examples:
 
-   # No examples available yet
+   (Examples will be added in future releases)

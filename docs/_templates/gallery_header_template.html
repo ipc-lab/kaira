@@ -1,4 +1,59 @@
-{% extends "layout.html" %}
+{% extends "!layout.html" %}
+
+{% block content %}
+<div class="gallery-header">
+    <div class="gallery-intro">
+        <h1>{{ title }}</h1>
+        {% if description %}
+            <div class="gallery-description">{{ description }}</div>
+        {% endif %}
+        
+        <div class="gallery-metadata">
+            {% if example_count %}
+                <span class="metadata-item">
+                    <i class="fa fa-cube"></i> {{ example_count }} examples
+                </span>
+            {% endif %}
+            {% if total_execution_time %}
+                <span class="metadata-item">
+                    <i class="fa fa-clock-o"></i> Total runtime: {{ "%.2f"|format(total_execution_time) }}s
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if sections %}
+        <nav class="gallery-navigation">
+            <div class="section-links">
+                {% for section in sections %}
+                    <a href="#{{ section.id }}" class="section-link">
+                        {{ section.title }}
+                        <span class="example-count">({{ section.example_count }})</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </nav>
+    {% endif %}
+    
+    {% if download_buttons %}
+        <div class="gallery-actions">
+            {% if zip_download_link %}
+                <a href="{{ zip_download_link }}" class="action-button download-all">
+                    <i class="fa fa-download"></i> Download all examples
+                </a>
+            {% endif %}
+            {% if binder_link %}
+                <a href="{{ binder_link }}" class="action-button launch-binder">
+                    <img src="https://mybinder.org/badge_logo.svg" alt="Launch Binder"/>
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{{ super() }}
+{% endblock %}
+
 {% block body %}
 <div class="section examples-gallery">
   <h1>{{ title }}</h1>

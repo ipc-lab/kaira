@@ -1,12 +1,136 @@
 {% extends "!layout.html" %}
 
 {% block extrahead %}
-{{ super() }}
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="{{ pathto('_static/js/custom.js', 1) }}"></script>
-<link rel="shortcut icon" type="image/x-icon" href="{{ pathto('_static/favicon.ico', 1) }}">
-<link rel="icon" type="image/x-icon" href="{{ pathto('_static/favicon.ico', 1) }}">
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    {% if pagename.startswith('auto_examples/') %}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="Kaira Documentation">
+        {% if title %}
+            <meta property="og:title" content="{{ title }}">
+        {% endif %}
+        {% if meta and meta.description %}
+            <meta property="og:description" content="{{ meta.description }}">
+        {% endif %}
+        {% if meta and meta.image %}
+            <meta property="og:image" content="{{ meta.image }}">
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block sidebarbottom %}
+    {{ super() }}
+    {% if pagename.startswith('auto_examples/') %}
+        <div class="example-metadata">
+            {% if meta and meta.filename %}
+                <div class="metadata-block">
+                    <h4>Example Information</h4>
+                    <dl>
+                        <dt>Source:</dt>
+                        <dd>{{ meta.filename }}</dd>
+                        {% if meta.exec_time %}
+                            <dt>Execution time:</dt>
+                            <dd>{{ "%.2f"|format(meta.exec_time) }}s</dd>
+                        {% endif %}
+                        {% if meta.lines %}
+                            <dt>Lines:</dt>
+                            <dd>{{ meta.lines }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            {% endif %}
+            
+            {% if meta and meta.binder_link %}
+                <div class="binder-badge">
+                    <a href="{{ meta.binder_link }}" target="_blank" rel="noopener">
+                        <img src="https://mybinder.org/badge_logo.svg" alt="Launch in Binder">
+                    </a>
+                </div>
+            {% endif %}
+            
+            {% if meta and meta.download_link %}
+                <div class="example-download">
+                    <a href="{{ pathto(meta.download_link, 1) }}" download class="download-button">
+                        <i class="fa fa-download"></i> Download this example
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+    {% if pagename.startswith('auto_examples/') %}
+        <script>
+            // Add table of contents for example pages
+            document.addEventListener('DOMContentLoaded', function() {
+                var headings = document.querySelectorAll('h2, h3');
+                if (headings.length > 2) {
+                    var toc = document.createElement('div');
+                    toc.className = 'example-toc';
+                    toc.innerHTML = '<h4>Contents</h4><ul></ul>';
+                    var tocList = toc.querySelector('ul');
+                    
+                    headings.forEach(function(heading) {
+                        if (!heading.id) {
+                            heading.id = heading.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                        }
+                        var li = document.createElement('li');
+                        var a = document.createElement('a');
+                        a.href = '#' + heading.id;
+                        a.textContent = heading.textContent;
+                        a.className = heading.tagName.toLowerCase();
+                        li.appendChild(a);
+                        tocList.appendChild(li);
+                    });
+                    
+                    // Fix: Check if .section exists before attempting to insert
+                    var content = document.querySelector('.section');
+                    if (content) {
+                        content.insertBefore(toc, content.firstChild);
+                    } else {
+                        // Alternative: Try another common container
+                        content = document.querySelector('.body[role="main"]');
+                        if (content) {
+                            content.insertBefore(toc, content.firstChild);
+                        } else {
+                            // If no suitable container is found, append to body
+                            document.body.insertBefore(toc, document.body.firstChild);
+                        }
+                    }
+                }
+            });
+            
+            // Enable smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        // Update URL without scrolling
+                        history.pushState(null, null, '#' + targetId);
+                    }
+                });
+            });
+        </script>
+    {% endif %}
+{% endblock %}
+
+{% block document %}
+    <div class="documentwrapper">
+        <div class="bodywrapper">
+            <div class="body" role="main">
+                {% block body %}{{ super() }}{% endblock %}
+            </div>
+        </div>
+    </div>
 {% endblock %}

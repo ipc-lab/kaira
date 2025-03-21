@@ -9,6 +9,18 @@
   --background-alt: #f9fafb;
   --border-color: #e5e7eb;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+  --gallery-card-bg: #ffffff;
+  --gallery-card-border: #e5e7eb;
+  --gallery-hover-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --code-bg: #0e1624;
+  --code-color: #e6f1ff;
+  --inline-code-bg: rgba(0, 0, 0, 0.05);
+  --inline-code-color: #b91c1c;
+  --download-btn-color: #3b82f6; /* New variable for download buttons */
+  --download-btn-hover: #2563eb; /* New variable for download button hover */
+  --hyperlink-color: #3b82f6; /* New variable for hyperlinks */
+  --hyperlink-hover: #1d4ed8; /* New variable for hyperlink hover */
+  --hyperlink-visited: #7c3aed; /* New variable for visited hyperlinks */
 }
 
 /* Add direct favicon link to ensure it loads properly */
@@ -24,6 +36,7 @@ link[rel="shortcut icon"] {
 
 html {
     height: 100%;
+    scroll-behavior: smooth;
 }
 
 body {
@@ -40,6 +53,138 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+/* More compact reference styling */
+.rst-content a.reference {
+    font-size: 0.95em;
+    border-bottom: 1px dotted rgba(59, 130, 246, 0.3);
+    padding-bottom: 1px;
+}
+
+.rst-content a.reference:hover {
+    border-bottom: 1px solid var(--hyperlink-hover);
+    text-decoration: none;
+}
+
+.rst-content a.reference.internal {
+    font-weight: 500;
+}
+
+.rst-content a.reference.external {
+    color: #0369a1;
+}
+
+.rst-content a.reference.external:hover {
+    color: #0284c7;
+}
+
+/* Specific styling for examples links */
+.rst-content a.reference.internal[href^="../auto_examples/"],
+.rst-content a.reference.internal[href^="auto_examples/"],
+.rst-content a.reference.internal[href*="sphx_glr_"] {
+    display: inline-block;
+    padding: 0.2em 0.5em;
+    background-color: rgba(59, 130, 246, 0.1);
+    border-radius: 4px;
+    border-bottom: none;
+    margin: 0 1px;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.rst-content a.reference.internal[href^="../auto_examples/"]:hover,
+.rst-content a.reference.internal[href^="auto_examples/"]:hover,
+.rst-content a.reference.internal[href*="sphx_glr_"]:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* Improved gallery download buttons */
+.sphx-glr-download {
+    margin: 2rem 0 !important;
+    text-align: center !important;
+}
+
+.sphx-glr-download a {
+    background-color: var(--download-btn-color) !important;
+    color: white !important;
+    padding: 0.6rem 1.2rem !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    margin: 0.5rem !important;
+}
+
+.sphx-glr-download a:hover {
+    background-color: var(--download-btn-hover) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Add an icon to download links */
+.sphx-glr-download a::before {
+    content: "⬇️ ";
+    margin-right: 0.4rem;
+}
+
+/* More compact download section */
+div.sphx-glr-download-link-note {
+    font-size: 0.9rem !important;
+    padding: 1rem !important;
+    background-color: #f8fafc !important;
+    border-radius: 6px !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+/* Fix large and inconsistent spacing in gallery links */
+p.sphx-glr-signature {
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+p.sphx-glr-signature a.reference.external {
+    font-size: 0.9rem;
+}
+
+/* Style for gallery thumbnail links */
+.sphx-glr-thumbcontainer a.reference.internal {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    color: inherit !important;
+}
+
+.sphx-glr-thumbcontainer:hover a.reference.internal {
+    color: var(--primary-color) !important;
+}
+
+/* Style the mini-gallery list items */
+.sphx-glr-mini {
+    margin-bottom: 1.5rem;
+}
+
+.sphx-glr-mini a.reference.internal {
+    display: inline-block;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.7rem;
+    margin: 0.25rem 0;
+    background-color: #f3f4f6;
+    border-radius: 4px;
+    border-bottom: none;
+    transition: all 0.2s ease;
+}
+
+.sphx-glr-mini a.reference.internal:hover {
+    background-color: #e5e7eb;
+    transform: translateY(-1px);
+}
+
 .sphx-glr-script-out .highlight pre {
     color: #1a2a3a;
 }
@@ -185,26 +330,48 @@ main {
 }
 
 /* Code blocks styling */
+div.highlight {
+    margin: 1em 0;
+}
+
 div.highlight pre {
-    background: #0e1624;
-    color: #e6f1ff;
+    background: var(--code-bg);
+    color: var(--code-color);
     border-radius: 6px;
     padding: 1.25em;
     font-size: 0.95em;
-    line-height: 1.5;
+    line-height: 1.4;
     overflow-x: auto;
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    margin: 0;
+}
+
+/* Fix extra line spacing in code blocks */
+.highlight pre span {
+    display: inline;
+    white-space: pre;
+}
+
+.code-line {
+    display: block !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.code-line:empty {
+    display: none !important;
 }
 
 /* Inline code styling */
 code {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--inline-code-bg);
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-size: 0.9em;
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    color: #b91c1c;
+    color: var(--inline-code-color);
 }
 
 /* Sidebar styling */
@@ -656,4 +823,215 @@ blockquote {
     margin: 0;
     color: #64748b;
     line-height: 1.5;
+}
+
+/* Enhanced Sphinx-Gallery Styling */
+
+/* Main gallery styling */
+.kaira-gallery,
+.sphx-glr-thumbcontainer {
+    background-color: var(--gallery-card-bg) !important;
+    border: 1px solid var(--gallery-card-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+    margin: 1em !important;
+    min-height: 320px !important;
+    transition: all 0.3s ease !important;
+    overflow: hidden !important;
+}
+
+.kaira-gallery:hover,
+.sphx-glr-thumbcontainer:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: var(--gallery-hover-shadow) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Gallery thumbnail image improvements */
+.sphx-glr-thumbnail-img {
+    max-width: 100% !important;
+    height: 220px !important;
+    object-fit: contain !important;
+    background-color: #f8fafc !important;
+    padding: 10px !important;
+    margin: 0 auto !important;
+    display: block !important;
+    border-bottom: 1px solid #eaeef2 !important;
+}
+
+/* Gallery title improvements */
+.sphx-glr-thumbnail-title {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    color: var(--primary-color) !important;
+    padding: 1rem !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    min-height: 70px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Gallery section headings */
+.sphx-glr-section-title {
+    font-size: 1.75rem !important;
+    color: var(--primary-color) !important;
+    border-bottom: 2px solid var(--primary-color) !important;
+    padding-bottom: 0.75rem !important;
+    margin: 2rem 0 1.5rem 0 !important;
+    font-weight: 600 !important;
+}
+
+/* Gallery download buttons */
+.sphx-glr-download {
+    margin: 2rem 0 !important;
+    text-align: center !important;
+}
+
+.sphx-glr-download a {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+}
+
+.sphx-glr-download a:hover {
+    background-color: var(--primary-hover) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Execution time display */
+.sphx-glr-timing {
+    margin-top: 1.5rem !important;
+    padding: 0.75rem !important;
+    background-color: #f8fafc !important;
+    border-radius: 6px !important;
+    font-size: 0.9rem !important;
+    color: #64748b !important;
+    border-left: 3px solid #94a3b8 !important;
+}
+
+/* Gallery script outputs */
+.sphx-glr-script-out {
+    margin: 1rem 0 !important;
+    padding: 1rem !important;
+    background-color: #f8fafc !important;
+    border-radius: 6px !important;
+    border: 1px solid #eaeef2 !important;
+}
+
+.sphx-glr-script-out .highlight pre {
+    background-color: var(--code-bg) !important;
+    color: var(--code-color) !important;
+    border-radius: 4px !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+.sphx-glr-script-out .highlight pre span {
+    line-height: inherit !important;
+}
+
+/* Add copy button styling */
+button.copybtn {
+    opacity: 0.3;
+    transition: opacity 0.3s ease-in-out;
+    border-radius: 4px;
+    padding: 0.3em 0.6em;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+div:hover > button.copybtn, button.copybtn:hover {
+    opacity: 1;
+}
+
+/* Gallery grid container */
+.sphx-glr-thumbnails {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    gap: 1.5rem !important;
+    margin: 1.5rem 0 !important;
+}
+
+/* Gallery clear decorator fix */
+.sphx-glr-clear {
+    clear: both !important;
+    display: none !important;
+}
+
+
+/* Binder button styling */
+div.binder-badge {
+    margin: 1rem 0 !important;
+    text-align: right !important;
+}
+
+/* Fix for sphinx_rtd_theme compatibility */
+.rst-content .sphx-glr-thumbcontainer {
+    background-color: var(--gallery-card-bg) !important;
+    border: 1px solid var(--gallery-card-border) !important; 
+    border-radius: 8px !important;
+}
+
+/* RTD specific gallery adjustments */
+.rst-content .sphx-glr-thumbnails::before,
+.rst-content .sphx-glr-thumbnails::after {
+    content: none !important;
+}
+
+/* Improved download links in RTD theme */
+.rst-content .sphx-glr-download a {
+    padding: 0.6rem 1.2rem !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    background-color: var(--download-btn-color) !important;
+    border-radius: 4px !important;
+    color: white !important;
+    border: none !important;
+}
+
+.rst-content .sphx-glr-download a:visited {
+    background-color: var(--download-btn-color) !important;
+    color: white !important;
+}
+
+.rst-content .sphx-glr-download a:hover {
+    background-color: var(--download-btn-hover) !important;
+    color: white !important;
+    text-decoration: none !important;
+}
+
+/* Responsive design for gallery */
+@media (max-width: 768px) {
+    .sphx-glr-thumbnails {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .sphx-glr-thumbnails {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Custom loader for gallery execution */
+.sphx-glr-script-out:before {
+    content: "Output";
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #64748b;
+    font-size: 0.9rem;
 }

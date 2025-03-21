@@ -92,10 +92,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_awgn_channel_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_awgn_channel_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_awgn_channel.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_awgn_channel.py`
 
 .. raw:: html
 
@@ -105,14 +105,14 @@ Examples and Tutorials
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the LaplacianChannel in Kaira, which models channels with impulsive noise that follows the Laplacian distribution. Unlike Gaussian noise,  Laplacian noise has heavier tails, making it suitable for modeling environments  with occasional large noise spikes.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the LaplacianChannel in Kaira, which models channels with impulsive noise that follows the Laplacian distribution. Unlike Gaussian noise, Laplacian noise has heavier tails, making it suitable for modeling environments with occasional large noise spikes.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_laplacian_channel_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_laplacian_channel_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_laplacian_channel.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_laplacian_channel.py`
 
 .. raw:: html
 
@@ -126,10 +126,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_basic_constraints_thumb.png
-    :alt:
+    .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_basic_constraints_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_basic_constraints.py`
+    :ref:`sphx_glr_auto_examples_constraints_plot_basic_constraints.py`
 
 .. raw:: html
 
@@ -143,10 +143,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_phase_noise_channel_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_phase_noise_channel_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_phase_noise_channel.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_phase_noise_channel.py`
 
 .. raw:: html
 
@@ -160,10 +160,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_binary_channels_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_binary_channels_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_binary_channels.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_binary_channels.py`
 
 .. raw:: html
 
@@ -177,10 +177,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_constraint_composition_thumb.png
-    :alt:
+    .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_constraint_composition_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_constraint_composition.py`
+    :ref:`sphx_glr_auto_examples_constraints_plot_constraint_composition.py`
 
 .. raw:: html
 
@@ -194,10 +194,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_fading_channels_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_fading_channels_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_fading_channels.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_fading_channels.py`
 
 .. raw:: html
 
@@ -211,10 +211,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_nonlinear_channel_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_nonlinear_channel_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_nonlinear_channel.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_nonlinear_channel.py`
 
 .. raw:: html
 
@@ -228,10 +228,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_composite_channels_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_composite_channels_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_composite_channels.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_composite_channels.py`
 
 .. raw:: html
 
@@ -241,14 +241,14 @@ Examples and Tutorials
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the PoissonChannel in Kaira, which models signal-dependent noise commonly found in optical systems and photon-counting detectors. Unlike AWGN where noise is independent of signal intensity, Poisson noise increases with  signal strength, making it essential for accurate modeling of optical communications and imaging systems.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the PoissonChannel in Kaira, which models signal-dependent noise commonly found in optical systems and photon-counting detectors. Unlike AWGN where noise is independent of signal intensity, Poisson noise increases with signal strength, making it essential for accurate modeling of optical communications and imaging systems.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_poisson_channel_thumb.png
-    :alt:
+    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_poisson_channel_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_poisson_channel.py`
+    :ref:`sphx_glr_auto_examples_channel_models_plot_poisson_channel.py`
 
 .. raw:: html
 
@@ -262,10 +262,10 @@ Examples and Tutorials
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_practical_constraints_thumb.png
-    :alt:
+    .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_practical_constraints_thumb.png
+      :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_practical_constraints.py`
+    :ref:`sphx_glr_auto_examples_constraints_plot_practical_constraints.py`
 
 .. raw:: html
 
@@ -283,17 +283,17 @@ Examples and Tutorials
 .. toctree::
    :hidden:
 
-   auto_examples/plot_awgn_channel
-   auto_examples/plot_laplacian_channel
-   auto_examples/plot_basic_constraints
-   auto_examples/plot_phase_noise_channel
-   auto_examples/plot_binary_channels
-   auto_examples/plot_constraint_composition
-   auto_examples/plot_fading_channels
-   auto_examples/plot_nonlinear_channel
-   auto_examples/plot_composite_channels
-   auto_examples/plot_poisson_channel
-   auto_examples/plot_practical_constraints
+   /auto_examples/channel_models/plot_awgn_channel
+   /auto_examples/channel_models/plot_laplacian_channel
+   /auto_examples/constraints/plot_basic_constraints
+   /auto_examples/channel_models/plot_phase_noise_channel
+   /auto_examples/channel_models/plot_binary_channels
+   /auto_examples/constraints/plot_constraint_composition
+   /auto_examples/channel_models/plot_fading_channels
+   /auto_examples/channel_models/plot_nonlinear_channel
+   /auto_examples/channel_models/plot_composite_channels
+   /auto_examples/channel_models/plot_poisson_channel
+   /auto_examples/constraints/plot_practical_constraints
 
 
 .. only:: html
@@ -302,11 +302,11 @@ Examples and Tutorials
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
-      :download:`Download all examples in Python source code: auto_examples_python.zip </auto_examples/auto_examples_python.zip>`
+      :download:`Download all examples in Python source code: auto_examples_python.zip <../auto_examples/auto_examples_python.zip>`
 
     .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-      :download:`Download all examples in Jupyter notebooks: auto_examples_jupyter.zip </auto_examples/auto_examples_jupyter.zip>`
+      :download:`Download all examples in Jupyter notebooks: auto_examples_jupyter.zip <../auto_examples/auto_examples_jupyter.zip>`
 
 
 .. only:: html
