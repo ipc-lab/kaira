@@ -1,0 +1,55 @@
+{% extends "!layout.html" %}
+
+{% block content %}
+<div class="examples-gallery">
+    <h1>{{ title }}</h1>
+    
+    <div class="gallery-intro">
+        {{ content }}
+    </div>
+
+    <div class="gallery-section">
+        <div class="examples-grid">
+            {% for example in examples %}
+                <div class="example-card">
+                    <a href="{{ example.url }}" class="example-link">
+                        {% if example.thumbnail %}
+                            <img src="{{ example.thumbnail }}" alt="{{ example.title }} thumbnail" class="example-thumb" loading="lazy" />
+                        {% else %}
+                            <div class="example-thumb-placeholder">
+                                <i class="fa fa-file-code-o" aria-hidden="true"></i>
+                            </div>
+                        {% endif %}
+                        <div class="example-info">
+                            <h3 class="example-title">{{ example.title }}</h3>
+                            <p class="example-description">{{ example.tooltip|truncate(100) }}</p>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {% if download_buttons %}
+        <div class="gallery-actions">
+            {% if zip_download_link_py %}
+                <a href="{{ zip_download_link_py }}" class="action-button download-all">
+                    <i class="fa fa-download"></i> Download all examples (Python source)
+                </a>
+            {% endif %}
+            {% if zip_download_link_jupyter %}
+                <a href="{{ zip_download_link_jupyter }}" class="action-button download-all">
+                    <i class="fa fa-download"></i> Download all examples (Jupyter notebooks)
+                </a>
+            {% endif %}
+            {% if binder_link %}
+                <a href="{{ binder_link }}" class="action-button launch-binder">
+                    <img src="https://mybinder.org/badge_logo.svg" alt="Launch Binder"/>
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{{ super() }}
+{% endblock content %}

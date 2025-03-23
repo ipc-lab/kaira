@@ -24,8 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
       createCategoryFilter(sections);
     }
     
-    // Add search functionality for examples
-    addGallerySearch();
+    // Search functionality removed
   }
   
   // Enhance syntax highlighting
@@ -34,10 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add scroll progress indicator for long examples
   addScrollProgress();
   
-  // Add copy buttons to all code blocks if not already added by sphinx-copybutton
-  if (typeof window.copybuttonSkip === 'undefined') {
-    addCopyButtons();
-  }
 });
 
 /**
@@ -151,84 +146,6 @@ function createCategoryFilter(sections) {
     if (firstSection && firstSection.parentElement) {
       firstSection.parentElement.insertBefore(filterContainer, firstSection);
     }
-  }
-}
-
-/**
- * Adds search functionality to the gallery
- */
-function addGallerySearch() {
-  // Create search container
-  const searchContainer = document.createElement('div');
-  searchContainer.className = 'gallery-search';
-  searchContainer.innerHTML = `
-    <input type="text" placeholder="Search examples..." class="search-input">
-    <div class="search-icon">🔍</div>
-  `;
-  
-  // Style the search container
-  searchContainer.style.margin = '1rem 0 2rem 0';
-  searchContainer.style.display = 'flex';
-  searchContainer.style.alignItems = 'center';
-  searchContainer.style.position = 'relative';
-  
-  const searchInput = searchContainer.querySelector('.search-input');
-  searchInput.style.width = '100%';
-  searchInput.style.padding = '0.75rem 1rem 0.75rem 2.5rem';
-  searchInput.style.borderRadius = '6px';
-  searchInput.style.border = '1px solid #e5e7eb';
-  searchInput.style.fontSize = '1rem';
-  
-  const searchIcon = searchContainer.querySelector('.search-icon');
-  searchIcon.style.position = 'absolute';
-  searchIcon.style.left = '0.75rem';
-  searchIcon.style.color = '#9ca3af';
-  
-  // Add search functionality
-  searchInput.addEventListener('input', () => {
-    const searchQuery = searchInput.value.toLowerCase();
-    const galleryItems = document.querySelectorAll('.sphx-glr-thumbcontainer');
-    
-    galleryItems.forEach(item => {
-      const title = item.querySelector('.sphx-glr-thumbnail-title');
-      if (!title) return;
-      
-      const titleText = title.textContent.toLowerCase();
-      if (titleText.includes(searchQuery)) {
-        item.style.display = 'block';
-      } else {
-        item.style.display = 'none';
-      }
-    });
-    
-    // Show/hide section titles based on whether they have visible items
-    const sections = document.querySelectorAll('.sphx-glr-section-title');
-    sections.forEach(section => {
-      const sectionContainer = section.parentElement;
-      if (!sectionContainer) return;
-      
-      const sectionItems = sectionContainer.querySelectorAll('.sphx-glr-thumbcontainer');
-      if (sectionItems.length === 0) return;
-      
-      let hasVisibleItems = false;
-      sectionItems.forEach(item => {
-        if (item.style.display !== 'none') {
-          hasVisibleItems = true;
-        }
-      });
-      
-      if (hasVisibleItems) {
-        sectionContainer.style.display = 'block';
-      } else {
-        sectionContainer.style.display = 'none';
-      }
-    });
-  });
-  
-  // Add the search before the first gallery
-  const galleryContainer = document.querySelector('.sphx-glr-thumbnails');
-  if (galleryContainer && galleryContainer.parentElement) {
-    galleryContainer.parentElement.insertBefore(searchContainer, galleryContainer);
   }
 }
 

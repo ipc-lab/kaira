@@ -16,16 +16,21 @@
   --code-color: #e6f1ff;
   --inline-code-bg: rgba(0, 0, 0, 0.05);
   --inline-code-color: #b91c1c;
-  --download-btn-color: #3b82f6; /* New variable for download buttons */
-  --download-btn-hover: #2563eb; /* New variable for download button hover */
+  --download-btn-color: #4a5568; /* Dark gray for download buttons */
+  --download-btn-hover: #2d3748; /* Darker gray for hover state */
   --hyperlink-color: #3b82f6; /* New variable for hyperlinks */
   --hyperlink-hover: #1d4ed8; /* New variable for hyperlink hover */
   --hyperlink-visited: #7c3aed; /* New variable for visited hyperlinks */
+  --binder-btn-color: #f8fafc; /* Light background for binder button */
+  --binder-btn-border: #e2e8f0; /* Light border for binder button */
+  --backreference-bg: #f0f9ff; /* New: Background for backreferences section */
+  --backreference-border: #bae6fd; /* New: Border color for backreferences section */
+  --backreference-heading: #0284c7; /* New: Color for backreferences heading */
 }
 
 /* Add direct favicon link to ensure it loads properly */
 head::after {
-  content: "";
+  content: url("_static/favicon.ico");
   display: none;
 }
 
@@ -102,35 +107,38 @@ body {
 
 /* Improved gallery download buttons */
 .sphx-glr-download {
-    margin: 2rem 0 !important;
+    margin: 0 !important;
     text-align: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+    padding: 0.5rem !important;
 }
 
 .sphx-glr-download a {
     background-color: var(--download-btn-color) !important;
+    background-image: none !important; /* Remove any gradient */
     color: white !important;
-    padding: 0.6rem 1.2rem !important;
-    border-radius: 4px !important;
+    padding: 0.7rem 1.4rem !important;
+    border-radius: 6px !important;
     font-weight: 500 !important;
     font-size: 0.95rem !important;
     text-decoration: none !important;
     display: inline-block !important;
-    transition: all 0.25s ease !important;
+    transition: all 0.2s ease !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     border: none !important;
-    margin: 0.5rem !important;
+    margin: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
 
 .sphx-glr-download a:hover {
     background-color: var(--download-btn-hover) !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+    background-image: none !important; /* Remove any gradient on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
     transform: translateY(-2px) !important;
-}
-
-/* Add an icon to download links */
-.sphx-glr-download a::before {
-    content: "⬇️ ";
-    margin-right: 0.4rem;
 }
 
 /* More compact download section */
@@ -139,8 +147,10 @@ div.sphx-glr-download-link-note {
     padding: 1rem !important;
     background-color: #f8fafc !important;
     border-radius: 6px !important;
-    margin-bottom: 1rem !important;
+    margin: 0 auto 1.5rem auto !important;
     border: 1px solid #e5e7eb !important;
+    max-width: 800px !important;
+    text-align: center !important;
 }
 
 /* Fix large and inconsistent spacing in gallery links */
@@ -588,42 +598,21 @@ tbody tr:hover {
     background-color: #eff6ff;
     border-radius: 4px;
 }
-
 .admonition.warning {
     border-left-color: #f59e0b;
     background-color: #fffbeb;
 }
-
 .admonition.danger {
     border-left-color: #ef4444;
     background-color: #fee2e2;
 }
-
 .admonition.tip {
     border-left-color: #10b981;
     background-color: #ecfdf5;
 }
-
 .admonition-title {
     font-weight: 600;
     margin-bottom: 0.5rem;
-}
-
-/* Search box enhancement */
-.search-box {
-    padding: 0.75rem;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
-    width: 100%;
-    font-size: 1rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.search-box:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-    outline: none;
 }
 
 /* Documentation version selector */
@@ -889,13 +878,15 @@ blockquote {
     border: 1px solid var(--gallery-card-border) !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06) !important;
-    margin: 1em !important;
+    margin: 0 !important;
     min-height: 320px !important;
     transition: all 0.3s ease !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
+    width: 100% !important;
+    float: none !important;
 }
 
 .kaira-gallery:hover,
@@ -1002,19 +993,180 @@ div:hover > button.copybtn, button.copybtn:hover {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
     gap: 1.5rem !important;
     margin: 1.5rem 0 !important;
+    width: 100% !important;
+    float: none !important;
+    clear: both !important;
 }
 
-/* Gallery clear decorator fix */
+/* Fix for clearing floats in default gallery layout */
 .sphx-glr-clear {
     clear: both !important;
     display: none !important;
 }
 
-
 /* Binder button styling */
 div.binder-badge {
+    margin: 0.5rem 0 1.5rem 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+div.binder-badge a {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0.7rem 1.2rem !important;
+    background-color: var(--binder-btn-color) !important;
+    border: 1px solid var(--binder-btn-border) !important;
+    border-radius: 6px !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: #333 !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+div.binder-badge a:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Improved download links in RTD theme */
+.rst-content .sphx-glr-download a {
+    padding: 0.7rem 1.4rem !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    background-color: var(--download-btn-color) !important;
+    background-image: none !important; /* Remove any gradient */
+    border-radius: 6px !important;
+    color: white !important;
+    border: none !important;
+}
+
+.rst-content .sphx-glr-download a:visited {
+    background-color: var(--download-btn-color) !important;
+    background-image: none !important; /* Remove any gradient */
+    color: white !important;
+}
+
+.rst-content .sphx-glr-download a:hover {
+    background-color: var(--download-btn-hover) !important;
+    background-image: none !important; /* Remove any gradient on hover */
+    color: white !important;
+    text-decoration: none !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Custom loader for gallery execution */
+.sphx-glr-script-out:before {
+    content: "Output";
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Gallery and download section layout improvements */
+.sphx-glr-footer.docutils.container {
+    margin-top: 2rem !important;
+    padding: 2rem !important;
+    background-color: #f8fafc !important;
+    border-radius: 8px !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.sphx-glr-footer-title {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin-bottom: 1rem !important;
+    text-align: center !important;
+}
+
+.sphx-glr-download {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 1rem !important;
     margin: 1rem 0 !important;
-    text-align: right !important;
+}
+
+.sphx-glr-download a {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.sphx-glr-download a:hover {
+    background-color: #2563eb !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+div.binder-badge {
+    margin: 1rem 0 !important;
+    text-align: center !important;
+}
+
+div.binder-badge a {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    color: #1e293b !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+div.binder-badge a:hover {
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix spacing between elements in the gallery footer */
+.sphx-glr-signature {
+    margin: 1.5rem 0 0.5rem 0 !important;
+    text-align: center !important;
+}
+
+/* Create a container for buttons */
+.sphx-glr-download-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+}
+
+/* Make sure no extra space between signature and binder */
+.sphx-glr-signature + div.binder-badge {
+    margin-top: 0.5rem !important;
+}
+
+/* Fix spacing between binder and download buttons */
+.sphx-glr-signature + div.binder-badge {
+    margin-top: -1rem !important;
+    margin-bottom: 1rem !important;
 }
 
 /* Fix for sphinx_rtd_theme compatibility */
@@ -1028,51 +1180,4 @@ div.binder-badge {
 .rst-content .sphx-glr-thumbnails::before,
 .rst-content .sphx-glr-thumbnails::after {
     content: none !important;
-}
-
-/* Improved download links in RTD theme */
-.rst-content .sphx-glr-download a {
-    padding: 0.6rem 1.2rem !important;
-    line-height: 1.4 !important;
-    height: auto !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    background-color: var(--download-btn-color) !important;
-    border-radius: 4px !important;
-    color: white !important;
-    border: none !important;
-}
-
-.rst-content .sphx-glr-download a:visited {
-    background-color: var(--download-btn-color) !important;
-    color: white !important;
-}
-
-.rst-content .sphx-glr-download a:hover {
-    background-color: var(--download-btn-hover) !important;
-    color: white !important;
-    text-decoration: none !important;
-}
-
-/* Responsive design for gallery */
-@media (max-width: 768px) {
-    .sphx-glr-thumbnails {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
-    }
-}
-
-@media (max-width: 576px) {
-    .sphx-glr-thumbnails {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-/* Custom loader for gallery execution */
-.sphx-glr-script-out:before {
-    content: "Output";
-    display: block;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: #64748b;
-    font-size: 0.9rem;
 }

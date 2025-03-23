@@ -6,10 +6,9 @@
 import datetime
 import os
 import sys
-from typing import List
 import importlib.util
 # Import sphinx gallery components
-from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
+from sphinx_gallery.sorting import FileNameSortKey
 
 # Improve module path setup for proper imports
 # First, add the root directory containing the kaira package
@@ -109,6 +108,9 @@ sphinx_gallery_conf = {
     "matplotlib_animations": True,  # Enable matplotlib animations
     "show_signature": True,  # Show function signatures
     
+    # Custom template - using correct parameter
+    "default_thumb_file": "_static/logo.png",  # Default thumbnail image
+    
     # Reference configurations
     "reference_url": {
         "kaira": None,  # The module has no reference URL
@@ -118,11 +120,12 @@ sphinx_gallery_conf = {
     # Gallery organization
     "within_subsection_order": FileNameSortKey,  # Sort by filename within subsections
     
-    # First cell in generated notebooks
-    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*",
+    # First cell in generated notebooks - improving the note about downloading and Binder
+    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*\n\n**Quick Links:**\n- Download this example as a Jupyter notebook or Python script using the buttons below\n- Run this example interactively in your browser via Binder\n",
     
-    # Add title with backreferences to gallery homepage
+    # Backreferences configuration
     "backreferences_dir": "gen_modules/backreferences",
+    "doc_module": ("kaira",),  # Add this line to specify which modules to document
     
     # Enable Binder integration with JupyterLab interface
     "binder": {
