@@ -320,8 +320,11 @@ plt.grid(True)
 
 # Amplitude distribution plot (histogram)
 plt.subplot(gs[2, :])
-plt.hist(signal[0].numpy(), bins=50, alpha=0.5, label='Original')
-plt.hist(signal_all[0].numpy(), bins=50, alpha=0.5, label='Constrained')
+# Ensure we're using real values for histogram
+orig_signal = signal[0].numpy().real if np.iscomplexobj(signal[0].numpy()) else signal[0].numpy()
+all_signal = signal_all[0].numpy().real if np.iscomplexobj(signal_all[0].numpy()) else signal_all[0].numpy()
+plt.hist(orig_signal, bins=50, alpha=0.5, label='Original')
+plt.hist(all_signal, bins=50, alpha=0.5, label='Constrained')
 plt.axvline(x=props_all['peak_amplitude'], color='r', linestyle='--', 
            label=f'Max Amplitude: {props_all["peak_amplitude"]:.2f}')
 plt.title("Amplitude Distribution")

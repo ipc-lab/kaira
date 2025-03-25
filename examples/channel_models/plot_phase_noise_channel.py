@@ -110,7 +110,7 @@ for i, (phase_std, output) in enumerate(outputs):
     x = torch.real(output).cpu().numpy()
     y = torch.imag(output).cpu().numpy()
     
-    # Create density-based scatter plot
+    # Create density-based scatter plot - ensure x and y are real values
     plt.hist2d(x, y, bins=100, range=[[-2, 2], [-2, 2]], cmap=cmap)
     
     # Plot original constellation points for reference

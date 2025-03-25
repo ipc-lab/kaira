@@ -176,11 +176,10 @@ plt.show()
 # --------------------------------------------------
 # Let's analyze how fading affects the amplitude distribution of the symbols.
 
-# Calculate amplitudes
-perfect_amp = np.abs(perfect_complex)
-awgn_amp = np.abs(awgn_complex)
-fading_amp = np.abs(fading_complex)
-
+# Calculate amplitudes - ensure we're using real values
+perfect_amp = np.abs(perfect_complex).real
+awgn_amp = np.abs(awgn_complex).real
+fading_amp = np.abs(fading_complex).real
 plt.figure(figsize=(12, 5))
 
 # Histogram of amplitudes

@@ -563,8 +563,11 @@ plt.ylabel("Q")
 
 # Plot amplitude histograms
 plt.subplot(gs[3, :])
-plt.hist(np.sqrt(orig_power), bins=100, alpha=0.5, label='Original')
-plt.hist(np.sqrt(const_power), bins=100, alpha=0.5, label='Constrained')
+# Ensure we're using real values for histogram
+orig_amp = np.sqrt(orig_power).real if np.iscomplexobj(orig_power) else np.sqrt(orig_power)
+const_amp = np.sqrt(const_power).real if np.iscomplexobj(const_power) else np.sqrt(const_power)
+plt.hist(orig_amp, bins=100, alpha=0.5, label='Original')
+plt.hist(const_amp, bins=100, alpha=0.5, label='Constrained')
 plt.axvline(x=tx_constrained_props['peak_amplitude'], color='r', linestyle='--', 
            label=f'Max Amplitude: {tx_constrained_props["peak_amplitude"]:.2f}')
 plt.title("Amplitude Distribution")
