@@ -66,39 +66,42 @@ for name, (modulator, _) in modulators.items():
 # %%
 # Plot Constellation Diagrams
 # ------------------------------------------------
-plt.figure(figsize=(15, 10))
-
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 for i, (name, symbols) in enumerate(modulated_symbols.items()):
-    plt.subplot(2, 3, i + 1)
+    # Calculate row and column position
+    row, col = divmod(i, 3)
+    ax = axes[row, col]
     plot_constellation(symbols.flatten(),
                       title=f'{name} Constellation',
-                      marker='.')
-    plt.grid(True)
-
+                      marker='.', 
+                      ax=ax)
+    ax.grid(True)
 plt.tight_layout()
 plt.show()
 
 # %%
 # Compare Symbol Energy Distribution
 # ------------------------------------------------------
-plt.figure(figsize=(12, 6))
-
+fig, axes = plt.subplots(2, 3, figsize=(12, 6))
 # Plot symbol energy distribution
 for i, (name, symbols) in enumerate(modulated_symbols.items()):
+    # Calculate row and column position
+    row, col = divmod(i, 3)
+    ax = axes[row, col]
+    # Use .real to explicitly take only the real part for the histogram
     energy = torch.abs(symbols) ** 2
-    plt.subplot(2, 3, i + 1)
-    plt.hist(energy.numpy().flatten(), bins=30, density=True,
+    energy_real = energy.real if torch.is_complex(energy) else energy
+    ax.hist(energy_real.numpy().flatten(), bins=30, density=True,
              alpha=0.7, label=name)
-    plt.title(f'{name} Symbol Energy')
-    plt.xlabel('Symbol Energy')
-    plt.ylabel('Density')
-    plt.grid(True)
+    ax.set_title(f'{name} Symbol Energy')
+    ax.set_xlabel('Symbol Energy')
+    ax.set_ylabel('Density')
+    ax.grid(True)
     # Add mean energy line
-    mean_energy = torch.mean(energy).item()
-    plt.axvline(mean_energy, color='r', linestyle='--',
+    mean_energy = torch.mean(energy_real).item()
+    ax.axvline(mean_energy, color='r', linestyle='--',
                 label=f'Mean={mean_energy:.2f}')
-    plt.legend()
-
+    ax.legend()
 plt.tight_layout()
 plt.show()
 

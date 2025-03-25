@@ -592,7 +592,7 @@ for latency in latencies:
 # Create a grid of latency and packet loss values
 latencies = torch.linspace(0, 500, 50)
 packet_losses = torch.linspace(0, 15, 50)
-lat_grid, loss_grid = torch.meshgrid(latencies, packet_losses)
+lat_grid, loss_grid = torch.meshgrid(latencies, packet_losses, indexing='ij')
 
 # Calculate MOS for each combination (with fixed jitter of 20ms)
 mos_values = torch.zeros_like(lat_grid)

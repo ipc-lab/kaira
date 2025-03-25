@@ -113,13 +113,10 @@ plt.show()
 test_snr_db = [20, 10, 5]
 n_test_symbols = 1000
 pam8_mod = modulators[8]
-
 plt.figure(figsize=(15, 5))
-
 # Generate random PAM-8 symbols
 test_bits = torch.randint(0, 2, (1, 3 * n_test_symbols))  # 3 bits per symbol for PAM-8
 pam8_symbols = pam8_mod(test_bits)
-
 for i, snr_db in enumerate(test_snr_db):
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
@@ -127,8 +124,11 @@ for i, snr_db in enumerate(test_snr_db):
     # Pass through noisy channel
     received_symbols = channel(pam8_symbols)
     
+    # Explicitly take real part for histogram if values are complex
+    hist_values = received_symbols.real if torch.is_complex(received_symbols) else received_symbols
+    
     plt.subplot(1, 3, i + 1)
-    plt.hist(received_symbols.numpy().flatten(), bins=50, density=True)
+    plt.hist(hist_values.numpy().flatten(), bins=50, density=True)
     plt.title(f'PAM-8 Reception at {snr_db} dB SNR')
     plt.xlabel('Amplitude')
     plt.ylabel('Density')
@@ -140,7 +140,6 @@ for i, snr_db in enumerate(test_snr_db):
     ideal_points = pam8_mod.constellation.numpy()
     for point in ideal_points:
         plt.axvline(x=point, color='r', linestyle='--', alpha=0.5)
-
 plt.tight_layout()
 plt.show()
 

@@ -426,8 +426,8 @@ colors = ['b', 'r', 'g', 'm']
 line_styles = ['-', '--', '-.', ':']
 
 for (metric_name, style, color, marker) in zip(metrics.keys(), line_styles, colors, markers):
-    plt.semilogy(snr_db_range, metrics[metric_name], marker, label=metric_name, 
-                 linestyle=style, color=color)
+    plt.semilogy(snr_db_range, metrics[metric_name], marker[0] + style, label=metric_name, 
+                 color=color)
 
 plt.grid(True)
 plt.xlabel('SNR (dB)')
