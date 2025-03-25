@@ -1,21 +1,19 @@
-{{ objname | escape | underline}}
+{{ fullname | escape | underline}}
 
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
    :members:
    :show-inheritance:
-   :inherited-members:
-   :special-members: __call__, __add__, __mul__
 
    {% block methods %}
    {% if methods %}
    .. rubric:: {{ _('Methods') }}
 
    .. autosummary::
-      :nosignatures:
+      :toctree:
    {% for item in methods %}
-      ~{{ name }}.{{ item }}
+      ~{{ fullname }}.{{ item }}
    {%- endfor %}
    {% endif %}
    {% endblock %}
@@ -25,8 +23,18 @@
    .. rubric:: {{ _('Attributes') }}
 
    .. autosummary::
+      :toctree:
    {% for item in attributes %}
-      ~{{ name }}.{{ item }}
+      ~{{ fullname }}.{{ item }}
    {%- endfor %}
    {% endif %}
    {% endblock %}
+
+{% if objname in ["AWGNChannel", "BaseChannel", "BinaryErasureChannel", "BinarySymmetricChannel", "BinaryZChannel", 
+                 "ChannelRegistry", "FlatFadingChannel", "GaussianChannel", "IdealChannel", "IdentityChannel",
+                 "LambdaChannel", "LaplacianChannel", "NonlinearChannel", "PerfectChannel", "PhaseNoiseChannel", "PoissonChannel"] %}
+.. rubric:: {{ _('Examples using') }} ``{{ objname }}``
+
+.. include:: ../gen_modules/backreferences/{{module}}.{{objname}}.examples
+   :optional:
+{% endif %}

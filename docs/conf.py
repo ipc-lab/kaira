@@ -7,7 +7,6 @@ import datetime
 import os
 import sys
 import importlib.util
-# Import sphinx gallery components
 from sphinx_gallery.sorting import FileNameSortKey
 
 # Improve module path setup for proper imports
@@ -77,12 +76,13 @@ extensions = [
 
 # Enhanced sphinx-gallery configuration
 sphinx_gallery_conf = {
-    # Directory paths - now using a list of tuples for multiple directories
+    # Directory paths
     "examples_dirs": [
         "../examples/channel_models",
         "../examples/constraints",
         "../examples/modulation",
         "../examples/deep_jscc",
+        "../examples/metrics",
         "../examples/performance_analysis",
     ],
     "gallery_dirs": [
@@ -90,43 +90,24 @@ sphinx_gallery_conf = {
         "auto_examples/constraints",
         "auto_examples/modulation",
         "auto_examples/deep_jscc",
+        "auto_examples/metrics",
         "auto_examples/performance_analysis",
     ],
     
     # File patterns and organization
-    "filename_pattern": r"\.py$",  # Include all Python files
-    "ignore_pattern": r"__init__\.py|utils\.py",  # Ignore __init__.py and utility files
+    "filename_pattern": r"\.py$",
+    "ignore_pattern": r"__init__\.py|utils\.py",
     
     # Content display options
-    #"line_numbers": True,  # Show line numbers in code blocks
-    "download_all_examples": True,  # Option to download all examples
-    "plot_gallery": True,  # Generate plots from examples
-    "thumbnail_size": (400, 280),  # Larger thumbnails for better visibility
-    "remove_config_comments": True,  # Remove config comments in examples
-    "min_reported_time": 1,  # Minimum time to report in examples
-    "show_memory": False,  # Don't show memory usage
-    "matplotlib_animations": True,  # Enable matplotlib animations
-    "show_signature": True,  # Show function signatures
-    
-    # Custom template - using correct parameter
-    "default_thumb_file": "_static/logo.png",  # Default thumbnail image
-    
-    # Reference configurations
-    "reference_url": {
-        "kaira": None,  # The module has no reference URL
-    },
-    "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
-    
-    # Gallery organization
-    "within_subsection_order": FileNameSortKey,  # Sort by filename within subsections
-    
-    # First cell in generated notebooks - improving the note about downloading and Binder
-    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*\n\n**Quick Links:**\n- Download this example as a Jupyter notebook or Python script using the buttons below\n- Run this example interactively in your browser via Binder\n",
-    
-    # Backreferences configuration
-    "backreferences_dir": "gen_modules/backreferences",
-    "doc_module": ("kaira",),  # Add this line to specify which modules to document
-    
+    "download_all_examples": True,
+    "plot_gallery": True,  # Enable gallery plots
+    "thumbnail_size": (400, 280),
+    "remove_config_comments": True,
+    "min_reported_time": 1,
+    "show_memory": False,
+    "matplotlib_animations": True,
+    "show_signature": True,
+        
     # Enable Binder integration with JupyterLab interface
     "binder": {
         "org": "ipc-lab",
@@ -143,6 +124,30 @@ sphinx_gallery_conf = {
     # Execution settings
     "junit": "_build/junit-results.xml",  # Save test results
     "inspect_global_variables": True,  # Inspect global variables
+
+    # Custom template
+    "default_thumb_file": "_static/logo.png",
+    
+    # Build settings
+    "only_warn_on_example_error": True,
+    "reset_modules": ('matplotlib',),
+    
+    # Backreference settings
+    "backreferences_dir": "gen_modules/backreferences",
+    "doc_module": "kaira",
+
+    # Reference configurations
+    "reference_url": {
+        "kaira": None,  # The module has no reference URL
+    },
+    "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
+    
+    # Gallery organization
+    "within_subsection_order": FileNameSortKey,  # Sort by filename within subsections
+    
+    # First cell in generated notebooks - improving the note about downloading and Binder
+    "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*\n\n**Quick Links:**\n- Download this example as a Jupyter notebook or Python script using the buttons below\n- Run this example interactively in your browser via Binder\n",
+
 }
 
 # Configure autodoc

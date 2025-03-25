@@ -56,6 +56,13 @@ Examples and Tutorials
         </div>
         
         <div class="category-card">
+            <a href="examples/metrics/index.html">
+                <h3>Metrics</h3>
+                <p>Comprehensive evaluation metrics for signal quality, error rates, and perceptual quality, including PSNR, SSIM, BER, SNR, and LPIPS</p>
+            </a>
+        </div>
+        
+        <div class="category-card">
             <a href="examples/performance_analysis/index.html">
                 <h3>Performance Analysis</h3>
                 <p>Tools for measuring and optimizing system performance</p>
@@ -78,6 +85,7 @@ Examples and Tutorials
    examples/constraints/index
    examples/modulation/index
    examples/deep_jscc/index
+   examples/metrics/index
    examples/performance_analysis/index
 
 .. raw:: html
