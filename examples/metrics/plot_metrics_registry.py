@@ -1,23 +1,23 @@
 """
-==========================================
+============================
 Metrics Registry
-==========================================
+============================
 
-This example demonstrates how to use the metrics registry in the Kaira library.
-The MetricRegistry provides a convenient way to register, access, and manage
-metrics throughout your project, facilitating both built-in and custom metrics.
+This example demonstrates the usage of the metrics registry in Kaira,
+which provides a central location for registering, managing, and
+retrieving metrics.
 """
+
 # %%
-# Imports and Setup
-# --------------------------------
+# First, let's import the necessary modules
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from kaira.metrics import (
-    MetricRegistry, 
-    BER, PSNR, SSIM,
+    BER, PSNR, SSIM, SNR,
     BaseMetric
 )
+from kaira.metrics.registry import MetricRegistry
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -25,24 +25,24 @@ np.random.seed(42)
 
 # %%
 # 1. Basic Registry Usage
-# ----------------------
-# Initialize a new metrics registry
-registry = MetricRegistry()
+# -------------------------------------------------------------------------
+# Create a new registry instance for our examples
 
-# Register built-in metrics
-registry.register("ber", BER())
-registry.register("psnr", PSNR())
-registry.register("ssim", SSIM())
+# Clear existing registrations and register new metric classes
+MetricRegistry._metrics.clear()  # Clear existing registrations
+MetricRegistry.register("ber", BER)
+MetricRegistry.register("snr", SNR)
 
-# Print all registered metrics
-print("Registered Metrics:")
-for name in registry.get_metric_names():
-    print(f"- {name}")
+# Print available metrics
+print("Available metrics:")
+for name in MetricRegistry.list_metrics():
+    print(f"  - {name}")
 
 # %%
-# 2. Accessing and Using Registered Metrics
-# ----------------------------------------
-# Generate some test data
+# 2. Using Registered Metrics
+# --------------------------------------------------------------------------------------------------
+# Generate test data and use a registered metric
+
 n_bits = 1000
 bits = torch.randint(0, 2, (1, n_bits))
 # Introduce some errors (5% error rate)
@@ -50,14 +50,16 @@ error_probability = 0.05
 errors = torch.rand(1, n_bits) < error_probability
 received_bits = torch.logical_xor(bits, errors).int()
 
-# Use a registered metric
-ber_value = registry["ber"](received_bits, bits)
-print(f"Measured BER: {ber_value.item():.5f}")
+# Create a metric instance from the registry
+ber_metric = MetricRegistry.create("ber")
+ber_value = ber_metric(received_bits, bits)
+print(f"\nMeasured BER: {ber_value.item():.5f}")
 
 # %%
 # 3. Creating and Registering Custom Metrics
-# -----------------------------------------
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Define a custom metric
+
 class BitsPerSecond(BaseMetric):
     """Metric to calculate bits per second throughput."""
     
@@ -78,35 +80,23 @@ class BitsPerSecond(BaseMetric):
         time_seconds = torch.clamp(time_seconds, min=1e-6)
         return num_bits / time_seconds
 
-# Register the custom metric
-registry.register("throughput", BitsPerSecond())
+# Register the custom metric class with a unique name
+MetricRegistry.register("throughput", BitsPerSecond)
 
 # Test the custom metric
 bits_transmitted = torch.tensor([1000.0])
 transmission_time = torch.tensor([0.1])  # 0.1 seconds
 
-throughput = registry["throughput"](bits_transmitted, transmission_time)
-print(f"Throughput: {throughput.item():.1f} bits per second")
+# Create an instance and use it
+throughput_metric = MetricRegistry.create("throughput")
+throughput = throughput_metric(bits_transmitted, transmission_time)
+print(f"\nThroughput: {throughput.item():.1f} bits per second")
 
 # %%
-# 4. Registering Metrics with Custom Names
-# ---------------------------------------
-# You can register the same metric type multiple times with different names
+# 4. Parameterized Metrics
+# --------------------------------------------------------------------------
+# Create metrics with different parameters
 
-# Register PSNR with a custom name
-registry.register("psnr_custom", PSNR(name="Custom PSNR"))
-
-# Check if the metric exists
-print(f"Is 'psnr_custom' registered? {registry.has_metric('psnr_custom')}")
-
-# Get the metric by name
-psnr_custom = registry["psnr_custom"]
-print(f"Retrieved metric name: {psnr_custom.name}")
-
-# %%
-# 5. Registering Metrics with Different Parameters
-# ----------------------------------------------
-# Create a custom parameterized metric
 class ParameterizedBER(BER):
     """BER metric with a threshold parameter."""
     
@@ -119,31 +109,25 @@ class ParameterizedBER(BER):
         thresholded_pred = (y_pred > self.threshold).float()
         return super().forward(thresholded_pred, y_true)
 
-# Register BER metrics with different thresholds
-registry.register("ber_low_threshold", ParameterizedBER(threshold=0.3))
-registry.register("ber_high_threshold", ParameterizedBER(threshold=0.7))
+# Register the parameterized metric class
+MetricRegistry.register("param_ber", ParameterizedBER)
 
-# Test with soft bits (probabilistic values)
-soft_bits = torch.rand(1, n_bits)  # Random values between 0 and 1
+# Generate soft decisions for testing
+n_bits = 1000
 true_bits = torch.randint(0, 2, (1, n_bits))
+noise = 0.3 * torch.randn(1, n_bits)
+soft_bits = true_bits.float() + noise
 
-ber_low = registry["ber_low_threshold"](soft_bits, true_bits)
-ber_high = registry["ber_high_threshold"](soft_bits, true_bits)
-ber_default = registry["ber"](soft_bits > 0.5, true_bits)
-
-print(f"BER with threshold=0.3: {ber_low.item():.5f}")
-print(f"BER with threshold=0.5 (default): {ber_default.item():.5f}")
-print(f"BER with threshold=0.7: {ber_high.item():.5f}")
-
-# %%
-# Visualize the effect of different thresholds
-thresholds = np.linspace(0.1, 0.9, 9)
+# Test different thresholds
+thresholds = [0.3, 0.4, 0.5, 0.6, 0.7]
 ber_values = []
 
 for threshold in thresholds:
-    metric = ParameterizedBER(threshold=threshold)
+    # Create a new metric instance for each threshold
+    metric = MetricRegistry.create("param_ber", threshold=threshold)
     ber_values.append(metric(soft_bits, true_bits).item())
 
+# Visualize the effect of threshold
 plt.figure(figsize=(10, 6))
 plt.plot(thresholds, ber_values, 'bo-')
 plt.grid(True)
@@ -160,91 +144,64 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# 6. Practical Example: Communication System Evaluation Framework
-# -------------------------------------------------------------
-# Create a system evaluation class that uses the metrics registry
+# 5. Evaluating Multiple Metrics
+# ------------------------------------------------------------------------------------------------------
+# Create a framework to evaluate multiple metrics
 
 class SystemEvaluator:
     """Framework for evaluating communication system performance."""
     
-    def __init__(self, metrics_registry=None):
-        if metrics_registry is None:
-            metrics_registry = MetricRegistry()
-        self.registry = metrics_registry
-        self.results = {}
+    def __init__(self):
+        """Initialize the evaluator."""
+        self.metrics = {}
     
     def register_metric(self, name, metric):
-        """Register a new metric."""
-        self.registry.register(name, metric)
-        return self
+        """Register a new metric instance."""
+        if name in self.metrics:
+            print(f"Warning: Overwriting existing metric '{name}'")
+        self.metrics[name] = metric
     
     def evaluate_all(self, **kwargs):
         """Evaluate all registered metrics with the given inputs."""
         results = {}
-        for name in self.registry.get_metric_names():
-            try:
-                # Try to evaluate the metric with the provided inputs
-                metric = self.registry[name]
-                # Extract only the arguments needed by this metric
-                metric_result = metric(**{k: kwargs[k] for k in kwargs if k in metric.get_expected_args()})
-                results[name] = metric_result.item()
-            except Exception as e:
-                print(f"Could not evaluate '{name}': {str(e)}")
+        for name, metric in self.metrics.items():
+            # Get expected arguments for this metric
+            args = getattr(metric, 'get_expected_args', lambda: [])()
+            if not args:  # If no specific args defined, try common patterns
+                if 'received_bits' in kwargs and 'true_bits' in kwargs:
+                    args = ['received_bits', 'true_bits']
+                elif 'time_seconds' in kwargs and 'num_bits' in kwargs:
+                    args = ['num_bits', 'time_seconds']
+            
+            if args:
+                # Extract relevant arguments
+                metric_args = [kwargs[arg] for arg in args if arg in kwargs]
+                if len(metric_args) == len(args):
+                    results[name] = metric(*metric_args)
         
-        self.results = results
         return results
-    
-    def plot_results(self, x_values=None, metric_names=None):
-        """Plot results of multiple evaluations."""
-        if not hasattr(self, 'results_history'):
-            print("No evaluation history to plot.")
-            return
-        
-        if metric_names is None:
-            metric_names = list(self.results_history[0].keys())
-        
-        plt.figure(figsize=(12, 6))
-        for name in metric_names:
-            values = [result.get(name, float('nan')) for result in self.results_history]
-            plt.plot(x_values, values, 'o-', label=name)
-        
-        plt.grid(True)
-        plt.xlabel('Evaluation Parameter')
-        plt.ylabel('Metric Value')
-        plt.title('System Performance Metrics')
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
 
-# %%
-# Add methods to BaseMetric to help with our evaluation framework
-def dummy_get_expected_args(self):
-    """Return expected argument names for each metric."""
-    # For demo purposes - in a real implementation, this would be properly handled
+# Add method to help identify expected arguments
+def get_expected_args(self):
+    """Return expected argument names for the metric."""
     if isinstance(self, BER):
         return ['received_bits', 'true_bits']
-    elif isinstance(self, PSNR) or isinstance(self, SSIM):
-        return ['received_image', 'original_image']
     elif isinstance(self, BitsPerSecond):
         return ['num_bits', 'time_seconds']
     else:
         return []
 
-# Add method to BaseMetric class instance
-BaseMetric.get_expected_args = dummy_get_expected_args
+# Add method to BaseMetric class
+BaseMetric.get_expected_args = get_expected_args
 
-# %%
-# Create a complete evaluation framework
+# Create evaluator and register metrics
 evaluator = SystemEvaluator()
+evaluator.register_metric("system_ber", MetricRegistry.create("ber"))
+evaluator.register_metric("system_throughput", MetricRegistry.create("throughput"))
 
-# Register metrics
-evaluator.register_metric("ber", BER())
-evaluator.register_metric("throughput", BitsPerSecond())
-
-# Prepare test data for a simple transmission scenario
+# Prepare test data
 true_bits = torch.randint(0, 2, (1, 1000))
 received_bits = true_bits.clone()
-# Add some random bit flips
 error_mask = torch.rand(1, 1000) < 0.05  # 5% error rate
 received_bits = torch.logical_xor(received_bits, error_mask).int()
 
@@ -252,7 +209,7 @@ received_bits = torch.logical_xor(received_bits, error_mask).int()
 transmission_time = torch.tensor([0.1])  # seconds
 num_bits = torch.tensor([1000.0])  # number of bits
 
-# Evaluate
+# Evaluate all metrics
 results = evaluator.evaluate_all(
     true_bits=true_bits,
     received_bits=received_bits,
@@ -263,20 +220,19 @@ results = evaluator.evaluate_all(
 # Print results
 print("\nSystem Evaluation Results:")
 for name, value in results.items():
-    print(f"{name}: {value:.5f}")
+    print(f"{name}: {value.item():.5f}")
 
 # %%
-# 7. Dynamic Metric Creation and Registration
-# ------------------------------------------
-# Create and register metrics on-the-fly
+# 6. Dynamic Metric Creation
+# ------------------------------------------------------------------------------------------
+# Create and register metrics dynamically
 
-# Define a function to create a scaled metric
-def create_scaled_metric(base_metric_class, scale_factor, name=None):
-    """Create a metric that scales the result of another metric."""
+def create_scaled_metric_class(base_metric_class, scale_factor):
+    """Create a metric class that scales its result by a factor."""
     
     class ScaledMetric(base_metric_class):
-        def __init__(self, scale=scale_factor, metric_name=name):
-            super().__init__(name=metric_name)
+        def __init__(self, scale=scale_factor, name=None):
+            super().__init__(name=name)
             self.scale = scale
         
         def forward(self, *args, **kwargs):
@@ -284,36 +240,36 @@ def create_scaled_metric(base_metric_class, scale_factor, name=None):
             result = super().forward(*args, **kwargs)
             return result * self.scale
     
-    return ScaledMetric()
+    return ScaledMetric
 
-# Create a new registry
-dynamic_registry = MetricRegistry()
-
-# Create and register metrics dynamically
+# Create and register metrics with different scale factors
 for scale in [0.5, 1.0, 2.0]:
     metric_name = f"scaled_ber_{scale}"
-    scaled_metric = create_scaled_metric(BER, scale, name=metric_name)
-    dynamic_registry.register(metric_name, scaled_metric)
+    # Create a scaled metric class for each scale factor
+    scaled_metric_class = create_scaled_metric_class(BER, scale)
+    MetricRegistry.register(metric_name, scaled_metric_class)
 
-# Test the dynamically created metrics
-for name in dynamic_registry.get_metric_names():
-    metric = dynamic_registry[name]
-    result = metric(received_bits, true_bits)
-    print(f"{name}: {result.item():.5f}")
-
-# %%
-# Visualize the effect of scaling
-plt.figure(figsize=(8, 5))
+# Test the scaled metrics
 scales = [0.5, 1.0, 2.0]
-results = [dynamic_registry[f"scaled_ber_{s}"](received_bits, true_bits).item() for s in scales]
+results = []
 
+for scale in scales:
+    metric_name = f"scaled_ber_{scale}"
+    # Create an instance from the registered class
+    metric = MetricRegistry.create(metric_name)
+    result = metric(received_bits, true_bits)
+    results.append(result.item())
+    print(f"{metric_name}: {result.item():.5f}")
+
+# Visualize scaling effects
+plt.figure(figsize=(8, 5))
 plt.bar(scales, results)
 plt.grid(axis='y', alpha=0.3)
 plt.xlabel('Scale Factor')
 plt.ylabel('Scaled BER')
-plt.title('Effect of Scaling on BER Metric')
+plt.title('Effect of Scaling on BER')
 
-# Add values on top of bars
+# Add value labels
 for i, (x, y) in enumerate(zip(scales, results)):
     plt.text(x, y + 0.001, f"{y:.5f}", ha='center', va='bottom')
 
@@ -322,20 +278,18 @@ plt.show()
 
 # %%
 # Conclusion
-# ------------------
+# --------------------------------------------------------------
 # This example demonstrated:
 #
-# 1. How to use the MetricRegistry to manage metrics in Kaira
-# 2. Registering and accessing built-in metrics
-# 3. Creating and registering custom metrics
-# 4. Using parametrized metrics with the registry
-# 5. Building a complete system evaluation framework
-# 6. Dynamic metric creation and registration
+# 1. Basic usage of the metrics registry
+# 2. Creating and registering custom metrics
+# 3. Creating parameterized metrics for different scenarios
+# 4. Building evaluation frameworks
+# 5. Dynamic metric creation and registration
 #
-# Key takeaways:
+# The metrics registry provides a flexible way to:
 #
-# - The metrics registry provides a flexible way to manage metrics
-# - Custom metrics can be easily created and integrated
-# - Registration enables using metrics by name throughout your code
-# - Parameterized metrics allow for flexible evaluation strategies
-# - System evaluation frameworks can leverage the registry for comprehensive analysis
+# * Centralize metric management
+# * Create parameterized variations of metrics
+# * Dynamically generate metrics
+# * Build evaluation frameworks

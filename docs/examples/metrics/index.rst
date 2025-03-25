@@ -114,6 +114,12 @@ Metrics Registry
 The metrics registry provides a flexible way to register and manage various metrics in your projects.
 
 .. Hidden toctree to avoid warnings during first build
-
 .. toctree::
    :hidden:
+
+   /auto_examples/metrics/plot_signal_metrics
+   /auto_examples/metrics/plot_image_metrics
+   /auto_examples/metrics/plot_custom_metrics
+   /auto_examples/metrics/plot_composite_metrics
+   /auto_examples/metrics/plot_metrics_registry
+   /auto_examples/metrics/sample_images/index

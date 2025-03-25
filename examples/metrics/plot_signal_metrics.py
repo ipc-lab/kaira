@@ -10,7 +10,7 @@ These metrics are essential for evaluating the performance of communication syst
 """
 # %%
 # Imports and Setup
-# --------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -31,7 +31,7 @@ np.random.seed(42)
 
 # %%
 # Initialize Metrics
-# --------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------
 ber_metric = BitErrorRate()  # or BER()
 bler_metric = BlockErrorRate()  # or BLER()
 ser_metric = SymbolErrorRate()  # or SER()
@@ -40,7 +40,7 @@ snr_metric = SignalToNoiseRatio()  # or SNR()
 
 # %%
 # 1. Basic Metric Usage
-# ---------------------
+# ------------------------------------------------------------------------
 # Demonstrate basic usage of each metric
 
 # Generate random bits
@@ -81,7 +81,7 @@ plt.show()
 
 # %%
 # 2. Block Error Rate (BLER) and Frame Error Rate (FER)
-# ------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Calculate BLER by reshaping bits into blocks
 
 # Reshape bits into blocks of 10 bits each
@@ -122,7 +122,7 @@ plt.show()
 
 # %%
 # 3. Symbol Error Rate (SER) with QAM Modulation
-# ----------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Demonstrate SER using 16-QAM modulation
 
 # Create QAM modulator and demodulator
@@ -193,7 +193,7 @@ plt.show()
 
 # %%
 # 4. Evaluating Communication System Performance
-# ---------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Evaluate BER and SER over different SNR values
 
 # SNR range in dB
@@ -287,7 +287,7 @@ plt.show()
 
 # %%
 # 5. Block Error Rate vs SNR
-# --------------------------
+# ---------------------------------------------------------------------------------------------------
 # Analyze how block size affects BLER
 block_sizes = [10, 50, 100]
 qam_order = 16
@@ -349,7 +349,7 @@ plt.show()
 
 # %%
 # 6. Comparing Multiple Metrics on the Same System
-# ------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Compare BER, BLER, SER, and FER on a 16-QAM system
 
 # Setup parameters
@@ -439,7 +439,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ------------------
+# --------------------------------------------------------------
 # This example demonstrated:
 #
 # 1. Implementation and usage of various error rate metrics in Kaira

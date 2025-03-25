@@ -10,7 +10,7 @@ evaluation of communication systems.
 """
 # %%
 # Imports and Setup
-# --------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -28,17 +28,29 @@ np.random.seed(42)
 
 # %%
 # 1. Creating a Composite Metric
-# -----------------------------
+# ------------------------------------------------------------------------------------------------------
 # We'll first create a composite metric that combines BER and SNR
 
 # Initialize individual metrics
 ber_metric = BER()
 snr_metric = SNR()
 
-# Create a composite metric
-ber_snr_composite = CompositeMetric(
-    metrics={"BER": ber_metric, "SNR": snr_metric}
-)
+# Create a wrapper metric that handles both BER and SNR inputs
+class BERSNRMetric(BaseMetric):
+    def __init__(self, ber_metric, snr_metric):
+        super().__init__()
+        self.ber = ber_metric
+        self.snr = snr_metric
+    
+    def forward(self, x, y=None):
+        # For this metric, x is a tuple containing all needed inputs
+        received_bits, bits, received_signal, signal = x
+        ber_value = self.ber(received_bits, bits)
+        snr_value = self.snr(received_signal, signal)
+        return {"BER": ber_value, "SNR": snr_value}
+
+# Create the wrapped metric
+wrapped_metric = BERSNRMetric(ber_metric, snr_metric)
 
 # Generate some test data
 n_bits = 1000
@@ -53,301 +65,286 @@ signal = (2 * bits - 1.0).float()  # Convert 0/1 bits to -1.0/+1.0 signal
 noise = 0.2 * torch.randn_like(signal)
 received_signal = signal + noise
 
-# Calculate composite metric
-result = ber_snr_composite(received_bits, bits, received_signal, signal)
-print("Composite Metric Result:")
+# Calculate metrics directly
+inputs = (received_bits, bits, received_signal, signal)
+result = wrapped_metric(inputs)
+print("Metrics Results:")
 print(f"BER: {result['BER'].item():.5f}")
 print(f"SNR: {result['SNR'].item():.2f} dB")
-print(f"Overall: {result['__all__'].item():.5f}")
 
 # %%
 # 2. Weighted Composite Metrics
-# -----------------------------
+# ------------------------------------------------------------------------------------------------------
 # Creating a weighted composite metric with custom weights
 
-# Create a weighted composite metric
-# We're weighting BER more heavily than SNR
-weighted_composite = CompositeMetric(
-    metrics={"BER": ber_metric, "SNR": snr_metric},
-    weights={"BER": 0.7, "SNR": 0.3},
-    reduction="weighted_sum"
-)
+class WeightedBERSNRMetric(BERSNRMetric):
+    def __init__(self, ber_metric, snr_metric, ber_weight=0.7, snr_weight=0.3):
+        super().__init__(ber_metric, snr_metric)
+        total_weight = ber_weight + snr_weight
+        self.ber_weight = ber_weight / total_weight
+        self.snr_weight = snr_weight / total_weight
+    
+    def forward(self, x, y=None):
+        results = super().forward(x)
+        # Normalize SNR (assuming max SNR of 20 dB for demo)
+        norm_snr = torch.clamp(results["SNR"] / 20.0, 0, 1)
+        # Invert BER since lower is better (assuming max BER of 0.5)
+        norm_ber = 1.0 - torch.clamp(results["BER"] / 0.5, 0, 1)
+        
+        weighted_result = self.ber_weight * norm_ber + self.snr_weight * norm_snr
+        
+        return {
+            "BER": results["BER"], 
+            "SNR": results["SNR"], 
+            "BER_normalized": norm_ber,
+            "SNR_normalized": norm_snr,
+            "weighted_score": weighted_result
+        }
 
-# Calculate weighted composite
-result_weighted = weighted_composite(received_bits, bits, received_signal, signal)
-print("\nWeighted Composite Metric Result:")
+# Create a weighted metric
+weighted_metric = WeightedBERSNRMetric(ber_metric, snr_metric)
+
+# Calculate weighted result
+result_weighted = weighted_metric(inputs)
+print("\nWeighted Metrics Result:")
 print(f"BER: {result_weighted['BER'].item():.5f}")
 print(f"SNR: {result_weighted['SNR'].item():.2f} dB")
-print(f"Weighted Composite: {result_weighted['__all__'].item():.5f}")
+print(f"Normalized BER: {result_weighted['BER_normalized'].item():.5f}")
+print(f"Normalized SNR: {result_weighted['SNR_normalized'].item():.5f}")
+print(f"Weighted Score: {result_weighted['weighted_score'].item():.5f}")
 
 # %%
-# 3. Different Reduction Methods
-# -----------------------------
-# Exploring different reduction methods for composite metrics
+# 3. Visualizing Metric Trade-offs
+# -------------------------------------------------------------------------------------------------------
+# Creating a chart to show how different metrics behave
 
-reduction_methods = ["sum", "mean", "weighted_sum", "weighted_mean", "min", "max"]
-composite_results = {}
+# Generate data with varying SNR
+snr_db_range = torch.linspace(0, 20, 10)
+ber_values = []
+snr_values = []
+weighted_scores = []
 
-for method in reduction_methods:
-    # Create composite with different reduction
-    if "weighted" in method:
-        composite = CompositeMetric(
-            metrics={"BER": ber_metric, "SNR": snr_metric},
-            weights={"BER": 0.7, "SNR": 0.3},
-            reduction=method
-        )
-    else:
-        composite = CompositeMetric(
-            metrics={"BER": ber_metric, "SNR": snr_metric},
-            reduction=method
-        )
+# Simple model of BER vs SNR for BPSK in AWGN
+# BER = 0.5 * erfc(sqrt(SNR))
+for snr_db in snr_db_range:
+    # Calculate theoretical BER for this SNR
+    snr_linear = 10 ** (snr_db.item() / 10)
+    ber = 0.5 * torch.erfc(torch.sqrt(torch.tensor(snr_linear)) / torch.sqrt(torch.tensor(2.0)))
     
-    # Calculate result
-    result = composite(received_bits, bits, received_signal, signal)
-    composite_results[method] = result["__all__"].item()
+    # Create signals for this SNR
+    this_signal = torch.ones((1, n_bits)) * 1.0
+    noise_power = 1.0 / snr_linear
+    this_noise = torch.sqrt(torch.tensor(noise_power)) * torch.randn_like(this_signal)
+    this_received = this_signal + this_noise
+    
+    # Generate bits with error rate matching the theoretical BER
+    this_bits = torch.ones((1, n_bits), dtype=torch.int)
+    error_mask = torch.rand(1, n_bits) < ber
+    this_received_bits = torch.logical_xor(this_bits, error_mask).int()
+    
+    # Calculate metrics
+    this_inputs = (this_received_bits, this_bits, this_received, this_signal)
+    this_result = weighted_metric(this_inputs)
+    
+    # Store results
+    ber_values.append(this_result['BER'].item())
+    snr_values.append(snr_db.item())
+    weighted_scores.append(this_result['weighted_score'].item())
 
-# Plot results for different reduction methods
-plt.figure(figsize=(10, 6))
-plt.bar(reduction_methods, [composite_results[m] for m in reduction_methods])
-plt.title('Composite Metric Values with Different Reduction Methods')
-plt.xlabel('Reduction Method')
-plt.ylabel('Composite Value')
-plt.xticks(rotation=45)
-plt.grid(axis='y', alpha=0.3)
+# Plot results
+plt.figure(figsize=(12, 6))
 
-for i, method in enumerate(reduction_methods):
-    plt.text(i, composite_results[method] + 0.01, f"{composite_results[method]:.4f}",
-             ha='center', va='bottom')
+# First subplot: BER vs SNR
+plt.subplot(1, 2, 1)
+plt.semilogy(snr_db_range, ber_values, 'bo-', label='BER')
+plt.grid(True, which='both')
+plt.xlabel('SNR (dB)')
+plt.ylabel('Bit Error Rate')
+plt.title('BER vs SNR')
+plt.legend()
+
+# Second subplot: Weighted score vs SNR
+plt.subplot(1, 2, 2)
+plt.plot(snr_db_range, weighted_scores, 'ro-', label='Weighted Score')
+plt.grid(True)
+plt.xlabel('SNR (dB)')
+plt.ylabel('Weighted Score')
+plt.title('Composite Metric vs SNR')
+plt.legend()
 
 plt.tight_layout()
 plt.show()
 
 # %%
-# 4. Practical Example: Image Transmission System Evaluation
-# ---------------------------------------------------------
-# We'll create a composite metric for evaluating an image transmission system
+# 4. Creating a Custom Composite Metric for Image Quality
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Combining PSNR and SSIM metrics with custom weights
 
-# Function to create a simple test image
-def generate_test_image(size=64):
-    """Generate a synthetic test image"""
+# Generate test images
+def create_test_image(size=64):
+    """Create a simple test image pattern"""
     x = np.linspace(-4, 4, size)
     y = np.linspace(-4, 4, size)
     xx, yy = np.meshgrid(x, y)
-    z = np.sin(xx**2 + yy**2) / (xx**2 + yy**2 + 1)
-    # Normalize to [0, 1]
-    z = (z - z.min()) / (z.max() - z.min())
-    return torch.from_numpy(z).float().unsqueeze(0).unsqueeze(0)
+    # Create a pattern with some features
+    z = np.sin(xx) * np.cos(yy)
+    return torch.FloatTensor(z).unsqueeze(0).unsqueeze(0)
 
-# Create test image
-original_image = generate_test_image(64)
+# Create original and noisy images
+original_img = create_test_image()
+noisy_img = original_img + 0.1 * torch.randn_like(original_img)
 
-# Create a composite metric for image quality
-psnr_metric = PSNR()
-ssim_metric = SSIM()
+# Create PSNR and SSIM metrics
+psnr_metric = PSNR(data_range=2.0)  # Range is [-1,1]
+ssim_metric = SSIM(data_range=2.0)  # Range is [-1,1]
 
-image_quality_composite = CompositeMetric(
-    metrics={"PSNR": psnr_metric, "SSIM": ssim_metric},
-    weights={"PSNR": 0.4, "SSIM": 0.6},
-    reduction="weighted_mean"
-)
-
-# Simulate transmission at different SNR levels
-snr_values = np.arange(0, 31, 5)
-received_images = []
-psnr_results = []
-ssim_results = []
-composite_results = []
-
-for snr_db in snr_values:
-    # Convert SNR to linear scale for noise calculation
-    snr_linear = 10**(snr_db/10)
-    signal_power = torch.mean(original_image**2)
-    noise_power = signal_power / snr_linear
+# Create a custom image quality metric
+class ImageQualityMetric(BaseMetric):
+    def __init__(self, psnr_metric, ssim_metric, psnr_weight=0.4, ssim_weight=0.6):
+        super().__init__()
+        self.psnr = psnr_metric
+        self.ssim = ssim_metric
+        total_weight = psnr_weight + ssim_weight
+        self.psnr_weight = psnr_weight / total_weight
+        self.ssim_weight = ssim_weight / total_weight
     
-    # Add noise
-    noise = torch.sqrt(torch.tensor(noise_power)) * torch.randn_like(original_image)
-    received_image = original_image + noise
-    received_image = torch.clamp(received_image, 0, 1)
-    received_images.append(received_image)
-    
-    # Calculate metrics
-    result = image_quality_composite(received_image, original_image)
-    
-    psnr_results.append(result["PSNR"].item())
-    ssim_results.append(result["SSIM"].item())
-    composite_results.append(result["__all__"].item())
+    def forward(self, x, y):
+        # Calculate individual metrics
+        psnr_value = self.psnr(x, y)
+        ssim_value = self.ssim(x, y)
+        
+        # Normalize PSNR to [0,1] (assuming max PSNR is 50 dB)
+        norm_psnr = torch.clamp(psnr_value / 50.0, 0, 1)
+        
+        # Combine into a weighted score
+        weighted_score = self.psnr_weight * norm_psnr + self.ssim_weight * ssim_value
+        
+        return {
+            "PSNR": psnr_value,
+            "SSIM": ssim_value,
+            "PSNR_normalized": norm_psnr,
+            "weighted_score": weighted_score
+        }
+
+# Create image quality metric
+img_quality_metric = ImageQualityMetric(psnr_metric, ssim_metric)
+
+# Evaluate image quality
+img_result = img_quality_metric(noisy_img, original_img)
+print("\nImage Quality Evaluation:")
+print(f"PSNR: {img_result['PSNR'].item():.2f} dB")
+print(f"SSIM: {img_result['SSIM'].item():.4f}")
+print(f"Normalized PSNR: {img_result['PSNR_normalized'].item():.4f}")
+print(f"Weighted Score: {img_result['weighted_score'].item():.4f}")
+
+# Visualize the images
+plt.figure(figsize=(10, 4))
+plt.subplot(1, 2, 1)
+plt.imshow(original_img[0, 0].numpy(), cmap='gray')
+plt.title('Original Image')
+plt.colorbar()
+
+plt.subplot(1, 2, 2)
+plt.imshow(noisy_img[0, 0].numpy(), cmap='gray')
+plt.title(f'Noisy Image (PSNR: {img_result["PSNR"].item():.1f} dB, SSIM: {img_result["SSIM"].item():.3f})')
+plt.colorbar()
+
+plt.tight_layout()
+plt.show()
 
 # %%
-# Visualize transmitted images at different SNR levels
-plt.figure(figsize=(15, 4))
+# 5. Evaluating Multiple Distortions
+# -------------------------------------------------------------------------------------------------------------------------------
+# Compare different types of distortions using composite metrics
 
-# Original image
-plt.subplot(1, len(snr_values) + 1, 1)
-plt.imshow(original_image.squeeze().numpy(), cmap='gray')
+# Create different distortions
+blur_kernel = 5
+blurred_img = torch.nn.functional.avg_pool2d(
+    original_img, 
+    kernel_size=blur_kernel, 
+    stride=1, 
+    padding=blur_kernel//2
+)
+
+# Add salt and pepper noise
+salt_pepper_img = original_img.clone()
+mask = torch.rand_like(salt_pepper_img)
+salt_pepper_img[mask < 0.05] = -1.0  # salt
+salt_pepper_img[mask > 0.95] = 1.0   # pepper
+
+# Compression effect (simulate with quantization)
+compression_levels = 8
+compressed_img = torch.round(original_img * compression_levels) / compression_levels
+
+# Evaluate all distortions
+distorted_images = {
+    "Gaussian Noise": noisy_img,
+    "Blur": blurred_img,
+    "Salt & Pepper": salt_pepper_img,
+    "Compressed": compressed_img
+}
+
+# Compute metrics for each distortion
+results = {}
+for name, img in distorted_images.items():
+    results[name] = img_quality_metric(img, original_img)
+
+# Visualize all images and metrics
+plt.figure(figsize=(15, 10))
+
+# Plot images
+for i, (name, img) in enumerate(distorted_images.items()):
+    plt.subplot(2, 3, i + 1)
+    plt.imshow(img[0, 0].numpy(), cmap='gray')
+    plt.title(f'{name}\nPSNR: {results[name]["PSNR"].item():.1f} dB\nSSIM: {results[name]["SSIM"].item():.3f}')
+    plt.axis('off')
+
+# Add original image
+plt.subplot(2, 3, 5)
+plt.imshow(original_img[0, 0].numpy(), cmap='gray')
 plt.title('Original')
 plt.axis('off')
 
-# Received images at different SNRs
-for i, snr_db in enumerate(snr_values):
-    plt.subplot(1, len(snr_values) + 1, i + 2)
-    plt.imshow(received_images[i].squeeze().numpy(), cmap='gray')
-    plt.title(f'SNR = {snr_db} dB')
-    plt.axis('off')
+# Plot metrics comparison
+plt.figure(figsize=(12, 6))
 
-plt.tight_layout()
-plt.show()
+# Prepare data for bar chart
+names = list(results.keys())
+psnr_values = [results[name]["PSNR_normalized"].item() for name in names]
+ssim_values = [results[name]["SSIM"].item() for name in names]
+composite_values = [results[name]["weighted_score"].item() for name in names]
 
-# %%
-# Plot metrics vs SNR
-plt.figure(figsize=(10, 6))
+# Plot as grouped bar chart
+x = np.arange(len(names))
+width = 0.25
 
-# Plot each metric and the composite
-plt.plot(snr_values, psnr_results, 'bo-', label='PSNR (normalized)')
-plt.plot(snr_values, ssim_results, 'ro-', label='SSIM')
-plt.plot(snr_values, composite_results, 'go-', label='Composite (40% PSNR, 60% SSIM)')
+plt.bar(x - width, psnr_values, width, label='Normalized PSNR')
+plt.bar(x, ssim_values, width, label='SSIM')
+plt.bar(x + width, composite_values, width, label='Composite Score')
 
-plt.grid(True)
-plt.xlabel('SNR (dB)')
+plt.xlabel('Distortion Type')
 plt.ylabel('Metric Value')
-plt.title('Image Quality Metrics vs. SNR')
+plt.title('Image Quality Metrics Comparison')
+plt.xticks(x, names)
 plt.legend()
+plt.grid(axis='y', alpha=0.3)
 plt.tight_layout()
-plt.show()
-
-# %%
-# 5. Creating a Custom Composite Metric
-# ------------------------------------
-# Define a custom composite metric class with special reduction logic
-
-class QualityPriceRatioMetric(CompositeMetric):
-    """Custom composite metric that implements a quality-price ratio."""
-    
-    def __init__(self, quality_metric, cost_metric, **kwargs):
-        metrics = {"quality": quality_metric, "cost": cost_metric}
-        super().__init__(metrics=metrics, **kwargs)
-    
-    def reduce(self, results_dict):
-        """Custom reduction: quality / cost ratio."""
-        quality = results_dict["quality"]
-        cost = results_dict["cost"]
-        # Ensure cost is not zero
-        cost = torch.clamp(cost, min=1e-6)
-        # Calculate ratio, higher is better
-        ratio = quality / cost
-        
-        # Store individual results
-        self.last_results = {
-            "quality": quality,
-            "cost": cost,
-            "__all__": ratio
-        }
-        return ratio
-
-# %%
-# Use our custom composite metric for system evaluation
-
-# Define quality and cost metrics (adapting existing metrics for demo)
-class SimplifiedQualityMetric(BaseMetric):
-    def forward(self, snr):
-        # Higher SNR means better quality
-        return torch.log10(snr + 1)  # Log scale for quality perception
-
-class SimplifiedCostMetric(BaseMetric):
-    def forward(self, power):
-        # Higher power means higher cost
-        return power
-
-# Initialize metrics
-quality_metric = SimplifiedQualityMetric()
-cost_metric = SimplifiedCostMetric()
-
-# Create QoS metric
-qpr_metric = QualityPriceRatioMetric(quality_metric, cost_metric)
-
-# Evaluate system at different power levels
-power_levels = torch.tensor([0.1, 0.5, 1.0, 2.0, 5.0, 10.0])
-resulting_snrs = power_levels * 2  # Simplified model: SNR = power * channel_gain
-
-# Calculate QPR for each power level
-qpr_results = []
-quality_results = []
-cost_results = []
-
-for power, snr in zip(power_levels, resulting_snrs):
-    result = qpr_metric(snr, power)
-    qpr_results.append(result["__all__"].item())
-    quality_results.append(result["quality"].item())
-    cost_results.append(result["cost"].item())
-
-# %%
-# Visualize the quality-price tradeoff
-plt.figure(figsize=(15, 5))
-
-# Plot quality vs power
-plt.subplot(1, 3, 1)
-plt.plot(power_levels.numpy(), quality_results, 'bo-')
-plt.grid(True)
-plt.xlabel('Power')
-plt.ylabel('Quality')
-plt.title('Quality vs Power')
-
-# Plot cost vs power
-plt.subplot(1, 3, 2)
-plt.plot(power_levels.numpy(), cost_results, 'ro-')
-plt.grid(True)
-plt.xlabel('Power')
-plt.ylabel('Cost')
-plt.title('Cost vs Power')
-
-# Plot QPR vs power
-plt.subplot(1, 3, 3)
-plt.plot(power_levels.numpy(), qpr_results, 'go-')
-plt.grid(True)
-plt.xlabel('Power')
-plt.ylabel('Quality-Price Ratio')
-plt.title('QPR vs Power')
-
-plt.tight_layout()
-plt.show()
-
-# %%
-# Find the optimal operating point
-optimal_idx = np.argmax(qpr_results)
-optimal_power = power_levels[optimal_idx].item()
-optimal_qpr = qpr_results[optimal_idx]
-
-print(f"Optimal operating point:")
-print(f"Power: {optimal_power}")
-print(f"Quality: {quality_results[optimal_idx]}")
-print(f"Cost: {cost_results[optimal_idx]}")
-print(f"QPR: {optimal_qpr}")
-
-plt.figure(figsize=(8, 6))
-plt.plot(power_levels.numpy(), qpr_results, 'bo-')
-plt.axvline(x=optimal_power, color='r', linestyle='--', 
-           label=f'Optimal Power = {optimal_power}')
-plt.grid(True)
-plt.xlabel('Power')
-plt.ylabel('Quality-Price Ratio')
-plt.title('Optimal Operating Point')
-plt.legend()
 plt.show()
 
 # %%
 # Conclusion
-# ------------------
+# --------------------------------
 # This example demonstrated:
 #
-# 1. How to create and use composite metrics in kaira
-# 2. Various reduction methods available for combining metrics
-# 3. Using composite metrics for evaluating image transmission systems
-# 4. Creating custom composite metrics with specialized reduction logic
-# 5. Finding optimal operating points in systems with multiple objectives
+# 1. Creating and using composite metrics to evaluate multiple aspects of performance
+# 2. Combining metrics with different scales through normalization
+# 3. Applying custom weights to emphasize metrics according to application needs
+# 4. Visualizing trade-offs between different metrics
+# 5. Using composite metrics to compare different types of distortions
 #
-# Key takeaways:
+# Composite metrics are particularly useful when:
 #
-# - Composite metrics enable multi-objective evaluation of communication systems
-# - Different reduction methods produce different combined results
-# - Weighted combinations allow prioritizing certain metrics over others
-# - Custom composite metrics can implement domain-specific evaluation criteria
-# - Multi-objective evaluation can help identify optimal system configurations
+# * Multiple factors contribute to overall system quality
+# * Different metrics capture complementary aspects of performance
+# * Applications require balancing competing objectives
+# * Standard metrics alone don't align with specific use case requirements

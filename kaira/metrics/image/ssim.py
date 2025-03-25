@@ -25,17 +25,27 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
     to better match human visual perception :cite:`wang2004image` :cite:`brunet2011mathematical`.
     """
 
-    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, **kwargs: Any) -> None:
+    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, reduction: str = None, **kwargs: Any) -> None:
         """Initialize the SSIM module.
 
         Args:
             data_range (float): Range of the input data (typically 1.0 or 255)
             kernel_size (int): Size of the Gaussian kernel
             sigma (float): Standard deviation of the Gaussian kernel
+            reduction (str, optional): Reduction method. The underlying torchmetrics implementation
+                requires reduction=None, so this parameter controls post-processing reduction.
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="SSIM")
-        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **kwargs)
+        self.reduction = reduction
+        # Always use reduction=None in the underlying implementation
+        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(
+            data_range=data_range, 
+            kernel_size=kernel_size, 
+            sigma=sigma, 
+            reduction=None, 
+            **kwargs
+        )
 
     def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
         """Calculate SSIM between predicted and target images.
@@ -45,9 +55,17 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             targets (Tensor): Target images
 
         Returns:
-            Tensor: SSIM values for each sample
+            Tensor: SSIM values for each sample or reduced according to reduction parameter
         """
-        return self.ssim(preds, targets)
+        values = self.ssim(preds, targets)
+        
+        # Apply reduction if specified
+        if self.reduction == 'mean':
+            return values.mean()
+        elif self.reduction == 'sum':
+            return values.sum()
+        else:
+            return values
 
     def compute_with_stats(self, preds: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
         """Compute SSIM with mean and standard deviation.
@@ -73,17 +91,19 @@ class MultiScaleSSIM(BaseMetric):
     than single-scale methods :cite:`wang2004image`.
     """
 
-    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, **kwargs: Any) -> None:
+    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: str = None, **kwargs: Any) -> None:
         """Initialize the MultiScaleSSIM module.
 
         Args:
             kernel_size (int): The size of the Gaussian kernel
             data_range (float): The range of the input data (typically 1.0 or 255)
+            reduction (str, optional): Reduction method ('mean', 'sum', or None)
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="MS-SSIM")
         self.kernel_size = kernel_size
         self.data_range = data_range
+        self.reduction = reduction
         self.register_buffer("sum_values", torch.tensor(0.0))
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("count", torch.tensor(0))
@@ -96,15 +116,23 @@ class MultiScaleSSIM(BaseMetric):
             targets (torch.Tensor): Target images
 
         Returns:
-            torch.Tensor: MS-SSIM values for each sample
+            torch.Tensor: MS-SSIM values for each sample, or reduced according to reduction parameter
         """
-        return ms_ssim(
+        values = ms_ssim(
             preds,
             targets,
             data_range=self.data_range,
             size_average=False,
             win_size=self.kernel_size,
         )
+
+        # Apply reduction if specified
+        if self.reduction == 'mean':
+            return values.mean()
+        elif self.reduction == 'sum':
+            return values.sum()
+        else:
+            return values
 
     def update(self, preds: torch.Tensor, targets: torch.Tensor) -> None:
         """Update internal state with batch of samples.

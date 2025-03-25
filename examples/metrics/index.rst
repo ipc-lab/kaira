@@ -55,7 +55,7 @@ systems.
    /auto_examples/metrics/plot_image_metrics
 
 Detailed Topics
---------------
+-------------------------------------------
 
 Signal Metrics
 ~~~~~~~~~~~~~

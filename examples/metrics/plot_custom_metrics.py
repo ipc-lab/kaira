@@ -10,7 +10,7 @@ communication system requirements.
 """
 # %%
 # Imports and Setup
-# --------------------------------
+# -----------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -25,7 +25,7 @@ np.random.seed(42)
 
 # %%
 # 1. Creating a Simple Custom Metric
-# ---------------------------------
+# ------------------------------------------------------------
 # Start with a basic custom metric that implements error-free-bits ratio
 
 class ErrorFreeBitsRatio(BaseMetric):
@@ -73,7 +73,7 @@ print(f"Verification: 1 - BER = {1 - ber_value.item():.5f}")
 
 # %%
 # 2. Creating a Parameterized Custom Metric
-# ----------------------------------------
+# ----------------------------------------------------------------------------
 # Implement a custom BER metric with configurable decision thresholds
 class AdaptiveThresholdBER(BaseMetric):
     """BER metric with adaptive thresholding based on signal statistics."""
@@ -200,7 +200,7 @@ plt.show()
 
 # %%
 # 3. Creating a More Complex Custom Metric
-# ---------------------------------------
+# ---------------------------------------------------------------------------
 # Implement a weighted error metric where errors in certain positions are considered more serious
 
 class WeightedBER(BaseMetric):
@@ -340,7 +340,7 @@ plt.show()
 
 # %%
 # 4. Application-Specific Custom Metric
-# ------------------------------------
+# ------------------------------------------------------------------------
 # Create a custom metric for evaluating the Quality of Service (QoS) of a system
 
 class QualityOfServiceMetric(BaseMetric):
@@ -445,7 +445,7 @@ plt.show()
 
 # %%
 # 5. Metric that Implements a Communication Standard
-# -------------------------------------------------
+# ----------------------------------------------------------------------------------------------
 # Implement a custom metric that follows a communications standard specification
 
 class MeanOpinionScore(BaseMetric):
@@ -630,7 +630,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ------------------
+# ------------------------------------
 # This example demonstrated:
 #
 # 1. How to create custom metrics by extending the BaseMetric class
