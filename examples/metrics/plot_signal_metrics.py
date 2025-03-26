@@ -8,11 +8,9 @@ in the Kaira library, including BER (Bit Error Rate), BLER (Block Error Rate),
 SER (Symbol Error Rate), FER (Frame Error Rate), and SNR (Signal-to-Noise Ratio).
 These metrics are essential for evaluating the performance of communication systems.
 """
-import matplotlib.pyplot as plt
+from typing import Dict, List, Literal
 
-# %%
-# Imports and Setup
-# -------------------------------------------------------------------------------------------------------------------------------
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -128,7 +126,7 @@ plt.show()
 # Demonstrate SER using 16-QAM modulation
 
 # Create QAM modulator and demodulator
-qam_order = 16
+qam_order: Literal[4, 16, 64, 256] = 16
 bits_per_symbol = int(np.log2(qam_order))
 modulator = QAMModulator(order=qam_order)
 demodulator = QAMDemodulator(order=qam_order)
@@ -198,12 +196,12 @@ plt.show()
 
 # SNR range in dB
 snr_db_range = np.arange(0, 21, 2)
-qam_orders = [4, 16, 64]
+qam_orders: List[Literal[4, 16, 64]] = [4, 16, 64]
 
 # Store results
-ber_results = {order: [] for order in qam_orders}
-ser_results = {order: [] for order in qam_orders}
-measured_snr = {order: [] for order in qam_orders}
+ber_results: Dict[Literal[4, 16, 64], List[float]] = {order: [] for order in qam_orders}
+ser_results: Dict[Literal[4, 16, 64], List[float]] = {order: [] for order in qam_orders}
+measured_snr: Dict[Literal[4, 16, 64], List[float]] = {order: [] for order in qam_orders}
 
 # Define parameters
 n_symbols = 10000
@@ -290,13 +288,13 @@ plt.show()
 # ---------------------------------------------------------------------------------------------------
 # Analyze how block size affects BLER
 block_sizes = [10, 50, 100]
-qam_order = 16
-bits_per_symbol = int(np.log2(qam_order))
-bler_vs_snr = {block_size: [] for block_size in block_sizes}
+qam_order_bler: Literal[4, 16, 64, 256] = 16
+bits_per_symbol = int(np.log2(qam_order_bler))
+bler_vs_snr: Dict[int, List[float]] = {block_size: [] for block_size in block_sizes}
 
 # Create modulator/demodulator
-modulator = QAMModulator(order=qam_order)
-demodulator = QAMDemodulator(order=qam_order)
+modulator = QAMModulator(order=qam_order_bler)
+demodulator = QAMDemodulator(order=qam_order_bler)
 
 # Generate random bits (use more bits for larger block sizes)
 n_symbols = 10000
@@ -353,14 +351,14 @@ plt.show()
 # Compare BER, BLER, SER, and FER on a 16-QAM system
 
 # Setup parameters
-qam_order = 16
-bits_per_symbol = int(np.log2(qam_order))
+qam_order_multi: Literal[4, 16, 64, 256] = 16
+bits_per_symbol = int(np.log2(qam_order_multi))
 block_size = 20  # bits per block
 frame_size = 100  # bits per frame
 
 # Create modulator/demodulator
-modulator = QAMModulator(order=qam_order)
-demodulator = QAMDemodulator(order=qam_order)
+modulator = QAMModulator(order=qam_order_multi)
+demodulator = QAMDemodulator(order=qam_order_multi)
 
 # Generate random bits
 n_symbols = 10000
@@ -371,7 +369,7 @@ bits = torch.randint(0, 2, (1, n_bits))
 symbols = modulator(bits)
 
 # Store results
-metrics = {"BER": [], "SER": [], "BLER": [], "FER": []}
+metrics: Dict[str, List[float]] = {"BER": [], "SER": [], "BLER": [], "FER": []}
 
 for snr_db in snr_db_range:
     # Calculate noise power from SNR

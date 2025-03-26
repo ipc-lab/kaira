@@ -109,13 +109,13 @@ for i in range(16):
     symbol = qam16_mod(torch.tensor([bits]))
     symbols.append(symbol.item())
 
-symbols = torch.tensor(symbols)
+symbols_ct: torch.Tensor = torch.tensor(symbols, dtype=torch.complex64)
 
 # Plot constellation with labels
-plt.scatter(symbols.real, symbols.imag, color="blue", s=100)
+plt.scatter(symbols_ct.real, symbols_ct.imag, color="blue", s=100)
 
 # Add bit pattern labels to each point
-for symbol, bits in zip(symbols, bit_patterns):
+for symbol, bits in zip(symbols_ct, bit_patterns):
     bit_str = "".join([str(b) for b in bits])
     plt.annotate(bit_str, (symbol.real + 0.05, symbol.imag + 0.05))
 

@@ -12,6 +12,8 @@ We'll cover:
 - Mel-Spectrogram Loss
 """
 
+from typing import Dict, List
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -131,8 +133,8 @@ noise_levels = np.linspace(0, 0.5, 10)
 filter_sizes = np.arange(1, 20, 2)
 
 # Store results
-noise_results = {"stft": [], "multi_res_stft": [], "mel": []}
-filter_results = {"stft": [], "multi_res_stft": [], "mel": []}
+noise_results: Dict[str, List[float]] = {"stft": [], "multi_res_stft": [], "mel": []}
+filter_results: Dict[str, List[float]] = {"stft": [], "multi_res_stft": [], "mel": []}
 
 # Compute losses for different noise levels
 for noise in noise_levels:

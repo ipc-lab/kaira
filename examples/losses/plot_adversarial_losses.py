@@ -13,6 +13,8 @@ We'll cover:
 - Hinge Loss
 """
 
+from typing import Dict, List
+
 import matplotlib.pyplot as plt
 
 # %%
@@ -66,7 +68,7 @@ def compute_losses(d_output):
 
 # Generate range of discriminator outputs
 d_outputs = torch.linspace(-5, 5, 100).unsqueeze(1)
-loss_curves = {name: [] for name in ["Vanilla GAN", "WGAN", "LSGAN", "Hinge"]}
+loss_curves: Dict[str, List[float]] = {name: [] for name in ["Vanilla GAN", "WGAN", "LSGAN", "Hinge"]}
 
 for d_out in d_outputs:
     losses = compute_losses(d_out.unsqueeze(0))

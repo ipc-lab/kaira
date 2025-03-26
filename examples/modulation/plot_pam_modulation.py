@@ -28,11 +28,11 @@ np.random.seed(42)
 # %%
 # Create PAM Modulators with Different Orders
 # --------------------------------------------------------------------------------
-pam_orders = [2, 4, 8, 16]  # PAM-2 through PAM-16
+pam_orders: list[int] = [2, 4, 8, 16]  # PAM-2 through PAM-16
 n_symbols = 1000
 
-modulators = {order: PAMModulator(order=order) for order in pam_orders}
-demodulators = {order: PAMDemodulator(order=order) for order in pam_orders}
+modulators: dict[int, PAMModulator] = {order: PAMModulator(order=order) for order in pam_orders}  # type: ignore
+demodulators: dict[int, PAMDemodulator] = {order: PAMDemodulator(order=order) for order in pam_orders}  # type: ignore
 
 # Generate random bits for each PAM order
 bits_per_symbol = {order: int(np.log2(order)) for order in pam_orders}
@@ -70,7 +70,7 @@ plt.show()
 # Simulate Transmission over AWGN Channel
 # ---------------------------------------------------------------------
 snr_db_range = np.arange(0, 26, 2)
-ber_results = {order: [] for order in pam_orders}
+ber_results: dict[int, list[float]] = {order: [] for order in pam_orders}
 
 # Initialize BER metric
 ber_metric = BER()

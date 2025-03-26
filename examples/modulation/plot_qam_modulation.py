@@ -29,11 +29,11 @@ np.random.seed(42)
 # %%
 # Create QAM Modulators with Different Orders
 # --------------------------------------------------------------------------------
-qam_orders = [4, 16, 64]
+qam_orders: list[int] = [4, 16, 64]
 n_symbols = 1000
 
-modulators = {order: QAMModulator(order=order) for order in qam_orders}
-demodulators = {order: QAMDemodulator(order=order) for order in qam_orders}
+modulators: dict[int, QAMModulator] = {order: QAMModulator(order=order) for order in qam_orders}  # type: ignore
+demodulators: dict[int, QAMDemodulator] = {order: QAMDemodulator(order=order) for order in qam_orders}  # type: ignore
 
 # Generate random bits for each QAM order
 bits_per_symbol = {4: 2, 16: 4, 64: 6}  # 4-QAM (same as QPSK)  # 16-QAM  # 64-QAM
@@ -59,7 +59,7 @@ plt.show()
 # Simulate Transmission over AWGN Channel
 # ---------------------------------------------------------------------
 snr_db_range = np.arange(0, 31, 2)
-ber_results = {order: [] for order in qam_orders}
+ber_results: dict[int, list[float]] = {order: [] for order in qam_orders}
 
 # Initialize BER metric
 ber_metric = BER()

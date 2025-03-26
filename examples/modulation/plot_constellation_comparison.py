@@ -103,7 +103,7 @@ plt.show()
 # Compare BER Performance
 # ------------------------------------
 snr_db_range = np.arange(0, 31, 2)
-ber_results = {name: [] for name in modulators.keys()}
+ber_results: dict[str, list[float]] = {name: [] for name in modulators.keys()}
 
 # Initialize BER metric
 ber_metric = BER()

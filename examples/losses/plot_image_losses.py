@@ -13,6 +13,8 @@ We'll cover:
 - Combined Loss (Multiple losses with weights)
 """
 
+from typing import Dict, List
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -137,8 +139,8 @@ noise_levels = np.linspace(0, 0.5, 10)
 blur_sizes = np.arange(1, 20, 2)
 
 # Store results
-noise_results = {"mse": [], "ssim": [], "lpips": []}
-blur_results = {"mse": [], "ssim": [], "lpips": []}
+noise_results: Dict[str, List[float]] = {"mse": [], "ssim": [], "lpips": []}
+blur_results: Dict[str, List[float]] = {"mse": [], "ssim": [], "lpips": []}
 
 # Compute losses for different noise levels
 for noise in noise_levels:

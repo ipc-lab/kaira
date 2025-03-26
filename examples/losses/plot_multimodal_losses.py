@@ -12,6 +12,8 @@ We'll cover:
 - InfoNCE Loss (Info Noise-Contrastive Estimation)
 """
 
+from typing import Dict, List
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -86,7 +88,7 @@ def compute_similarity_losses(similarity):
 
 # Generate range of similarity values
 similarities = np.linspace(-1, 1, 100)
-loss_curves = {name: [] for name in ["Contrastive", "Triplet", "InfoNCE"]}
+loss_curves: Dict[str, List[float]] = {name: [] for name in ["Contrastive", "Triplet", "InfoNCE"]}
 
 for sim in similarities:
     losses = compute_similarity_losses(sim)
@@ -142,7 +144,7 @@ plt.show()
 margins = [0.1, 0.3, 0.5, 1.0]
 anchor_point = torch.tensor([[1.0, 0.0]])
 theta = np.linspace(0, 2 * np.pi, 100)
-loss_values = {margin: [] for margin in margins}
+loss_values: Dict[float, List[float]] = {margin: [] for margin in margins}
 
 for t in theta:
     point = torch.tensor([[np.cos(t), np.sin(t)]])
