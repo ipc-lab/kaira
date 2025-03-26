@@ -232,14 +232,27 @@ def create_scaled_metric_class(base_metric_class, scale_factor):
     """Create a metric class that scales its result by a factor."""
 
     class ScaledMetric(base_metric_class):
-        def __init__(self, scale=scale_factor, name=None):
-            super().__init__(name=name)
-            self.scale = scale
+        """A scaled version of the base metric.
+
+        Multiplies the output of the base metric by a scaling factor.
+        Inherits all functionality from the base metric class.
+
+        Args:
+            *args: Variable length argument list passed to base metric.
+            **kwargs: Arbitrary keyword arguments passed to base metric.
+        """
 
         def forward(self, *args, **kwargs):
-            # Get the original result and scale it
-            result = super().forward(*args, **kwargs)
-            return result * self.scale
+            """Apply scaling to the base metric's output.
+
+            Args:
+                *args: Variable length argument list passed to base metric.
+                **kwargs: Arbitrary keyword arguments passed to base metric.
+
+            Returns:
+                torch.Tensor: Scaled metric value (base metric output * scale_factor)
+            """
+            return super().forward(*args, **kwargs) * scale_factor
 
     return ScaledMetric
 

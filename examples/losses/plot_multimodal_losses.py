@@ -28,6 +28,19 @@ from kaira.losses import LossRegistry
 # %%
 # Let's create some sample embeddings to simulate features from different modalities
 def create_sample_embeddings(n_samples=100, n_dim=128):
+    """Generate sample embeddings for multimodal loss demonstration.
+
+    Args:
+        n_samples (int): Number of samples to generate. Default is 100.
+        n_dim (int): Dimensionality of each embedding. Default is 128.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+            - anchors: Anchor embeddings (e.g., image features).
+            - positives: Positive embeddings (similar to anchors).
+            - negatives: Negative embeddings (different from anchors).
+            - labels: Labels corresponding to each sample.
+    """
     # Create anchor embeddings (e.g., image features)
     anchors = torch.randn(n_samples, n_dim)
     anchors = nn.functional.normalize(anchors, p=2, dim=1)
@@ -113,6 +126,23 @@ plt.show()
 # %%
 # Let's examine the clustering behavior of these losses
 def plot_embedding_clusters(embeddings, labels, title):
+    """Visualize embeddings using t-SNE for dimensionality reduction.
+
+    Args:
+        embeddings (torch.Tensor): 2D tensor of shape (n_samples, n_dim) representing the embeddings.
+        labels (torch.Tensor): 1D tensor of shape (n_samples,) representing the labels.
+        title (str): Title for the plot.
+
+    Raises:
+        AssertionError: If input tensors are not of the expected shape or type.
+    """
+    # Input validation
+    assert torch.is_tensor(embeddings), "Embeddings must be a torch tensor"
+    assert torch.is_tensor(labels), "Labels must be a torch tensor"
+    assert embeddings.dim() == 2, f"Expected 2D embeddings, got {embeddings.dim()}D"
+    assert labels.dim() == 1, f"Expected 1D labels, got {labels.dim()}D"
+    assert embeddings.shape[0] == labels.shape[0], "Number of embeddings and labels must match"
+
     # Use t-SNE for visualization
     from sklearn.manifold import TSNE
 

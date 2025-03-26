@@ -93,6 +93,15 @@ for rate in rate_factors:
 
 # Function to process through a channel and collect results
 def process_through_channel(channel, input_signal):
+    """Process an input signal through a given channel.
+
+    Args:
+        channel: A channel model instance (PoissonChannel or AWGNChannel)
+        input_signal (torch.Tensor): Input signal to be processed
+
+    Returns:
+        numpy.ndarray: Channel output as a numpy array with batch dimension removed
+    """
     with torch.no_grad():
         output = channel(input_signal)
     return output.squeeze(0).numpy()
@@ -152,11 +161,35 @@ plt.show()
 
 # Function to extract noise component
 def extract_noise(output, original):
+    """Extract noise component by subtracting original signal from output.
+
+    Args:
+        output (numpy.ndarray): Channel output signal
+        original (numpy.ndarray): Original input signal
+
+    Returns:
+        numpy.ndarray: Noise component
+    """
     return output - original
 
 
 # Extract horizontal profiles from middle rows of each region
 def get_profiles(image, original):
+    """Extract horizontal profiles and noise from different regions of the image.
+
+    Args:
+        image (numpy.ndarray): Processed image with noise
+        original (numpy.ndarray): Original image without noise
+
+    Returns:
+        dict: Dictionary containing profiles and noise for ramp and gradient regions:
+            - ramp_profile: Signal profile from ramp region
+            - ramp_noise: Noise profile from ramp region
+            - ramp_signal: Original signal in ramp region
+            - gradient_profile: Signal profile from gradient region
+            - gradient_noise: Noise profile from gradient region
+            - gradient_signal: Original signal in gradient region
+    """
     h, w = original.shape
     ramp_row = h // 8  # Middle of ramp region
     gradient_row = 3 * h // 4  # Middle of gradient region
@@ -307,6 +340,17 @@ awgn_snr = []
 
 # Function to compute local SNR within bins
 def compute_local_snr(signal, noise, signal_levels):
+    """Compute local SNR within signal level bins.
+
+    Args:
+        signal (numpy.ndarray): Original signal values
+        noise (numpy.ndarray): Noise values
+        signal_levels (numpy.ndarray): Bin edges for signal levels
+
+    Returns:
+        list: List of tuples (signal_level, snr_db) containing the signal level
+            and corresponding SNR in dB for each bin
+    """
     snr_values = []
     for i in range(len(signal_levels) - 1):
         min_level = signal_levels[i]
@@ -366,6 +410,16 @@ plt.show()
 
 # Create a binary signal (0s and 1s)
 def create_binary_signal(length=500):
+    """Create a random binary signal for transmission testing.
+
+    Args:
+        length (int, optional): Number of bits to generate. Defaults to 500.
+
+    Returns:
+        tuple:
+            - torch.Tensor: Signal values mapped to [0.2, 0.8] range
+            - numpy.ndarray: Original binary bits
+    """
     # Generate random bits
     bits = np.random.randint(0, 2, length)
 

@@ -30,6 +30,21 @@ from kaira.losses import LossRegistry
 # Create sample data - we'll simulate an original image and a degraded version
 # For this example, we'll create simple synthetic images
 def create_sample_images(size=64):
+    """Create synthetic image pairs for demonstrating image quality losses.
+
+    Generates a pattern image using sinusoidal functions and a degraded version
+    of the same image with added noise and Gaussian blur.
+
+    Args:
+        size (int): The width and height of the square images to generate.
+                   Defaults to 64.
+
+    Returns:
+        tuple: A pair of torch tensors (original, degraded) where:
+            - original: Clean pattern image of shape (1, 1, size, size)
+            - degraded: Noisy/blurred version of shape (1, 1, size, size)
+            Both tensors are normalized to [0, 1] range.
+    """
     # Create an original image with a pattern
     x = np.linspace(-4, 4, size)
     y = np.linspace(-4, 4, size)

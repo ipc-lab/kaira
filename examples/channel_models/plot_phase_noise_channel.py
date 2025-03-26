@@ -200,6 +200,16 @@ plt.show()
 
 # Function to detect the closest constellation point
 def detect_symbol(received_points, constellation):
+    """Detect the closest constellation point for each received point.
+
+    Args:
+        received_points (torch.Tensor): Complex tensor containing received signal points.
+        constellation (torch.Tensor): Reference constellation points, either as complex
+            1D tensor or 2D tensor with separate I/Q components.
+
+    Returns:
+        torch.Tensor: Indices of the closest constellation points for each received point.
+    """
     # Calculate distances to each constellation point
     distances = []
     if constellation.ndim == 1:  # 1D complex tensor

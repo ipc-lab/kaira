@@ -27,6 +27,15 @@ from kaira.losses import LossRegistry
 # %%
 # Let's create some sample data for text classification
 def create_sample_classification_data(n_samples=100, n_classes=5):
+    """Create synthetic data for text classification tasks.
+
+    Args:
+        n_samples (int): Number of samples to generate.
+        n_classes (int): Number of classification classes.
+
+    Returns:
+        tuple: (logits, labels) where logits are model outputs and labels are true classes.
+    """
     # Create logits (raw model outputs)
     logits = torch.randn(n_samples, n_classes)
 
@@ -58,6 +67,12 @@ for smoothing in smoothing_values:
 # %%
 # Let's visualize how label smoothing affects the target distribution
 def plot_label_distributions(smoothing_values, n_classes=5):
+    """Visualize how label smoothing affects the target distribution.
+
+    Args:
+        smoothing_values (list): List of label smoothing values to visualize.
+        n_classes (int): Number of classes in the distribution.
+    """
     fig, axes = plt.subplots(1, len(smoothing_values), figsize=(4 * len(smoothing_values), 4))
 
     for i, smoothing in enumerate(smoothing_values):
@@ -83,6 +98,15 @@ plot_label_distributions(smoothing_values)
 # %%
 # Now let's examine Word2Vec loss for word embeddings
 def create_sample_word_embeddings(vocab_size=1000, embed_dim=100):
+    """Create sample word embeddings for demonstration.
+
+    Args:
+        vocab_size (int): Size of the vocabulary.
+        embed_dim (int): Dimension of the embeddings.
+
+    Returns:
+        tuple: (embeddings, center_words, context_words) for Word2Vec training.
+    """
     # Create sample word embeddings
     embeddings = torch.randn(vocab_size, embed_dim)
     embeddings = nn.functional.normalize(embeddings, p=2, dim=1)
@@ -106,6 +130,14 @@ print(f"Word2Vec Loss: {w2v_value:.4f}")
 # %%
 # Let's visualize how the cosine similarity loss behaves for word embeddings
 def compute_cosine_losses(similarities):
+    """Compute cosine similarity losses for given similarity values.
+
+    Args:
+        similarities (numpy.ndarray): Array of cosine similarity values.
+
+    Returns:
+        list: Computed loss values for each similarity value.
+    """
     # Create pairs of vectors with specified cosine similarities
     v1 = torch.tensor([[1.0, 0.0]])
     losses = []
@@ -139,6 +171,10 @@ plt.show()
 # %%
 # Let's examine how different losses handle prediction confidence
 def plot_confidence_impact():
+    """Visualize how different losses respond to prediction confidence.
+
+    Compares Cross Entropy and Label Smoothing losses across confidence levels.
+    """
     # Create a range of prediction confidences
     confidences = np.linspace(0.01, 0.99, 100)
     losses = {"Cross Entropy": [], "Label Smoothing (α=0.1)": [], "Label Smoothing (α=0.2)": []}

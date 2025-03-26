@@ -34,12 +34,28 @@ snr_metric = SNR()
 
 # Create a wrapper metric that handles both BER and SNR inputs
 class BERSNRMetric(BaseMetric):
+    """Combined metric for evaluating both Bit Error Rate (BER) and Signal-to-Noise Ratio (SNR).
+
+    Args:
+        ber_metric (BER): Instance of BER metric
+        snr_metric (SNR): Instance of SNR metric
+    """
+
     def __init__(self, ber_metric, snr_metric):
         super().__init__()
         self.ber = ber_metric
         self.snr = snr_metric
 
     def forward(self, x, y=None):
+        """Calculate both BER and SNR metrics.
+
+        Args:
+            x (tuple): Tuple containing (received_bits, original_bits, received_signal, original_signal)
+            y (None): Not used, maintained for compatibility
+
+        Returns:
+            dict: Dictionary containing 'BER' and 'SNR' values
+        """
         # For this metric, x is a tuple containing all needed inputs
         received_bits, bits, received_signal, signal = x
         ber_value = self.ber(received_bits, bits)
@@ -77,6 +93,15 @@ print(f"SNR: {result['SNR'].item():.2f} dB")
 
 
 class WeightedBERSNRMetric(BERSNRMetric):
+    """Weighted combination of BER and SNR metrics with normalization.
+
+    Args:
+        ber_metric (BER): Instance of BER metric
+        snr_metric (SNR): Instance of SNR metric
+        ber_weight (float): Weight for BER metric (default: 0.7)
+        snr_weight (float): Weight for SNR metric (default: 0.3)
+    """
+
     def __init__(self, ber_metric, snr_metric, ber_weight=0.7, snr_weight=0.3):
         super().__init__(ber_metric, snr_metric)
         total_weight = ber_weight + snr_weight
@@ -84,6 +109,15 @@ class WeightedBERSNRMetric(BERSNRMetric):
         self.snr_weight = snr_weight / total_weight
 
     def forward(self, x, y=None):
+        """Calculate weighted combination of normalized BER and SNR metrics.
+
+        Args:
+            x (tuple): Tuple containing (received_bits, original_bits, received_signal, original_signal)
+            y (None): Not used, maintained for compatibility
+
+        Returns:
+            dict: Dictionary containing raw metrics, normalized metrics, and weighted score
+        """
         results = super().forward(x)
         # Normalize SNR (assuming max SNR of 20 dB for demo)
         norm_snr = torch.clamp(results["SNR"] / 20.0, 0, 1)
@@ -197,6 +231,15 @@ ssim_metric = SSIM(data_range=2.0)  # Range is [-1,1]
 
 # Create a custom image quality metric
 class ImageQualityMetric(BaseMetric):
+    """Combined image quality metric using PSNR and SSIM.
+
+    Args:
+        psnr_metric (PSNR): Instance of PSNR metric
+        ssim_metric (SSIM): Instance of SSIM metric
+        psnr_weight (float): Weight for PSNR metric (default: 0.4)
+        ssim_weight (float): Weight for SSIM metric (default: 0.6)
+    """
+
     def __init__(self, psnr_metric, ssim_metric, psnr_weight=0.4, ssim_weight=0.6):
         super().__init__()
         self.psnr = psnr_metric
@@ -206,6 +249,15 @@ class ImageQualityMetric(BaseMetric):
         self.ssim_weight = ssim_weight / total_weight
 
     def forward(self, x, y):
+        """Calculate weighted combination of PSNR and SSIM metrics.
+
+        Args:
+            x (torch.Tensor): Input image
+            y (torch.Tensor): Reference image
+
+        Returns:
+            dict: Dictionary containing PSNR, SSIM, normalized PSNR, and weighted score
+        """
         # Calculate individual metrics
         psnr_value = self.psnr(x, y)
         ssim_value = self.ssim(x, y)

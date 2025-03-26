@@ -89,6 +89,13 @@ print(f"Mel-Spectrogram Loss: {mel_value:.4f}")
 # %%
 # Let's visualize the spectrograms to understand what these losses are comparing
 def plot_spectrogram(waveform, sample_rate, title):
+    """Plot the spectrogram of an audio waveform.
+
+    Args:
+        waveform (torch.Tensor): Input audio waveform tensor
+        sample_rate (int): Sampling rate of the audio in Hz
+        title (str): Title for the spectrogram plot
+    """
     spectrogram = torchaudio.transforms.Spectrogram(
         n_fft=1024,
         hop_length=256,
