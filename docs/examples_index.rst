@@ -42,16 +42,16 @@ Examples and Tutorials
         </div>
         
         <div class="category-card">
-            <a href="examples/modulation/index.html">
-                <h3>Modulation</h3>
-                <p>Digital modulation schemes and constellation analysis</p>
+            <a href="examples/data/index.html">
+                <h3>Data Generation</h3>
+                <p>Utilities for generating synthetic data and correlation models</p>
             </a>
         </div>
         
         <div class="category-card">
-            <a href="examples/deep_jscc/index.html">
-                <h3>Deep JSCC</h3>
-                <p>End-to-end deep learning for joint source-channel coding</p>
+            <a href="examples/modulation/index.html">
+                <h3>Modulation</h3>
+                <p>Digital modulation schemes and constellation analysis</p>
             </a>
         </div>
         
@@ -62,12 +62,6 @@ Examples and Tutorials
             </a>
         </div>
         
-        <div class="category-card">
-            <a href="examples/performance_analysis/index.html">
-                <h3>Performance Analysis</h3>
-                <p>Tools for measuring and optimizing system performance</p>
-            </a>
-        </div>
     </div>
 
 .. raw:: html
@@ -83,10 +77,9 @@ Examples and Tutorials
    
    examples/channel_models/index
    examples/constraints/index
+   examples/data/index
    examples/modulation/index
-   examples/deep_jscc/index
    examples/metrics/index
-   examples/performance_analysis/index
 
 .. raw:: html
 

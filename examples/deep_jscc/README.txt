@@ -1,5 +1,5 @@
 Deep Joint Source-Channel Coding
-===========================
+================================
 
 These examples demonstrate Deep Joint Source-Channel Coding (Deep JSCC) techniques in the Kaira library.
 
@@ -17,7 +17,7 @@ Examples
    # e.g., plot_jscc_autoencoder
 
 Key Concepts
------------
+------------
 
 * **End-to-End Optimization**: Joint optimization of source and channel coding for specific channel conditions
 * **Autoencoder Architecture**: Neural network architectures that encode and decode signals in a single model
@@ -28,5 +28,4 @@ See Also
 --------
 
 * :mod:`kaira.models` module documentation
-* :ref:`Deep JSCC reference <jscc_reference>`
 

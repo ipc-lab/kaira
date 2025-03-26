@@ -255,7 +255,6 @@ plt.show()
 # Demonstrate soft decision demodulation (LLR output)
 test_snr_db = 10  # 10 dB SNR
 noise_power = snr_to_noise_power(1.0, test_snr_db)
-test_symbols = 5
 
 # Generate simple test sequence
 test_qpsk_bits = torch.tensor([[0, 0, 1, 1, 0, 1, 1, 0, 0, 1]])
@@ -270,22 +269,53 @@ hard_bits = qpsk_demod(received_qpsk)
 soft_llrs = qpsk_demod(received_qpsk, noise_var=noise_power)
 
 # Print results for comparison
+print("\nDemodulation Results:")
 print("Original bits:", test_qpsk_bits.numpy().flatten())
 print("Hard decisions:", hard_bits.numpy().flatten().astype(int))
 print("Soft LLRs:", soft_llrs.numpy().flatten())
 
-# Visualize the received symbols
-plt.figure(figsize=(8, 8))
-plot_constellation(received_qpsk.flatten(),
-                  title=f'Received QPSK Symbols at {test_snr_db} dB SNR',
-                  marker='o')
+# Create figure with two subplots
+plt.figure(figsize=(15, 6))
+
+# Plot received symbols and constellation
+plt.subplot(1, 2, 1)
+# Plot the received symbols
+plt.scatter(received_qpsk.real.numpy(), received_qpsk.imag.numpy(), 
+           c='blue', marker='o', label='Received', alpha=0.6)
 
 # Add original constellation points for reference
-qpsk_const = torch.complex(torch.tensor([1.0, 1.0, -1.0, -1.0]), torch.tensor([1.0, -1.0, 1.0, -1.0])) / np.sqrt(2)
-plt.scatter(qpsk_const.real, qpsk_const.imag, color='red', marker='x', s=100, label='Constellation Points')
+qpsk_const = qpsk_mod.constellation
+plt.scatter(qpsk_const.real.numpy(), qpsk_const.imag.numpy(), 
+           c='red', marker='x', s=100, label='Constellation Points')
+
+# Add bit labels to constellation points
+for i, point in enumerate(qpsk_const):
+    bits = ''.join(str(int(b)) for b in qpsk_mod.bit_patterns[i])
+    plt.annotate(bits, (point.real + 0.1, point.imag + 0.1))
 
 plt.grid(True)
+plt.xlabel('In-Phase')
+plt.ylabel('Quadrature')
+plt.title(f'QPSK Received Symbols at {test_snr_db} dB SNR')
 plt.legend()
+plt.axis('equal')
+
+# Plot LLR values
+plt.subplot(1, 2, 2)
+x = np.arange(len(soft_llrs.numpy().flatten()))
+llr_values = soft_llrs.numpy().flatten()
+plt.stem(x, llr_values)  # Removed deprecated parameter
+plt.axhline(y=0, color='r', linestyle='--', alpha=0.3)
+plt.grid(True)
+plt.xlabel('LLR Index')
+plt.ylabel('LLR Value')
+plt.title('Soft Decision Log-Likelihood Ratios (LLRs)')
+
+# Add decision threshold reference
+plt.axhline(y=0, color='r', linestyle='--', label='Decision Threshold')
+plt.legend()
+
+plt.tight_layout()
 plt.show()
 
 # %%

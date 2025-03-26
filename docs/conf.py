@@ -81,17 +81,15 @@ sphinx_gallery_conf = {
         "../examples/channel_models",
         "../examples/constraints",
         "../examples/modulation",
-        "../examples/deep_jscc",
         "../examples/metrics",
-        "../examples/performance_analysis",
+        "../examples/data",
     ],
     "gallery_dirs": [
         "auto_examples/channel_models",
         "auto_examples/constraints",
         "auto_examples/modulation",
-        "auto_examples/deep_jscc",
         "auto_examples/metrics",
-        "auto_examples/performance_analysis",
+        "auto_examples/data",
     ],
     
     # File patterns and organization

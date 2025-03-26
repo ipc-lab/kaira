@@ -46,9 +46,9 @@ for order in pam_orders:
 # Visualize PAM Constellations
 # --------------------------------------------------
 plt.figure(figsize=(15, 5))
-
 for i, order in enumerate(pam_orders):
-    symbols = modulated_symbols[order].numpy().flatten()
+    # Ensure we're working with real values
+    symbols = modulated_symbols[order].real.numpy().flatten() if torch.is_complex(modulated_symbols[order]) else modulated_symbols[order].numpy().flatten()
     
     plt.subplot(1, 4, i + 1)
     plt.scatter(np.zeros_like(symbols), symbols, alpha=0.5)
@@ -61,7 +61,6 @@ for i, order in enumerate(pam_orders):
     unique_levels = np.unique(symbols)
     for level in unique_levels:
         plt.axhline(y=level, color='r', linestyle='--', alpha=0.2)
-
 plt.tight_layout()
 plt.show()
 
@@ -124,7 +123,7 @@ for i, snr_db in enumerate(test_snr_db):
     # Pass through noisy channel
     received_symbols = channel(pam8_symbols)
     
-    # Explicitly take real part for histogram if values are complex
+    # Explicitly take real part for histogram
     hist_values = received_symbols.real if torch.is_complex(received_symbols) else received_symbols
     
     plt.subplot(1, 3, i + 1)
@@ -135,9 +134,8 @@ for i, snr_db in enumerate(test_snr_db):
     plt.grid(True)
     
     # Add vertical lines at ideal constellation points
-    # Instead of using unique() which doesn't work with complex tensors,
-    # calculate the theoretical constellation points for PAM-8
-    ideal_points = pam8_mod.constellation.numpy()
+    ideal_points = pam8_mod.constellation.real if torch.is_complex(pam8_mod.constellation) else pam8_mod.constellation
+    ideal_points = ideal_points.numpy()
     for point in ideal_points:
         plt.axvline(x=point, color='r', linestyle='--', alpha=0.5)
 plt.tight_layout()

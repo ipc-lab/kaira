@@ -23,7 +23,7 @@ Examples
    plot_poisson_channel
 
 Key Concepts
------------
+------------
 
 * **Channel Capacity**: The maximum rate at which information can be transmitted through a channel
 * **Signal-to-Noise Ratio (SNR)**: The ratio of signal power to noise power, often expressed in decibels
@@ -34,5 +34,4 @@ See Also
 --------
 
 * :mod:`kaira.channels` module documentation
-* :ref:`Channel models reference <ch_reference>`
 
