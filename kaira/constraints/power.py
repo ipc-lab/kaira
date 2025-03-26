@@ -60,7 +60,8 @@ class TotalPowerConstraint(BaseConstraint):
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
         dims = self.get_dimensions(x)
-        x_norm = torch.norm(x, dim=dims, keepdim=True)
+        # Use torch.linalg.vector_norm instead of torch.norm
+        x_norm = torch.linalg.vector_norm(x, dim=dims, keepdim=True)
 
         # Adjust power factor for complex signals
         power_factor = self.total_power_factor
@@ -121,7 +122,8 @@ class AveragePowerConstraint(BaseConstraint):
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
         dims = self.get_dimensions(x)
-        x_norm = torch.norm(x, dim=dims, keepdim=True)
+        # Use torch.linalg.vector_norm instead of torch.norm
+        x_norm = torch.linalg.vector_norm(x, dim=dims, keepdim=True)
 
         # Calculate scaling factor for average power
         power_factor = self.power_avg_factor
