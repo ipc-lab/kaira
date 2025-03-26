@@ -161,7 +161,7 @@ techniques commonly used in modern communications systems.
 
 .. toctree::
    :hidden:
-   
+
    /auto_examples/modulation/plot_psk_modulation
    /auto_examples/modulation/plot_higher_order_psk
    /auto_examples/modulation/plot_qam_modulation

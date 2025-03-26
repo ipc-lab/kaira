@@ -8,20 +8,19 @@ in the Kaira library, specifically focusing on BPSK and QPSK modulation.
 We'll visualize constellation diagrams and analyze bit error rates.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.modulations import (
-    BPSKModulator, BPSKDemodulator,
-    QPSKModulator, QPSKDemodulator,
-)
-from kaira.modulations.utils import plot_constellation
+
 from kaira.channels import AWGNChannel
-from kaira.utils import snr_to_noise_power
 from kaira.metrics import BER
+from kaira.modulations import BPSKDemodulator, BPSKModulator, QPSKDemodulator, QPSKModulator
+from kaira.modulations.utils import plot_constellation
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -55,17 +54,11 @@ qpsk_symbols = qpsk_mod(bits_qpsk)
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 # BPSK constellation
-plot_constellation(bpsk_symbols.flatten(), 
-                  title='BPSK Constellation',
-                  marker='o',
-                  ax=axs[0])
+plot_constellation(bpsk_symbols.flatten(), title="BPSK Constellation", marker="o", ax=axs[0])
 axs[0].grid(True)
 
 # QPSK constellation
-plot_constellation(qpsk_symbols.flatten(), 
-                  title='QPSK Constellation',
-                  marker='o',
-                  ax=axs[1])
+plot_constellation(qpsk_symbols.flatten(), title="QPSK Constellation", marker="o", ax=axs[1])
 axs[1].grid(True)
 
 plt.tight_layout()
@@ -87,12 +80,12 @@ for snr_db in snr_db_range:
     # Calculate noise power and create AWGN channel
     noise_power = snr_to_noise_power(1.0, snr_db)  # Assuming unit signal power
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # BPSK transmission
     received_bpsk = channel(bpsk_symbols)
     demod_bits_bpsk = bpsk_demod(received_bpsk)
     ber_bpsk.append(ber_metric(demod_bits_bpsk, bits_bpsk).item())
-    
+
     # QPSK transmission
     received_qpsk = channel(qpsk_symbols)
     demod_bits_qpsk = qpsk_demod(received_qpsk)
@@ -102,21 +95,21 @@ for snr_db in snr_db_range:
 # Plot BER vs SNR
 # ----------------------
 plt.figure(figsize=(10, 6))
-plt.semilogy(snr_db_range, ber_bpsk, 'bo-', label='BPSK')
-plt.semilogy(snr_db_range, ber_qpsk, 'ro-', label='QPSK')
+plt.semilogy(snr_db_range, ber_bpsk, "bo-", label="BPSK")
+plt.semilogy(snr_db_range, ber_qpsk, "ro-", label="QPSK")
 
 # Add theoretical BER curves
 snr_lin = 10 ** (snr_db_range / 10)
 theoretical_ber_bpsk = 0.5 * torch.erfc(torch.sqrt(torch.tensor(snr_lin)))
 theoretical_ber_qpsk = torch.erfc(torch.sqrt(torch.tensor(snr_lin))) / 2
 
-plt.semilogy(snr_db_range, theoretical_ber_bpsk, 'b--', alpha=0.5, label='BPSK (Theoretical)')
-plt.semilogy(snr_db_range, theoretical_ber_qpsk, 'r--', alpha=0.5, label='QPSK (Theoretical)')
+plt.semilogy(snr_db_range, theoretical_ber_bpsk, "b--", alpha=0.5, label="BPSK (Theoretical)")
+plt.semilogy(snr_db_range, theoretical_ber_qpsk, "r--", alpha=0.5, label="QPSK (Theoretical)")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance of BPSK and QPSK')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance of BPSK and QPSK")
 plt.legend()
 plt.show()
 
@@ -132,16 +125,13 @@ fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 for i, snr_db in enumerate(test_snr_db):
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # Generate and modulate random QPSK symbols
     test_bits = torch.randint(0, 2, (1, 2 * n_test_symbols))
     qpsk_symbols = qpsk_mod(test_bits)
     received_symbols = channel(qpsk_symbols)
-    
-    plot_constellation(received_symbols.flatten(),
-                      title=f'QPSK at {snr_db} dB SNR',
-                      marker='.',
-                      ax=axs[i])
+
+    plot_constellation(received_symbols.flatten(), title=f"QPSK at {snr_db} dB SNR", marker=".", ax=axs[i])
     axs[i].grid(True)
 
 plt.tight_layout()

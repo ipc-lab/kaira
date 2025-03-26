@@ -8,14 +8,17 @@ Write 2-3 sentences that explain the purpose and value of this example.
 Include any key concepts that will be covered.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # ----------------
 # Explain what packages are being imported and why.
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.[module] import [Class]
+
+# TODO: Replace with actual module and class imports
+# Example: from kaira.channels import AWGNChannel
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -39,9 +42,9 @@ y = np.sin(x)
 plt.figure(figsize=(8, 5))
 plt.plot(x, y)
 plt.grid(True)
-plt.xlabel('X axis')
-plt.ylabel('Y axis')
-plt.title('Example Plot')
+plt.xlabel("X axis")
+plt.ylabel("Y axis")
+plt.title("Example Plot")
 plt.show()
 
 # %%
@@ -58,7 +61,3 @@ plt.show()
 # References:
 # - Reference 1
 # - Reference 2
-"""
-This meta-comment will not appear in the rendered output but can be used to
-provide additional context for maintainers of the example.
-"""

@@ -1,8 +1,9 @@
 from typing import Any
 
-from kaira.models.base import BaseModel
 import torch
 from torch import nn
+
+from kaira.models.base import BaseModel
 
 from ..registry import ModelRegistry
 

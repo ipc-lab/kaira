@@ -143,7 +143,7 @@ Examples demonstrating various communication channel models and their characteri
 
 .. toctree::
    :hidden:
-   
+
    /auto_examples/channel_models/plot_awgn_channel
    /auto_examples/channel_models/plot_laplacian_channel
    /auto_examples/channel_models/plot_phase_noise_channel

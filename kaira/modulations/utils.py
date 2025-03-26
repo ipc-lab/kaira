@@ -121,23 +121,23 @@ def plot_constellation(
         Matplotlib figure object
     """
     constellation = constellation.detach().cpu()
-    
+
     # Check if ax is provided in kwargs
-    ax = kwargs.pop('ax', None)
+    ax = kwargs.pop("ax", None)
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.figure
-    
+
     # Plot constellation points - pass kwargs to scatter
     ax.scatter(constellation.real, constellation.imag, marker=marker, s=marker_size, color=color, **kwargs)
-    
+
     # Add annotations if requested
     if annotate and labels is not None:
         for i, (x, y) in enumerate(zip(constellation.real, constellation.imag)):
             label = labels[i] if i < len(labels) else str(i)
             ax.annotate(label, (x, y), xytext=(5, 5), textcoords="offset points", fontsize=12)
-    
+
     # Add axis lines, grid, labels
     ax.axhline(y=0, color="k", linestyle="-", alpha=0.3)
     ax.axvline(x=0, color="k", linestyle="-", alpha=0.3)

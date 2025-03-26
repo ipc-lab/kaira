@@ -93,7 +93,7 @@ class WynerZivCorrelationModel(nn.Module):
 
 
 class WynerZivCorrelationDataset(Dataset):
-    """Dataset for Wyner-Ziv coding scenarios with correlated sources.
+    r"""Dataset for Wyner-Ziv coding scenarios with correlated sources.
 
     This dataset pairs source data with correlated side information according to a
     specified correlation model. It's particularly useful for simulating and evaluating

@@ -8,15 +8,14 @@ which provides a central location for registering, managing, and
 retrieving metrics.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # First, let's import the necessary modules
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.metrics import (
-    BER, PSNR, SSIM, SNR,
-    BaseMetric
-)
+
+from kaira.metrics import BER, SNR, BaseMetric
 from kaira.metrics.registry import MetricRegistry
 
 # Set random seed for reproducibility
@@ -60,25 +59,27 @@ print(f"\nMeasured BER: {ber_value.item():.5f}")
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Define a custom metric
 
+
 class BitsPerSecond(BaseMetric):
     """Metric to calculate bits per second throughput."""
-    
+
     def __init__(self, name=None):
         super().__init__(name=name)
-    
+
     def forward(self, num_bits, time_seconds):
         """Calculate bits per second.
-        
+
         Args:
             num_bits (torch.Tensor): Number of bits transmitted
             time_seconds (torch.Tensor): Time in seconds
-        
+
         Returns:
             torch.Tensor: Bits per second
         """
         # Ensure time is not zero
         time_seconds = torch.clamp(time_seconds, min=1e-6)
         return num_bits / time_seconds
+
 
 # Register the custom metric class with a unique name
 MetricRegistry.register("throughput", BitsPerSecond)
@@ -97,17 +98,19 @@ print(f"\nThroughput: {throughput.item():.1f} bits per second")
 # --------------------------------------------------------------------------
 # Create metrics with different parameters
 
+
 class ParameterizedBER(BER):
     """BER metric with a threshold parameter."""
-    
+
     def __init__(self, threshold=0.5, name=None):
         super().__init__(name=name)
         self.threshold = threshold
-    
+
     def forward(self, y_pred, y_true):
         """Apply threshold before calculating BER."""
         thresholded_pred = (y_pred > self.threshold).float()
         return super().forward(thresholded_pred, y_true)
+
 
 # Register the parameterized metric class
 MetricRegistry.register("param_ber", ParameterizedBER)
@@ -129,16 +132,15 @@ for threshold in thresholds:
 
 # Visualize the effect of threshold
 plt.figure(figsize=(10, 6))
-plt.plot(thresholds, ber_values, 'bo-')
+plt.plot(thresholds, ber_values, "bo-")
 plt.grid(True)
-plt.xlabel('Decision Threshold')
-plt.ylabel('BER')
-plt.title('Effect of Decision Threshold on BER')
+plt.xlabel("Decision Threshold")
+plt.ylabel("BER")
+plt.title("Effect of Decision Threshold on BER")
 
 # Add data points with labels
 for i, (x, y) in enumerate(zip(thresholds, ber_values)):
-    plt.annotate(f"{y:.3f}", (x, y), textcoords="offset points", 
-                 xytext=(0, 10), ha='center')
+    plt.annotate(f"{y:.3f}", (x, y), textcoords="offset points", xytext=(0, 10), ha="center")
 
 plt.tight_layout()
 plt.show()
@@ -148,48 +150,51 @@ plt.show()
 # ------------------------------------------------------------------------------------------------------
 # Create a framework to evaluate multiple metrics
 
+
 class SystemEvaluator:
     """Framework for evaluating communication system performance."""
-    
+
     def __init__(self):
         """Initialize the evaluator."""
         self.metrics = {}
-    
+
     def register_metric(self, name, metric):
         """Register a new metric instance."""
         if name in self.metrics:
             print(f"Warning: Overwriting existing metric '{name}'")
         self.metrics[name] = metric
-    
+
     def evaluate_all(self, **kwargs):
         """Evaluate all registered metrics with the given inputs."""
         results = {}
         for name, metric in self.metrics.items():
             # Get expected arguments for this metric
-            args = getattr(metric, 'get_expected_args', lambda: [])()
+            args = getattr(metric, "get_expected_args", lambda: [])()
             if not args:  # If no specific args defined, try common patterns
-                if 'received_bits' in kwargs and 'true_bits' in kwargs:
-                    args = ['received_bits', 'true_bits']
-                elif 'time_seconds' in kwargs and 'num_bits' in kwargs:
-                    args = ['num_bits', 'time_seconds']
-            
+                if "received_bits" in kwargs and "true_bits" in kwargs:
+                    args = ["received_bits", "true_bits"]
+                elif "time_seconds" in kwargs and "num_bits" in kwargs:
+                    args = ["num_bits", "time_seconds"]
+
             if args:
                 # Extract relevant arguments
                 metric_args = [kwargs[arg] for arg in args if arg in kwargs]
                 if len(metric_args) == len(args):
                     results[name] = metric(*metric_args)
-        
+
         return results
+
 
 # Add method to help identify expected arguments
 def get_expected_args(self):
     """Return expected argument names for the metric."""
     if isinstance(self, BER):
-        return ['received_bits', 'true_bits']
+        return ["received_bits", "true_bits"]
     elif isinstance(self, BitsPerSecond):
-        return ['num_bits', 'time_seconds']
+        return ["num_bits", "time_seconds"]
     else:
         return []
+
 
 # Add method to BaseMetric class
 BaseMetric.get_expected_args = get_expected_args
@@ -210,12 +215,7 @@ transmission_time = torch.tensor([0.1])  # seconds
 num_bits = torch.tensor([1000.0])  # number of bits
 
 # Evaluate all metrics
-results = evaluator.evaluate_all(
-    true_bits=true_bits,
-    received_bits=received_bits,
-    time_seconds=transmission_time,
-    num_bits=num_bits
-)
+results = evaluator.evaluate_all(true_bits=true_bits, received_bits=received_bits, time_seconds=transmission_time, num_bits=num_bits)
 
 # Print results
 print("\nSystem Evaluation Results:")
@@ -227,20 +227,22 @@ for name, value in results.items():
 # ------------------------------------------------------------------------------------------
 # Create and register metrics dynamically
 
+
 def create_scaled_metric_class(base_metric_class, scale_factor):
     """Create a metric class that scales its result by a factor."""
-    
+
     class ScaledMetric(base_metric_class):
         def __init__(self, scale=scale_factor, name=None):
             super().__init__(name=name)
             self.scale = scale
-        
+
         def forward(self, *args, **kwargs):
             # Get the original result and scale it
             result = super().forward(*args, **kwargs)
             return result * self.scale
-    
+
     return ScaledMetric
+
 
 # Create and register metrics with different scale factors
 for scale in [0.5, 1.0, 2.0]:
@@ -264,14 +266,14 @@ for scale in scales:
 # Visualize scaling effects
 plt.figure(figsize=(8, 5))
 plt.bar(scales, results)
-plt.grid(axis='y', alpha=0.3)
-plt.xlabel('Scale Factor')
-plt.ylabel('Scaled BER')
-plt.title('Effect of Scaling on BER')
+plt.grid(axis="y", alpha=0.3)
+plt.xlabel("Scale Factor")
+plt.ylabel("Scaled BER")
+plt.title("Effect of Scaling on BER")
 
 # Add value labels
 for i, (x, y) in enumerate(zip(scales, results)):
-    plt.text(x, y + 0.001, f"{y:.5f}", ha='center', va='bottom')
+    plt.text(x, y + 0.001, f"{y:.5f}", ha="center", va="bottom")
 
 plt.tight_layout()
 plt.show()

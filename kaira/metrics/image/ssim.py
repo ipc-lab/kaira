@@ -5,7 +5,7 @@ processing such as data compression or by losses in data transmission :cite:`wan
 MS-SSIM extends this concept to multiple scales :cite:`wang2003multiscale`.
 """
 
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import torch
 import torchmetrics
@@ -25,27 +25,21 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
     to better match human visual perception :cite:`wang2004image` :cite:`brunet2011mathematical`.
     """
 
-    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, reduction: str = None, **kwargs: Any) -> None:
+    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, reduction: Optional[str] = None, **kwargs: Any) -> None:
         """Initialize the SSIM module.
 
         Args:
             data_range (float): Range of the input data (typically 1.0 or 255)
             kernel_size (int): Size of the Gaussian kernel
             sigma (float): Standard deviation of the Gaussian kernel
-            reduction (str, optional): Reduction method. The underlying torchmetrics implementation
+            reduction (Optional[str]): Reduction method. The underlying torchmetrics implementation
                 requires reduction=None, so this parameter controls post-processing reduction.
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="SSIM")
         self.reduction = reduction
         # Always use reduction=None in the underlying implementation
-        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(
-            data_range=data_range, 
-            kernel_size=kernel_size, 
-            sigma=sigma, 
-            reduction=None, 
-            **kwargs
-        )
+        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **kwargs)
 
     def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
         """Calculate SSIM between predicted and target images.
@@ -58,11 +52,11 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             Tensor: SSIM values for each sample or reduced according to reduction parameter
         """
         values = self.ssim(preds, targets)
-        
+
         # Apply reduction if specified
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return values.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return values.sum()
         else:
             return values
@@ -91,13 +85,13 @@ class MultiScaleSSIM(BaseMetric):
     than single-scale methods :cite:`wang2004image`.
     """
 
-    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: str = None, **kwargs: Any) -> None:
+    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: Optional[str] = None, **kwargs: Any) -> None:
         """Initialize the MultiScaleSSIM module.
 
         Args:
             kernel_size (int): The size of the Gaussian kernel
             data_range (float): The range of the input data (typically 1.0 or 255)
-            reduction (str, optional): Reduction method ('mean', 'sum', or None)
+            reduction (Optional[str]): Reduction method ('mean', 'sum', or None)
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="MS-SSIM")
@@ -127,9 +121,9 @@ class MultiScaleSSIM(BaseMetric):
         )
 
         # Apply reduction if specified
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return values.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return values.sum()
         else:
             return values

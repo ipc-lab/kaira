@@ -8,17 +8,19 @@ in the Kaira library. We'll explore different QAM orders (4-QAM, 16-QAM, 64-QAM)
 and analyze their performance characteristics.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.modulations import QAMModulator, QAMDemodulator
-from kaira.modulations.utils import plot_constellation
+
 from kaira.channels import AWGNChannel
-from kaira.utils import snr_to_noise_power
 from kaira.metrics import BER
+from kaira.modulations import QAMDemodulator, QAMModulator
+from kaira.modulations.utils import plot_constellation
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -34,11 +36,7 @@ modulators = {order: QAMModulator(order=order) for order in qam_orders}
 demodulators = {order: QAMDemodulator(order=order) for order in qam_orders}
 
 # Generate random bits for each QAM order
-bits_per_symbol = {
-    4: 2,   # 4-QAM (same as QPSK)
-    16: 4,  # 16-QAM
-    64: 6   # 64-QAM
-}
+bits_per_symbol = {4: 2, 16: 4, 64: 6}  # 4-QAM (same as QPSK)  # 16-QAM  # 64-QAM
 
 input_bits = {}
 modulated_symbols = {}
@@ -52,10 +50,7 @@ for order in qam_orders:
 # -------------------------------------------------
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 for i, order in enumerate(qam_orders):
-    plot_constellation(modulated_symbols[order].flatten(),
-                      title=f'{order}-QAM Constellation',
-                      marker='o',
-                      ax=axs[i])
+    plot_constellation(modulated_symbols[order].flatten(), title=f"{order}-QAM Constellation", marker="o", ax=axs[i])
     axs[i].grid(True)
 plt.tight_layout()
 plt.show()
@@ -72,14 +67,14 @@ ber_metric = BER()
 for snr_db in snr_db_range:
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     for order in qam_orders:
         # Transmit through channel
         received = channel(modulated_symbols[order])
-        
+
         # Demodulate
         demod_bits = demodulators[order](received)
-        
+
         # Calculate BER
         ber = ber_metric(demod_bits, input_bits[order]).item()
         ber_results[order].append(ber)
@@ -89,16 +84,14 @@ for snr_db in snr_db_range:
 # -------------------------------------------------
 plt.figure(figsize=(10, 6))
 
-colors = ['b', 'r', 'g']
+colors = ["b", "r", "g"]
 for order, color in zip(qam_orders, colors):
-    plt.semilogy(snr_db_range, ber_results[order], 
-                 f'{color}o-',
-                 label=f'{order}-QAM')
+    plt.semilogy(snr_db_range, ber_results[order], f"{color}o-", label=f"{order}-QAM")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance of Different QAM Orders')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance of Different QAM Orders")
 plt.legend()
 plt.show()
 
@@ -118,14 +111,11 @@ qam16_symbols = qam16_mod(test_bits)
 for i, snr_db in enumerate(test_snr_db):
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # Pass through noisy channel
     received_symbols = channel(qam16_symbols)
-    
-    plot_constellation(received_symbols.flatten(),
-                      title=f'16-QAM at {snr_db} dB SNR',
-                      marker='.',
-                      ax=axs[i])
+
+    plot_constellation(received_symbols.flatten(), title=f"16-QAM at {snr_db} dB SNR", marker=".", ax=axs[i])
     axs[i].grid(True)
 
 plt.tight_layout()
@@ -140,12 +130,12 @@ plt.figure(figsize=(8, 5))
 spectral_efficiency = [np.log2(order) for order in qam_orders]
 
 plt.bar(range(len(qam_orders)), spectral_efficiency)
-plt.xticks(range(len(qam_orders)), [f'{order}-QAM' for order in qam_orders])
-plt.ylabel('Spectral Efficiency (bits/symbol)')
-plt.title('Spectral Efficiency Comparison')
+plt.xticks(range(len(qam_orders)), [f"{order}-QAM" for order in qam_orders])
+plt.ylabel("Spectral Efficiency (bits/symbol)")
+plt.title("Spectral Efficiency Comparison")
 
 for i, v in enumerate(spectral_efficiency):
-    plt.text(i, v + 0.1, f'{v:.1f}', ha='center')
+    plt.text(i, v + 0.1, f"{v:.1f}", ha="center")
 
 plt.show()
 

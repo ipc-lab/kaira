@@ -6,17 +6,20 @@ composition for complex signal requirements.
 """
 
 from typing import Sequence
+
 import torch
-from .base import BaseConstraint
 from torch import nn
+
+from .base import BaseConstraint
+
 
 class CompositeConstraint(BaseConstraint):
     """Applies multiple constraints in sequence.
-    
+
     This constraint combines multiple independent constraints and applies them
     in sequence to the input tensor. This allows for more complex constraint
     compositions like applying both power and spectral constraints together.
-    
+
     Attributes:
         constraints (nn.ModuleList): List of constraint modules to apply in sequence
 
@@ -34,7 +37,7 @@ class CompositeConstraint(BaseConstraint):
 
     def __init__(self, constraints: Sequence[BaseConstraint] | nn.ModuleList) -> None:
         """Initialize the composite constraint with a list of constraints.
-        
+
         Args:
             constraints (Sequence[BaseConstraint] | nn.ModuleList): List of constraint modules to apply in sequence
         """

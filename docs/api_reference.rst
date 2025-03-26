@@ -80,7 +80,7 @@ They apply noise, distortion, fading, and other effects that impact signal quali
    BinarySymmetricChannel
    BinaryErasureChannel
    BinaryZChannel
-   
+
    # Registry
    ChannelRegistry
 
@@ -114,11 +114,11 @@ These include power limitations, hardware restrictions, and regulatory requireme
    # Signal constraints
    PeakAmplitudeConstraint
    SpectralMaskConstraint
-   
+
    # Basic functional constraints
    IdentityConstraint
    LambdaConstraint
-   
+
    # Registry
    ConstraintRegistry
 
@@ -174,7 +174,7 @@ They quantify performance in terms of accuracy, fidelity, and perceptual quality
    FER
    SymbolErrorRate
    SER
-   
+
    # Registry
    MetricRegistry
 

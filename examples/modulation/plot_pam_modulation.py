@@ -8,16 +8,18 @@ in the Kaira library. We'll explore different PAM orders and analyze
 their performance characteristics.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.modulations import PAMModulator, PAMDemodulator
+
 from kaira.channels import AWGNChannel
-from kaira.utils import snr_to_noise_power
 from kaira.metrics import BER
+from kaira.modulations import PAMDemodulator, PAMModulator
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -49,18 +51,18 @@ plt.figure(figsize=(15, 5))
 for i, order in enumerate(pam_orders):
     # Ensure we're working with real values
     symbols = modulated_symbols[order].real.numpy().flatten() if torch.is_complex(modulated_symbols[order]) else modulated_symbols[order].numpy().flatten()
-    
+
     plt.subplot(1, 4, i + 1)
     plt.scatter(np.zeros_like(symbols), symbols, alpha=0.5)
-    plt.title(f'PAM-{order} Constellation')
+    plt.title(f"PAM-{order} Constellation")
     plt.grid(True)
-    plt.xlabel('Real')
-    plt.ylabel('Amplitude')
-    
+    plt.xlabel("Real")
+    plt.ylabel("Amplitude")
+
     # Add horizontal lines at constellation points
     unique_levels = np.unique(symbols)
     for level in unique_levels:
-        plt.axhline(y=level, color='r', linestyle='--', alpha=0.2)
+        plt.axhline(y=level, color="r", linestyle="--", alpha=0.2)
 plt.tight_layout()
 plt.show()
 
@@ -76,14 +78,14 @@ ber_metric = BER()
 for snr_db in snr_db_range:
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     for order in pam_orders:
         # Transmit through channel
         received = channel(modulated_symbols[order])
-        
+
         # Demodulate
         demod_bits = demodulators[order](received)
-        
+
         # Calculate BER
         ber = ber_metric(demod_bits, input_bits[order]).item()
         ber_results[order].append(ber)
@@ -93,16 +95,14 @@ for snr_db in snr_db_range:
 # -------------------------------------------------
 plt.figure(figsize=(10, 6))
 
-colors = ['b', 'r', 'g', 'm']
+colors = ["b", "r", "g", "m"]
 for order, color in zip(pam_orders, colors):
-    plt.semilogy(snr_db_range, ber_results[order], 
-                 f'{color}o-',
-                 label=f'PAM-{order}')
+    plt.semilogy(snr_db_range, ber_results[order], f"{color}o-", label=f"PAM-{order}")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance of Different PAM Orders')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance of Different PAM Orders")
 plt.legend()
 plt.show()
 
@@ -119,25 +119,25 @@ pam8_symbols = pam8_mod(test_bits)
 for i, snr_db in enumerate(test_snr_db):
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # Pass through noisy channel
     received_symbols = channel(pam8_symbols)
-    
+
     # Explicitly take real part for histogram
     hist_values = received_symbols.real if torch.is_complex(received_symbols) else received_symbols
-    
+
     plt.subplot(1, 3, i + 1)
     plt.hist(hist_values.numpy().flatten(), bins=50, density=True)
-    plt.title(f'PAM-8 Reception at {snr_db} dB SNR')
-    plt.xlabel('Amplitude')
-    plt.ylabel('Density')
+    plt.title(f"PAM-8 Reception at {snr_db} dB SNR")
+    plt.xlabel("Amplitude")
+    plt.ylabel("Density")
     plt.grid(True)
-    
+
     # Add vertical lines at ideal constellation points
     ideal_points = pam8_mod.constellation.real if torch.is_complex(pam8_mod.constellation) else pam8_mod.constellation
     ideal_points = ideal_points.numpy()
     for point in ideal_points:
-        plt.axvline(x=point, color='r', linestyle='--', alpha=0.5)
+        plt.axvline(x=point, color="r", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.show()
 
@@ -154,9 +154,8 @@ ax1 = plt.gca()
 ax2 = ax1.twinx()
 
 # Plot spectral efficiency
-bars = ax1.bar([i-0.2 for i in range(len(pam_orders))], spectral_efficiency, 
-               width=0.4, color='b', alpha=0.6, label='Spectral Efficiency')
-ax1.set_ylabel('Spectral Efficiency (bits/symbol)', color='b')
+bars = ax1.bar([i - 0.2 for i in range(len(pam_orders))], spectral_efficiency, width=0.4, color="b", alpha=0.6, label="Spectral Efficiency")
+ax1.set_ylabel("Spectral Efficiency (bits/symbol)", color="b")
 
 # Plot required SNR for BER = 1e-4 (approximate from BER curves)
 target_ber = 1e-4
@@ -169,19 +168,18 @@ for order in pam_orders:
     else:
         required_snr.append(snr_db_range[snr_idx])
 
-ax2.bar([i+0.2 for i in range(len(pam_orders))], required_snr,
-        width=0.4, color='r', alpha=0.6, label='Required SNR')
-ax2.set_ylabel('Required SNR for BER=1e-4 (dB)', color='r')
+ax2.bar([i + 0.2 for i in range(len(pam_orders))], required_snr, width=0.4, color="r", alpha=0.6, label="Required SNR")
+ax2.set_ylabel("Required SNR for BER=1e-4 (dB)", color="r")
 
-plt.xticks(range(len(pam_orders)), [f'PAM-{order}' for order in pam_orders])
-plt.title('Spectral Efficiency vs Power Efficiency')
+plt.xticks(range(len(pam_orders)), [f"PAM-{order}" for order in pam_orders])
+plt.title("Spectral Efficiency vs Power Efficiency")
 
 # Add value labels
 for i, v in enumerate(spectral_efficiency):
-    ax1.text(i-0.2, v, f'{v:.1f}', ha='center', va='bottom', color='b')
+    ax1.text(i - 0.2, v, f"{v:.1f}", ha="center", va="bottom", color="b")
 for i, v in enumerate(required_snr):
     if not np.isnan(v):
-        ax2.text(i+0.2, v, f'{v:.1f}', ha='center', va='bottom', color='r')
+        ax2.text(i + 0.2, v, f"{v:.1f}", ha="center", va="bottom", color="r")
 
 plt.tight_layout()
 plt.show()

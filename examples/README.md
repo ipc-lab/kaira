@@ -2,17 +2,6 @@
 
 This directory contains examples demonstrating various features and use cases of the Kaira library. The examples are organized by category and are automatically rendered into documentation using [Sphinx-Gallery](https://sphinx-gallery.github.io/).
 
-## Structure
-
-Examples are organized into the following categories:
-
-- `channel_models/`: Examples of different communication channel implementations
-- `constraints/`: Examples of constraint functions for optimization problems
-- `deep_jscc/`: Examples of Deep Joint Source-Channel Coding
-- `metrics/`: Examples of performance metrics
-- `modulation/`: Examples of signal modulation techniques
-- `performance_analysis/`: Examples of performance analysis techniques
-
 ## Creating New Examples
 
 When creating new examples, follow these guidelines to ensure they work properly with sphinx-gallery:
@@ -20,6 +9,7 @@ When creating new examples, follow these guidelines to ensure they work properly
 1. **Naming Convention**: Name your example files with a `plot_` prefix (e.g., `plot_my_example.py`), even if the example doesn't generate plots. This ensures sphinx-gallery processes them correctly.
 
 2. **File Structure**: Follow the template in `template_example.py`. Each example should include:
+
    - A docstring title and description at the top
    - Code sections separated by `# %%` comments
    - Section titles and explanations using `# %% # Section Title` format

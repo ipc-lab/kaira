@@ -12,16 +12,11 @@ We'll explore how to apply various constraints to signals and visualize their ef
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
-import torch.nn as nn
 
-from kaira.constraints import (
-    TotalPowerConstraint, 
-    AveragePowerConstraint, 
-    PAPRConstraint
-)
+from kaira.constraints import AveragePowerConstraint, PAPRConstraint, TotalPowerConstraint
 from kaira.constraints.utils import measure_signal_properties
 
 # Set random seed for reproducibility
@@ -52,11 +47,7 @@ random_signal = np.random.randn(1000)
 random_tensor = torch.from_numpy(random_signal).float().reshape(1, -1)
 
 # Dictionary of signals for processing
-signals = {
-    "Sine Wave": sine_tensor,
-    "Multi-tone": multi_tone_tensor,
-    "Random": random_tensor
-}
+signals = {"Sine Wave": sine_tensor, "Multi-tone": multi_tone_tensor, "Random": random_tensor}
 
 # Display properties of original signals
 print("Original Signal Properties:")
@@ -81,10 +72,10 @@ for name, signal in signals.items():
     # Apply constraint
     constrained_signal = power_constraint(signal)
     props = measure_signal_properties(constrained_signal)
-    
+
     # Store for visualization
     power_results[name] = constrained_signal.squeeze().numpy()
-    
+
     # Print results
     print(f"{name}:")
     print(f"  Constrained Power: {props['mean_power']:.4f}")
@@ -98,19 +89,19 @@ for name, signal in signals.items():
 plt.figure(figsize=(15, 10))
 for i, (name, signal) in enumerate(signals.items()):
     # Plot original signal
-    plt.subplot(len(signals), 2, i*2 + 1)
-    plt.plot(t, signal.squeeze().numpy(), 'b-')
+    plt.subplot(len(signals), 2, i * 2 + 1)
+    plt.plot(t, signal.squeeze().numpy(), "b-")
     props = measure_signal_properties(signal)
     plt.title(f'Original {name}\nPower: {props["mean_power"]:.2f}, PAPR: {props["papr_db"]:.2f} dB')
     plt.grid(True)
-    plt.ylabel('Amplitude')
-    
+    plt.ylabel("Amplitude")
+
     # Plot power-constrained signal
-    plt.subplot(len(signals), 2, i*2 + 2)
-    plt.plot(t, power_results[name], 'g-')
-    plt.title(f'After TotalPowerConstraint\nPower: {target_power:.2f}')
+    plt.subplot(len(signals), 2, i * 2 + 2)
+    plt.plot(t, power_results[name], "g-")
+    plt.title(f"After TotalPowerConstraint\nPower: {target_power:.2f}")
     plt.grid(True)
-    plt.ylabel('Amplitude')
+    plt.ylabel("Amplitude")
 
 plt.tight_layout()
 plt.show()
@@ -131,10 +122,10 @@ for name, signal in signals.items():
     signal_reshaped = signal.reshape(signal.shape[0], -1)  # Ensure it's [batch, sequence]
     constrained_signal = papr_constraint(signal_reshaped)
     props = measure_signal_properties(constrained_signal)
-    
+
     # Store for visualization
     papr_results[name] = constrained_signal.squeeze().numpy()
-    
+
     # Print results
     print(f"{name}:")
     print(f"  Power: {props['mean_power']:.4f}")
@@ -148,20 +139,20 @@ for name, signal in signals.items():
 plt.figure(figsize=(15, 10))
 for i, (name, signal) in enumerate(signals.items()):
     # Plot original signal
-    plt.subplot(len(signals), 2, i*2 + 1)
-    plt.plot(t, signal.squeeze().numpy(), 'b-')
+    plt.subplot(len(signals), 2, i * 2 + 1)
+    plt.plot(t, signal.squeeze().numpy(), "b-")
     props = measure_signal_properties(signal)
     plt.title(f'Original {name}\nPower: {props["mean_power"]:.2f}, PAPR: {props["papr_db"]:.2f} dB')
     plt.grid(True)
-    plt.ylabel('Amplitude')
-    
+    plt.ylabel("Amplitude")
+
     # Plot PAPR-constrained signal
-    plt.subplot(len(signals), 2, i*2 + 2)
-    plt.plot(t, papr_results[name], 'r-')
+    plt.subplot(len(signals), 2, i * 2 + 2)
+    plt.plot(t, papr_results[name], "r-")
     constrained_props = measure_signal_properties(torch.tensor(papr_results[name]).reshape(1, -1))
     plt.title(f'After PAPRConstraint\nPAPR: {constrained_props["papr_db"]:.2f} dB')
     plt.grid(True)
-    plt.ylabel('Amplitude')
+    plt.ylabel("Amplitude")
 
 plt.tight_layout()
 plt.show()
@@ -180,10 +171,10 @@ for name, signal in signals.items():
     # Apply constraint
     constrained_signal = avg_power_constraint(signal)
     props = measure_signal_properties(constrained_signal)
-    
+
     # Store for visualization
     avg_power_results[name] = constrained_signal.squeeze().numpy()
-    
+
     # Print results
     print(f"{name}:")
     print(f"  Constrained Average Power: {props['mean_power']:.4f}")
@@ -201,29 +192,31 @@ for i, (name, original) in enumerate(signals.items()):
     power_np = power_results[name]
     papr_np = papr_results[name]
     avg_power_np = avg_power_results[name]
-    
-    plt.subplot(len(signals), 1, i+1)
-    plt.plot(t, original_np, 'b-', alpha=0.7, label='Original')
-    plt.plot(t, power_np, 'g-', alpha=0.7, label=f'Total Power = {target_power}')
-    plt.plot(t, papr_np, 'r-', alpha=0.7, label=f'Max PAPR = {max_papr}')
-    plt.plot(t, avg_power_np, 'm-', alpha=0.7, label=f'Avg Power = {avg_power}')
-    
+
+    plt.subplot(len(signals), 1, i + 1)
+    plt.plot(t, original_np, "b-", alpha=0.7, label="Original")
+    plt.plot(t, power_np, "g-", alpha=0.7, label=f"Total Power = {target_power}")
+    plt.plot(t, papr_np, "r-", alpha=0.7, label=f"Max PAPR = {max_papr}")
+    plt.plot(t, avg_power_np, "m-", alpha=0.7, label=f"Avg Power = {avg_power}")
+
     # Measure properties for display
     orig_props = measure_signal_properties(original)
     power_props = measure_signal_properties(torch.tensor(power_np).reshape(1, -1))
     papr_props = measure_signal_properties(torch.tensor(papr_np).reshape(1, -1))
     avg_props = measure_signal_properties(torch.tensor(avg_power_np).reshape(1, -1))
-    
-    plt.title(f'{name} - Comparison of Constraints\n'
-              f'Original: Power={orig_props["mean_power"]:.2f}, PAPR={orig_props["papr_db"]:.2f} dB | '
-              f'TotalPower: Power={power_props["mean_power"]:.2f}, PAPR={power_props["papr_db"]:.2f} dB | '
-              f'PAPR: Power={papr_props["mean_power"]:.2f}, PAPR={papr_props["papr_db"]:.2f} dB')
-    
+
+    plt.title(
+        f"{name} - Comparison of Constraints\n"
+        f'Original: Power={orig_props["mean_power"]:.2f}, PAPR={orig_props["papr_db"]:.2f} dB | '
+        f'TotalPower: Power={power_props["mean_power"]:.2f}, PAPR={power_props["papr_db"]:.2f} dB | '
+        f'PAPR: Power={papr_props["mean_power"]:.2f}, PAPR={papr_props["papr_db"]:.2f} dB'
+    )
+
     plt.grid(True)
-    plt.ylabel('Amplitude')
+    plt.ylabel("Amplitude")
     plt.legend()
 
-plt.xlabel('Time (s)')
+plt.xlabel("Time (s)")
 plt.tight_layout()
 plt.show()
 
@@ -233,7 +226,7 @@ plt.show()
 # This example demonstrated how to use the basic power constraints in Kaira:
 #
 # - **TotalPowerConstraint**: Normalizes the signal to have a specific total power
-# - **PAPRConstraint**: Limits the peak-to-average power ratio, which is important in many 
+# - **PAPRConstraint**: Limits the peak-to-average power ratio, which is important in many
 #   communication systems to prevent amplifier saturation
 # - **AveragePowerConstraint**: Controls the average power per sample
 #
@@ -243,5 +236,5 @@ plt.show()
 # - Different signals respond differently to the same constraints
 #
 # These constraints are fundamental building blocks in communication system design,
-# particularly for signals that will be transmitted through physical channels 
+# particularly for signals that will be transmitted through physical channels
 # with power limitations.

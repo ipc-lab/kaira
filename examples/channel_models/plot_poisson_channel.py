@@ -5,21 +5,22 @@ Poisson Channel for Signal-Dependent Noise
 
 This example demonstrates the PoissonChannel in Kaira, which models signal-dependent
 noise commonly found in optical systems and photon-counting detectors. Unlike AWGN
-where noise is independent of signal intensity, Poisson noise increases with 
+where noise is independent of signal intensity, Poisson noise increases with
 signal strength, making it essential for accurate modeling of optical communications
 and imaging systems.
 """
+
+
+import matplotlib.pyplot as plt
 
 # %%
 # Imports and Setup
 # ----------------------------------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-import seaborn as sns
+from scipy.special import erfc
 
-from kaira.channels import AWGNChannel, PoissonChannel, PerfectChannel
-from kaira.utils import snr_to_noise_power
+from kaira.channels import AWGNChannel, PoissonChannel
 from kaira.metrics import BitErrorRate
 
 # Set random seed for reproducibility
@@ -42,7 +43,7 @@ x = np.linspace(-3, 3, ramp_size)
 y = np.linspace(-3, 3, ramp_size // 8)
 X, Y = np.meshgrid(x, y)
 R = np.sqrt(X**2 + Y**2)
-gradient_image = np.exp(-R**2 / 3)
+gradient_image = np.exp(-(R**2) / 3)
 
 # Combine test patterns
 test_image = np.vstack([ramp_image, gradient_image])
@@ -78,7 +79,7 @@ for rate in rate_factors:
     # SNR = rate for Poisson distribution
     snr_linear = rate
     noise_power = signal_power / snr_linear
-    
+
     # Create AWGN channel
     awgn_channel = AWGNChannel(avg_noise_power=noise_power)
     awgn_channels.append((rate, awgn_channel))
@@ -89,11 +90,13 @@ for rate in rate_factors:
 # -------------------------------------------------------------------------------------------------------------------
 # Pass our test image through each channel model and visualize the results.
 
+
 # Function to process through a channel and collect results
 def process_through_channel(channel, input_signal):
     with torch.no_grad():
         output = channel(input_signal)
     return output.squeeze(0).numpy()
+
 
 # Process through all channels
 poisson_outputs = []
@@ -115,27 +118,27 @@ plt.figure(figsize=(15, 12))
 
 # Plot the original image
 plt.subplot(len(rate_factors) + 1, 2, 1)
-plt.imshow(test_image, cmap='gray')
-plt.title('Original Image')
-plt.axis('off')
+plt.imshow(test_image, cmap="gray")
+plt.title("Original Image")
+plt.axis("off")
 
 # Empty plot for alignment
 plt.subplot(len(rate_factors) + 1, 2, 2)
-plt.axis('off')
+plt.axis("off")
 
 # Plot each noisy image
 for i, ((rate1, poisson_output), (rate2, awgn_output)) in enumerate(zip(poisson_outputs, awgn_outputs)):
     # Plot Poisson channel output
-    plt.subplot(len(rate_factors) + 1, 2, 2*i + 3)
-    plt.imshow(poisson_output, cmap='gray')
-    plt.title(f'Poisson Channel (Rate = {rate1})')
-    plt.axis('off')
-    
+    plt.subplot(len(rate_factors) + 1, 2, 2 * i + 3)
+    plt.imshow(poisson_output, cmap="gray")
+    plt.title(f"Poisson Channel (Rate = {rate1})")
+    plt.axis("off")
+
     # Plot AWGN channel output
-    plt.subplot(len(rate_factors) + 1, 2, 2*i + 4)
-    plt.imshow(awgn_output, cmap='gray')
-    plt.title(f'AWGN Channel (SNR = {10*np.log10(rate2):.1f} dB)')
-    plt.axis('off')
+    plt.subplot(len(rate_factors) + 1, 2, 2 * i + 4)
+    plt.imshow(awgn_output, cmap="gray")
+    plt.title(f"AWGN Channel (SNR = {10*np.log10(rate2):.1f} dB)")
+    plt.axis("off")
 
 plt.tight_layout()
 plt.show()
@@ -143,38 +146,34 @@ plt.show()
 # %%
 # Analyze Signal-Dependent Noise
 # -----------------------------------------------------------------------------------------------
-# Let's extract noise patterns from both channels and analyze 
+# Let's extract noise patterns from both channels and analyze
 # how noise varies with signal intensity.
+
 
 # Function to extract noise component
 def extract_noise(output, original):
     return output - original
+
 
 # Extract horizontal profiles from middle rows of each region
 def get_profiles(image, original):
     h, w = original.shape
     ramp_row = h // 8  # Middle of ramp region
     gradient_row = 3 * h // 4  # Middle of gradient region
-    
+
     ramp_profile = image[ramp_row, :]
     gradient_profile = image[gradient_row, :]
-    
+
     # Extract corresponding noise
     ramp_noise = extract_noise(ramp_profile, original[ramp_row, :])
     gradient_noise = extract_noise(gradient_profile, original[gradient_row, :])
-    
+
     # Signal values
     ramp_signal = original[ramp_row, :]
     gradient_signal = original[gradient_row, :]
-    
-    return {
-        'ramp_profile': ramp_profile,
-        'ramp_noise': ramp_noise,
-        'ramp_signal': ramp_signal,
-        'gradient_profile': gradient_profile,
-        'gradient_noise': gradient_noise,
-        'gradient_signal': gradient_signal
-    }
+
+    return {"ramp_profile": ramp_profile, "ramp_noise": ramp_noise, "ramp_signal": ramp_signal, "gradient_profile": gradient_profile, "gradient_noise": gradient_noise, "gradient_signal": gradient_signal}
+
 
 # Get profiles from each output
 poisson_profiles = []
@@ -202,25 +201,23 @@ awgn_profile = awgn_profiles[analysis_idx][1]
 
 # Plot ramp profiles
 plt.subplot(2, 2, 1)
-plt.plot(poisson_profile['ramp_signal'], label='Original Signal')
-plt.plot(poisson_profile['ramp_profile'], 'r-', alpha=0.5, label='Poisson Output')
-plt.plot(awgn_profile['ramp_profile'], 'g-', alpha=0.5, label='AWGN Output')
+plt.plot(poisson_profile["ramp_signal"], label="Original Signal")
+plt.plot(poisson_profile["ramp_profile"], "r-", alpha=0.5, label="Poisson Output")
+plt.plot(awgn_profile["ramp_profile"], "g-", alpha=0.5, label="AWGN Output")
 plt.grid(True)
-plt.title(f'Ramp Signal Profile (Rate = {rate})')
-plt.xlabel('Pixel Position')
-plt.ylabel('Intensity')
+plt.title(f"Ramp Signal Profile (Rate = {rate})")
+plt.xlabel("Pixel Position")
+plt.ylabel("Intensity")
 plt.legend()
 
 # Plot ramp noise
 plt.subplot(2, 2, 2)
-plt.plot(poisson_profile['ramp_signal'], poisson_profile['ramp_noise'], 'r.', alpha=0.5, 
-         label='Poisson Noise')
-plt.plot(awgn_profile['ramp_signal'], awgn_profile['ramp_noise'], 'g.', alpha=0.5, 
-         label='AWGN Noise')
+plt.plot(poisson_profile["ramp_signal"], poisson_profile["ramp_noise"], "r.", alpha=0.5, label="Poisson Noise")
+plt.plot(awgn_profile["ramp_signal"], awgn_profile["ramp_noise"], "g.", alpha=0.5, label="AWGN Noise")
 plt.grid(True)
-plt.title('Noise vs. Signal Intensity')
-plt.xlabel('Signal Intensity')
-plt.ylabel('Noise Value')
+plt.title("Noise vs. Signal Intensity")
+plt.xlabel("Signal Intensity")
+plt.ylabel("Noise Value")
 plt.legend()
 
 # Plot noise standard deviation vs. signal level
@@ -232,23 +229,21 @@ poisson_std_devs = []
 awgn_std_devs = []
 
 # Calculate binned noise standard deviation
-for i in range(len(signal_bins)-1):
-    bin_min, bin_max = signal_bins[i], signal_bins[i+1]
+for i in range(len(signal_bins) - 1):
+    bin_min, bin_max = signal_bins[i], signal_bins[i + 1]
     bin_center = (bin_min + bin_max) / 2
-    
+
     # Get indices of signal values within this bin
-    p_indices = np.where((poisson_profile['ramp_signal'] >= bin_min) & 
-                         (poisson_profile['ramp_signal'] < bin_max))[0]
-    a_indices = np.where((awgn_profile['ramp_signal'] >= bin_min) & 
-                         (awgn_profile['ramp_signal'] < bin_max))[0]
-    
+    p_indices = np.where((poisson_profile["ramp_signal"] >= bin_min) & (poisson_profile["ramp_signal"] < bin_max))[0]
+    a_indices = np.where((awgn_profile["ramp_signal"] >= bin_min) & (awgn_profile["ramp_signal"] < bin_max))[0]
+
     # Calculate noise std dev if there are enough samples
     if len(p_indices) > 5:
-        p_std = np.std(poisson_profile['ramp_noise'][p_indices])
+        p_std = np.std(poisson_profile["ramp_noise"][p_indices])
         poisson_std_devs.append((bin_center, p_std))
-    
+
     if len(a_indices) > 5:
-        a_std = np.std(awgn_profile['ramp_noise'][a_indices])
+        a_std = np.std(awgn_profile["ramp_noise"][a_indices])
         awgn_std_devs.append((bin_center, a_std))
 
 # Plot noise standard deviation vs. signal level
@@ -256,8 +251,8 @@ plt.subplot(2, 2, 3)
 p_centers, p_stds = zip(*poisson_std_devs) if poisson_std_devs else ([], [])
 a_centers, a_stds = zip(*awgn_std_devs) if awgn_std_devs else ([], [])
 
-plt.plot(p_centers, p_stds, 'ro-', label='Poisson Noise Std')
-plt.plot(a_centers, a_stds, 'go-', label='AWGN Noise Std')
+plt.plot(p_centers, p_stds, "ro-", label="Poisson Noise Std")
+plt.plot(a_centers, a_stds, "go-", label="AWGN Noise Std")
 
 # Plot theoretical curves
 x = np.linspace(0.1, 1.0, 100)
@@ -266,35 +261,31 @@ poisson_theory = np.sqrt(x / rate)
 # For AWGN: std is constant
 awgn_theory = np.sqrt(signal_power / rate) * np.ones_like(x)
 
-plt.plot(x, poisson_theory, 'r--', alpha=0.7, label='Poisson Theory')
-plt.plot(x, awgn_theory, 'g--', alpha=0.7, label='AWGN Theory')
+plt.plot(x, poisson_theory, "r--", alpha=0.7, label="Poisson Theory")
+plt.plot(x, awgn_theory, "g--", alpha=0.7, label="AWGN Theory")
 
 plt.grid(True)
-plt.title('Noise Standard Deviation vs. Signal Level')
-plt.xlabel('Signal Intensity')
-plt.ylabel('Noise Standard Deviation')
+plt.title("Noise Standard Deviation vs. Signal Level")
+plt.xlabel("Signal Intensity")
+plt.ylabel("Noise Standard Deviation")
 plt.legend()
 
 # Plot noise histograms
 plt.subplot(2, 2, 4)
-bright_region = np.where(poisson_profile['ramp_signal'] > 0.8)[0]
-dark_region = np.where(poisson_profile['ramp_signal'] < 0.2)[0]
+bright_region = np.where(poisson_profile["ramp_signal"] > 0.8)[0]
+dark_region = np.where(poisson_profile["ramp_signal"] < 0.2)[0]
 
 if len(bright_region) > 0 and len(dark_region) > 0:
-    plt.hist(poisson_profile['ramp_noise'][bright_region], bins=20, alpha=0.5, density=True,
-             label='Poisson (Bright Region)', color='red')
-    plt.hist(poisson_profile['ramp_noise'][dark_region], bins=20, alpha=0.5, density=True,
-             label='Poisson (Dark Region)', color='darkred')
-    plt.hist(awgn_profile['ramp_noise'][bright_region], bins=20, alpha=0.3, density=True,
-             label='AWGN (Bright Region)', color='green')
-    plt.hist(awgn_profile['ramp_noise'][dark_region], bins=20, alpha=0.3, density=True,
-             label='AWGN (Dark Region)', color='darkgreen')
+    plt.hist(poisson_profile["ramp_noise"][bright_region], bins=20, alpha=0.5, density=True, label="Poisson (Bright Region)", color="red")
+    plt.hist(poisson_profile["ramp_noise"][dark_region], bins=20, alpha=0.5, density=True, label="Poisson (Dark Region)", color="darkred")
+    plt.hist(awgn_profile["ramp_noise"][bright_region], bins=20, alpha=0.3, density=True, label="AWGN (Bright Region)", color="green")
+    plt.hist(awgn_profile["ramp_noise"][dark_region], bins=20, alpha=0.3, density=True, label="AWGN (Dark Region)", color="darkgreen")
 
 plt.grid(True)
-plt.title('Noise Distribution in Bright vs. Dark Regions')
-plt.xlabel('Noise Value')
-plt.ylabel('Probability Density')
-plt.legend(loc='upper left')
+plt.title("Noise Distribution in Bright vs. Dark Regions")
+plt.xlabel("Noise Value")
+plt.ylabel("Probability Density")
+plt.legend(loc="upper left")
 
 plt.tight_layout()
 plt.show()
@@ -313,58 +304,56 @@ bin_width = signal_levels[1] - signal_levels[0]
 poisson_snr = []
 awgn_snr = []
 
+
 # Function to compute local SNR within bins
 def compute_local_snr(signal, noise, signal_levels):
     snr_values = []
-    for i in range(len(signal_levels)-1):
+    for i in range(len(signal_levels) - 1):
         min_level = signal_levels[i]
-        max_level = signal_levels[i+1]
+        max_level = signal_levels[i + 1]
         center = (min_level + max_level) / 2
-        
+
         # Find points within this signal range
         indices = np.where((signal >= min_level) & (signal < max_level))[0]
-        
+
         if len(indices) > 5:  # Need enough points for reliable statistics
             local_signal = np.mean(signal[indices])
             local_noise_var = np.var(noise[indices])
-            
+
             if local_noise_var > 0:
                 snr = local_signal**2 / local_noise_var
                 snr_db = 10 * np.log10(snr)
                 snr_values.append((center, snr_db))
-    
+
     return snr_values
 
+
 # Compute local SNR for both channels
-poisson_snr = compute_local_snr(poisson_profile['ramp_signal'], 
-                               poisson_profile['ramp_noise'],
-                               signal_levels)
-awgn_snr = compute_local_snr(awgn_profile['ramp_signal'], 
-                            awgn_profile['ramp_noise'],
-                            signal_levels)
+poisson_snr = compute_local_snr(poisson_profile["ramp_signal"], poisson_profile["ramp_noise"], signal_levels)
+awgn_snr = compute_local_snr(awgn_profile["ramp_signal"], awgn_profile["ramp_noise"], signal_levels)
 
 # Plot SNR vs signal level
 if poisson_snr and awgn_snr:
     p_centers, p_snr_db = zip(*poisson_snr)
     a_centers, a_snr_db = zip(*awgn_snr)
-    
-    plt.plot(p_centers, p_snr_db, 'ro-', label='Poisson Channel')
-    plt.plot(a_centers, a_snr_db, 'go-', label='AWGN Channel')
-    
+
+    plt.plot(p_centers, p_snr_db, "ro-", label="Poisson Channel")
+    plt.plot(a_centers, a_snr_db, "go-", label="AWGN Channel")
+
     # Plot theoretical curves
     x = np.linspace(0.1, 1.0, 100)
     # For Poisson: SNR = rate * x (signal ^ 2 / signal = signal)
     poisson_theory_snr = 10 * np.log10(rate * x)
     # For AWGN: SNR = x^2 / (1/rate) = x^2 * rate
     awgn_theory_snr = 10 * np.log10(x**2 * rate)
-    
-    plt.plot(x, poisson_theory_snr, 'r--', alpha=0.7, label='Poisson Theory')
-    plt.plot(x, awgn_theory_snr, 'g--', alpha=0.7, label='AWGN Theory')
+
+    plt.plot(x, poisson_theory_snr, "r--", alpha=0.7, label="Poisson Theory")
+    plt.plot(x, awgn_theory_snr, "g--", alpha=0.7, label="AWGN Theory")
 
 plt.grid(True)
-plt.title(f'Local SNR vs. Signal Level (Rate = {rate})')
-plt.xlabel('Signal Intensity')
-plt.ylabel('SNR (dB)')
+plt.title(f"Local SNR vs. Signal Level (Rate = {rate})")
+plt.xlabel("Signal Intensity")
+plt.ylabel("SNR (dB)")
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -374,15 +363,17 @@ plt.show()
 # --------------------------------------------------------------------------------------------------------------------
 # Let's demonstrate how Poisson noise impacts digital signal transmission.
 
+
 # Create a binary signal (0s and 1s)
 def create_binary_signal(length=500):
     # Generate random bits
     bits = np.random.randint(0, 2, length)
-    
+
     # Convert to signal levels (use 0.2 for '0' and 0.8 for '1' to stay in valid range)
     signal = 0.2 + 0.6 * bits
-    
+
     return torch.from_numpy(signal).float().unsqueeze(0), bits
+
 
 # Generate binary signal
 binary_signal, original_bits = create_binary_signal(1000)
@@ -412,48 +403,43 @@ segment = slice(segment_start, segment_start + segment_length)
 
 # Plot original signal
 plt.subplot(len(rate_factors) + 1, 2, 1)
-plt.step(np.arange(segment_length), binary_signal.numpy()[0][segment], where='mid', 
-         color='black', linewidth=2, label='Original')
+plt.step(np.arange(segment_length), binary_signal.numpy()[0][segment], where="mid", color="black", linewidth=2, label="Original")
 plt.grid(True)
-plt.title('Original Binary Signal')
-plt.ylabel('Level')
+plt.title("Original Binary Signal")
+plt.ylabel("Level")
 plt.ylim(0, 1)
 
 # Empty plot for alignment
 plt.subplot(len(rate_factors) + 1, 2, 2)
-plt.axis('off')
+plt.axis("off")
 
 # Plot each channel output
-for i, ((rate1, poisson_out), (rate2, awgn_out)) in enumerate(zip(
-        poisson_binary_outputs, awgn_binary_outputs)):
-    
+for i, ((rate1, poisson_out), (rate2, awgn_out)) in enumerate(zip(poisson_binary_outputs, awgn_binary_outputs)):
     # Poisson channel output
-    plt.subplot(len(rate_factors) + 1, 2, 3 + i*2)
-    plt.step(np.arange(segment_length), poisson_out[segment], where='mid', 
-             linewidth=1.5, color='red', alpha=0.8)
-    plt.axhline(y=0.5, color='gray', linestyle='--', alpha=0.8)  # Decision threshold
+    plt.subplot(len(rate_factors) + 1, 2, 3 + i * 2)
+    plt.step(np.arange(segment_length), poisson_out[segment], where="mid", linewidth=1.5, color="red", alpha=0.8)
+    plt.axhline(y=0.5, color="gray", linestyle="--", alpha=0.8)  # Decision threshold
     plt.grid(True)
-    plt.title(f'Poisson Channel (Rate = {rate1})')
-    plt.ylabel('Level')
+    plt.title(f"Poisson Channel (Rate = {rate1})")
+    plt.ylabel("Level")
     plt.ylim(0, 1)
-    
+
     # AWGN channel output
-    plt.subplot(len(rate_factors) + 1, 2, 4 + i*2)
-    plt.step(np.arange(segment_length), awgn_out[segment], where='mid', 
-             linewidth=1.5, color='blue', alpha=0.8)
-    plt.axhline(y=0.5, color='gray', linestyle='--', alpha=0.8)  # Decision threshold
+    plt.subplot(len(rate_factors) + 1, 2, 4 + i * 2)
+    plt.step(np.arange(segment_length), awgn_out[segment], where="mid", linewidth=1.5, color="blue", alpha=0.8)
+    plt.axhline(y=0.5, color="gray", linestyle="--", alpha=0.8)  # Decision threshold
     plt.grid(True)
-    plt.title(f'AWGN Channel (SNR = {10*np.log10(rate2):.1f} dB)')
-    plt.ylabel('Level')
+    plt.title(f"AWGN Channel (SNR = {10*np.log10(rate2):.1f} dB)")
+    plt.ylabel("Level")
     plt.ylim(0, 1)
-    
+
     # Add x-label to bottom plots
     if i == len(rate_factors) - 1:
-        plt.subplot(len(rate_factors) + 1, 2, 3 + i*2)
-        plt.xlabel('Bit Index')
-        plt.subplot(len(rate_factors) + 1, 2, 4 + i*2)
-        plt.xlabel('Bit Index')
-        
+        plt.subplot(len(rate_factors) + 1, 2, 3 + i * 2)
+        plt.xlabel("Bit Index")
+        plt.subplot(len(rate_factors) + 1, 2, 4 + i * 2)
+        plt.xlabel("Bit Index")
+
 plt.tight_layout()
 plt.show()
 
@@ -495,28 +481,26 @@ poisson_bers = [ber for _, ber in poisson_ber_results]
 awgn_rates = [r for r, _ in awgn_ber_results]
 awgn_bers = [ber for _, ber in awgn_ber_results]
 
-plt.loglog(poisson_rates, poisson_bers, 'ro-', linewidth=2, label='Poisson Channel')
-plt.loglog(awgn_rates, awgn_bers, 'bo-', linewidth=2, label='AWGN Channel')
+plt.loglog(poisson_rates, poisson_bers, "ro-", linewidth=2, label="Poisson Channel")
+plt.loglog(awgn_rates, awgn_bers, "bo-", linewidth=2, label="AWGN Channel")
 
 # Add theoretical BER curves for comparison
 snr_range = np.logspace(0, 3, 100)  # Rate factors from 1 to 1000
-from scipy.special import erfc
 
 # For AWGN with OOK: BER = 0.5*erfc(sqrt(SNR/2))
 awgn_theory_ber = 0.5 * erfc(np.sqrt(snr_range / 2))
 
 # For Poisson with OOK: approximation based on Poisson statistics
 # This is simplified - actual formula depends on threshold and signal levels
-poisson_theory_ber = 0.5 * (np.exp(-0.2 * snr_range) + 
-                           (1 - np.exp(-(0.2 + 0.6) * snr_range)))
+poisson_theory_ber = 0.5 * (np.exp(-0.2 * snr_range) + (1 - np.exp(-(0.2 + 0.6) * snr_range)))
 
-plt.loglog(snr_range, awgn_theory_ber, 'b--', alpha=0.7, label='AWGN Theory')
-plt.loglog(snr_range, poisson_theory_ber, 'r--', alpha=0.7, label='Poisson Approx.')
+plt.loglog(snr_range, awgn_theory_ber, "b--", alpha=0.7, label="AWGN Theory")
+plt.loglog(snr_range, poisson_theory_ber, "r--", alpha=0.7, label="Poisson Approx.")
 
 plt.grid(True)
-plt.xlabel('Rate Factor / SNR')
-plt.ylabel('Bit Error Rate')
-plt.title('BER vs. Rate Factor/SNR Comparison')
+plt.xlabel("Rate Factor / SNR")
+plt.ylabel("Bit Error Rate")
+plt.title("BER vs. Rate Factor/SNR Comparison")
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -526,7 +510,7 @@ plt.show()
 # ------------------------------------
 # This example demonstrates several key characteristics of the Poisson channel:
 #
-# - Poisson noise is signal-dependent, with stronger signals experiencing larger 
+# - Poisson noise is signal-dependent, with stronger signals experiencing larger
 #   absolute noise but better signal-to-noise ratio
 # - In low-light conditions (small rate factor), Poisson noise dominates and can
 #   significantly degrade image quality and signal detection

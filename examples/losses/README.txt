@@ -13,6 +13,6 @@ for training deep learning models. The examples cover:
 Each example illustrates:
 - The mathematical formulation and intuition behind each loss
 - Practical usage scenarios and best practices
-- Visualizations of loss behavior 
+- Visualizations of loss behavior
 - Parameter tuning considerations
 - Comparisons between related losses

@@ -12,22 +12,20 @@ flat fading where all frequency components of the signal experience the same
 magnitude of fading.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # -------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
-import seaborn as sns
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+from scipy import signal  # Added here to fix E402 error
 
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
-from kaira.utils import snr_to_noise_power
-from kaira.modulations import QPSKModulator, plot_constellation
-from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.metrics import BitErrorRate
+from kaira.modulations import QPSKModulator
+from kaira.modulations.utils import calculate_theoretical_ber
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -49,7 +47,7 @@ random_bits = torch.randint(0, 2, (1, n_bits)).float()
 # Modulate bits to QPSK symbols
 with torch.no_grad():
     qpsk_symbols = qpsk_modulator(random_bits)
-    
+
 # Reshape for transmission through the channel (add sequence dimension if needed)
 # Each symbol has 2 components (real and imaginary)
 input_signal = qpsk_symbols.view(1, -1)
@@ -58,9 +56,9 @@ input_signal = qpsk_symbols.view(1, -1)
 symbol_indices = torch.zeros(n_symbols, dtype=torch.long)
 for i in range(n_symbols):
     idx = 0
-    if random_bits[0, i*2] > 0:
+    if random_bits[0, i * 2] > 0:
         idx += 2
-    if random_bits[0, i*2 + 1] > 0:
+    if random_bits[0, i * 2 + 1] > 0:
         idx += 1
     symbol_indices[i] = idx
 
@@ -79,7 +77,7 @@ plt.show()
 # %%
 # Define Channel Scenarios
 # ------------------------------------------
-# We'll compare a perfect channel (no distortion), an AWGN channel (noise only), 
+# We'll compare a perfect channel (no distortion), an AWGN channel (noise only),
 # and a flat fading channel (fading + noise).
 
 # Define SNR for our channels in dB
@@ -90,11 +88,7 @@ noise_power = snr_to_noise_power(signal_power, snr_db)
 # Create the channels
 perfect_channel = PerfectChannel()
 awgn_channel = AWGNChannel(avg_noise_power=noise_power)
-fading_channel = FlatFadingChannel(
-    fading_type='rayleigh',  # Use Rayleigh fading
-    coherence_time=1,        # Independent fading for each symbol
-    avg_noise_power=noise_power
-)
+fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)  # Use Rayleigh fading  # Independent fading for each symbol
 
 print(f"Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})")
 print(f"AWGN Channel configuration: {awgn_channel.get_config()}")
@@ -108,10 +102,10 @@ print(f"Fading Channel configuration: {fading_channel.get_config()}")
 with torch.no_grad():
     # Pass through perfect channel (no distortion)
     perfect_output = perfect_channel(input_signal)
-    
+
     # Pass through AWGN channel (adds noise)
     awgn_output = awgn_channel(input_signal)
-    
+
     # Pass through flat fading channel (adds fading + noise)
     fading_output = fading_channel(input_signal)
 
@@ -134,39 +128,36 @@ plt.figure(figsize=(15, 5))
 
 # Perfect channel
 plt.subplot(1, 3, 1)
-plt.scatter(np.real(perfect_complex[subset]), np.imag(perfect_complex[subset]), 
-           c=symbol_indices[subset], cmap='viridis', alpha=0.7, s=30)
+plt.scatter(np.real(perfect_complex[subset]), np.imag(perfect_complex[subset]), c=symbol_indices[subset], cmap="viridis", alpha=0.7, s=30)
 plt.grid(True)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
-plt.title('Perfect Channel\nQPSK Constellation')
-plt.xlabel('In-Phase')
-plt.ylabel('Quadrature')
-plt.axis('equal')
+plt.title("Perfect Channel\nQPSK Constellation")
+plt.xlabel("In-Phase")
+plt.ylabel("Quadrature")
+plt.axis("equal")
 
 # AWGN channel
 plt.subplot(1, 3, 2)
-plt.scatter(np.real(awgn_complex[subset]), np.imag(awgn_complex[subset]), 
-           c=symbol_indices[subset], cmap='viridis', alpha=0.7, s=30)
+plt.scatter(np.real(awgn_complex[subset]), np.imag(awgn_complex[subset]), c=symbol_indices[subset], cmap="viridis", alpha=0.7, s=30)
 plt.grid(True)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
-plt.title(f'AWGN Channel (SNR={snr_db} dB)\nQPSK Constellation')
-plt.xlabel('In-Phase')
-plt.ylabel('Quadrature')
-plt.axis('equal')
+plt.title(f"AWGN Channel (SNR={snr_db} dB)\nQPSK Constellation")
+plt.xlabel("In-Phase")
+plt.ylabel("Quadrature")
+plt.axis("equal")
 
 # Fading channel
 plt.subplot(1, 3, 3)
-plt.scatter(np.real(fading_complex[subset]), np.imag(fading_complex[subset]), 
-           c=symbol_indices[subset], cmap='viridis', alpha=0.7, s=30)
+plt.scatter(np.real(fading_complex[subset]), np.imag(fading_complex[subset]), c=symbol_indices[subset], cmap="viridis", alpha=0.7, s=30)
 plt.grid(True)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
-plt.title(f'Rayleigh Fading Channel (SNR={snr_db} dB)\nQPSK Constellation')
-plt.xlabel('In-Phase')
-plt.ylabel('Quadrature')
-plt.axis('equal')
+plt.title(f"Rayleigh Fading Channel (SNR={snr_db} dB)\nQPSK Constellation")
+plt.xlabel("In-Phase")
+plt.ylabel("Quadrature")
+plt.axis("equal")
 
 plt.tight_layout()
 plt.show()
@@ -184,27 +175,27 @@ plt.figure(figsize=(12, 5))
 
 # Histogram of amplitudes
 plt.subplot(1, 2, 1)
-plt.hist(perfect_amp, bins=30, alpha=0.3, label='Perfect Channel', density=True)
-plt.hist(awgn_amp, bins=30, alpha=0.3, label='AWGN Channel', density=True)
-plt.hist(fading_amp, bins=30, alpha=0.3, label='Fading Channel', density=True)
+plt.hist(perfect_amp, bins=30, alpha=0.3, label="Perfect Channel", density=True)
+plt.hist(awgn_amp, bins=30, alpha=0.3, label="AWGN Channel", density=True)
+plt.hist(fading_amp, bins=30, alpha=0.3, label="Fading Channel", density=True)
 plt.grid(True)
-plt.xlabel('Symbol Amplitude')
-plt.ylabel('Probability Density')
-plt.title('Symbol Amplitude Distribution')
+plt.xlabel("Symbol Amplitude")
+plt.ylabel("Probability Density")
+plt.title("Symbol Amplitude Distribution")
 plt.legend()
 
 # Theoretical vs. Empirical Rayleigh Distribution
 x = np.linspace(0, 3, 1000)
 # Rayleigh PDF: (x/σ²) * exp(-x²/(2σ²))
 # For unit variance Rayleigh, σ² = 1/2
-rayleigh_pdf = x * np.exp(-x**2/2)
+rayleigh_pdf = x * np.exp(-(x**2) / 2)
 plt.subplot(1, 2, 2)
-plt.hist(fading_amp, bins=30, alpha=0.5, density=True, label='Empirical (Fading Channel)')
-plt.plot(x, rayleigh_pdf, 'r-', linewidth=2, label='Theoretical Rayleigh')
+plt.hist(fading_amp, bins=30, alpha=0.5, density=True, label="Empirical (Fading Channel)")
+plt.plot(x, rayleigh_pdf, "r-", linewidth=2, label="Theoretical Rayleigh")
 plt.grid(True)
-plt.xlabel('Symbol Amplitude')
-plt.ylabel('Probability Density')
-plt.title('Rayleigh Fading Amplitude Distribution')
+plt.xlabel("Symbol Amplitude")
+plt.ylabel("Probability Density")
+plt.title("Rayleigh Fading Amplitude Distribution")
 plt.legend()
 
 plt.tight_layout()
@@ -229,51 +220,47 @@ fading_ser = []
 for snr_db in snr_range_db:
     # Calculate noise power from SNR
     noise_power = snr_to_noise_power(signal_power, snr_db)
-    
+
     # Create channels with current SNR
     awgn = AWGNChannel(avg_noise_power=noise_power)
-    fading = FlatFadingChannel(
-        fading_type='rayleigh',
-        coherence_time=1,
-        avg_noise_power=noise_power
-    )
-    
+    fading = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)
+
     # Pass signal through channels
     with torch.no_grad():
         awgn_out = awgn(input_signal)
         fading_out = fading(input_signal)
-    
+
     # Convert to complex form for demodulation
     awgn_complex_out = awgn_out.squeeze(0).cpu().numpy().view(np.complex128)
     fading_complex_out = fading_out.squeeze(0).cpu().numpy().view(np.complex128)
-    
+
     # Convert to constellation indices by finding closest constellation point
     qpsk_points = qpsk_modulator.constellation.cpu().numpy().view(np.complex128)
-    
+
     # Calculate SER manually (since we're interested in symbol errors, not bit errors)
     def calculate_ser(received, original_indices):
         """Calculate Symbol Error Rate for QPSK symbols."""
         # Map received symbols back to nearest constellation point
         received_real = np.real(received)
         received_imag = np.imag(received)
-        
+
         # Determine quadrant (equivalent to detecting QPSK symbol)
         detected_indices = np.zeros(len(received), dtype=int)
         detected_indices[(received_real > 0) & (received_imag > 0)] = 0  # 1+1j
         detected_indices[(received_real > 0) & (received_imag < 0)] = 1  # 1-1j
         detected_indices[(received_real < 0) & (received_imag > 0)] = 2  # -1+1j
         detected_indices[(received_real < 0) & (received_imag < 0)] = 3  # -1-1j
-        
+
         # Calculate error rate
-        errors = (detected_indices != original_indices.numpy())
+        errors = detected_indices != original_indices.numpy()
         ser = np.mean(errors)
-        
+
         return ser
-    
+
     # Calculate SER
     awgn_ser.append(calculate_ser(awgn_complex_out, symbol_indices))
     fading_ser.append(calculate_ser(fading_complex_out, symbol_indices))
-    
+
     print(f"SNR: {snr_db} dB - AWGN SER: {awgn_ser[-1]:.4f}, Fading SER: {fading_ser[-1]:.4f}")
 
 # %%
@@ -281,25 +268,25 @@ for snr_db in snr_range_db:
 # --------------------------
 
 plt.figure(figsize=(10, 6))
-plt.semilogy(snr_range_db, awgn_ser, 'bo-', linewidth=2, label='AWGN Channel')
-plt.semilogy(snr_range_db, fading_ser, 'rs-', linewidth=2, label='Rayleigh Fading Channel')
+plt.semilogy(snr_range_db, awgn_ser, "bo-", linewidth=2, label="AWGN Channel")
+plt.semilogy(snr_range_db, fading_ser, "rs-", linewidth=2, label="Rayleigh Fading Channel")
 
 # Add theoretical curves using Kaira's calculate_theoretical_ber function
 snr_theory = np.linspace(0, 25, 100)
 # For QPSK - use Kaira's built-in function
-awgn_theory_ser = calculate_theoretical_ber('qpsk', snr_theory) * 2  # Convert BER to SER (approx)
+awgn_theory_ser = calculate_theoretical_ber("qpsk", snr_theory) * 2  # Convert BER to SER (approx)
 
 # For Rayleigh fading, we still need to use the formula since it's not in Kaira yet
-snr_linear = 10**(snr_theory/10)
-fading_theory_ser = 1 - 1/np.sqrt(1 + 1/(2*snr_linear))
+snr_linear = 10 ** (snr_theory / 10)
+fading_theory_ser = 1 - 1 / np.sqrt(1 + 1 / (2 * snr_linear))
 
-plt.semilogy(snr_theory, awgn_theory_ser, 'b--', alpha=0.7, label='AWGN Theory')
-plt.semilogy(snr_theory, fading_theory_ser, 'r--', alpha=0.7, label='Rayleigh Theory')
+plt.semilogy(snr_theory, awgn_theory_ser, "b--", alpha=0.7, label="AWGN Theory")
+plt.semilogy(snr_theory, fading_theory_ser, "r--", alpha=0.7, label="Rayleigh Theory")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Symbol Error Rate (SER)')
-plt.title('SER vs. SNR Comparison for QPSK')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Symbol Error Rate (SER)")
+plt.title("SER vs. SNR Comparison for QPSK")
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -317,11 +304,7 @@ with torch.no_grad():
 time_input = time_symbols.view(1, -1)
 
 # Create a fading channel with time-correlation
-time_fading_channel = FlatFadingChannel(
-    fading_type='rayleigh',
-    coherence_time=10,       # Fading stays constant for 10 symbols
-    avg_noise_power=noise_power
-)
+time_fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=noise_power)  # Fading stays constant for 10 symbols
 
 # Pass signal through the channel
 with torch.no_grad():
@@ -341,13 +324,12 @@ fading_magnitude = np.abs(fading_estimate)
 plt.figure(figsize=(12, 6))
 plt.plot(fading_magnitude, linewidth=2)
 plt.grid(True)
-plt.xlabel('Symbol Index')
-plt.ylabel('Fading Magnitude')
-plt.title('Time-Varying Rayleigh Fading Magnitude')
+plt.xlabel("Symbol Index")
+plt.ylabel("Fading Magnitude")
+plt.title("Time-Varying Rayleigh Fading Magnitude")
 
 # Add the theoretical Rayleigh average (√(π/2) ≈ 0.89 for normalized Rayleigh)
-plt.axhline(y=np.sqrt(np.pi/2) * np.mean(fading_magnitude) / 1.253, 
-           color='r', linestyle='--', label='Theoretical Average')
+plt.axhline(y=np.sqrt(np.pi / 2) * np.mean(fading_magnitude) / 1.253, color="r", linestyle="--", label="Theoretical Average")
 plt.legend()
 plt.show()
 
@@ -357,7 +339,6 @@ plt.show()
 # Let's analyze the frequency characteristics of the fading process.
 
 # Calculate PSD using FFT
-from scipy import signal
 
 # Use Welch's method to estimate PSD
 f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=256)
@@ -365,11 +346,10 @@ f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=256)
 plt.figure(figsize=(10, 5))
 plt.semilogy(f, psd, linewidth=2)
 plt.grid(True)
-plt.xlabel('Normalized Frequency')
-plt.ylabel('Power Spectral Density')
-plt.title('PSD of Rayleigh Fading Process')
-plt.axvline(x=0.05, color='r', linestyle='--', 
-           label=f'Doppler Frequency (0.05)')
+plt.xlabel("Normalized Frequency")
+plt.ylabel("Power Spectral Density")
+plt.title("PSD of Rayleigh Fading Process")
+plt.axvline(x=0.05, color="r", linestyle="--", label="Doppler Frequency (0.05)")
 plt.legend()
 plt.tight_layout()
 plt.show()

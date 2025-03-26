@@ -16,7 +16,7 @@ Examples demonstrating various metrics for performance evaluation in communicati
 
     .. image:: /auto_examples/metrics/images/thumb/sphx_glr_plot_signal_metrics_thumb.png
       :alt:
-      
+
     :ref:`sphx_glr_auto_examples_metrics_plot_signal_metrics.py`
 
 .. raw:: html
@@ -94,7 +94,7 @@ Examples demonstrating various metrics for performance evaluation in communicati
 
 .. toctree::
    :hidden:
-   
+
    /auto_examples/metrics/plot_signal_metrics
    /auto_examples/metrics/plot_image_metrics
    /auto_examples/metrics/plot_custom_metrics

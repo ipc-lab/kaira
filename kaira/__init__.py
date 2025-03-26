@@ -6,15 +6,7 @@ source-channel coding (DeepJSCC). Designed to accelerate research and innovation
 seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication
 strategies.
 """
-from . import channels, constraints, metrics, models, modulations, data
+from . import channels, constraints, data, metrics, models, modulations
 from .version import __version__
 
-__all__ = [
-    "__version__",
-    "channels",
-    "constraints",
-    "metrics",
-    "models",
-    "modulations",
-    "data"
-]
+__all__ = ["__version__", "channels", "constraints", "metrics", "models", "modulations", "data"]

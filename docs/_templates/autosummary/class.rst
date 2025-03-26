@@ -30,7 +30,7 @@
    {% endif %}
    {% endblock %}
 
-{% if objname in ["AWGNChannel", "BaseChannel", "BinaryErasureChannel", "BinarySymmetricChannel", "BinaryZChannel", 
+{% if objname in ["AWGNChannel", "BaseChannel", "BinaryErasureChannel", "BinarySymmetricChannel", "BinaryZChannel",
                  "ChannelRegistry", "FlatFadingChannel", "GaussianChannel", "IdealChannel", "IdentityChannel",
                  "LambdaChannel", "LaplacianChannel", "NonlinearChannel", "PerfectChannel", "PhaseNoiseChannel", "PoissonChannel"] %}
 .. rubric:: {{ _('Examples using') }} ``{{ objname }}``

@@ -129,7 +129,7 @@ repos:
       - id: codespell
         args:
           - --skip=logs/**,data/**,*.ipynb,*.bib
-          - --ignore-words-list=fro
+          - --ignore-words-list=fro,ser,SER
 
   # jupyter notebook cell output clearing
   - repo: https://github.com/kynan/nbstripout

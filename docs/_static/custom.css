@@ -950,11 +950,11 @@ blockquote {
     .category-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
-    
+
     .examples-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
-    
+
     .sphx-glr-thumbnails {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
     }
@@ -964,11 +964,11 @@ blockquote {
     .category-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .examples-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .sphx-glr-thumbnails {
         grid-template-columns: 1fr !important;
     }
@@ -1172,7 +1172,7 @@ div.binder-badge a:hover {
 /* Fix for sphinx_rtd_theme compatibility */
 .rst-content .sphx-glr-thumbcontainer {
     background-color: var(--gallery-card-bg) !important;
-    border: 1px solid var(--gallery-card-border) !important; 
+    border: 1px solid var(--gallery-card-border) !important;
     border-radius: 8px !important;
 }
 

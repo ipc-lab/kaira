@@ -11,7 +11,7 @@ from sphinx_gallery.sorting import FileNameSortKey
 
 # Improve module path setup for proper imports
 # First, add the root directory containing the kaira package
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath(".."))
 
 # Debug information - print the current path
 print("Python sys.path:")
@@ -21,20 +21,21 @@ for p in sys.path:
 # Verify we can import kaira modules
 try:
     import kaira
+
     print(f"Successfully imported kaira version {kaira.__version__}")
-    
+
     # Check if data module exists
     if importlib.util.find_spec("kaira.data") is not None:
         print("kaira.data module found")
     else:
         print("WARNING: kaira.data module not found")
-        
+
     # List available kaira modules
     print("Available kaira modules:")
     for module_name in dir(kaira):
-        if not module_name.startswith('_'):
+        if not module_name.startswith("_"):
             print(f"  - {module_name}")
-            
+
 except ImportError as e:
     print(f"Error importing kaira: {e}")
     print("Documentation may not build correctly")
@@ -70,7 +71,7 @@ extensions = [
     "sphinx.ext.todo",  # Add support for TODOs
     "sphinx.ext.ifconfig",  # Add support for conditional content
     "sphinx_design",  # Add sphinx-design for better UI components
-    #"sphinx_copybutton",  # Add copy button to code blocks
+    # "sphinx_copybutton",  # Add copy button to code blocks
     # "hoverxref.extension"
 ]
 
@@ -93,11 +94,9 @@ sphinx_gallery_conf = {
         "auto_examples/data",
         "auto_examples/losses",
     ],
-    
     # File patterns and organization
     "filename_pattern": r"\.py$",
     "ignore_pattern": r"__init__\.py|utils\.py",
-    
     # Content display options
     "download_all_examples": True,
     "plot_gallery": True,  # Enable gallery plots
@@ -107,7 +106,6 @@ sphinx_gallery_conf = {
     "show_memory": False,
     "matplotlib_animations": True,
     "show_signature": True,
-        
     # Enable Binder integration with JupyterLab interface
     "binder": {
         "org": "ipc-lab",
@@ -117,37 +115,28 @@ sphinx_gallery_conf = {
         "dependencies": "../requirements.txt",
         "use_jupyter_lab": True,
     },
-    
     # Image scrapers
     "image_scrapers": ("matplotlib",),
-    
     # Execution settings
     "junit": "_build/junit-results.xml",  # Save test results
     "inspect_global_variables": True,  # Inspect global variables
-
     # Custom template
     "default_thumb_file": "_static/logo.png",
-    
     # Build settings
     "only_warn_on_example_error": True,
-    "reset_modules": ('matplotlib',),
-    
+    "reset_modules": ("matplotlib",),
     # Backreference settings
     "backreferences_dir": "gen_modules/backreferences",
     "doc_module": "kaira",
-
     # Reference configurations
     "reference_url": {
         "kaira": None,  # The module has no reference URL
     },
     "capture_repr": ("_repr_html_", "__repr__"),  # Capture representations for objects
-    
     # Gallery organization
     "within_subsection_order": FileNameSortKey,  # Sort by filename within subsections
-    
     # First cell in generated notebooks - improving the note about downloading and Binder
     "first_notebook_cell": "# %% [markdown]\n# # {title}\n# {descr}\n\n*This notebook demonstrates {title}*\n\n**Quick Links:**\n- Download this example as a Jupyter notebook or Python script using the buttons below\n- Run this example interactively in your browser via Binder\n",
-
 }
 
 # Configure autodoc
@@ -363,6 +352,7 @@ def setup(app):
     app.connect("autodoc-skip-member", skip_member)
     app.add_config_value("current_date", get_current_date(), "env")
 
+
 # Mock imports for modules that might not be installed
 # This prevents build failures due to missing dependencies
 autodoc_mock_imports = []
@@ -372,4 +362,4 @@ try:
     import kaira.data
 except ImportError:
     print("Adding kaira.data to mock imports")
-    autodoc_mock_imports.append('kaira.data')
+    autodoc_mock_imports.append("kaira.data")

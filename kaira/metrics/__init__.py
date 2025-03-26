@@ -3,10 +3,9 @@
 This module contains various metrics for evaluating the performance of communication systems.
 """
 
+from . import utils
 from .base import BaseMetric
 from .composite import CompositeMetric
-from .registry import MetricRegistry
-from . import utils
 from .image import (
     LPIPS,
     PSNR,
@@ -16,7 +15,19 @@ from .image import (
     PeakSignalNoiseRatio,
     StructuralSimilarityIndexMeasure,
 )
-from .signal import BER, BLER, SNR, BitErrorRate, BlockErrorRate, SignalToNoiseRatio, FER, FrameErrorRate, SER, SymbolErrorRate
+from .registry import MetricRegistry
+from .signal import (
+    BER,
+    BLER,
+    FER,
+    SER,
+    SNR,
+    BitErrorRate,
+    BlockErrorRate,
+    FrameErrorRate,
+    SignalToNoiseRatio,
+    SymbolErrorRate,
+)
 
 __all__ = [
     # Base classes
@@ -44,5 +55,5 @@ __all__ = [
     # Registry
     "MetricRegistry",
     # Utils
-    "utils"
+    "utils",
 ]

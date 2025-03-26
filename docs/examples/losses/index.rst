@@ -99,7 +99,7 @@ Examples demonstrating various loss functions for training deep learning models 
 
 .. toctree::
    :hidden:
-   
+
    /auto_examples/losses/plot_text_losses
    /auto_examples/losses/plot_image_losses
    /auto_examples/losses/plot_audio_losses

@@ -7,20 +7,19 @@ in Kaira, focusing on 8-PSK and 16-PSK. Higher-order PSK schemes increase
 spectral efficiency by encoding more bits per symbol at the cost of reduced
 noise immunity.
 """
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.modulations import (
-    PSKModulator, PSKDemodulator,
-    QPSKModulator, QPSKDemodulator
-)
-from kaira.modulations.utils import plot_constellation, calculate_spectral_efficiency
+
 from kaira.channels import AWGNChannel
-from kaira.utils import snr_to_noise_power
 from kaira.metrics import BER
+from kaira.modulations import PSKDemodulator, PSKModulator, QPSKDemodulator, QPSKModulator
+from kaira.modulations.utils import calculate_spectral_efficiency, plot_constellation
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -69,24 +68,15 @@ psk16_symbols = psk16_mod(psk16_bits)
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
 # QPSK constellation
-plot_constellation(qpsk_symbols.flatten(), 
-                  title='QPSK Constellation',
-                  marker='o',
-                  ax=axs[0])
+plot_constellation(qpsk_symbols.flatten(), title="QPSK Constellation", marker="o", ax=axs[0])
 axs[0].grid(True)
 
 # 8-PSK constellation
-plot_constellation(psk8_symbols.flatten(), 
-                  title='8-PSK Constellation',
-                  marker='o',
-                  ax=axs[1])
+plot_constellation(psk8_symbols.flatten(), title="8-PSK Constellation", marker="o", ax=axs[1])
 axs[1].grid(True)
 
 # 16-PSK constellation
-plot_constellation(psk16_symbols.flatten(), 
-                  title='16-PSK Constellation',
-                  marker='o',
-                  ax=axs[2])
+plot_constellation(psk16_symbols.flatten(), title="16-PSK Constellation", marker="o", ax=axs[2])
 axs[2].grid(True)
 
 plt.tight_layout()
@@ -109,41 +99,41 @@ psk16_min_dist = 2 * np.sin(np.pi / 16)
 
 # Plot with normalized radius showing minimum distances
 ax1 = fig.add_subplot(131)
-circle = plt.Circle((0, 0), 1, fill=False, linestyle='--', color='gray')
+circle = plt.Circle((0, 0), 1, fill=False, linestyle="--", color="gray")
 ax1.add_patch(circle)
-ax1.scatter([1, 0, -1, 0], [0, 1, 0, -1], color='blue')
-ax1.plot([0, 1], [0, 0], color='red', linewidth=2)
+ax1.scatter([1, 0, -1, 0], [0, 1, 0, -1], color="blue")
+ax1.plot([0, 1], [0, 0], color="red", linewidth=2)
 ax1.set_xlim(-1.2, 1.2)
 ax1.set_ylim(-1.2, 1.2)
 ax1.grid(True)
-ax1.set_title(f'QPSK\nMin Distance = {qpsk_min_dist:.3f}')
-ax1.set_aspect('equal')
+ax1.set_title(f"QPSK\nMin Distance = {qpsk_min_dist:.3f}")
+ax1.set_aspect("equal")
 
 ax2 = fig.add_subplot(132)
-circle = plt.Circle((0, 0), 1, fill=False, linestyle='--', color='gray')
+circle = plt.Circle((0, 0), 1, fill=False, linestyle="--", color="gray")
 ax2.add_patch(circle)
-theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
-ax2.scatter(np.cos(theta), np.sin(theta), color='blue')
-ax2.plot([0, np.cos(0)], [0, np.sin(0)], color='red', linewidth=2)
-ax2.plot([0, np.cos(np.pi/4)], [0, np.sin(np.pi/4)], color='red', linewidth=2)
+theta = np.linspace(0, 2 * np.pi, 8, endpoint=False)
+ax2.scatter(np.cos(theta), np.sin(theta), color="blue")
+ax2.plot([0, np.cos(0)], [0, np.sin(0)], color="red", linewidth=2)
+ax2.plot([0, np.cos(np.pi / 4)], [0, np.sin(np.pi / 4)], color="red", linewidth=2)
 ax2.set_xlim(-1.2, 1.2)
 ax2.set_ylim(-1.2, 1.2)
 ax2.grid(True)
-ax2.set_title(f'8-PSK\nMin Distance = {psk8_min_dist:.3f}')
-ax2.set_aspect('equal')
+ax2.set_title(f"8-PSK\nMin Distance = {psk8_min_dist:.3f}")
+ax2.set_aspect("equal")
 
 ax3 = fig.add_subplot(133)
-circle = plt.Circle((0, 0), 1, fill=False, linestyle='--', color='gray')
+circle = plt.Circle((0, 0), 1, fill=False, linestyle="--", color="gray")
 ax3.add_patch(circle)
-theta = np.linspace(0, 2*np.pi, 16, endpoint=False)
-ax3.scatter(np.cos(theta), np.sin(theta), color='blue')
-ax3.plot([0, np.cos(0)], [0, np.sin(0)], color='red', linewidth=2)
-ax3.plot([0, np.cos(np.pi/8)], [0, np.sin(np.pi/8)], color='red', linewidth=2)
+theta = np.linspace(0, 2 * np.pi, 16, endpoint=False)
+ax3.scatter(np.cos(theta), np.sin(theta), color="blue")
+ax3.plot([0, np.cos(0)], [0, np.sin(0)], color="red", linewidth=2)
+ax3.plot([0, np.cos(np.pi / 8)], [0, np.sin(np.pi / 8)], color="red", linewidth=2)
 ax3.set_xlim(-1.2, 1.2)
 ax3.set_ylim(-1.2, 1.2)
 ax3.grid(True)
-ax3.set_title(f'16-PSK\nMin Distance = {psk16_min_dist:.3f}')
-ax3.set_aspect('equal')
+ax3.set_title(f"16-PSK\nMin Distance = {psk16_min_dist:.3f}")
+ax3.set_aspect("equal")
 
 plt.tight_layout()
 plt.show()
@@ -164,17 +154,17 @@ for snr_db in snr_db_range:
     # Calculate noise power and create AWGN channel
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # QPSK transmission
     received_qpsk = channel(qpsk_symbols)
     demod_bits_qpsk = qpsk_demod(received_qpsk)
     ber_qpsk.append(ber_metric(demod_bits_qpsk, qpsk_bits).item())
-    
+
     # 8-PSK transmission
     received_psk8 = channel(psk8_symbols)
     demod_bits_psk8 = psk8_demod(received_psk8)
     ber_psk8.append(ber_metric(demod_bits_psk8, psk8_bits).item())
-    
+
     # 16-PSK transmission
     received_psk16 = channel(psk16_symbols)
     demod_bits_psk16 = psk16_demod(received_psk16)
@@ -182,24 +172,24 @@ for snr_db in snr_db_range:
 
 # Plot BER vs SNR
 plt.figure(figsize=(10, 6))
-plt.semilogy(snr_db_range, ber_qpsk, 'b-', marker='o', label='QPSK')
-plt.semilogy(snr_db_range, ber_psk8, 'g-', marker='s', label='8-PSK')
-plt.semilogy(snr_db_range, ber_psk16, 'r-', marker='^', label='16-PSK')
+plt.semilogy(snr_db_range, ber_qpsk, "b-", marker="o", label="QPSK")
+plt.semilogy(snr_db_range, ber_psk8, "g-", marker="s", label="8-PSK")
+plt.semilogy(snr_db_range, ber_psk16, "r-", marker="^", label="16-PSK")
 
 # Approximate theoretical bounds
 snr_lin = 10 ** (snr_db_range / 10)
 theoretical_ber_qpsk = torch.erfc(torch.sqrt(torch.tensor(snr_lin))) / 2
-theoretical_ber_8psk = torch.erfc(torch.sqrt(torch.tensor(snr_lin) * np.sin(np.pi/8)**2))
-theoretical_ber_16psk = torch.erfc(torch.sqrt(torch.tensor(snr_lin) * np.sin(np.pi/16)**2))
+theoretical_ber_8psk = torch.erfc(torch.sqrt(torch.tensor(snr_lin) * np.sin(np.pi / 8) ** 2))
+theoretical_ber_16psk = torch.erfc(torch.sqrt(torch.tensor(snr_lin) * np.sin(np.pi / 16) ** 2))
 
-plt.semilogy(snr_db_range, theoretical_ber_qpsk, 'b--', alpha=0.5, label='QPSK (Theory)')
-plt.semilogy(snr_db_range, theoretical_ber_8psk, 'g--', alpha=0.5, label='8-PSK (Theory)')
-plt.semilogy(snr_db_range, theoretical_ber_16psk, 'r--', alpha=0.5, label='16-PSK (Theory)')
+plt.semilogy(snr_db_range, theoretical_ber_qpsk, "b--", alpha=0.5, label="QPSK (Theory)")
+plt.semilogy(snr_db_range, theoretical_ber_8psk, "g--", alpha=0.5, label="8-PSK (Theory)")
+plt.semilogy(snr_db_range, theoretical_ber_16psk, "r--", alpha=0.5, label="16-PSK (Theory)")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance of PSK Modulations')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance of PSK Modulations")
 plt.legend()
 plt.show()
 
@@ -228,22 +218,13 @@ received_psk16 = channel(test_psk16)
 # Plot noisy constellations
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
-plot_constellation(received_qpsk.flatten(),
-                  title=f'QPSK at {test_snr_db} dB SNR',
-                  marker='.',
-                  ax=axs[0])
+plot_constellation(received_qpsk.flatten(), title=f"QPSK at {test_snr_db} dB SNR", marker=".", ax=axs[0])
 axs[0].grid(True)
 
-plot_constellation(received_psk8.flatten(),
-                  title=f'8-PSK at {test_snr_db} dB SNR',
-                  marker='.',
-                  ax=axs[1])
+plot_constellation(received_psk8.flatten(), title=f"8-PSK at {test_snr_db} dB SNR", marker=".", ax=axs[1])
 axs[1].grid(True)
 
-plot_constellation(received_psk16.flatten(),
-                  title=f'16-PSK at {test_snr_db} dB SNR',
-                  marker='.',
-                  ax=axs[2])
+plot_constellation(received_psk16.flatten(), title=f"16-PSK at {test_snr_db} dB SNR", marker=".", ax=axs[2])
 axs[2].grid(True)
 
 plt.tight_layout()
@@ -280,39 +261,37 @@ plt.figure(figsize=(15, 6))
 # Plot received symbols and constellation
 plt.subplot(1, 2, 1)
 # Plot the received symbols
-plt.scatter(received_qpsk.real.numpy(), received_qpsk.imag.numpy(), 
-           c='blue', marker='o', label='Received', alpha=0.6)
+plt.scatter(received_qpsk.real.numpy(), received_qpsk.imag.numpy(), c="blue", marker="o", label="Received", alpha=0.6)
 
 # Add original constellation points for reference
 qpsk_const = qpsk_mod.constellation
-plt.scatter(qpsk_const.real.numpy(), qpsk_const.imag.numpy(), 
-           c='red', marker='x', s=100, label='Constellation Points')
+plt.scatter(qpsk_const.real.numpy(), qpsk_const.imag.numpy(), c="red", marker="x", s=100, label="Constellation Points")
 
 # Add bit labels to constellation points
 for i, point in enumerate(qpsk_const):
-    bits = ''.join(str(int(b)) for b in qpsk_mod.bit_patterns[i])
+    bits = "".join(str(int(b)) for b in qpsk_mod.bit_patterns[i])
     plt.annotate(bits, (point.real + 0.1, point.imag + 0.1))
 
 plt.grid(True)
-plt.xlabel('In-Phase')
-plt.ylabel('Quadrature')
-plt.title(f'QPSK Received Symbols at {test_snr_db} dB SNR')
+plt.xlabel("In-Phase")
+plt.ylabel("Quadrature")
+plt.title(f"QPSK Received Symbols at {test_snr_db} dB SNR")
 plt.legend()
-plt.axis('equal')
+plt.axis("equal")
 
 # Plot LLR values
 plt.subplot(1, 2, 2)
 x = np.arange(len(soft_llrs.numpy().flatten()))
 llr_values = soft_llrs.numpy().flatten()
 plt.stem(x, llr_values)  # Removed deprecated parameter
-plt.axhline(y=0, color='r', linestyle='--', alpha=0.3)
+plt.axhline(y=0, color="r", linestyle="--", alpha=0.3)
 plt.grid(True)
-plt.xlabel('LLR Index')
-plt.ylabel('LLR Value')
-plt.title('Soft Decision Log-Likelihood Ratios (LLRs)')
+plt.xlabel("LLR Index")
+plt.ylabel("LLR Value")
+plt.title("Soft Decision Log-Likelihood Ratios (LLRs)")
 
 # Add decision threshold reference
-plt.axhline(y=0, color='r', linestyle='--', label='Decision Threshold')
+plt.axhline(y=0, color="r", linestyle="--", label="Decision Threshold")
 plt.legend()
 
 plt.tight_layout()
@@ -329,18 +308,17 @@ required_snr_16psk = np.interp(target_ber, theoretical_ber_16psk.numpy()[::-1], 
 
 # Create a bar chart of spectral efficiency vs required SNR
 plt.figure(figsize=(10, 6))
-modulations = ['QPSK', '8-PSK', '16-PSK']
+modulations = ["QPSK", "8-PSK", "16-PSK"]
 spectral_efficiencies = [2, 3, 4]  # bits/s/Hz
 required_snrs = [required_snr_qpsk, required_snr_8psk, required_snr_16psk]
 
 bars = plt.bar(modulations, spectral_efficiencies, width=0.5)
-plt.ylabel('Spectral Efficiency (bits/s/Hz)')
-plt.title(f'Spectral Efficiency vs Required SNR for BER = {target_ber}')
+plt.ylabel("Spectral Efficiency (bits/s/Hz)")
+plt.title(f"Spectral Efficiency vs Required SNR for BER = {target_ber}")
 
 # Add required SNR as text on each bar
 for i, (bar, snr) in enumerate(zip(bars, required_snrs)):
-    plt.text(i, bar.get_height() + 0.1, f'Required SNR: {snr:.1f} dB', 
-             ha='center', va='bottom', fontweight='bold')
+    plt.text(i, bar.get_height() + 0.1, f"Required SNR: {snr:.1f} dB", ha="center", va="bottom", fontweight="bold")
 
 plt.tight_layout()
 plt.show()

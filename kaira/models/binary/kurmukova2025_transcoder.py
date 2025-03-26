@@ -140,7 +140,7 @@ class Kurmukova2025TransCoder(BaseModel):
                 demodulated = self.demodulator(received)
 
             # Channel decoding
-            decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)
+            decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)  # type: Tuple[torch.Tensor, torch.Tensor]
 
             # Store results for this iteration
             iterations.append(

@@ -10,17 +10,20 @@ useful for creating synthetic data for information theory and
 communication systems experiments.
 """
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 # %%
 # Imports and Setup
 # ---------------------------------------------------------
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+
 from kaira.data import (
+    BinaryTensorDataset,
+    UniformTensorDataset,
     create_binary_tensor,
     create_uniform_tensor,
-    BinaryTensorDataset,
-    UniformTensorDataset
 )
 
 # Set random seed for reproducibility
@@ -87,12 +90,11 @@ actual_freqs = [tensor.mean().item() for tensor in binary_tensors]
 # Visualize the results
 plt.figure(figsize=(10, 6))
 plt.bar(probs, actual_freqs, width=0.05, alpha=0.7)
-plt.plot([0, 1], [0, 1], 'r--', label='Expected')
-plt.scatter(probs, actual_freqs, s=100, c='red', zorder=3)
+plt.plot([0, 1], [0, 1], "r--", label="Expected")
+plt.scatter(probs, actual_freqs, s=100, c="red", zorder=3)
 
 for p, f in zip(probs, actual_freqs):
-    plt.annotate(f"{f:.3f}", (p, f), xytext=(0, 10), 
-                 textcoords="offset points", ha='center')
+    plt.annotate(f"{f:.3f}", (p, f), xytext=(0, 10), textcoords="offset points", ha="center")
 
 plt.xlabel("Target Probability (p)")
 plt.ylabel("Actual Frequency of 1s")
@@ -137,7 +139,7 @@ plt.figure(figsize=(12, 8))
 # Plot binary dataset samples
 plt.subplot(2, 1, 1)
 for i in range(5):
-    plt.plot(binary_dataset[i].numpy(), 'o-', alpha=0.7, label=f"Sample {i+1}")
+    plt.plot(binary_dataset[i].numpy(), "o-", alpha=0.7, label=f"Sample {i+1}")
 plt.title("Binary Dataset Samples")
 plt.xlabel("Feature Index")
 plt.ylabel("Value")
@@ -147,7 +149,7 @@ plt.legend()
 # Plot uniform dataset samples
 plt.subplot(2, 1, 2)
 for i in range(5):
-    plt.plot(uniform_dataset[i].numpy(), 'o-', alpha=0.7, label=f"Sample {i+1}")
+    plt.plot(uniform_dataset[i].numpy(), "o-", alpha=0.7, label=f"Sample {i+1}")
 plt.title("Uniform Dataset Samples")
 plt.xlabel("Feature Index")
 plt.ylabel("Value")
@@ -163,7 +165,6 @@ plt.show()
 # We can use the PyTorch DataLoader with our dataset classes
 # to create mini-batches for training.
 
-from torch.utils.data import DataLoader
 
 # Create a DataLoader for the binary dataset
 batch_size = 32
@@ -177,7 +178,7 @@ print(f"Number of batches: {len(binary_loader)}")
 # Visualize the batch
 plt.figure(figsize=(12, 6))
 plt.subplot(1, 2, 1)
-plt.imshow(batch.numpy(), aspect='auto', cmap='binary')
+plt.imshow(batch.numpy(), aspect="auto", cmap="binary")
 plt.title(f"Binary Batch ({batch_size} samples)")
 plt.xlabel("Feature Index")
 plt.ylabel("Sample Index")
@@ -187,7 +188,7 @@ plt.colorbar(label="Value")
 plt.subplot(1, 2, 2)
 feature_means = batch.mean(dim=0).numpy()
 plt.bar(np.arange(feature_dim), feature_means, alpha=0.7)
-plt.axhline(y=0.3, color='r', linestyle='--', label="Expected Mean (p=0.3)")
+plt.axhline(y=0.3, color="r", linestyle="--", label="Expected Mean (p=0.3)")
 plt.title("Feature Means Across Batch")
 plt.xlabel("Feature Index")
 plt.ylabel("Mean Value")
@@ -208,12 +209,15 @@ message_length = 4
 batch_size = 8
 messages = create_binary_tensor(size=[batch_size, message_length], prob=0.5)
 
+
 # Simple repetition code: repeat each bit 3 times
 def repetition_encoder(x, repeat=3):
     """Simple repetition encoder."""
     return x.repeat_interleave(repeat, dim=-1)
 
+
 encoded = repetition_encoder(messages, repeat=3)
+
 
 # Simulate a noisy channel (bit flipping with 20% probability)
 def binary_symmetric_channel(x, flip_prob=0.2):
@@ -221,13 +225,16 @@ def binary_symmetric_channel(x, flip_prob=0.2):
     noise = create_binary_tensor(size=x.shape, prob=flip_prob)
     return (x + noise) % 2  # XOR operation
 
+
 received = binary_symmetric_channel(encoded, flip_prob=0.2)
+
 
 # Simple majority vote decoder
 def majority_decoder(x, repeat=3):
     """Majority vote decoder for repetition code."""
     x_reshaped = x.reshape(x.shape[0], -1, repeat)
-    return (x_reshaped.sum(dim=-1) > repeat/2).float()
+    return (x_reshaped.sum(dim=-1) > repeat / 2).float()
+
 
 decoded = majority_decoder(received, repeat=3)
 
@@ -243,28 +250,28 @@ plt.figure(figsize=(12, 10))
 
 # Plot original messages
 plt.subplot(4, 1, 1)
-plt.imshow(messages.numpy(), cmap='binary', aspect='auto')
+plt.imshow(messages.numpy(), cmap="binary", aspect="auto")
 plt.title("Original Messages")
 plt.ylabel("Message")
 plt.colorbar(ticks=[0, 1], orientation="vertical", pad=0.05)
 
 # Plot encoded messages
 plt.subplot(4, 1, 2)
-plt.imshow(encoded.numpy(), cmap='binary', aspect='auto')
+plt.imshow(encoded.numpy(), cmap="binary", aspect="auto")
 plt.title("Encoded Messages (3x Repetition)")
 plt.ylabel("Message")
 plt.colorbar(ticks=[0, 1], orientation="vertical", pad=0.05)
 
 # Plot received messages
 plt.subplot(4, 1, 3)
-plt.imshow(received.numpy(), cmap='binary', aspect='auto')
+plt.imshow(received.numpy(), cmap="binary", aspect="auto")
 plt.title("Received Messages (After Noisy Channel)")
 plt.ylabel("Message")
 plt.colorbar(ticks=[0, 1], orientation="vertical", pad=0.05)
 
 # Plot decoded messages
 plt.subplot(4, 1, 4)
-plt.imshow(decoded.numpy(), cmap='binary', aspect='auto')
+plt.imshow(decoded.numpy(), cmap="binary", aspect="auto")
 plt.title(f"Decoded Messages (BER: {bit_error_rate:.4f})")
 plt.ylabel("Message")
 plt.xlabel("Bit Position")

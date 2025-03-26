@@ -46,6 +46,6 @@ Examples demonstrating data generation utilities and correlation models for info
 
 .. toctree::
    :hidden:
-   
+
    /auto_examples/data/plot_data_generation
    /auto_examples/data/plot_correlation_models

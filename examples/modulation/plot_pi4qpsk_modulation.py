@@ -3,26 +3,25 @@
 π/4-QPSK Modulation
 =========================================
 This example demonstrates π/4-QPSK (pi/4 shifted QPSK) modulation in Kaira.
-π/4-QPSK is a variant of QPSK where the constellation is rotated by π/4 radians 
+π/4-QPSK is a variant of QPSK where the constellation is rotated by π/4 radians
 on alternating symbols, providing improved envelope properties and phase transitions.
 
 This modulation scheme is used in several digital mobile communications systems
 including North American TDMA (IS-136) and Japanese Digital Cellular.
 """
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
-from kaira.modulations import (
-    Pi4QPSKModulator, Pi4QPSKDemodulator,
-    QPSKModulator, QPSKDemodulator,
-)
-from kaira.modulations.utils import plot_constellation
+
 from kaira.channels import AWGNChannel, FlatFadingChannel
-from kaira.utils import snr_to_noise_power
 from kaira.metrics import BER
+from kaira.modulations import Pi4QPSKDemodulator, Pi4QPSKModulator, QPSKDemodulator, QPSKModulator
+from kaira.modulations.utils import plot_constellation
+from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -55,17 +54,11 @@ qpsk_symbols = qpsk_mod(bits)
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 # π/4-QPSK constellation
-plot_constellation(pi4qpsk_symbols.flatten(), 
-                  title='π/4-QPSK Constellation',
-                  marker='o',
-                  ax=axs[0])
+plot_constellation(pi4qpsk_symbols.flatten(), title="π/4-QPSK Constellation", marker="o", ax=axs[0])
 axs[0].grid(True)
 
 # Regular QPSK constellation for comparison
-plot_constellation(qpsk_symbols.flatten(), 
-                  title='Regular QPSK Constellation',
-                  marker='o',
-                  ax=axs[1])
+plot_constellation(qpsk_symbols.flatten(), title="Regular QPSK Constellation", marker="o", ax=axs[1])
 axs[1].grid(True)
 
 plt.tight_layout()
@@ -88,23 +81,23 @@ qpsk_simple = qpsk_mod(simple_bits)
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 # π/4-QPSK transitions
-axs[0].plot(pi4qpsk_simple[0].real, pi4qpsk_simple[0].imag, 'bo-', linewidth=2)
-axs[0].plot(pi4qpsk_simple[0, 0].real, pi4qpsk_simple[0, 0].imag, 'ro', markersize=10, label='First symbol')
+axs[0].plot(pi4qpsk_simple[0].real, pi4qpsk_simple[0].imag, "bo-", linewidth=2)
+axs[0].plot(pi4qpsk_simple[0, 0].real, pi4qpsk_simple[0, 0].imag, "ro", markersize=10, label="First symbol")
 axs[0].grid(True)
-axs[0].set_aspect('equal')
-axs[0].set_title('π/4-QPSK Phase Transitions')
-axs[0].set_xlabel('In-phase')
-axs[0].set_ylabel('Quadrature')
+axs[0].set_aspect("equal")
+axs[0].set_title("π/4-QPSK Phase Transitions")
+axs[0].set_xlabel("In-phase")
+axs[0].set_ylabel("Quadrature")
 axs[0].legend()
 
 # QPSK transitions
-axs[1].plot(qpsk_simple[0].real, qpsk_simple[0].imag, 'bo-', linewidth=2)
-axs[1].plot(qpsk_simple[0, 0].real, qpsk_simple[0, 0].imag, 'ro', markersize=10, label='First symbol')
+axs[1].plot(qpsk_simple[0].real, qpsk_simple[0].imag, "bo-", linewidth=2)
+axs[1].plot(qpsk_simple[0, 0].real, qpsk_simple[0, 0].imag, "ro", markersize=10, label="First symbol")
 axs[1].grid(True)
-axs[1].set_aspect('equal')
-axs[1].set_title('Regular QPSK Phase Transitions')
-axs[1].set_xlabel('In-phase')
-axs[1].set_ylabel('Quadrature')
+axs[1].set_aspect("equal")
+axs[1].set_title("Regular QPSK Phase Transitions")
+axs[1].set_xlabel("In-phase")
+axs[1].set_ylabel("Quadrature")
 axs[1].legend()
 
 plt.tight_layout()
@@ -129,12 +122,12 @@ for snr_db in snr_db_range:
     # Calculate noise power and create AWGN channel
     noise_power = snr_to_noise_power(1.0, snr_db)
     channel = AWGNChannel(avg_noise_power=noise_power)
-    
+
     # π/4-QPSK transmission
     received_pi4qpsk = channel(pi4qpsk_symbols)
     demod_bits_pi4qpsk = pi4qpsk_demod(received_pi4qpsk)
     ber_pi4qpsk.append(ber_metric(demod_bits_pi4qpsk, bits).item())
-    
+
     # QPSK transmission
     received_qpsk = channel(qpsk_symbols)
     demod_bits_qpsk = qpsk_demod(received_qpsk)
@@ -142,18 +135,18 @@ for snr_db in snr_db_range:
 
 # Plot BER vs SNR
 plt.figure(figsize=(10, 6))
-plt.semilogy(snr_db_range, ber_pi4qpsk, 'bo-', label='π/4-QPSK')
-plt.semilogy(snr_db_range, ber_qpsk, 'ro-', label='QPSK')
+plt.semilogy(snr_db_range, ber_pi4qpsk, "bo-", label="π/4-QPSK")
+plt.semilogy(snr_db_range, ber_qpsk, "ro-", label="QPSK")
 
 # Theoretical QPSK BER
 snr_lin = 10 ** (snr_db_range / 10)
 theoretical_ber_qpsk = torch.erfc(torch.sqrt(torch.tensor(snr_lin))) / 2
-plt.semilogy(snr_db_range, theoretical_ber_qpsk, 'k--', alpha=0.5, label='Theoretical QPSK')
+plt.semilogy(snr_db_range, theoretical_ber_qpsk, "k--", alpha=0.5, label="Theoretical QPSK")
 
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance in AWGN Channel')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance in AWGN Channel")
 plt.legend()
 plt.show()
 
@@ -170,18 +163,14 @@ pi4qpsk_demod.reset_state()
 
 for snr_db in snr_db_range:
     # Calculate noise power and create Rayleigh fading channel
-    noise_power = snr_to_noise_power(1.0, snr_db) 
-    channel = FlatFadingChannel(
-        fading_type="rayleigh",
-        coherence_time=n_symbols//10,  # Introducing some temporal correlation
-        snr_db=snr_db
-    )
-    
+    noise_power = snr_to_noise_power(1.0, snr_db)
+    channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=n_symbols // 10, snr_db=snr_db)  # Introducing some temporal correlation
+
     # π/4-QPSK transmission
     received_pi4qpsk = channel(pi4qpsk_symbols)
     demod_bits_pi4qpsk = pi4qpsk_demod(received_pi4qpsk)
     ber_pi4qpsk_fading.append(ber_metric(demod_bits_pi4qpsk, bits).item())
-    
+
     # QPSK transmission
     received_qpsk = channel(qpsk_symbols)
     demod_bits_qpsk = qpsk_demod(received_qpsk)
@@ -189,12 +178,12 @@ for snr_db in snr_db_range:
 
 # Plot BER vs SNR
 plt.figure(figsize=(10, 6))
-plt.semilogy(snr_db_range, ber_pi4qpsk_fading, 'bo-', label='π/4-QPSK')
-plt.semilogy(snr_db_range, ber_qpsk_fading, 'ro-', label='QPSK')
+plt.semilogy(snr_db_range, ber_pi4qpsk_fading, "bo-", label="π/4-QPSK")
+plt.semilogy(snr_db_range, ber_qpsk_fading, "ro-", label="QPSK")
 plt.grid(True)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate (BER)')
-plt.title('BER Performance in Rayleigh Fading Channel')
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate (BER)")
+plt.title("BER Performance in Rayleigh Fading Channel")
 plt.legend()
 plt.show()
 
@@ -219,18 +208,18 @@ qpsk_envelope = torch.abs(qpsk_long)
 # Plot envelope variations
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
-axs[0].plot(pi4qpsk_envelope[0].numpy(), 'b-', linewidth=1.5)
+axs[0].plot(pi4qpsk_envelope[0].numpy(), "b-", linewidth=1.5)
 axs[0].grid(True)
-axs[0].set_title('π/4-QPSK Envelope')
-axs[0].set_xlabel('Symbol index')
-axs[0].set_ylabel('Envelope magnitude')
+axs[0].set_title("π/4-QPSK Envelope")
+axs[0].set_xlabel("Symbol index")
+axs[0].set_ylabel("Envelope magnitude")
 axs[0].set_ylim(0, 1.5)
 
-axs[1].plot(qpsk_envelope[0].numpy(), 'r-', linewidth=1.5)
+axs[1].plot(qpsk_envelope[0].numpy(), "r-", linewidth=1.5)
 axs[1].grid(True)
-axs[1].set_title('QPSK Envelope')
-axs[1].set_xlabel('Symbol index')
-axs[1].set_ylabel('Envelope magnitude')
+axs[1].set_title("QPSK Envelope")
+axs[1].set_xlabel("Symbol index")
+axs[1].set_ylabel("Envelope magnitude")
 axs[1].set_ylim(0, 1.5)
 
 plt.tight_layout()

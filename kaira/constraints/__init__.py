@@ -51,7 +51,6 @@ from .registry import ConstraintRegistry
 
 # Signal constraints
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
-from .utils import combine_constraints, create_mimo_constraints, create_ofdm_constraints
 
 __all__ = [
     # Base classes

@@ -14,7 +14,7 @@ class ModulationRegistry:
 
     _modulators: Dict[str, Type[BaseModulator]] = {}
     _demodulators: Dict[str, Type[BaseDemodulator]] = {}
-    
+
     @classmethod
     def register(cls, name: str, modulation_class: Union[Type[BaseModulator], Type[BaseDemodulator]], mode: Literal["modulator", "demodulator"]) -> None:
         """Register a modulation class in the registry.

@@ -15,7 +15,7 @@ Examples and Tutorials
             <li>Visualizations of results and performance metrics</li>
             <li>Tips for adapting the examples to your specific use cases</li>
         </ul>
-        
+
         <h2>Getting Started</h2>
         <ul>
             <li><strong>New to Kaira?</strong> Start with the basic examples to understand core concepts</li>
@@ -33,28 +33,28 @@ Examples and Tutorials
                 <p>Explore various communication channel implementations</p>
             </a>
         </div>
-        
+
         <div class="category-card">
             <a href="examples/constraints/index.html">
                 <h3>Constraints</h3>
                 <p>Examples demonstrating various constraints for communications systems</p>
             </a>
         </div>
-        
+
         <div class="category-card">
             <a href="examples/data/index.html">
                 <h3>Data Generation</h3>
                 <p>Utilities for generating synthetic data and correlation models</p>
             </a>
         </div>
-        
+
         <div class="category-card">
             <a href="examples/modulation/index.html">
                 <h3>Modulation</h3>
                 <p>Digital modulation schemes and constellation analysis</p>
             </a>
         </div>
-        
+
         <div class="category-card">
             <a href="examples/metrics/index.html">
                 <h3>Metrics</h3>
@@ -68,7 +68,7 @@ Examples and Tutorials
                 <p>Various loss functions for training deep learning models across different modalities</p>
             </a>
         </div>
-        
+
     </div>
 
 .. raw:: html
@@ -81,7 +81,7 @@ Examples and Tutorials
 .. toctree::
    :maxdepth: 2
    :hidden:
-   
+
    examples/channel_models/index
    examples/constraints/index
    examples/data/index

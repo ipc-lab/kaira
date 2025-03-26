@@ -50,7 +50,7 @@ def create_uniform_tensor(
 
 
 class BinaryTensorDataset(Dataset):
-    """Dataset of randomly generated binary tensors.
+    r"""Dataset of randomly generated binary tensors.
 
     Creates a dataset where each sample is a binary tensor generated with a specified
     probability of 1s. Useful for simulating binary sources or discrete channels in
@@ -92,7 +92,7 @@ class BinaryTensorDataset(Dataset):
 
 
 class UniformTensorDataset(Dataset):
-    """Dataset of uniformly distributed random tensors.
+    r"""Dataset of uniformly distributed random tensors.
 
     Creates a dataset where each sample is a tensor with values uniformly distributed
     between specified bounds. Useful for simulating continuous sources or analog signals
