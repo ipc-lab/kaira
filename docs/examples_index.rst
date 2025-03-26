@@ -61,6 +61,13 @@ Examples and Tutorials
                 <p>Comprehensive evaluation metrics for signal quality, error rates, and perceptual quality, including PSNR, SSIM, BER, SNR, and LPIPS</p>
             </a>
         </div>
+
+        <div class="category-card">
+            <a href="examples/losses/index.html">
+                <h3>Loss Functions</h3>
+                <p>Various loss functions for training deep learning models across different modalities</p>
+            </a>
+        </div>
         
     </div>
 
@@ -80,6 +87,7 @@ Examples and Tutorials
    examples/data/index
    examples/modulation/index
    examples/metrics/index
+   examples/losses/index
 
 .. raw:: html
 

@@ -83,6 +83,7 @@ sphinx_gallery_conf = {
         "../examples/modulation",
         "../examples/metrics",
         "../examples/data",
+        "../examples/losses",
     ],
     "gallery_dirs": [
         "auto_examples/channel_models",
@@ -90,6 +91,7 @@ sphinx_gallery_conf = {
         "auto_examples/modulation",
         "auto_examples/metrics",
         "auto_examples/data",
+        "auto_examples/losses",
     ],
     
     # File patterns and organization
