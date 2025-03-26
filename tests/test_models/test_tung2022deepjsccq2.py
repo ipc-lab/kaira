@@ -1,14 +1,17 @@
-# tests/test_models/test_deepjsccq2.py
+"""Tests for Tung2022DeepJSCCQ2 model."""
 import pytest
 import torch
 
-from kaira.models.image.tung2022_deepjscc_q2 import DeepJSCCQ2Encoder, Tung2022DeepJSCCQ2Decoder
+from kaira.models.image.tung2022_deepjscc_q import (
+    Tung2022DeepJSCCQ2Decoder,
+    Tung2022DeepJSCCQ2Encoder,
+)
 
 
 @pytest.fixture
 def encoder2():
     """Fixture for creating a DeepJSCCQ2Encoder."""
-    return DeepJSCCQ2Encoder(N=32, M=64, csi_length=1)
+    return Tung2022DeepJSCCQ2Encoder(N=32, M=64, csi_length=1)
 
 
 @pytest.fixture
@@ -31,7 +34,7 @@ def sample_snr():
 
 def test_deepjsccq2_encoder_initialization(encoder2):
     """Test DeepJSCCQ2Encoder initialization."""
-    assert isinstance(encoder2, DeepJSCCQ2Encoder)
+    assert isinstance(encoder2, Tung2022DeepJSCCQ2Encoder)
     # Verify number of layers
     assert len(encoder2.g_a) == 13
 
@@ -78,7 +81,7 @@ def test_deepjsccq2_encoder_decoder_roundtrip(encoder2, decoder2, sample_image, 
 @pytest.mark.parametrize("N, M, csi_length", [(16, 32, 2), (64, 128, 4)])
 def test_deepjsccq2_encoder_decoder_different_sizes(N, M, csi_length):
     """Test encoder and decoder with different N, M, and csi_length values."""
-    encoder = DeepJSCCQ2Encoder(N=N, M=M, csi_length=csi_length)
+    encoder = Tung2022DeepJSCCQ2Encoder(N=N, M=M, csi_length=csi_length)
     decoder = Tung2022DeepJSCCQ2Decoder(N=N, M=M, csi_length=csi_length)
     sample_image = torch.randn(1, 3, 32, 32)
     sample_snr = torch.randn(1, csi_length)

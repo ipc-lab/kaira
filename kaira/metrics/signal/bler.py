@@ -100,17 +100,17 @@ class BlockErrorRate(BaseMetric):
         if self.block_size is not None:
             preds_blocks = self._reshape_into_blocks(preds)
             targets_blocks = self._reshape_into_blocks(targets)
-
-            # Check if any element in each block has an error
+            
+            # Check if any element in each block has an error that exceeds the threshold
             errors = torch.abs(preds_blocks - targets_blocks) > self.threshold
-            # Reduce along block_size dimension to check if any element has error
+            
+            # Reduce along block_size dimension to check if any element has error in each block
             block_errors = errors.any(dim=-1)
         else:
-            # Each row is a separate block, check if any element in the row has an error
+            # The input is already organized as [batch_size, num_blocks, block_size]
+            # Just check if any element in each block has an error
             errors = torch.abs(preds - targets) > self.threshold
-            # Flatten all dimensions after batch dimension
-            errors_flat = errors.reshape(errors.shape[0], -1)
-            block_errors = errors_flat.any(dim=-1)
+            block_errors = errors.any(dim=-1)
 
         # Apply reduction
         if self.reduction == "none":

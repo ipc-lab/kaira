@@ -59,18 +59,17 @@ class TotalPowerConstraint(BaseConstraint):
             For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
-        dims = self.get_dimensions(x)
-        # Use torch.linalg.vector_norm instead of torch.norm
-        x_norm = torch.linalg.vector_norm(x, dim=dims, keepdim=True)
-
-        # Adjust power factor for complex signals
-        power_factor = self.total_power_factor
+        # Calculate the current total power of the input tensor
         if torch.is_complex(x):
-            # For complex signals, distribute power between real/imaginary components
-            power_factor = self.total_power_factor * torch.sqrt(torch.tensor(0.5))
-
-        x = x * power_factor / (x_norm + 1e-8)
-        return x
+            current_power = torch.sum(torch.abs(x) ** 2)
+        else:
+            current_power = torch.sum(x ** 2)
+            
+        # Compute scaling factor to achieve target power
+        scale = torch.sqrt(self.total_power / (current_power + 1e-8))
+        
+        # Scale the input to achieve desired total power
+        return x * scale
 
 
 @ConstraintRegistry.register_constraint()
@@ -117,23 +116,23 @@ class AveragePowerConstraint(BaseConstraint):
                 have exactly the target average power
 
         Note:
-            The power is calculated across all dimensions except the batch dimension.
+            The power is calculated across all dimensions.
             For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
-        dims = self.get_dimensions(x)
-        # Use torch.linalg.vector_norm instead of torch.norm
-        x_norm = torch.linalg.vector_norm(x, dim=dims, keepdim=True)
-
-        # Calculate scaling factor for average power
-        power_factor = self.power_avg_factor
+        # Calculate the current average power of the input tensor
+        num_elements = x.numel()
+        
         if torch.is_complex(x):
-            # For complex signals, distribute power between real/imaginary components
-            power_factor = self.power_avg_factor * torch.sqrt(torch.tensor(0.5))
-
-        avg_power_sqrt = power_factor * torch.sqrt(torch.prod(torch.tensor(x.shape[1:]), 0))
-        x = x * avg_power_sqrt / (x_norm + 1e-8)
-        return x
+            current_power = torch.sum(torch.abs(x) ** 2) / num_elements
+        else:
+            current_power = torch.sum(x ** 2) / num_elements
+            
+        # Compute scaling factor to achieve target average power
+        scale = torch.sqrt(self.average_power / (current_power + 1e-8))
+        
+        # Scale the input to achieve desired average power
+        return x * scale
 
 
 @ConstraintRegistry.register_constraint()

@@ -53,6 +53,16 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
         Returns:
             Tensor: LPIPS values for each sample
         """
+        # Normalize inputs to the expected range if they exceed bounds
+        if not self.normalize:
+            # When normalize=False, inputs should be in range [-1, 1]
+            img1 = torch.clamp(img1, -1.0, 1.0)
+            img2 = torch.clamp(img2, -1.0, 1.0)
+        else:
+            # When normalize=True, inputs should be in range [0, 1]
+            img1 = torch.clamp(img1, 0.0, 1.0)
+            img2 = torch.clamp(img2, 0.0, 1.0)
+            
         return self.lpips(img1, img2)
 
     def update(self, img1: Tensor, img2: Tensor) -> None:
@@ -62,6 +72,16 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
             img1 (Tensor): First batch of images
             img2 (Tensor): Second batch of images
         """
+        # Normalize inputs to the expected range if they exceed bounds
+        if not self.normalize:
+            # When normalize=False, inputs should be in range [-1, 1]
+            img1 = torch.clamp(img1, -1.0, 1.0)
+            img2 = torch.clamp(img2, -1.0, 1.0)
+        else:
+            # When normalize=True, inputs should be in range [0, 1]
+            img1 = torch.clamp(img1, 0.0, 1.0)
+            img2 = torch.clamp(img2, 0.0, 1.0)
+            
         loss, total = _lpips_update(img1, img2, net=self.lpips.net, normalize=self.normalize)
         self.sum_scores += loss.sum()
         self.total += total

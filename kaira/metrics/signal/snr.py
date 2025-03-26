@@ -43,18 +43,28 @@ class SignalToNoiseRatio(BaseMetric):
         """
         # Calculate noise
         noise = noisy_signal - signal
-
-        # Calculate power of signal and noise
-        signal_power = torch.mean(signal**2, dim=-1)
-        noise_power = torch.mean(noise**2, dim=-1)
-
+        
+        # Handle complex signals
+        if torch.is_complex(signal):
+            signal_power = torch.mean(torch.abs(signal)**2)
+            noise_power = torch.mean(torch.abs(noise)**2)
+        else:
+            # Calculate power of signal and noise
+            signal_power = torch.mean(signal**2)
+            noise_power = torch.mean(noise**2)
+            
         # Avoid division by zero
-        eps = torch.finfo(signal.dtype).eps
-
+        eps = torch.finfo(torch.float32).eps
+        
+        # For perfect signal (no noise), return very high value approaching infinity
+        if noise_power < eps:
+            return torch.tensor(float('inf'))
+            
         # Calculate SNR in dB: 10 * log10(signal_power / noise_power)
         snr = 10 * torch.log10(signal_power / (noise_power + eps))
-
-        return snr
+        
+        # Return scalar tensor
+        return snr.squeeze()
 
     def compute_with_stats(self, signal: Tensor, noisy_signal: Tensor) -> Tuple[Tensor, Tensor]:
         """Compute SNR with mean and standard deviation.

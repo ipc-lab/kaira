@@ -40,8 +40,17 @@ class CompositeConstraint(BaseConstraint):
 
         Args:
             constraints (Sequence[BaseConstraint] | nn.ModuleList): List of constraint modules to apply in sequence
+
+        Raises:
+            TypeError: If any element in constraints is not a BaseConstraint
         """
         super().__init__()  # Call parent constructor with no arguments
+        
+        # Validate that all constraints are BaseConstraint instances
+        for constraint in constraints:
+            if not isinstance(constraint, BaseConstraint):
+                raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
+                
         self.constraints = constraints if isinstance(constraints, torch.nn.ModuleList) else torch.nn.ModuleList(constraints)
 
     def add_constraint(self, constraint: BaseConstraint) -> None:
@@ -52,8 +61,7 @@ class CompositeConstraint(BaseConstraint):
         """
         if not isinstance(constraint, BaseConstraint):
             raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
-
-        self.add_step(constraint)
+        self.constraints.append(constraint)
 
     def forward(self, x):
         """Apply the composite constraint to the input signal.

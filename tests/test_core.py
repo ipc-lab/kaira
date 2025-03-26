@@ -4,7 +4,10 @@ import unittest
 import torch
 from torch import nn
 
-from .base import BaseChannel, BaseConstraint, BaseMetric, BaseModel
+from kaira.channels.base import BaseChannel
+from kaira.constraints.base import BaseConstraint
+from kaira.metrics.base import BaseMetric
+from kaira.models.base import BaseModel
 
 
 class DummyModule(nn.Module):

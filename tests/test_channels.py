@@ -2,7 +2,7 @@
 import pytest
 import torch
 
-from kaira.channels import AWGNChannel, ComplexAWGNChannel, PerfectChannel
+from kaira.channels import AWGNChannel, PerfectChannel
 
 
 def test_awgn_channel_initialization():
@@ -30,14 +30,24 @@ def test_awgn_channel_forward(random_tensor, avg_noise_power):
     assert torch.isclose(measured_variance, torch.tensor(avg_noise_power), rtol=0.1)
 
 
-def test_complex_awgn_channel():
-    """Test complex AWGN channel behavior."""
-    channel = ComplexAWGNChannel(avg_noise_power=1.0)
-    x = torch.randn(4, 2, 32, 32)  # Complex-valued input
+def test_awgn_channel_complex():
+    """Test AWGN channel with complex inputs."""
+    avg_noise_power = 0.1
+    channel = AWGNChannel(avg_noise_power=avg_noise_power)
+    x = torch.complex(torch.randn(4, 2, 32, 32), torch.randn(4, 2, 32, 32))
     output = channel(x)
 
+    # Check output shape and type
     assert output.shape == x.shape
     assert output.dtype == x.dtype
+    assert torch.is_complex(output)
+
+    # Check noise variance for real and imaginary parts
+    noise = output - x
+    real_variance = torch.var(noise.real)
+    imag_variance = torch.var(noise.imag)
+    assert torch.isclose(real_variance, torch.tensor(avg_noise_power/2), rtol=0.1)
+    assert torch.isclose(imag_variance, torch.tensor(avg_noise_power/2), rtol=0.1)
 
 
 def test_perfect_channel():

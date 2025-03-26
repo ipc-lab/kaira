@@ -1,0 +1,43 @@
+{
+    "name": "Kaira Development",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-python.flake8",
+                "ms-python.mypy-type-checker",
+                "ms-toolsai.jupyter",
+                "streetsidesoftware.code-spell-checker",
+                "eamodio.gitlens",
+                "github.vscode-github-actions"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.formatting.provider": "black",
+                "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+                "python.linting.mypyEnabled": true,
+                "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": true
+                },
+                "isort.args": ["--profile", "black"],
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.testing.nosetestsEnabled": false
+            }
+        }
+    },
+    "postCreateCommand": "pip install --upgrade pip && pip install -e '.[dev]' && pre-commit install",
+    "remoteUser": "vscode"
+}
