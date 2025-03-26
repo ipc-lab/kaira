@@ -25,6 +25,22 @@ DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
 DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 
 
+@ModelRegistry.register_model()
+class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
+    """DeepJSCC-NOMA Encoder Module :cite:`yilmaz2023distributed`.
+    This encoder transforms input images into latent representations. This class directly extends the Tung2022DeepJSCCQ2Encoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
+    """
+    pass
+
+@ModelRegistry.register_model()
+class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
+    """DeepJSCC-NOMA Decoder Module :cite:`yilmaz2023distributed`.
+
+    This decoder reconstructs images from received channel signals, supporting both
+    individual device decoding and shared decoding for multiple devices. This class directly extends the Tung2022DeepJSCCQ2Decoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
+    """
+    pass
+
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
     """Distributed Deep Joint Source-Channel Coding over a Multiple Access Channel
@@ -156,24 +172,15 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                 self._load_checkpoint(ckpt_path)
 
     def _load_checkpoint(self, ckpt_path: str) -> None:
-        """Load model weights from a checkpoint file.
+        """Load pre-trained weights from checkpoint.
 
         Args:
-            ckpt_path: Path to the checkpoint file
+            ckpt_path (str): Path to checkpoint file
         """
-        state_dict = torch.load(ckpt_path)["state_dict"]
-
-        enc_dict: Dict[str, torch.Tensor] = {}
-        dec_dict: Dict[str, torch.Tensor] = {}
-        img_dict: Dict[str, torch.Tensor] = {}
-
-        for k, v in state_dict.items():
-            if k.startswith("net.encoders.0"):
-                enc_dict[k.replace("net.encoders.0", "0")] = v
-            elif k.startswith("net.decoders.0"):
-                dec_dict[k.replace("net.decoders.0", "0")] = v
-            elif k.startswith("net.device_images."):
-                img_dict[k.replace("net.device_images.", "")] = v
+        checkpoint = torch.load(ckpt_path)
+        enc_dict = checkpoint.get("encoder_state_dict", {})
+        dec_dict = checkpoint.get("decoder_state_dict", {})
+        img_dict = checkpoint.get("device_image_state_dict", {})
 
         self.encoders.load_state_dict(enc_dict)
         self.decoders.load_state_dict(dec_dict)
@@ -181,19 +188,19 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         print("checkpoint loaded")
 
     def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """Forward pass of the DeepJSCC-NOMA model.
+        """Forward pass through the DeepJSCC-NOMA model.
 
         Args:
-            x: Input images with shape [batch_size, num_devices, channels, height, width]
-            csi: Channel state information values for the channel with shape [batch_size, csi_length]
+            x: Input data with shape [batch_size, num_devices, channels, height, width]
+            csi: Channel state information with shape [batch_size, csi_length]
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
+        # Add device embeddings if enabled
         if self.use_device_embedding:
-            # Create device embeddings and reshape to image dimensions
             h, w = self.image_shape
             emb = torch.stack([self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w) for i in range(self.num_devices)], dim=1)
             x = torch.cat([x, emb], dim=2)

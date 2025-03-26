@@ -3,6 +3,7 @@ from . import binary, components, generic, image
 from .base import BaseModel, ConfigurableModel
 from .deepjscc import DeepJSCCModel
 from .feedback_channel import FeedbackChannelModel
+from .multiple_access_channel import MultipleAccessChannelModel
 from .registry import ModelRegistry
 from .wyner_ziv import WynerZivModel
 
@@ -19,6 +20,7 @@ __all__ = [
     "DeepJSCCModel",
     "FeedbackChannelModel",
     "WynerZivModel",
+    "MultipleAccessChannelModel",
     # Registry
     "ModelRegistry",
 ]

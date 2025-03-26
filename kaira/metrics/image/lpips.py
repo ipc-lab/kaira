@@ -30,7 +30,8 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
 
         Args:
             net_type (str): The backbone network to use ('vgg', 'alex', or 'squeeze')
-            normalize (bool): Whether to normalize the input images
+            normalize (bool): Whether to normalize the input images to [-1,1] range. If True, the input images
+                should be in the range [0,1]. If False, the input images should be in the range [-1,1].
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="LPIPS")
