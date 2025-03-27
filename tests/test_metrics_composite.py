@@ -111,21 +111,18 @@ def test_composite_metric_get_individual_metrics():
     """Test getting individual metric values from CompositeMetric."""
     metric1 = MockMetric(return_value=torch.tensor(1.0))
     metric2 = MockMetric(return_value=torch.tensor(2.0))
-
-    composite = CompositeMetric()
-    composite.add_metric("metric1", metric1)
-    composite.add_metric("metric2", metric2)
-
+    
+    # Create with metrics dictionary instead of empty constructor
+    metrics = {"metric1": metric1, "metric2": metric2}
+    composite = CompositeMetric(metrics)
+    
     # Setup mock inputs
     preds = torch.randn(1, 3, 10, 10)
     target = torch.randn(1, 3, 10, 10)
-
-    # Call update to prepare state
-    composite.update(preds, target)
-
-    # Test get_individual_metrics
-    individual_metrics = composite.get_individual_metrics()
-
+    
+    # Get individual metrics using compute_individual method
+    individual_metrics = composite.compute_individual(preds, target)
+    
     assert isinstance(individual_metrics, dict)
     assert "metric1" in individual_metrics
     assert "metric2" in individual_metrics
@@ -138,9 +135,9 @@ def test_composite_metric_string_representation():
     metric1 = MockMetric(return_value=torch.tensor(1.0))
     metric2 = MockMetric(return_value=torch.tensor(2.0))
 
-    composite = CompositeMetric()
-    composite.add_metric("metric1", metric1)
-    composite.add_metric("metric2", metric2)
+    # Initialize with dictionary of metrics
+    metrics = {"metric1": metric1, "metric2": metric2}
+    composite = CompositeMetric(metrics)
 
     # Check string representation
     string_repr = str(composite)

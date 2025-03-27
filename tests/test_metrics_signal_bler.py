@@ -70,17 +70,21 @@ def test_bler_specific_patterns(block_size, error_pattern):
     n_bits = block_size * n_blocks
     true_bits = torch.zeros((1, n_bits))
     received_bits = true_bits.clone()
-
+    
     # Introduce errors in specific blocks
     for block_idx in error_pattern:
         idx = block_idx if block_idx >= 0 else n_blocks + block_idx
         start_idx = idx * block_size
         received_bits[0, start_idx] = 1  # Introduce an error in the block
-
+    
     blocks = true_bits.reshape(1, n_blocks, block_size)
     received_blocks = received_bits.reshape(1, n_blocks, block_size)
-
-    bler = BlockErrorRate()
-    bler_value = bler(received_blocks, blocks)
+    
+    bler = BlockErrorRate(block_size=block_size)  # Explicitly set block_size
+    bler.update(received_blocks, blocks)
+    bler_value = bler.compute()
+    
+    # In the current implementation, if there's any bit error in a block, 
+    # the entire block is counted as an error
     expected_bler = len(error_pattern) / n_blocks
     assert abs(bler_value.item() - expected_bler) < 1e-6
