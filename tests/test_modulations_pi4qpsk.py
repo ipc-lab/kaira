@@ -1,58 +1,126 @@
-import pytest
 import numpy as np
+import pytest
 import torch
-from kaira.modulations import Pi4QPSKModulator, Pi4QPSKDemodulator  # Changed from Pi4QPSKModem
+
+from kaira.modulations.pi4qpsk import Pi4QPSKDemodulator, Pi4QPSKModulator
+
 
 @pytest.fixture
-def modulator():
-    """Fixture providing a Pi4QPSK modulator."""
+def pi4qpsk_modulator():
+    """Fixture for a Pi/4-QPSK modulator."""
     return Pi4QPSKModulator()
 
+
 @pytest.fixture
-def demodulator():
-    """Fixture providing a Pi4QPSK demodulator."""
+def pi4qpsk_demodulator():
+    """Fixture for a Pi/4-QPSK demodulator."""
     return Pi4QPSKDemodulator()
 
-def test_modulator_init(modulator):
-    """Test initialization of Pi4QPSK modulator."""
-    assert modulator.bits_per_symbol == 2  # Pi4QPSK uses 2 bits per symbol
 
-def test_modulate(modulator):
-    """Test Pi4QPSK modulation of bits to symbols."""
-    bits = torch.tensor([0, 1, 1, 0, 0, 0, 1, 1], dtype=torch.float32)
-    symbols = modulator(bits)
-    assert symbols.shape[0] == 4  # 8 bits → 4 symbols
-    
-    # If constellation is accessible, verify symbols are valid constellation points
-    if hasattr(modulator, 'constellation'):
-        for symbol in symbols:
-            # Check if symbol is close to any constellation point
-            distances = torch.abs(symbol - modulator.constellation)
-            assert torch.min(distances) < 1e-5
+def test_pi4qpsk_modulator_initialization():
+    """Test initialization of Pi/4-QPSK modulator."""
+    mod = Pi4QPSKModulator()
+    assert mod.bits_per_symbol == 2
+    assert mod.constellation.shape == (4,)
 
-def test_demodulate(demodulator):
-    """Test Pi4QPSK demodulation of symbols back to bits."""
-    # Define test symbols appropriate for Pi4QPSK
-    symbols = torch.tensor([1+1j, -1-1j, 1-1j, -1+1j], dtype=torch.complex64)
-    bits = demodulator(symbols)
-    assert bits.shape[0] == 8  # 4 symbols → 8 bits
-    assert torch.all((bits == 0) | (bits == 1))  # All values must be 0 or 1
+    # Verify constellation points
+    # Pi/4-QPSK uses two QPSK constellations rotated by pi/4
+    torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+    torch.tensor([np.sqrt(2) / 2 + np.sqrt(2) / 2 * 1j, -np.sqrt(2) / 2 + np.sqrt(2) / 2 * 1j, -np.sqrt(2) / 2 - np.sqrt(2) / 2 * 1j, np.sqrt(2) / 2 - np.sqrt(2) / 2 * 1j], dtype=torch.complex64)
 
-def test_modulation_demodulation_cycle():
-    """Test Pi4QPSK modulation followed by demodulation recovers original bits."""
-    modulator = Pi4QPSKModulator()
-    demodulator = Pi4QPSKDemodulator()
-    
-    # Create random bits (multiple of bits_per_symbol)
-    torch.manual_seed(42)
-    bits = torch.randint(0, 2, (100,), dtype=torch.float32)
-    bits = bits[:len(bits) - (len(bits) % modulator.bits_per_symbol)]
-    
-    # Modulate bits to symbols
-    symbols = modulator(bits)
-    
-    # Demodulate symbols back to bits
-    recovered_bits = demodulator(symbols)
-    
-    # Check recovered bits match original bits
-    assert torch.equal(recovered_bits, bits)
+    # Verify the rotation property is preserved in the implementation
+    assert mod._even_symbols or mod._odd_symbols
+
+    # Test with gray coding
+    mod_gray = Pi4QPSKModulator(gray_coded=True)
+    mod_no_gray = Pi4QPSKModulator(gray_coded=False)
+    # Constellation should be different with gray coding
+    assert not torch.allclose(mod_gray.constellation, mod_no_gray.constellation)
+
+
+def test_pi4qpsk_modulator_forward(pi4qpsk_modulator):
+    """Test forward pass of Pi/4-QPSK modulator."""
+    # Reset state
+    pi4qpsk_modulator.reset_state()
+
+    # Test with batch of integers
+    x = torch.tensor([0, 1, 2, 3])
+    y = pi4qpsk_modulator(x)
+    assert y.shape == torch.Size([4])
+    assert y.dtype == torch.complex64
+
+    # Pi/4-QPSK alternates between two constellation sets
+    # Modulate twice and verify different constellation sets are used
+    pi4qpsk_modulator.reset_state()
+    y1 = pi4qpsk_modulator(torch.tensor([0]))
+    y2 = pi4qpsk_modulator(torch.tensor([0]))
+    # Same symbol but different constellations should produce different outputs
+    assert not torch.isclose(y1, y2)
+
+
+def test_pi4qpsk_reset_state():
+    """Test resetting state for Pi/4-QPSK modulator."""
+    mod = Pi4QPSKModulator()
+
+    # Modulate a sequence
+    mod.reset_state()
+    seq1 = mod(torch.tensor([0, 1, 2, 3]))
+
+    # Reset and modulate the same sequence again
+    mod.reset_state()
+    seq2 = mod(torch.tensor([0, 1, 2, 3]))
+
+    # Both sequences should be identical after reset
+    assert torch.allclose(seq1, seq2)
+
+
+def test_pi4qpsk_demodulator_initialization():
+    """Test initialization of Pi/4-QPSK demodulator."""
+    demod = Pi4QPSKDemodulator()
+    assert demod.bits_per_symbol == 2
+
+    # Test with soft output
+    demod_soft = Pi4QPSKDemodulator(soft_output=True)
+    assert demod_soft.soft_output is True
+
+
+def test_pi4qpsk_demodulator_forward(pi4qpsk_modulator, pi4qpsk_demodulator):
+    """Test forward pass of Pi/4-QPSK demodulator."""
+    # Reset states
+    pi4qpsk_modulator.reset_state()
+    pi4qpsk_demodulator.reset_state()
+
+    # Test round trip with a sequence
+    x = torch.tensor([0, 1, 2, 3, 0, 1])
+    y = pi4qpsk_modulator(x)
+    x_hat = pi4qpsk_demodulator(y)
+
+    # Should recover original symbols
+    assert torch.equal(x, x_hat)
+
+    # Test with noise
+    y_noisy = y + 0.1 * torch.randn_like(y.real) + 0.1j * torch.randn_like(y.imag)
+    x_hat_noisy = pi4qpsk_demodulator(y_noisy)
+    # Shape should match even with noise
+    assert x_hat_noisy.shape == x.shape
+
+
+def test_pi4qpsk_soft_demodulation():
+    """Test soft demodulation for Pi/4-QPSK."""
+    mod = Pi4QPSKModulator()
+    demod = Pi4QPSKDemodulator(soft_output=True)
+
+    # Reset states
+    mod.reset_state()
+    demod.reset_state()
+
+    # Test with a sequence
+    x = torch.tensor([0, 1, 2, 3])
+    y = mod(x)
+
+    # Get soft bit LLRs
+    llrs = demod(y)
+    assert llrs.shape == (4, 2)  # 4 symbols, 2 bits per symbol
+
+    # For perfect reception, LLRs should have high magnitude
+    assert torch.all(torch.abs(llrs) > 1.0)

@@ -45,12 +45,12 @@ class CompositeConstraint(BaseConstraint):
             TypeError: If any element in constraints is not a BaseConstraint
         """
         super().__init__()  # Call parent constructor with no arguments
-        
+
         # Validate that all constraints are BaseConstraint instances
         for constraint in constraints:
             if not isinstance(constraint, BaseConstraint):
                 raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
-                
+
         self.constraints = constraints if isinstance(constraints, torch.nn.ModuleList) else torch.nn.ModuleList(constraints)
 
     def add_constraint(self, constraint: BaseConstraint) -> None:

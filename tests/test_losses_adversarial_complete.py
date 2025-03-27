@@ -1,12 +1,13 @@
 import pytest
 import torch
+
 from kaira.losses.adversarial import (
-    VanillaGANLoss,
-    LSGANLoss,
-    WassersteinGANLoss,
-    HingeLoss,
     FeatureMatchingLoss,
-    R1GradientPenalty
+    HingeLoss,
+    LSGANLoss,
+    R1GradientPenalty,
+    VanillaGANLoss,
+    WassersteinGANLoss,
 )
 
 
@@ -48,7 +49,7 @@ def test_vanilla_gan_loss_backward_compatibility():
     fake_logits = torch.tensor([0.1, 0.2, 0.3])
     d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
     g_loss = loss_fn(fake_logits, None, mode="generator")
-    
+
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
@@ -61,7 +62,7 @@ def test_lsgan_loss_backward_compatibility():
     fake_logits = torch.tensor([0.1, 0.2, 0.3])
     d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
     g_loss = loss_fn(fake_logits, None, mode="generator")
-    
+
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
@@ -74,7 +75,7 @@ def test_wasserstein_gan_loss_backward_compatibility():
     fake_logits = torch.tensor([0.1, 0.2, 0.3])
     d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
     g_loss = loss_fn(fake_logits, None, mode="generator")
-    
+
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
@@ -87,26 +88,27 @@ def test_hinge_loss_backward_compatibility():
     fake_logits = torch.tensor([0.1, 0.2, 0.3])
     d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
     g_loss = loss_fn(fake_logits, None, mode="generator")
-    
+
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
 
 def test_feature_matching_loss_with_different_features(real_data, fake_data):
     """Test FeatureMatchingLoss with multiple feature levels."""
+
     # Create a simple discriminator that returns multiple features
     class MultiFeatureDiscriminator(torch.nn.Module):
         def forward(self, x):
-            features = [x, x*0.5, x*0.25]
+            features = [x, x * 0.5, x * 0.25]
             return features[-1], features
-    
+
     discriminator = MultiFeatureDiscriminator()
     loss_fn = FeatureMatchingLoss()
-    
+
     # Get features from the discriminator
     _, real_features = discriminator(real_data)
     _, fake_features = discriminator(fake_data)
-    
+
     # Calculate loss
     loss = loss_fn(real_features, fake_features)
     assert isinstance(loss, torch.Tensor)
@@ -116,13 +118,10 @@ def test_feature_matching_loss_with_different_features(real_data, fake_data):
 def test_r1_gradient_penalty_with_discriminator(real_data):
     """Test R1GradientPenalty with a discriminator network."""
     # Create a simple discriminator
-    discriminator = torch.nn.Sequential(
-        torch.nn.Flatten(),
-        torch.nn.Linear(3*3*32*32, 1)
-    )
-    
+    discriminator = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(3 * 3 * 32 * 32, 1))
+
     loss_fn = R1GradientPenalty(gamma=10.0)
-    
+
     # Test with a discriminator function
     penalty = loss_fn(real_data, discriminator)
     assert isinstance(penalty, torch.Tensor)

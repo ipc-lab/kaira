@@ -1,20 +1,15 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
 
-from kaira.modulations import OQPSKModulator, OQPSKDemodulator
+from kaira.modulations import OQPSKDemodulator, OQPSKModulator
 
 
 @pytest.fixture
 def binary_bits():
     """Fixture providing binary bits for testing."""
-    return torch.tensor([
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1]
-    ], dtype=torch.float32)
+    return torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=torch.float32)
 
 
 @pytest.fixture
@@ -31,10 +26,7 @@ def test_oqpsk_modulator():
     symbols = modulator(bits)
 
     norm = 1 / np.sqrt(2)
-    expected = torch.complex(
-        torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype),
-        torch.tensor([norm, -norm, norm, -norm], dtype=symbols.imag.dtype)
-    )
+    expected = torch.complex(torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype), torch.tensor([norm, -norm, norm, -norm], dtype=symbols.imag.dtype))
 
     assert torch.allclose(symbols, expected)
     assert modulator.bits_per_symbol == 2
@@ -66,10 +58,7 @@ def test_oqpsk_modulator_plot_constellation():
 
 def test_oqpsk_demodulator_hard():
     """Test OQPSK hard demodulation."""
-    symbols = torch.complex(
-        torch.tensor([0.8, 0.9, -0.7, -0.8]),
-        torch.tensor([0.7, -0.8, 0.9, -0.7])
-    )
+    symbols = torch.complex(torch.tensor([0.8, 0.9, -0.7, -0.8]), torch.tensor([0.7, -0.8, 0.9, -0.7]))
     demodulator = OQPSKDemodulator()
     bits = demodulator(symbols)
 
@@ -82,10 +71,7 @@ def test_oqpsk_demodulator_hard():
 def test_oqpsk_demodulator_soft():
     """Test OQPSK soft demodulation (LLR calculation)."""
     norm = 1 / np.sqrt(2)
-    symbols = torch.complex(
-        torch.tensor([0.7, 0.8, -0.7, -0.8]) * norm,
-        torch.tensor([0.6, -0.7, 0.8, -0.6]) * norm
-    )
+    symbols = torch.complex(torch.tensor([0.7, 0.8, -0.7, -0.8]) * norm, torch.tensor([0.6, -0.7, 0.8, -0.6]) * norm)
     noise_var = 0.5
     demodulator = OQPSKDemodulator()
     llrs = demodulator(symbols, noise_var)
@@ -97,7 +83,7 @@ def test_oqpsk_demodulator_soft():
 
 def test_oqpsk_modulation_demodulation_cycle(binary_stream):
     """Test OQPSK modulation followed by demodulation recovers original bits."""
-    bits = binary_stream[:len(binary_stream) - (len(binary_stream) % 2)]
+    bits = binary_stream[: len(binary_stream) - (len(binary_stream) % 2)]
     modulator = OQPSKModulator()
     demodulator = OQPSKDemodulator()
     symbols = modulator(bits)

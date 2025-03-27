@@ -159,16 +159,13 @@ class SSIMLoss(BaseLoss):
 
     def __init__(self, kernel_size: int = 11, data_range: float = 1.0):
         """Initialize the SSIMLoss module.
-        
+
         Args:
             kernel_size (int): Size of the Gaussian kernel used in SSIM calculation.
             data_range (float): Range of the input data (typically 1.0 or 255).
         """
         super().__init__()
-        self.ssim = StructuralSimilarityIndexMeasure(
-            data_range=data_range, 
-            kernel_size=kernel_size
-        )
+        self.ssim = StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size)
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the SSIMLoss module.
@@ -183,7 +180,7 @@ class SSIMLoss(BaseLoss):
         # Normalize input data to range [-1, 1] if necessary
         x_norm = torch.clamp(x, -1.0, 1.0)
         target_norm = torch.clamp(target, -1.0, 1.0)
-        
+
         # 1 - SSIM because higher SSIM means better similarity (we want to minimize loss)
         return 1 - self.ssim(x_norm, target_norm)
 
@@ -199,7 +196,7 @@ class MSSSIMLoss(BaseLoss):
 
     def __init__(self, kernel_size: int = 11, data_range: float = 1.0):
         """Initialize the MSSSIMLoss module.
-        
+
         Args:
             kernel_size (int): Size of the Gaussian kernel used in SSIM calculation.
             data_range (float): Range of the input data (typically 1.0 or 255).
@@ -210,10 +207,7 @@ class MSSSIMLoss(BaseLoss):
         # we'll fall back to regular SSIM
         self.data_range = data_range
         self.kernel_size = kernel_size
-        self.ssim = StructuralSimilarityIndexMeasure(
-            data_range=data_range,
-            kernel_size=kernel_size
-        )
+        self.ssim = StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size)
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the MSSSIMLoss module.
@@ -228,7 +222,7 @@ class MSSSIMLoss(BaseLoss):
         # Normalize input data to range [-1, 1] if necessary
         x_norm = torch.clamp(x, -1.0, 1.0)
         target_norm = torch.clamp(target, -1.0, 1.0)
-        
+
         # 1 - SSIM because higher SSIM means better similarity (we want to minimize loss)
         return 1 - self.ssim(x_norm, target_norm)
 

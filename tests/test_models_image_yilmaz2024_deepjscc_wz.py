@@ -1,17 +1,17 @@
 import pytest
 import torch
 
-from kaira.models.image.yilmaz2024_deepjscc_wz import (
-    Yilmaz2024DeepJSCCWZSmallEncoder,
-    Yilmaz2024DeepJSCCWZSmallDecoder,
-    Yilmaz2024DeepJSCCWZEncoder,
-    Yilmaz2024DeepJSCCWZDecoder,
-    Yilmaz2024DeepJSCCWZConditionalEncoder,
-    Yilmaz2024DeepJSCCWZConditionalDecoder,
-    Yilmaz2024DeepJSCCWZModel,
-)
 from kaira.channels import AWGNChannel
 from kaira.constraints import TotalPowerConstraint
+from kaira.models.image.yilmaz2024_deepjscc_wz import (
+    Yilmaz2024DeepJSCCWZConditionalDecoder,
+    Yilmaz2024DeepJSCCWZConditionalEncoder,
+    Yilmaz2024DeepJSCCWZDecoder,
+    Yilmaz2024DeepJSCCWZEncoder,
+    Yilmaz2024DeepJSCCWZModel,
+    Yilmaz2024DeepJSCCWZSmallDecoder,
+    Yilmaz2024DeepJSCCWZSmallEncoder,
+)
 
 
 @pytest.fixture

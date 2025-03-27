@@ -31,13 +31,13 @@ def create_binary_tensor(
     # Convert single integer to tuple
     if isinstance(size, int):
         size = (size,)
-    
+
     result = torch.bernoulli(torch.full(size, prob, device=device))
-    
+
     # Convert to requested dtype if specified
     if dtype is not None:
         result = result.to(dtype)
-        
+
     return result
 
 
@@ -63,13 +63,13 @@ def create_uniform_tensor(
     # Convert single integer to tuple
     if isinstance(size, int):
         size = (size,)
-    
+
     result = torch.rand(size, device=device) * (high - low) + low
-    
+
     # Convert to requested dtype if specified
     if dtype is not None:
         result = result.to(dtype)
-        
+
     return result
 
 

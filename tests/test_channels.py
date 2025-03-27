@@ -46,8 +46,8 @@ def test_awgn_channel_complex():
     noise = output - x
     real_variance = torch.var(noise.real)
     imag_variance = torch.var(noise.imag)
-    assert torch.isclose(real_variance, torch.tensor(avg_noise_power/2), rtol=0.1)
-    assert torch.isclose(imag_variance, torch.tensor(avg_noise_power/2), rtol=0.1)
+    assert torch.isclose(real_variance, torch.tensor(avg_noise_power / 2), rtol=0.1)
+    assert torch.isclose(imag_variance, torch.tensor(avg_noise_power / 2), rtol=0.1)
 
 
 def test_perfect_channel():

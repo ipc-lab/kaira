@@ -1,9 +1,10 @@
-import os
 import pytest
 import torch
 from PIL import Image
 from torchvision import transforms
+
 from kaira.models.image.compressors.bpg import BPGCompressor
+
 
 @pytest.fixture
 def sample_image():
@@ -12,10 +13,12 @@ def sample_image():
     transform = transforms.ToTensor()
     return transform(img).unsqueeze(0)  # Add batch dimension
 
+
 @pytest.fixture
 def bpg_compressor():
     """Fixture that provides a BPGCompressor instance for testing."""
     return BPGCompressor(quality=30)
+
 
 def test_bpg_compressor_initialization():
     """Test BPGCompressor initialization with valid parameters."""
@@ -23,11 +26,13 @@ def test_bpg_compressor_initialization():
     assert compressor.quality == 30
     assert compressor.max_bits_per_image is None
 
+
 def test_bpg_compressor_forward(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass."""
     output = bpg_compressor(sample_image)
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
+
 
 def test_bpg_compressor_forward_with_bits(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with bits per image."""
@@ -38,6 +43,7 @@ def test_bpg_compressor_forward_with_bits(sample_image, bpg_compressor):
     assert isinstance(bits_per_image, list)
     assert len(bits_per_image) == 1
 
+
 def test_bpg_compressor_forward_with_compressed_data(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with compressed data."""
     bpg_compressor.return_compressed_data = True
@@ -47,6 +53,7 @@ def test_bpg_compressor_forward_with_compressed_data(sample_image, bpg_compresso
     assert isinstance(compressed_data, list)
     assert len(compressed_data) == 1
     assert isinstance(compressed_data[0], bytes)
+
 
 def test_bpg_compressor_forward_with_bits_and_compressed_data(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with bits and compressed data."""
@@ -61,15 +68,18 @@ def test_bpg_compressor_forward_with_bits_and_compressed_data(sample_image, bpg_
     assert len(compressed_data) == 1
     assert isinstance(compressed_data[0], bytes)
 
+
 def test_bpg_compressor_invalid_quality():
     """Test BPGCompressor initialization with invalid quality."""
     with pytest.raises(ValueError):
         BPGCompressor(quality=60)
 
+
 def test_bpg_compressor_invalid_executable_path():
     """Test BPGCompressor initialization with invalid executable path."""
     with pytest.raises(ValueError):
         BPGCompressor(quality=30, bpg_encoder_path="invalid;path")
+
 
 def test_bpg_compressor_collect_stats(sample_image, bpg_compressor):
     """Test BPGCompressor with collect_stats enabled."""
@@ -80,6 +90,7 @@ def test_bpg_compressor_collect_stats(sample_image, bpg_compressor):
     assert "total_bits" in stats
     assert "avg_quality" in stats
     assert "processing_time" in stats
+
 
 def test_bpg_compressor_get_bits_per_image(sample_image, bpg_compressor):
     """Test BPGCompressor get_bits_per_image method."""

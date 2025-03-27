@@ -1,6 +1,7 @@
-import pytest
 import torch
+
 from kaira.constraints import IdentityConstraint
+
 
 def test_identity_constraint():
     constraint = IdentityConstraint()

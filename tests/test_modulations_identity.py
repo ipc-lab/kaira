@@ -1,6 +1,7 @@
-import pytest
 import torch
+
 from kaira.modulations import IdentityModulator  # Changed from IdentityModulation
+
 
 def test_identity_modulation_modulate():
     """Test that identity modulator returns input unchanged."""
@@ -9,6 +10,7 @@ def test_identity_modulation_modulate():
     modulated_signal = modulator(input_signal)  # Using __call__ instead of modulate
     assert torch.equal(modulated_signal, input_signal)
 
+
 def test_identity_modulation_forward():
     """Test forward method of identity modulator."""
     modulator = IdentityModulator()
@@ -16,12 +18,14 @@ def test_identity_modulation_forward():
     modulated_signal = modulator.forward(input_signal)
     assert torch.equal(modulated_signal, input_signal)
 
+
 def test_identity_modulation_empty():
     """Test identity modulator with empty tensor."""
     modulator = IdentityModulator()
     input_signal = torch.tensor([])
     modulated_signal = modulator(input_signal)
     assert torch.equal(modulated_signal, input_signal)
+
 
 def test_identity_modulation_bits_per_symbol():
     """Test bits_per_symbol property of identity modulator."""
@@ -34,9 +38,9 @@ def test_identity_modulation_bits_per_symbol():
     except NotImplementedError:
         pass  # This is also acceptable if not implemented
 
+
 def test_identity_modulation_reset_state():
     """Test reset_state method of identity modulator."""
     modulator = IdentityModulator()
     # Should not raise exception
     modulator.reset_state()
-

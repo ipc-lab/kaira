@@ -1,15 +1,19 @@
 import pytest
 import torch
+
 from kaira.losses.composite import CompositeLoss
 from kaira.losses.image import MSELoss, SSIMLoss
+
 
 @pytest.fixture
 def sample_preds():
     return torch.randn(1, 3, 32, 32)
 
+
 @pytest.fixture
 def sample_targets():
     return torch.randn(1, 3, 32, 32)
+
 
 def test_composite_loss_forward(sample_preds, sample_targets):
     mse_loss = MSELoss()
@@ -19,6 +23,7 @@ def test_composite_loss_forward(sample_preds, sample_targets):
     composite_loss = CompositeLoss(losses=losses, weights=weights)
     loss = composite_loss(sample_preds, sample_targets)
     assert isinstance(loss, torch.Tensor)
+
 
 def test_composite_loss_individual(sample_preds, sample_targets):
     mse_loss = MSELoss()

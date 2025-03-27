@@ -2,10 +2,10 @@ import pytest
 import torch
 
 from kaira.models.image.yang2024_deepjcc_swin import (
-    Yang2024DeepJSCCSwinEncoder,
-    Yang2024DeepJSCCSwinDecoder,
-    create_swin_jscc_models,
     SwinJSCCConfig,
+    Yang2024DeepJSCCSwinDecoder,
+    Yang2024DeepJSCCSwinEncoder,
+    create_swin_jscc_models,
 )
 
 

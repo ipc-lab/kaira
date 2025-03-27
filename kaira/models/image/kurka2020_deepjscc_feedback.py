@@ -9,11 +9,11 @@ layers for iterative image quality improvement.
 
 from typing import Any
 
-from kaira.models.base import BaseModel
 import torch
 import torch.nn as nn
 from compressai.layers import GDN
 
+from kaira.models.base import BaseModel
 from kaira.models.feedback_channel import FeedbackChannelModel
 from kaira.models.registry import ModelRegistry
 

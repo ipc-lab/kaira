@@ -63,11 +63,11 @@ class TotalPowerConstraint(BaseConstraint):
         if torch.is_complex(x):
             current_power = torch.sum(torch.abs(x) ** 2)
         else:
-            current_power = torch.sum(x ** 2)
-            
+            current_power = torch.sum(x**2)
+
         # Compute scaling factor to achieve target power
         scale = torch.sqrt(self.total_power / (current_power + 1e-8))
-        
+
         # Scale the input to achieve desired total power
         return x * scale
 
@@ -122,15 +122,15 @@ class AveragePowerConstraint(BaseConstraint):
         """
         # Calculate the current average power of the input tensor
         num_elements = x.numel()
-        
+
         if torch.is_complex(x):
             current_power = torch.sum(torch.abs(x) ** 2) / num_elements
         else:
-            current_power = torch.sum(x ** 2) / num_elements
-            
+            current_power = torch.sum(x**2) / num_elements
+
         # Compute scaling factor to achieve target average power
         scale = torch.sqrt(self.average_power / (current_power + 1e-8))
-        
+
         # Scale the input to achieve desired average power
         return x * scale
 

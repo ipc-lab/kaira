@@ -63,21 +63,21 @@ class CompositeLoss(BaseLoss):
             weights (Optional[Dict[str, float]]): Dictionary mapping loss names to their
                 relative importance. If None, equal weights are assigned to all losses.
                 Weights are automatically normalized to sum to 1.0.
-                
+
         Raises:
             ValueError: If weights dictionary contains keys not present in losses dictionary.
         """
         super().__init__()
         self.losses = nn.ModuleDict(losses)
-        
+
         # Validate weights
         if weights is not None:
             for name in weights:
                 if name not in losses:
                     raise ValueError(f"Weight key '{name}' not found in losses dictionary")
-        
+
         self.weights = weights or {name: 1.0 for name in losses}
-        
+
         # Normalize weights
         total = sum(self.weights.values())
         self.weights = {k: v / total for k, v in self.weights.items()}
@@ -132,14 +132,14 @@ class CompositeLoss(BaseLoss):
 
         Returns:
             None: Updates the loss and weight dictionaries in-place
-            
+
         Raises:
             ValueError: If a loss with the given name already exists
         """
         # Check if loss name already exists
         if name in self.losses:
             raise ValueError(f"Loss '{name}' already exists in the composite loss")
-            
+
         # Add loss to ModuleDict
         self.losses[name] = loss
 
@@ -152,7 +152,7 @@ class CompositeLoss(BaseLoss):
             # Re-normalize weights
             total_weight = sum(self.weights.values())
             self.weights = {k: v / total_weight for k, v in self.weights.items()}
-        
+
     def get_individual_losses(self, x: torch.Tensor, target: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Compute all individual losses separately without combining them.
 

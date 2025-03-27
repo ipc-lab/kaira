@@ -70,13 +70,13 @@ class CompositeMetric(BaseMetric):
                 Use negative weights for metrics where lower values indicate better quality
                 (e.g., LPIPS, MSE) when combining with metrics where higher values indicate
                 better quality (e.g., PSNR, SSIM).
-                
+
         Raises:
             ValueError: If weights dictionary contains keys that don't exist in metrics
         """
         super().__init__(name="CompositeMetric")
         self.metrics = nn.ModuleDict(metrics)
-        
+
         # Validate weights if provided
         if weights is not None:
             invalid_keys = set(weights.keys()) - set(metrics.keys())
@@ -157,10 +157,10 @@ class CompositeMetric(BaseMetric):
         """
         if name in self.metrics:
             raise ValueError(f"Metric '{name}' already exists in composite metric")
-        
+
         # Add the metric
         self.metrics[name] = metric
-        
+
         # Handle weights
         if weight is None:
             # Default to equal weights for all metrics

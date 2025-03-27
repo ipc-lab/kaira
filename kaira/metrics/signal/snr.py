@@ -43,55 +43,55 @@ class SignalToNoiseRatio(BaseMetric):
         """
         # Check for batch dimension
         is_batched = signal.dim() > 1 and signal.size(0) > 1
-        
+
         # Calculate noise
         noise = noisy_signal - signal
-        
+
         if is_batched:
             # Process each sample in the batch independently
             result = []
             for i in range(signal.size(0)):
                 # Handle complex signals
                 if torch.is_complex(signal):
-                    signal_power = torch.mean(torch.abs(signal[i])**2)
-                    noise_power = torch.mean(torch.abs(noise[i])**2)
+                    signal_power = torch.mean(torch.abs(signal[i]) ** 2)
+                    noise_power = torch.mean(torch.abs(noise[i]) ** 2)
                 else:
                     # Calculate power of signal and noise
-                    signal_power = torch.mean(signal[i]**2)
-                    noise_power = torch.mean(noise[i]**2)
-                    
+                    signal_power = torch.mean(signal[i] ** 2)
+                    noise_power = torch.mean(noise[i] ** 2)
+
                 # Avoid division by zero
                 eps = torch.finfo(torch.float32).eps
-                
+
                 # For perfect signal (no noise), return very high value approaching infinity
                 if noise_power < eps:
-                    result.append(torch.tensor(float('inf')))
+                    result.append(torch.tensor(float("inf")))
                 else:
                     # Calculate SNR in dB: 10 * log10(signal_power / noise_power)
                     snr = 10 * torch.log10(signal_power / (noise_power + eps))
                     result.append(snr)
-            
+
             return torch.stack(result)
         else:
             # Handle complex signals
             if torch.is_complex(signal):
-                signal_power = torch.mean(torch.abs(signal)**2)
-                noise_power = torch.mean(torch.abs(noise)**2)
+                signal_power = torch.mean(torch.abs(signal) ** 2)
+                noise_power = torch.mean(torch.abs(noise) ** 2)
             else:
                 # Calculate power of signal and noise
                 signal_power = torch.mean(signal**2)
                 noise_power = torch.mean(noise**2)
-                
+
             # Avoid division by zero
             eps = torch.finfo(torch.float32).eps
-            
+
             # For perfect signal (no noise), return very high value approaching infinity
             if noise_power < eps:
-                return torch.tensor(float('inf'))
-                
+                return torch.tensor(float("inf"))
+
             # Calculate SNR in dB: 10 * log10(signal_power / noise_power)
             snr = 10 * torch.log10(signal_power / (noise_power + eps))
-            
+
             # Return scalar tensor
             return snr.squeeze()
 
@@ -110,9 +110,8 @@ class SignalToNoiseRatio(BaseMetric):
 
     def reset(self) -> None:
         """Reset accumulated statistics.
-        
-        For SNR, there are no accumulated statistics to reset
-        as it's a direct computation.
+
+        For SNR, there are no accumulated statistics to reset as it's a direct computation.
         """
         pass
 

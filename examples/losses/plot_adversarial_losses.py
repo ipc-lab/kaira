@@ -104,7 +104,7 @@ def compute_d_losses(real_out, fake_out):
 # Generate combinations of real and fake outputs
 real_range = torch.linspace(-2, 4, 20)
 fake_range = torch.linspace(-4, 2, 20)
-X, Y = torch.meshgrid(real_range, fake_range, indexing='ij')
+X, Y = torch.meshgrid(real_range, fake_range, indexing="ij")
 Z = {name: torch.zeros_like(X) for name in ["Vanilla GAN", "WGAN", "LSGAN", "Hinge"]}
 
 for i in range(len(real_range)):

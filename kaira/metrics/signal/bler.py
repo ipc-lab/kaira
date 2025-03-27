@@ -4,7 +4,7 @@ BLER is a key performance indicator for block-based transmission schemes like th
 in modern wireless systems :cite:`lin2004error` :cite:`moon2005error`.
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 from torch import Tensor
@@ -100,10 +100,10 @@ class BlockErrorRate(BaseMetric):
         if self.block_size is not None:
             preds_blocks = self._reshape_into_blocks(preds)
             targets_blocks = self._reshape_into_blocks(targets)
-            
+
             # Check if any element in each block has an error that exceeds the threshold
             errors = torch.abs(preds_blocks - targets_blocks) > self.threshold
-            
+
             # Reduce along block_size dimension to check if any element has error in each block
             block_errors = errors.any(dim=-1)
         else:

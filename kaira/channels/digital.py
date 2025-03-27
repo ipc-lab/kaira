@@ -165,36 +165,31 @@ class BinaryZChannel(BaseChannel):
         """
         # Check if input uses {-1,1} format
         neg_one_format = (x == -1).any()
-        
+
         # Convert to {0,1} format if needed
         if neg_one_format:
             x_binary = (x + 1) / 2
         else:
             x_binary = x.clone()
-            
+
         # Create output tensor starting with the input
         y = x_binary.clone().float()
-        
-        
+
         # Only process if error probability is greater than 0
         if self.error_prob > 0:
             # Generate mask for ones in the input
             ones_mask = x_binary == 1
-            
+
             # Apply error probability to all positions with 1s
             if ones_mask.any():
                 # Generate random numbers between 0 and 1
                 random_values = torch.rand_like(y[ones_mask])
-                
+
                 # Flip bits where random value is less than error probability
-                y[ones_mask] = torch.where(
-                    random_values < self.error_prob,
-                    torch.zeros_like(y[ones_mask]),
-                    y[ones_mask]
-                )
-            
+                y[ones_mask] = torch.where(random_values < self.error_prob, torch.zeros_like(y[ones_mask]), y[ones_mask])
+
         # Convert back to original format if needed
         if neg_one_format:
             y = 2 * y - 1
-            
+
         return y

@@ -1,6 +1,7 @@
-import pytest
 import torch
+
 from kaira.models.generic.lambda_model import LambdaModel
+
 
 def test_lambda_model_forward():
     model = LambdaModel(lambda x: x * 2)
@@ -8,6 +9,7 @@ def test_lambda_model_forward():
     output = model(input_tensor)
     expected_output = input_tensor * 2
     assert torch.allclose(output, expected_output)
+
 
 def test_lambda_model_with_args():
     def add_and_scale(x, add_value, scale_factor):
@@ -18,6 +20,7 @@ def test_lambda_model_with_args():
     output = model(input_tensor, 5.0, 2.0)
     expected_output = (input_tensor + 5.0) * 2.0
     assert torch.allclose(output, expected_output)
+
 
 def test_lambda_model_repr():
     model = LambdaModel(lambda x: x * 2, name="DoubleModel")

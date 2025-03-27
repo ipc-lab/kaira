@@ -5,7 +5,7 @@ Source-Channel Coding over a Multiple Access Channel as described in the paper b
 (2023).
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, List, Optional, Tuple, Type
 
 import torch
 from torch import nn
@@ -28,9 +28,12 @@ DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 @ModelRegistry.register_model()
 class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
     """DeepJSCC-NOMA Encoder Module :cite:`yilmaz2023distributed`.
+
     This encoder transforms input images into latent representations. This class directly extends the Tung2022DeepJSCCQ2Encoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
     """
+
     pass
+
 
 @ModelRegistry.register_model()
 class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
@@ -39,7 +42,9 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
     This decoder reconstructs images from received channel signals, supporting both
     individual device decoding and shared decoding for multiple devices. This class directly extends the Tung2022DeepJSCCQ2Decoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
     """
+
     pass
+
 
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):

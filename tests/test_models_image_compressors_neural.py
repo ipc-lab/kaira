@@ -1,6 +1,7 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 import torch
-from unittest.mock import patch, MagicMock
 from PIL import Image
 from torchvision import transforms
 
@@ -19,13 +20,7 @@ def sample_image():
 def mock_compressai_model():
     """Mock for CompressAI model."""
     model = MagicMock()
-    model.return_value = {
-        "x_hat": torch.ones(1, 3, 32, 32),
-        "likelihoods": {
-            "y": torch.ones(1, 3, 8, 8) * 0.5,
-            "z": torch.ones(1, 3, 4, 4) * 0.5
-        }
-    }
+    model.return_value = {"x_hat": torch.ones(1, 3, 32, 32), "likelihoods": {"y": torch.ones(1, 3, 8, 8) * 0.5, "z": torch.ones(1, 3, 4, 4) * 0.5}}
     model.compress.return_value = {"strings": {"y": b"test", "z": b"test"}, "shape": {"y": [8, 8], "z": [4, 4]}}
     return model
 
@@ -72,18 +67,18 @@ def test_neural_compressor_get_model():
 
         # Create compressor with lazy loading
         compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, lazy_loading=True)
-        
+
         # First call should load the model
-        model = compressor.get_model(5)
+        compressor.get_model(5)
         mock_factory.assert_called_once_with(quality=5, pretrained=True, metric="mse")
-        
+
         # Second call should use cached model
         mock_factory.reset_mock()
-        model = compressor.get_model(5)
+        compressor.get_model(5)
         mock_factory.assert_not_called()
 
         # Different quality should load new model
-        model = compressor.get_model(4)
+        compressor.get_model(4)
         mock_factory.assert_called_once_with(quality=4, pretrained=True, metric="mse")
 
 
@@ -95,12 +90,12 @@ def test_neural_compressor_eager_loading():
         mock_model.eval.return_value = mock_model
 
         # With quality specified, should load one model
-        compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, lazy_loading=False)
+        NeuralCompressor(method="bmshj2018_factorized", quality=5, lazy_loading=False)
         mock_factory.assert_called_once_with(quality=5, pretrained=True, metric="mse")
-        
+
         # With max_bits_per_image, should load all models
         mock_factory.reset_mock()
-        compressor = NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=1000, lazy_loading=False)
+        NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=1000, lazy_loading=False)
         assert mock_factory.call_count == 8  # 8 possible qualities for this method
 
 
@@ -109,23 +104,23 @@ def test_neural_compressor_forward_fixed_quality(mock_factory, sample_image, moc
     """Test neural compressor forward pass with fixed quality."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5)
     output = compressor(sample_image)
-    
+
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
-    
+
 
 @patch("compressai.zoo.bmshj2018_factorized")
 def test_neural_compressor_forward_fixed_quality_with_bits(mock_factory, sample_image, mock_compressai_model):
     """Test neural compressor forward pass with bits per image."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, return_bits=True)
     output, bits_per_image = compressor(sample_image)
-    
+
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
     assert isinstance(bits_per_image, torch.Tensor)
@@ -137,10 +132,10 @@ def test_neural_compressor_forward_fixed_quality_with_compressed_data(mock_facto
     """Test neural compressor forward pass with compressed data."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, return_bits=False, return_compressed_data=True)
     output, compressed_data = compressor(sample_image)
-    
+
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
     assert isinstance(compressed_data, list)
@@ -152,10 +147,10 @@ def test_neural_compressor_forward_fixed_quality_with_bits_and_compressed_data(m
     """Test neural compressor forward pass with bits and compressed data."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, return_bits=True, return_compressed_data=True)
     output, bits_per_image, compressed_data = compressor(sample_image)
-    
+
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
     assert isinstance(bits_per_image, torch.Tensor)
@@ -169,16 +164,16 @@ def test_neural_compressor_bit_constrained_mode(mock_factory, sample_image, mock
     """Test neural compressor in bit-constrained mode."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     # Set bits that would be produced by model mock
-    bits_per_image = -torch.log2(torch.tensor(0.5)) * (3*8*8 + 3*4*4)
+    bits_per_image = -torch.log2(torch.tensor(0.5)) * (3 * 8 * 8 + 3 * 4 * 4)
     max_bits = bits_per_image - 10  # Set max_bits below what the model would produce
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=max_bits)
     with patch.object(compressor, "compute_bits_compressai", return_value=torch.tensor([bits_per_image])):
         # Should try different qualities and settle on the lowest one
         output = compressor(sample_image)
-    
+
     assert isinstance(output, torch.Tensor)
     assert output.shape == sample_image.shape
 
@@ -188,10 +183,10 @@ def test_neural_compressor_collect_stats(mock_factory, sample_image, mock_compre
     """Test neural compressor with collect_stats enabled."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, collect_stats=True)
     compressor(sample_image)
-    
+
     stats = compressor.get_stats()
     assert isinstance(stats, dict)
     assert "total_bits" in stats
@@ -204,10 +199,10 @@ def test_neural_compressor_collect_stats(mock_factory, sample_image, mock_compre
 def test_neural_compressor_get_stats_when_not_collected():
     """Test get_stats when stats were not collected."""
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, collect_stats=False)
-    
+
     with pytest.warns(UserWarning, match="Statistics not collected"):
         stats = compressor.get_stats()
-    
+
     assert stats == {}
 
 
@@ -216,12 +211,12 @@ def test_neural_compressor_get_bits_per_image(mock_factory, sample_image, mock_c
     """Test neural compressor get_bits_per_image method."""
     mock_model = mock_compressai_model
     mock_factory.return_value.eval.return_value = mock_model
-    
+
     compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, return_bits=False)
     bits_per_image = compressor.get_bits_per_image(sample_image)
-    
+
     assert isinstance(bits_per_image, torch.Tensor)
     assert bits_per_image.shape == (1,)
-    
+
     # Verify return_bits was temporarily changed and then restored
     assert compressor.return_bits is False
