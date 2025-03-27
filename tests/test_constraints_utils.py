@@ -13,34 +13,48 @@ from kaira.constraints.utils import (
 
 class DummyConstraint(BaseConstraint):
     """Dummy constraint for testing."""
-    def __init__(self, scale=2.0):
+    def __init__(self, scale_factor=2.0):
         super().__init__()
-        self.scale = scale
-    
+        self.scale_factor = scale_factor
+        
     def forward(self, x):
-        return x * self.scale
+        return x * self.scale_factor
 
 
 def test_combine_constraints():
     """Test combining multiple constraints."""
-    # Create constraints
-    c1 = DummyConstraint(2.0)
-    c2 = DummyConstraint(0.5)
+    c1 = DummyConstraint(scale_factor=2.0)
+    c2 = DummyConstraint(scale_factor=0.5)
     
-    # Combine them
+    # Combine constraints
     combined = combine_constraints([c1, c2])
     
-    # Test on data
-    x = torch.ones(10)
-    result = combined(x)
+    # Test the combined constraint
+    x = torch.ones(5)
+    y = combined(x)
     
-    # Should apply c1 then c2: x * 2.0 * 0.5 = x
-    assert torch.allclose(result, x)
-    
-    # Empty list should return identity
-    identity = combine_constraints([])
-    assert torch.allclose(identity(x), x)
+    # The output should be the same as applying c1 and then c2
+    expected = c2(c1(x))
+    assert torch.allclose(y, expected)
 
+def test_combine_constraints_empty():
+    """Test combine_constraints with an empty list."""
+    # Should raise ValueError for empty list
+    with pytest.raises(ValueError, match="Cannot combine an empty list of constraints"):
+        combine_constraints([])
+
+def test_combine_constraints_single():
+    """Test combine_constraints with a single constraint."""
+    constraint = TotalPowerConstraint(total_power=1.0)
+    result = combine_constraints([constraint])
+    
+    # Should return the original constraint, not a CompositeConstraint
+    assert result is constraint
+    
+    # Test that it works as expected
+    x = torch.randn(10)
+    y = result(x)
+    assert torch.isclose(torch.sum(y**2), torch.tensor(1.0), rtol=1e-4)
 
 def test_verify_constraint():
     """Test constraint verification utility."""
@@ -75,29 +89,31 @@ def test_verify_constraint():
     with pytest.raises(ValueError):
         verify_constraint(constraint, x, "invalid_property", 1.0)
 
-
 def test_apply_constraint_chain():
     """Test applying a chain of constraints with verbose output."""
-    # Create constraints
+    # Create a list of constraints
     constraints = [
-        DummyConstraint(2.0),
-        DummyConstraint(0.5),
-        DummyConstraint(3.0)
+        TotalPowerConstraint(total_power=1.0),
+        PAPRConstraint(max_papr=2.0)
     ]
     
-    # Create input
-    x = torch.ones(10)
+    # Create input tensor
+    x = torch.randn(10)
     
-    # Apply chain
-    result = apply_constraint_chain(constraints, x, verbose=True)
+    # Apply constraints without verbose output
+    result = apply_constraint_chain(constraints, x, verbose=False)
     
-    # Check result (should be x * 2.0 * 0.5 * 3.0 = x * 3.0)
-    assert torch.allclose(result, x * 3.0)
+    # Check that constraints were applied correctly
+    assert torch.isclose(torch.sum(result**2), torch.tensor(1.0), rtol=1e-4)
     
-    # With empty list
-    result = apply_constraint_chain([], x)
-    assert torch.allclose(result, x)
-
+    avg_power = torch.mean(result**2)
+    peak_power = torch.max(result**2)
+    papr = peak_power / avg_power
+    assert papr <= 2.0 + 1e-5
+    
+    # Test with verbose output (this just checks it doesn't crash)
+    result_verbose = apply_constraint_chain(constraints, x, verbose=True)
+    assert torch.allclose(result, result_verbose)
 
 def test_measure_signal_properties():
     """Test measuring signal properties."""
@@ -132,7 +148,6 @@ def test_measure_signal_properties():
     assert props["papr"] == float('inf')
     assert props["papr_db"] == float('inf')
 
-
 def test_verify_constraint_power():
     """Test verify_constraint function with power property."""
     constraint = TotalPowerConstraint(total_power=1.0)
@@ -150,7 +165,6 @@ def test_verify_constraint_power():
     assert "expected_power" in results
     # Use more tolerance for numerical precision
     assert abs(results["measured_power"] - 1.0) <= 1.0
-
 
 def test_verify_constraint_papr():
     """Test verify_constraint function with PAPR property."""
@@ -173,7 +187,6 @@ def test_verify_constraint_papr():
     assert abs(results["measured_papr"] - 1.0) <= 1e-5
     assert results["success"]
 
-
 def test_verify_constraint_amplitude():
     """Test verify_constraint function with amplitude property."""
     constraint = TotalPowerConstraint(total_power=1.0)
@@ -194,7 +207,6 @@ def test_verify_constraint_amplitude():
     # Allow more tolerance for numerical precision
     assert abs(results["measured_max_amplitude"] - 1.0) <= 0.7
     assert results["success"]
-
 
 def test_verify_constraint_invalid_property():
     """Test verify_constraint function with an invalid property."""

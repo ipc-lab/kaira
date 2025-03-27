@@ -104,3 +104,66 @@ def test_add_metric():
     # Adding duplicate should raise error
     with pytest.raises(ValueError):
         composite.add_metric("metric1", MockMetric(0.5))
+
+
+def test_composite_metric_get_individual_metrics():
+    """Test getting individual metric values from CompositeMetric."""
+    metric1 = MockMetric(return_value=torch.tensor(1.0))
+    metric2 = MockMetric(return_value=torch.tensor(2.0))
+    
+    composite = CompositeMetric()
+    composite.add_metric("metric1", metric1)
+    composite.add_metric("metric2", metric2)
+    
+    # Setup mock inputs
+    preds = torch.randn(1, 3, 10, 10)
+    target = torch.randn(1, 3, 10, 10)
+    
+    # Call update to prepare state
+    composite.update(preds, target)
+    
+    # Test get_individual_metrics
+    individual_metrics = composite.get_individual_metrics()
+    
+    assert isinstance(individual_metrics, dict)
+    assert "metric1" in individual_metrics
+    assert "metric2" in individual_metrics
+    assert torch.equal(individual_metrics["metric1"], torch.tensor(1.0))
+    assert torch.equal(individual_metrics["metric2"], torch.tensor(2.0))
+
+
+def test_composite_metric_string_representation():
+    """Test string representation of CompositeMetric."""
+    metric1 = MockMetric(return_value=torch.tensor(1.0))
+    metric2 = MockMetric(return_value=torch.tensor(2.0))
+    
+    composite = CompositeMetric()
+    composite.add_metric("metric1", metric1)
+    composite.add_metric("metric2", metric2)
+    
+    # Check string representation
+    string_repr = str(composite)
+    
+    assert "CompositeMetric" in string_repr
+    assert "metric1" in string_repr
+    assert "metric2" in string_repr
+
+
+def test_composite_metric_get_metrics():
+    """Test get_metrics method in CompositeMetric."""
+    metric1 = MockMetric(return_value=torch.tensor(1.0))
+    metric2 = MockMetric(return_value=torch.tensor(2.0))
+    
+    composite = CompositeMetric()
+    composite.add_metric("metric1", metric1)
+    composite.add_metric("metric2", metric2)
+    
+    # Get the metrics dictionary
+    metrics_dict = composite.get_metrics()
+    
+    # Check keys and values
+    assert isinstance(metrics_dict, dict)
+    assert "metric1" in metrics_dict
+    assert "metric2" in metrics_dict
+    assert metrics_dict["metric1"] is metric1
+    assert metrics_dict["metric2"] is metric2

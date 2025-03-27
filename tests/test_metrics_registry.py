@@ -1,20 +1,16 @@
 import pytest
 import torch
+import torch.nn as nn
+from kaira.metrics.registry import MetricRegistry
 
-from kaira.metrics import BaseMetric, MetricRegistry
-from kaira.metrics.signal import BitErrorRate
 
-
-class DummyMetric(BaseMetric):
-    def __init__(self, value=0.5):
+class DummyMetric(nn.Module):
+    def __init__(self, value=0.0):
         super().__init__()
         self.value = value
 
-    def forward(self, preds, targets):
+    def forward(self, preds, target):
         return torch.tensor(self.value)
-
-    def reset(self):
-        pass
 
 
 def test_metric_registry_register():
@@ -41,7 +37,7 @@ def test_metric_registry_register_decorator():
     try:
         # Define and register a metric using decorator
         @MetricRegistry.register_metric("decorator_test")
-        class TestMetric(BaseMetric):
+        class TestMetric(nn.Module):
             def forward(self, preds, targets):
                 return torch.tensor(0.0)
             
@@ -54,7 +50,7 @@ def test_metric_registry_register_decorator():
         
         # Test with custom name
         @MetricRegistry.register_metric()
-        class ImplicitNameMetric(BaseMetric):
+        class ImplicitNameMetric(nn.Module):
             def forward(self, preds, targets):
                 return torch.tensor(0.0)
             
@@ -158,3 +154,72 @@ def test_create_composite_metric():
     composite = MetricRegistry.create_composite_metric(metrics, weights)
     result = composite(torch.zeros(1), torch.zeros(1))
     assert result.item() == pytest.approx(0.3*0.8 + 0.7*0.2)
+
+
+def test_metric_registry_clear():
+    """Test clearing the MetricRegistry."""
+    original_metrics = MetricRegistry._metrics.copy()
+    
+    try:
+        # Register a test metric
+        MetricRegistry.register("test_clear", DummyMetric)
+        
+        # Clear registry
+        MetricRegistry.clear()
+        
+        # Check that registry is empty
+        assert len(MetricRegistry._metrics) == 0
+        
+        # Test re-registering after clear
+        MetricRegistry.register("test_after_clear", DummyMetric)
+        assert "test_after_clear" in MetricRegistry._metrics
+    finally:
+        # Restore original metrics
+        MetricRegistry._metrics = original_metrics
+
+
+def test_metric_registry_create_with_args_kwargs():
+    """Test creating a metric with args and kwargs."""
+    original_metrics = MetricRegistry._metrics.copy()
+    
+    try:
+        # Register a test metric
+        MetricRegistry.register("test_args_kwargs", DummyMetric)
+        
+        # Create with positional arg
+        metric1 = MetricRegistry.create("test_args_kwargs", 0.5)
+        assert metric1.value == 0.5
+        
+        # Create with keyword arg
+        metric2 = MetricRegistry.create("test_args_kwargs", value=0.7)
+        assert metric2.value == 0.7
+        
+        # Create with both args and kwargs (kwargs should take precedence)
+        metric3 = MetricRegistry.create("test_args_kwargs", 0.5, value=0.9)
+        assert metric3.value == 0.9
+    finally:
+        # Restore original metrics
+        MetricRegistry._metrics = original_metrics
+
+
+def test_metric_registry_available_metrics():
+    """Test getting available metrics."""
+    original_metrics = MetricRegistry._metrics.copy()
+    
+    try:
+        # Clear and add known metrics
+        MetricRegistry._metrics.clear()
+        MetricRegistry.register("metric1", DummyMetric)
+        MetricRegistry.register("metric2", DummyMetric)
+        
+        # Get available metrics
+        available = MetricRegistry.available_metrics()
+        
+        # Check result
+        assert isinstance(available, list)
+        assert "metric1" in available
+        assert "metric2" in available
+        assert len(available) == 2
+    finally:
+        # Restore original metrics
+        MetricRegistry._metrics = original_metrics

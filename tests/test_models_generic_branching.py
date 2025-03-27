@@ -47,3 +47,41 @@ def test_branching_model_get_branch(branching_model):
     condition, model = branching_model.get_branch("branch1")
     assert condition(torch.tensor([5.0, 6.0])) is True
     assert isinstance(model, DummyModel)
+
+# New tests to increase coverage
+
+def test_branching_model_add_branch_duplicate():
+    """Test adding a branch with a duplicate name raises ValueError."""
+    model = BranchingModel()
+    dummy = DummyModel()
+    condition = lambda x: True
+    
+    # Add first branch
+    model.add_branch("test", condition, dummy)
+    
+    # Try to add branch with same name
+    with pytest.raises(ValueError, match="Branch 'test' already exists"):
+        model.add_branch("test", condition, dummy)
+
+def test_branching_model_default_branch_execution():
+    """Test that default branch is executed when no conditions match."""
+    model = BranchingModel()
+    
+    # Add a branch with a condition that will never match
+    model.add_branch("never_match", lambda x: False, DummyModel())
+    
+    # Set a default branch that we can verify was called
+    default_model = DummyModel()
+    model.set_default_branch(default_model)
+    
+    # Test with return_branch=True to check branch name
+    result, branch_name = model(torch.tensor([1.0]), return_branch=True)
+    assert branch_name == "default"
+    assert result is not None
+
+def test_branching_model_get_branch_nonexistent():
+    """Test that get_branch raises KeyError for nonexistent branch."""
+    model = BranchingModel()
+    
+    with pytest.raises(KeyError, match="Branch 'nonexistent' not found"):
+        model.get_branch("nonexistent")

@@ -258,3 +258,9 @@ def summarize_metrics_over_batches(metrics_history: List[Dict[str, Any]]) -> Dic
         }
 
     return result
+
+
+def check_same_shape(tensor1: torch.Tensor, tensor2: torch.Tensor) -> None:
+    """Check if two tensors have the same shape."""
+    if tensor1.shape != tensor2.shape:
+        raise ValueError(f"Tensors must have the same shape. Got {tensor1.shape} and {tensor2.shape}")

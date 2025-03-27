@@ -61,3 +61,25 @@ def test_perfect_channel():
 
     # Check output values are identical to input values
     assert torch.allclose(output, input_tensor)
+
+def test_perfect_channel_with_args():
+    """Test PerfectChannel with additional arguments."""
+    # Create PerfectChannel
+    channel = PerfectChannel()
+    
+    # Create a random tensor
+    input_tensor = random_tensor()
+    
+    # Pass additional arguments to the forward method
+    output = channel(input_tensor, "extra_arg", keyword_arg=123)
+    
+    # Verify the output is identical to the input
+    assert torch.allclose(output, input_tensor)
+    
+    # Test with multiple tensors as additional args
+    extra_tensor1 = random_tensor()
+    extra_tensor2 = random_tensor()
+    output = channel(input_tensor, extra_tensor1, extra_tensor2)
+    
+    # Verify the output is still identical to the input
+    assert torch.allclose(output, input_tensor)

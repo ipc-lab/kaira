@@ -44,3 +44,13 @@ def test_wyner_ziv_correlation_dataset(source_tensor):
     batch_x, batch_y = dataset[10:20]
     assert batch_x.shape == torch.Size([10, 20])
     assert batch_y.shape == torch.Size([10, 20])
+
+def test_wyner_ziv_correlation_model_unknown_type(source_tensor):
+    model = WynerZivCorrelationModel(correlation_type="unknown")
+    with pytest.raises(ValueError, match="Unknown correlation type"):
+        model(source_tensor)
+
+def test_wyner_ziv_correlation_model_missing_transform_fn(source_tensor):
+    model = WynerZivCorrelationModel(correlation_type="custom", correlation_params={})
+    with pytest.raises(ValueError, match="requires 'transform_fn' parameter"):
+        model(source_tensor)

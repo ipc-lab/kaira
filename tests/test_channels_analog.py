@@ -434,3 +434,237 @@ def test_nonlinear_channel_invalid_parameters():
         NonlinearChannel(nonlinear_fn=lambda x: x, complex_mode="invalid")
     with pytest.raises(ValueError):
         NonlinearChannel(nonlinear_fn=lambda x: x, add_noise=True)
+
+
+def test_laplacian_channel_snr():
+    """Test LaplacianChannel with SNR specification."""
+    x = torch.ones(1000)
+    snr_db = 10.0
+    channel = LaplacianChannel(snr_db=snr_db)
+    y = channel(x)
+    
+    # Check that output has same shape as input
+    assert y.shape == x.shape
+    
+    # Calculate actual SNR
+    signal_power = 1.0  # since input is all ones
+    noise_power = torch.mean((y - x) ** 2).item()
+    actual_snr_db = 10 * math.log10(signal_power / noise_power)
+    
+    # Allow for some statistical variation
+    assert abs(actual_snr_db - snr_db) < 2.0
+
+
+def test_laplacian_channel_complex():
+    """Test LaplacianChannel with complex input."""
+    x = torch.complex(torch.ones(1000), torch.ones(1000))
+    scale = 0.1
+    channel = LaplacianChannel(scale=scale)
+    y = channel(x)
+    
+    # Check that output has same shape and is complex
+    assert y.shape == x.shape
+    assert torch.is_complex(y)
+    
+    # Check that noise was added to both real and imaginary parts
+    assert not torch.allclose(y.real, x.real)
+    assert not torch.allclose(y.imag, x.imag)
+
+
+def test_poisson_channel_complex():
+    """Test PoissonChannel with complex input."""
+    # Create complex input with non-negative magnitude
+    real = torch.rand(1000) + 0.5  # Make sure values are positive
+    imag = torch.rand(1000) + 0.5
+    x = torch.complex(real, imag)
+    
+    channel = PoissonChannel(rate_factor=10.0, normalize=True)
+    y = channel(x)
+    
+    # Check that output is complex and preserves phase direction
+    assert torch.is_complex(y)
+    assert y.shape == x.shape
+    
+    # Check that magnitude was modified but phase was preserved
+    x_mag = torch.abs(x)
+    y_mag = torch.abs(y)
+    x_phase = torch.angle(x)
+    y_phase = torch.angle(y)
+    
+    # Magnitudes should be different
+    assert not torch.allclose(x_mag, y_mag)
+    
+    # Phases should be approximately preserved (with some numerical precision issues)
+    phase_diff = torch.abs(x_phase - y_phase)
+    assert torch.mean(phase_diff) < 0.01
+
+
+def test_poisson_channel_negative_input():
+    """Test PoissonChannel with negative inputs (should raise error)."""
+    x = torch.randn(100)  # Will contain negative values
+    channel = PoissonChannel()
+    
+    # Should raise ValueError due to negative values
+    with pytest.raises(ValueError):
+        channel(x)
+
+
+def test_flat_fading_rician_parameters():
+    """Test FlatFadingChannel with Rician fading and various parameters."""
+    x = torch.complex(torch.ones(10, 100), torch.zeros(10, 100))
+    
+    # Test with SNR specification
+    channel = FlatFadingChannel(
+        fading_type="rician",
+        coherence_time=10,
+        k_factor=2.0,
+        snr_db=15.0
+    )
+    y = channel(x)
+    
+    # Check shape preservation
+    assert y.shape == x.shape
+    
+    # Verify channel operation changed the signal
+    assert not torch.allclose(y, x)
+
+
+def test_flat_fading_lognormal():
+    """Test FlatFadingChannel with log-normal fading."""
+    x = torch.complex(torch.ones(5, 50), torch.zeros(5, 50))
+    
+    channel = FlatFadingChannel(
+        fading_type="lognormal",
+        coherence_time=5,
+        shadow_sigma_db=4.0,
+        avg_noise_power=0.01
+    )
+    
+    y = channel(x)
+    
+    # Check shape preservation
+    assert y.shape == x.shape
+    
+    # Verify fading effects
+    assert not torch.allclose(y, x)
+
+
+def test_flat_fading_3d_input():
+    """Test FlatFadingChannel with 3D input."""
+    # Create 3D input (batch, channels, sequence)
+    x = torch.complex(
+        torch.ones(5, 3, 40),
+        torch.zeros(5, 3, 40)
+    )
+    
+    channel = FlatFadingChannel(
+        fading_type="rayleigh",
+        coherence_time=10,
+        snr_db=20.0
+    )
+    
+    y = channel(x)
+    
+    # Check shape preservation for 3D input
+    assert y.shape == x.shape
+    assert torch.is_complex(y)
+
+
+def test_nonlinear_channel_complex_direct():
+    """Test NonlinearChannel with complex input using direct mode."""
+    # Define nonlinear function for complex values
+    def complex_nonlinear(z):
+        return z * (1.0 - 0.1 * torch.abs(z))
+    
+    x = torch.complex(torch.randn(100), torch.randn(100))
+    
+    channel = NonlinearChannel(
+        nonlinear_fn=complex_nonlinear,
+        complex_mode="direct"
+    )
+    
+    y = channel(x)
+    
+    # Check output
+    assert y.shape == x.shape
+    assert torch.is_complex(y)
+    assert not torch.allclose(y, x)
+
+
+def test_nonlinear_channel_complex_cartesian():
+    """Test NonlinearChannel with complex input using cartesian mode."""
+    # Define nonlinear function for real values
+    def real_nonlinear(x):
+        return x + 0.1 * x**3
+    
+    x = torch.complex(torch.randn(100), torch.randn(100))
+    
+    channel = NonlinearChannel(
+        nonlinear_fn=real_nonlinear,
+        complex_mode="cartesian"
+    )
+    
+    y = channel(x)
+    
+    # Check output
+    assert y.shape == x.shape
+    assert torch.is_complex(y)
+    
+    # Verify that real and imaginary parts were transformed separately
+    expected_real = real_nonlinear(x.real)
+    expected_imag = real_nonlinear(x.imag)
+    
+    assert torch.allclose(y.real, expected_real)
+    assert torch.allclose(y.imag, expected_imag)
+
+
+def test_nonlinear_channel_with_noise():
+    """Test NonlinearChannel with added noise."""
+    def nonlinear_fn(x):
+        return torch.tanh(x)
+    
+    x = torch.randn(1000)
+    
+    channel = NonlinearChannel(
+        nonlinear_fn=nonlinear_fn,
+        add_noise=True,
+        snr_db=15.0
+    )
+    
+    y = channel(x)
+    
+    # Check output
+    assert y.shape == x.shape
+    
+    # Apply just the nonlinearity without noise
+    y_no_noise = nonlinear_fn(x)
+    
+    # Verify that noise was added (should be different)
+    assert not torch.allclose(y, y_no_noise)
+
+
+def test_nonlinear_channel_avg_noise_power():
+    """Test NonlinearChannel with specified average noise power."""
+    def nonlinear_fn(x):
+        return x
+    
+    x = torch.ones(1000)
+    noise_power = 0.1
+    
+    channel = NonlinearChannel(
+        nonlinear_fn=nonlinear_fn,
+        add_noise=True,
+        avg_noise_power=noise_power
+    )
+    
+    y = channel(x)
+    
+    # Check output
+    assert y.shape == x.shape
+    
+    # Estimate actual noise power
+    noise = y - x
+    actual_noise_power = torch.mean(noise**2).item()
+    
+    # Check that actual noise power is close to specified
+    assert abs(actual_noise_power - noise_power) < 0.02

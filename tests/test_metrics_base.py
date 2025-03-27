@@ -40,6 +40,17 @@ class ConcreteMetric(BaseMetric):
             return error.mean()
 
 
+class DummyMetric(BaseMetric):
+    def reset(self):
+        self.value = 0
+        
+    def update(self, preds, target):
+        self.value += 1
+        
+    def compute(self):
+        return self.value
+
+
 def test_base_metric_stateful_computation():
     """Test stateful computation of metrics (update-compute pattern)."""
     metric = ConcreteMetric()
@@ -86,3 +97,24 @@ def test_base_metric_direct_computation():
     metric_sum = ConcreteMetric(reduction='sum')
     result_sum = metric_sum(preds, targets)
     assert result_sum.shape == torch.Size([])
+
+
+def test_base_metric_initialization():
+    """Test BaseMetric initialization."""
+    metric = DummyMetric()
+    assert isinstance(metric, BaseMetric)
+
+
+def test_base_metric_forward_calls_update_compute():
+    """Test that BaseMetric forward method calls update and compute."""
+    metric = DummyMetric()
+    
+    # Setup mock inputs
+    preds = torch.randn(1, 3, 10, 10)
+    target = torch.randn(1, 3, 10, 10)
+    
+    # Call forward
+    result = metric(preds, target)
+    
+    # Check that update was called (since value should be 1)
+    assert result == 1

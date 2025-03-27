@@ -42,3 +42,16 @@ def test_configurable_model_remove_step_out_of_range():
     model = ConfigurableModel()
     with pytest.raises(IndexError):
         model.remove_step(0)
+
+def test_base_model_abstract_forward():
+    """Test that BaseModel's forward method raises NotImplementedError if not implemented in subclass."""
+    # Create a class that inherits from BaseModel but doesn't implement forward
+    class IncompleteModel(BaseModel):
+        pass
+    
+    # Instantiate the incomplete model
+    model = IncompleteModel()
+    
+    # Verify that calling forward raises NotImplementedError
+    with pytest.raises(NotImplementedError):
+        model.forward(torch.randn(1, 10))
