@@ -113,7 +113,7 @@ class MetricRegistry:
         return decorator
 
     @classmethod
-    def create(cls, name: str, **kwargs: Any) -> BaseMetric:
+    def create(cls, name: str, *args: Any, **kwargs: Any) -> BaseMetric:
         """Create a metric instance from the registry with the specified parameters.
 
         This function instantiates a registered metric class with the provided parameters,
@@ -121,7 +121,8 @@ class MetricRegistry:
 
         Args:
             name (str): Name of the metric to create (case-sensitive registry key)
-            **kwargs: Arguments to pass to the metric constructor. These should match
+            *args: Positional arguments to pass to the metric constructor
+            **kwargs: Keyword arguments to pass to the metric constructor. These should match
                 the parameters expected by the metric's __init__ method.
 
         Returns:
@@ -129,18 +130,18 @@ class MetricRegistry:
 
         Raises:
             KeyError: If the metric name is not found in the registry
-            TypeError: If the provided kwargs don't match the metric's expected parameters
+            TypeError: If the provided args/kwargs don't match the metric's expected parameters
 
         Example:
             >>> # Create a PSNR metric with custom parameters
             >>> psnr = MetricRegistry.create("psnr", data_range=255.0)
             >>>
-            >>> # Create a custom registered metric
-            >>> my_metric = MetricRegistry.create("mycustommetric", param1=10, param2="value")
+            >>> # Create a custom registered metric with positional arguments
+            >>> my_metric = MetricRegistry.create("mycustommetric", 10, param2="value")
         """
         if name not in cls._metrics:
             raise KeyError(f"Metric '{name}' not found in registry. Available metrics: {list(cls._metrics.keys())}")
-        return cls._metrics[name](**kwargs)
+        return cls._metrics[name](*args, **kwargs)
 
     @classmethod
     def list_metrics(cls) -> List[str]:
@@ -308,3 +309,20 @@ class MetricRegistry:
             >>> balanced_metric = MetricRegistry.create_composite_metric(metrics, weights)
         """
         return CompositeMetric(metrics, weights)
+
+    @classmethod
+    def clear(cls) -> None:
+        """Clear all registered metrics from the registry.
+        This is primarily useful for testing and reinitialization scenarios.
+        """
+        cls._metrics.clear()
+
+    @classmethod
+    def available_metrics(cls) -> List[str]:
+        """Get a list of all available metrics in the registry.
+        This is an alias for list_metrics() for backward compatibility.
+        
+        Returns:
+            List[str]: List of registered metric names
+        """
+        return cls.list_metrics()

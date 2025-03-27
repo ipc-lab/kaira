@@ -67,22 +67,31 @@ def test_bler_reset():
 
 def test_bler_with_threshold():
     """Test BlockErrorRate with different thresholds."""
-    # Create data with soft values (probabilities)
-    soft_preds = torch.tensor([[0.2, 0.7, 0.3, 0.8, 0.1, 0.6], [0.9, 0.4, 0.2, 0.3, 0.7, 0.8]])
-    target = torch.tensor([[0.0, 1.0, 0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 0.0, 0.0, 1.0, 1.0]])
-
+    # Create data with values that will definitely give different results with different thresholds
+    soft_preds = torch.tensor([
+        [0.45, 0.55, 0.45, 0.55, 0.45, 0.55],  # All close to threshold
+        [0.45, 0.55, 0.45, 0.55, 0.45, 0.55]
+    ])
+    # Intentionally mismatch the targets slightly from what a 0.5 threshold would give
+    # so that one threshold gives errors and the other doesn't
+    target = torch.tensor([
+        [0.0, 0.0, 0.0, 1.0, 0.0, 1.0],  # First 0.55 should be a 0 (does not match 0.5 threshold)
+        [0.0, 0.0, 0.0, 1.0, 0.0, 1.0]
+    ])
+    
     # With threshold 0.5
-    bler_default = BlockErrorRate(block_size=3, threshold=0.5)
+    bler_default = BlockErrorRate(block_size=2, threshold=0.5)
     bler_default.update(soft_preds, target)
     result_default = bler_default.compute()
-
-    # With threshold 0.6
-    bler_higher = BlockErrorRate(block_size=3, threshold=0.6)
+    
+    # With threshold 0.6 - this should change which predictions are considered 1s vs 0s
+    bler_higher = BlockErrorRate(block_size=2, threshold=0.6)
     bler_higher.update(soft_preds, target)
     result_higher = bler_higher.compute()
-
-    # Results should be different due to different thresholds
-    assert not torch.isclose(result_default, result_higher)
+    
+    # Instead of checking specific values, verify that the results are different
+    # Because the data was constructed to give different error rates with different thresholds
+    assert not torch.allclose(result_default, result_higher)
 
 
 def test_bler_with_different_batch_sizes(random_binary_data):
