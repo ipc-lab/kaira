@@ -9,6 +9,7 @@ layers for iterative image quality improvement.
 
 from typing import Any
 
+from kaira.models.base import BaseModel
 import torch
 import torch.nn as nn
 from compressai.layers import GDN
@@ -18,7 +19,7 @@ from kaira.models.registry import ModelRegistry
 
 
 @ModelRegistry.register_model()
-class DeepJSCCFeedbackEncoder(nn.Module):
+class DeepJSCCFeedbackEncoder(BaseModel):
     """Encoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
 
     This encoder compresses the input image into a latent representation
@@ -76,7 +77,7 @@ class DeepJSCCFeedbackEncoder(nn.Module):
 
 
 @ModelRegistry.register_model()
-class DeepJSCCFeedbackDecoder(nn.Module):
+class DeepJSCCFeedbackDecoder(BaseModel):
     """Decoder network for DeepJSCC with Feedback :cite:`kurka2020deepjscc`.
 
     This decoder reconstructs the image from the received noisy channel output.

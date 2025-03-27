@@ -3,7 +3,7 @@ import torch
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.generic import SequentialModel
 from kaira.channels import AWGNChannel
-from kaira.constraints import PowerConstraint
+from kaira.constraints import PeakAmplitudeConstraint
 from kaira.models.registry import ModelRegistry
 
 class SimpleEncoder(SequentialModel):
@@ -25,7 +25,7 @@ class SimpleDecoder(SequentialModel):
 @pytest.fixture
 def deepjscc_model():
     encoder = SimpleEncoder()
-    constraint = PowerConstraint(max_power=1.0)
+    constraint = PeakAmplitudeConstraint(max_amplitude=1.0)
     channel = AWGNChannel(avg_noise_power=0.1)
     decoder = SimpleDecoder()
     return DeepJSCCModel(encoder=encoder, constraint=constraint, channel=channel, decoder=decoder)
@@ -33,7 +33,7 @@ def deepjscc_model():
 def test_deepjscc_model_initialization(deepjscc_model):
     assert isinstance(deepjscc_model, DeepJSCCModel)
     assert isinstance(deepjscc_model.encoder, SimpleEncoder)
-    assert isinstance(deepjscc_model.constraint, PowerConstraint)
+    assert isinstance(deepjscc_model.constraint, PeakAmplitudeConstraint)
     assert isinstance(deepjscc_model.channel, AWGNChannel)
     assert isinstance(deepjscc_model.decoder, SimpleDecoder)
 
@@ -45,7 +45,7 @@ def test_deepjscc_model_forward(deepjscc_model):
 def test_deepjscc_model_registry():
     assert "deepjscc" in ModelRegistry._models
     encoder = SimpleEncoder()
-    constraint = PowerConstraint(max_power=1.0)
+    constraint = PeakAmplitudeConstraint(max_power=1.0)
     channel = AWGNChannel(avg_noise_power=0.1)
     decoder = SimpleDecoder()
     model = ModelRegistry.create(
