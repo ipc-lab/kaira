@@ -349,52 +349,97 @@ class AudioContrastiveLoss(BaseLoss):
     """Audio Contrastive Loss Module.
 
     This module calculates a contrastive loss to bring similar audio samples closer in feature
-    space.
+    space. It can be used for self-supervised learning of audio representations.
     """
 
-    def __init__(self, margin=1.0, temperature=0.07):
+    def __init__(self, margin=1.0, temperature=0.1, normalize=True, reduction="mean"):
         """Initialize the AudioContrastiveLoss module.
 
         Args:
             margin (float): Margin for contrastive loss. Default is 1.0.
-            temperature (float): Temperature for scaling. Default is 0.07.
+            temperature (float): Temperature scaling factor. Default is 0.1.
+            normalize (bool): Whether to normalize features. Default is True.
+            reduction (str): Reduction method ('mean', 'sum', 'none'). Default is 'mean'.
         """
         super().__init__()
         self.margin = margin
         self.temperature = temperature
+        self.normalize = normalize
+        self.reduction = reduction
 
-    def forward(self, features: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: torch.Tensor, target: torch.Tensor = None, projector=None, view_maker=None, labels=None) -> torch.Tensor:
         """Forward pass through the AudioContrastiveLoss module.
 
         Args:
             features (torch.Tensor): Audio feature embeddings.
-            labels (torch.Tensor): Audio class labels.
+            target (torch.Tensor, optional): Target features for comparison. If None, features
+                are compared with themselves (self-supervised). Default is None.
+            projector (nn.Module, optional): Optional projection network to map features
+                to a lower-dimensional space. Default is None.
+            view_maker (callable, optional): Function to create different views of the same
+                data. Default is None.
+            labels (torch.Tensor, optional): Labels for supervised contrastive learning.
+                Default is None.
 
         Returns:
             torch.Tensor: The contrastive loss.
         """
+        # Apply projector if provided
+        if projector is not None:
+            features = projector(features)
+            if target is not None:
+                target = projector(target)
+
+        # Apply view maker if provided
+        if view_maker is not None:
+            # Create positive pairs using the view maker
+            if target is None:
+                target = view_maker(features)
+            else:
+                target = view_maker(target)
+
+        # If no target is provided, use the features themselves
+        if target is None:
+            target = features
+
         # Normalize features
-        features = F.normalize(features, p=2, dim=1)
+        if self.normalize:
+            features = F.normalize(features, p=2, dim=1)
+            target = F.normalize(target, p=2, dim=1)
 
         # Compute similarity matrix
-        similarity_matrix = torch.matmul(features, features.t()) / self.temperature
+        similarity_matrix = torch.matmul(features, target.t()) / self.temperature
 
         # Create mask for positive pairs
-        labels = labels.view(-1, 1)
-        mask_positive = torch.eq(labels, labels.t()).float()
+        if labels is not None:
+            # Supervised contrastive learning with provided labels
+            mask_positive = torch.eq(labels.view(-1, 1), labels.view(1, -1)).float()
+        else:
+            # Self-supervised learning (positive pairs are along the diagonal)
+            batch_size = features.size(0)
+            mask_positive = torch.eye(batch_size, device=features.device)
 
-        # Remove self-comparisons
+        # Remove self-comparisons for robustness
         mask_self = torch.eye(mask_positive.shape[0], device=mask_positive.device)
         mask_positive = mask_positive - mask_self
 
-        # Compute loss
+        # Compute loss (InfoNCE / NT-Xent loss)
         exp_logits = torch.exp(similarity_matrix) * (1 - mask_self)
-        log_prob = similarity_matrix - torch.log(exp_logits.sum(dim=1, keepdim=True))
+        log_prob = similarity_matrix - torch.log(exp_logits.sum(dim=1, keepdim=True) + 1e-10)
 
-        # Compute mean of positives
-        mean_log_prob_pos = (mask_positive * log_prob).sum(1) / mask_positive.sum(1)
+        # Compute mean of positive pairs
+        # Handle the case where there are no positive pairs for some samples
+        positive_per_sample = mask_positive.sum(1)
+        # Avoid division by zero (add small epsilon)
+        positive_per_sample = torch.clamp(positive_per_sample, min=1e-10)
+        mean_log_prob_pos = (mask_positive * log_prob).sum(1) / positive_per_sample
 
-        # Loss
-        loss = -mean_log_prob_pos.mean()
+        # Apply reduction
+        if self.reduction == "mean":
+            loss = -mean_log_prob_pos.mean()
+        elif self.reduction == "sum":
+            loss = -mean_log_prob_pos.sum()
+        else:
+            loss = -mean_log_prob_pos
 
         return loss

@@ -26,6 +26,29 @@ class VanillaGANLoss(BaseLoss):
         super().__init__()
         self.reduction = reduction
 
+    def discriminator_loss(self, real_logits: torch.Tensor, fake_logits: torch.Tensor) -> torch.Tensor:
+        """Compute discriminator loss (alias for forward_discriminator for backward compatibility).
+
+        Args:
+            real_logits (torch.Tensor): Discriminator outputs for real data.
+            fake_logits (torch.Tensor): Discriminator outputs for fake data.
+
+        Returns:
+            torch.Tensor: Discriminator loss.
+        """
+        return self.forward_discriminator(real_logits, fake_logits)
+
+    def generator_loss(self, fake_logits: torch.Tensor) -> torch.Tensor:
+        """Compute generator loss (alias for forward_generator for backward compatibility).
+
+        Args:
+            fake_logits (torch.Tensor): Discriminator outputs for fake data.
+
+        Returns:
+            torch.Tensor: Generator loss.
+        """
+        return self.forward_generator(fake_logits)
+
     def forward_discriminator(self, real_logits: torch.Tensor, fake_logits: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
@@ -80,6 +103,29 @@ class LSGANLoss(BaseLoss):
         """
         super().__init__()
         self.reduction = reduction
+        
+    def discriminator_loss(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute discriminator loss (alias for forward_discriminator for backward compatibility).
+        
+        Args:
+            real_pred (torch.Tensor): Discriminator outputs for real data.
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Discriminator loss.
+        """
+        return self.forward_discriminator(real_pred, fake_pred)
+        
+    def generator_loss(self, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute generator loss (alias for forward_generator for backward compatibility).
+        
+        Args:
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Generator loss.
+        """
+        return self.forward_generator(fake_pred)
 
     def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
@@ -136,6 +182,29 @@ class WassersteinGANLoss(BaseLoss):
     def __init__(self):
         """Initialize the WassersteinGANLoss module."""
         super().__init__()
+        
+    def discriminator_loss(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute discriminator loss (alias for forward_discriminator for backward compatibility).
+        
+        Args:
+            real_pred (torch.Tensor): Discriminator outputs for real data.
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Discriminator loss.
+        """
+        return self.forward_discriminator(real_pred, fake_pred)
+        
+    def generator_loss(self, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute generator loss (alias for forward_generator for backward compatibility).
+        
+        Args:
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Generator loss.
+        """
+        return self.forward_generator(fake_pred)
 
     def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
@@ -190,6 +259,29 @@ class HingeLoss(BaseLoss):
     def __init__(self):
         """Initialize the HingeLoss module."""
         super().__init__()
+        
+    def discriminator_loss(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute discriminator loss (alias for forward_discriminator for backward compatibility).
+        
+        Args:
+            real_pred (torch.Tensor): Discriminator outputs for real data.
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Discriminator loss.
+        """
+        return self.forward_discriminator(real_pred, fake_pred)
+        
+    def generator_loss(self, fake_pred: torch.Tensor) -> torch.Tensor:
+        """Compute generator loss (alias for forward_generator for backward compatibility).
+        
+        Args:
+            fake_pred (torch.Tensor): Discriminator outputs for fake data.
+            
+        Returns:
+            torch.Tensor: Generator loss.
+        """
+        return self.forward_generator(fake_pred)
 
     def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
@@ -291,7 +383,17 @@ class R1GradientPenalty(BaseLoss):
             torch.Tensor: The R1 gradient penalty.
         """
         # Create gradient graph
-        grad_real = torch.autograd.grad(outputs=real_outputs.sum(), inputs=real_data, create_graph=True, retain_graph=True)[0]
+        grad_real = torch.autograd.grad(
+            outputs=real_outputs.sum(), 
+            inputs=real_data, 
+            create_graph=True, 
+            retain_graph=True,
+            allow_unused=True  # Allow unused gradients
+        )[0]
+        
+        # If gradient is None, return zero penalty
+        if grad_real is None:
+            return torch.tensor(0.0, device=real_data.device)
 
         # Flatten the gradients
         grad_real = grad_real.view(grad_real.size(0), -1)

@@ -250,32 +250,24 @@ def test_psk_modulator():
     """Test general PSK modulation with different orders."""
     # Test parameters
     orders = [4, 8, 16]
-
     for order in orders:
         # Create modulator with specified order
         modulator = PSKModulator(order=order, gray_coding=True)
-
         # Check bits_per_symbol is calculated correctly
         bits_per_symbol = int(np.log2(order))
         assert modulator.bits_per_symbol == bits_per_symbol
-
         # Check constellation size
         assert modulator.constellation.shape[0] == order
-
         # Check all constellation points have unit magnitude
         assert torch.allclose(torch.abs(modulator.constellation), torch.ones(order))
-
         # Create all possible bit patterns for this order
         bit_patterns = []
         for i in range(order):
             pattern = [(i >> j) & 1 for j in range(bits_per_symbol - 1, -1, -1)]
             bit_patterns.extend(pattern)
-
         test_bits = torch.tensor(bit_patterns, dtype=torch.float32)
-
         # Modulate all possible bit patterns
         symbols = modulator(test_bits)
-
         # Check output shape
         assert symbols.shape[0] == order
 
@@ -442,8 +434,8 @@ def test_psk_modulator_initialization():
         PSKModulator(bits_per_symbol=0)
 
     # Test with gray coding
-    mod_gray = PSKModulator(bits_per_symbol=2, gray_coded=True)
-    mod_no_gray = PSKModulator(bits_per_symbol=2, gray_coded=False)
+    mod_gray = PSKModulator(bits_per_symbol=2, gray_coding=True)
+    mod_no_gray = PSKModulator(bits_per_symbol=2, gray_coding=False)
     # They should have different constellation mappings
     assert not torch.allclose(mod_gray.constellation, mod_no_gray.constellation)
 

@@ -82,3 +82,32 @@ def test_papr_constraint_scaling_needed():
     # The constraint algorithm might not be able to exactly achieve the target PAPR
     # Use a higher tolerance to account for numerical approximations
     assert papr <= 8.0  # Using a higher tolerance
+
+
+def test_papr_constraint_multidimensional():
+    """Test PAPRConstraint with multidimensional input to cover the get_dimensions method."""
+    # Create a multi-dimensional tensor (batch_size, channels, sequence_length)
+    x = torch.ones(3, 4, 5)
+    x[0, 0, 0] = 5.0  # Create a peak in the first batch
+    x[1, 2, 3] = 6.0  # Create another peak in the second batch
+    
+    constraint = PAPRConstraint(max_papr=2.0)
+    y = constraint(x)
+    
+    # Verify the shape is preserved
+    assert y.shape == x.shape
+    
+    # Calculate PAPR for each batch separately
+    for batch_idx in range(x.shape[0]):
+        batch_y = y[batch_idx]
+        avg_power = torch.mean(torch.abs(batch_y) ** 2)
+        peak_power = torch.max(torch.abs(batch_y) ** 2)
+        papr = peak_power / avg_power
+        
+        # Verify PAPR is constrained
+        assert papr <= 2.0 + 1e-5  # Allow small tolerance for numerical precision
+    
+    # Also test that the method handles the case where no scaling is needed
+    x_uniform = torch.ones(2, 3, 4) * 2.0  # Uniform signal with PAPR = 1
+    y_uniform = constraint(x_uniform)
+    assert torch.allclose(x_uniform, y_uniform)  # Should remain unchanged

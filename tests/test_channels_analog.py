@@ -627,3 +627,99 @@ def test_nonlinear_channel_avg_noise_power():
 
     # Check that actual noise power is close to specified
     assert abs(actual_noise_power - noise_power.item()) < 0.02
+
+
+def test_apply_noise_no_parameters():
+    """Test that _apply_noise raises error when neither noise_power nor snr_db is provided."""
+    from kaira.channels.analog import _apply_noise
+    
+    x = torch.randn(10)
+    
+    # Should raise ValueError when neither parameter is provided
+    with pytest.raises(ValueError):
+        _apply_noise(x)
+
+
+def test_poisson_channel_negative_complex_input():
+    """Test PoissonChannel with negative magnitude in complex input (should raise error)."""
+    # Create complex input with some negative magnitudes
+    real = torch.randn(100)
+    imag = torch.randn(100)
+    # This will have some values with negative magnitude (impossible in practice, but for testing)
+    x = torch.complex(-torch.abs(real), torch.zeros_like(imag))
+    
+    channel = PoissonChannel()
+    
+    # Should raise ValueError due to negative magnitude
+    with pytest.raises(ValueError):
+        channel(x)
+
+
+def test_phase_noise_channel_negative_std():
+    """Test PhaseNoiseChannel with negative standard deviation (should raise error)."""
+    x = torch.complex(torch.ones(100), torch.zeros(100))
+    
+    # Should raise ValueError due to negative phase_noise_std
+    with pytest.raises(ValueError):
+        PhaseNoiseChannel(phase_noise_std=-0.1)(x)
+
+
+def test_flat_fading_channel_avg_noise_power():
+    """Test FlatFadingChannel with avg_noise_power specification."""
+    x = torch.complex(torch.ones(10, 100), torch.zeros(10, 100))
+    
+    # Test with avg_noise_power specification
+    noise_power = 0.01
+    channel = FlatFadingChannel(
+        fading_type="rayleigh", 
+        coherence_time=10, 
+        avg_noise_power=noise_power
+    )
+    
+    y = channel(x)
+    
+    # Check shape preservation
+    assert y.shape == x.shape
+    
+    # Verify channel operation changed the signal
+    assert not torch.allclose(y, x)
+
+
+def test_flat_fading_expand_coefficients():
+    """Test _expand_coefficients in FlatFadingChannel."""
+    # Direct test of internal method
+    from kaira.channels.analog import FlatFadingChannel
+    
+    # Create a simple channel
+    channel = FlatFadingChannel(
+        fading_type="rayleigh", 
+        coherence_time=5, 
+        snr_db=15.0
+    )
+    
+    # Create mock block fading coefficients (2 batches, 3 blocks)
+    h = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=torch.complex64)
+    
+    # Expand to sequence length 10
+    h_expanded = channel._expand_coefficients(h, 10)
+    
+    # Check shape
+    assert h_expanded.shape == (2, 10)
+    
+    # First 5 values should be block 0, next 5 should be block 1, etc.
+    assert torch.allclose(h_expanded[0, :5], torch.full((5,), 1.0, dtype=torch.complex64))
+    assert torch.allclose(h_expanded[0, 5:10], torch.full((5,), 2.0, dtype=torch.complex64))
+    assert torch.allclose(h_expanded[1, :5], torch.full((5,), 4.0, dtype=torch.complex64))
+    assert torch.allclose(h_expanded[1, 5:10], torch.full((5,), 5.0, dtype=torch.complex64))
+
+
+def test_nonlinear_channel_invalid_noise_params():
+    """Test NonlinearChannel with invalid noise parameters."""
+    # When add_noise is True, providing both snr_db and avg_noise_power is invalid
+    with pytest.raises(ValueError):
+        NonlinearChannel(
+            nonlinear_fn=lambda x: x,
+            add_noise=True,
+            snr_db=10.0,
+            avg_noise_power=0.1
+        )

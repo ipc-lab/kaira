@@ -115,3 +115,102 @@ def test_bler_with_different_batch_sizes(random_binary_data):
 
     # Results should be the same regardless of batch processing
     assert torch.isclose(result_single, result_multiple)
+
+
+def test_bler_reshape_errors():
+    """Test error handling in reshape_into_blocks method."""
+    # Test case where input size is not divisible by block_size
+    bler = BlockErrorRate(block_size=3)  # Block size that doesn't evenly divide the input
+    
+    # Create inputs with length not divisible by block_size
+    preds = torch.zeros((2, 10))  # 10 is not divisible by 3
+    target = torch.zeros((2, 10))
+    
+    # This should raise a ValueError
+    with pytest.raises(ValueError, match="Input size .* is not divisible by"):
+        bler(preds, target)
+
+
+def test_bler_multidimensional_input():
+    """Test BlockErrorRate with multidimensional inputs."""
+    # Create 3D input tensors
+    bler = BlockErrorRate(block_size=2)
+    
+    # Create 3D tensors (batch, height, width) that can be reshaped into blocks
+    preds = torch.zeros((2, 2, 4))  # Can be reshaped to (2, 4, 2)
+    target = torch.zeros((2, 2, 4))
+    
+    # This should process without errors
+    result = bler(preds, target)
+    
+    # Should return 0 for a perfect match
+    assert isinstance(result, torch.Tensor)
+    assert torch.isclose(result, torch.tensor(0.0))
+
+
+def test_bler_with_different_reductions():
+    """Test BlockErrorRate with different reduction methods."""
+    # Create test data with known errors
+    preds = torch.zeros((2, 6))
+    target = torch.zeros((2, 6))
+    
+    # Introduce errors in specific blocks
+    preds[0, 0] = 1  # Error in first block of first batch
+    preds[1, 3] = 1  # Error in second block of second batch
+    
+    # Test with 'none' reduction
+    bler_none = BlockErrorRate(block_size=3, reduction='none')
+    result_none = bler_none(preds, target)
+    
+    # Should return a tensor with shape [2, 2] (batch_size x num_blocks)
+    assert result_none.shape[0] == 2
+    assert torch.allclose(result_none, torch.tensor([[1.0, 0.0], [0.0, 1.0]]).float())
+    
+    # Test with 'sum' reduction
+    bler_sum = BlockErrorRate(block_size=3, reduction='sum')
+    result_sum = bler_sum(preds, target)
+    
+    # Should return the sum of error blocks (2 in this case)
+    assert torch.isclose(result_sum, torch.tensor(2.0))
+    
+    # Test with default 'mean' reduction for comparison
+    bler_mean = BlockErrorRate(block_size=3)
+    result_mean = bler_mean(preds, target)
+    
+    # Should return the average (2/4 = 0.5 in this case)
+    assert torch.isclose(result_mean, torch.tensor(0.5))
+
+
+def test_bler_empty_state():
+    """Test compute method when no updates have been made."""
+    bler = BlockErrorRate(block_size=10)
+    
+    # Compute without any updates
+    result = bler.compute()
+    
+    # Should return 0 when no updates have been made
+    assert torch.isclose(result, torch.tensor(0.0))
+    
+    # Test with intentionally empty batches
+    # This would still update the total_blocks counter but not add any errors
+    empty_preds = torch.zeros((0, 10))
+    empty_target = torch.zeros((0, 10))
+    
+    bler.update(empty_preds, empty_target)
+    result_after_empty = bler.compute()
+    
+    # Should still return 0
+    assert torch.isclose(result_after_empty, torch.tensor(0.0))
+
+
+def test_bler_shape_mismatch():
+    """Test BlockErrorRate with mismatched shapes."""
+    bler = BlockErrorRate(block_size=10)
+    
+    # Create mismatched shapes
+    preds = torch.zeros((2, 20))
+    target = torch.zeros((2, 10))
+    
+    # This should raise a ValueError
+    with pytest.raises(ValueError, match="Shape mismatch"):
+        bler(preds, target)

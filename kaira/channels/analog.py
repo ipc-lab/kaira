@@ -628,3 +628,43 @@ class NonlinearChannel(BaseChannel):
                 y = _apply_noise(y, noise_power=self.avg_noise_power)
 
         return y
+
+
+@ChannelRegistry.register_channel()
+class RayleighFadingChannel(FlatFadingChannel):
+    """Specialized channel for Rayleigh fading in wireless communications.
+    
+    This is a convenience class that creates a FlatFadingChannel with the
+    fading_type set to "rayleigh" to model Rayleigh fading, which is common in
+    non-line-of-sight wireless propagation environments.
+    
+    Mathematical Model:
+        y[i] = h[⌊i/L⌋] * x[i] + n[i]
+        where L is the coherence length, h follows a Rayleigh distribution,
+        and n ~ CN(0,σ²)
+    
+    Args:
+        coherence_time (int, optional): Number of samples over which the fading coefficient
+            remains constant. Defaults to 1.
+        avg_noise_power (float, optional): The average noise power σ²
+        snr_db (float, optional): SNR in dB (alternative to avg_noise_power)
+    
+    Example:
+        >>> # Create a Rayleigh fading channel with coherence time of 10 samples
+        >>> channel = RayleighFadingChannel(coherence_time=10, snr_db=15)
+        >>> x = torch.complex(torch.ones(100), torch.zeros(100))
+        >>> y = channel(x)  # Output with Rayleigh fading
+    """
+    
+    def __init__(
+        self,
+        coherence_time=1,
+        avg_noise_power=None,
+        snr_db=None,
+    ):
+        super().__init__(
+            fading_type="rayleigh",
+            coherence_time=coherence_time,
+            avg_noise_power=avg_noise_power,
+            snr_db=snr_db if snr_db is not None else 15.0  # Default SNR if nothing specified
+        )

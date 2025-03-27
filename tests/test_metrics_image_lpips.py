@@ -89,3 +89,53 @@ def test_lpips_custom_initialization():
     # Other parameters would be passed to the model, so we can't directly test them
     # But we can verify the model was created successfully
     assert lpips.model is not None
+
+
+def test_lpips_normalization_forward():
+    """Test that input normalization works correctly in forward method."""
+    # Create inputs outside expected range
+    img1 = torch.randn(1, 3, 64, 64) * 2  # Values outside [-1, 1]
+    img2 = torch.randn(1, 3, 64, 64) * 2
+    
+    # Test with normalize=False (expects inputs in [-1, 1])
+    lpips_no_norm = LearnedPerceptualImagePatchSimilarity(normalize=False)
+    result = lpips_no_norm(img1, img2)
+    assert isinstance(result, torch.Tensor)
+    
+    # Test with normalize=True (expects inputs in [0, 1])
+    # First convert to [0, 1] range but with some values outside
+    img1_01 = torch.rand(1, 3, 64, 64) * 1.5  # Values outside [0, 1]
+    img2_01 = torch.rand(1, 3, 64, 64) * 1.5
+    
+    lpips_norm = LearnedPerceptualImagePatchSimilarity(normalize=True)
+    result = lpips_norm(img1_01, img2_01)
+    assert isinstance(result, torch.Tensor)
+
+
+def test_lpips_normalization_update():
+    """Test that input normalization works correctly in update method."""
+    # Create inputs outside expected range
+    img1 = torch.randn(1, 3, 64, 64) * 2  # Values outside [-1, 1]
+    img2 = torch.randn(1, 3, 64, 64) * 2
+    
+    # Test with normalize=False (expects inputs in [-1, 1])
+    lpips_no_norm = LearnedPerceptualImagePatchSimilarity(normalize=False)
+    lpips_no_norm.update(img1, img2)
+    assert lpips_no_norm.total > 0
+    
+    # Test with normalize=True (expects inputs in [0, 1])
+    # First convert to [0, 1] range but with some values outside
+    img1_01 = torch.rand(1, 3, 64, 64) * 1.5  # Values outside [0, 1]
+    img2_01 = torch.rand(1, 3, 64, 64) * 1.5
+    
+    lpips_norm = LearnedPerceptualImagePatchSimilarity(normalize=True)
+    lpips_norm.update(img1_01, img2_01)
+    assert lpips_norm.total > 0
+
+
+def test_lpips_backward_compatibility():
+    """Test backward compatibility alias."""
+    from kaira.metrics.image.lpips import LPIPS
+    
+    lpips = LPIPS()
+    assert isinstance(lpips, LearnedPerceptualImagePatchSimilarity)

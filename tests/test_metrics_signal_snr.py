@@ -150,3 +150,55 @@ def test_snr_db_calculation():
     
     # Verify the result is in dB
     assert torch.isclose(snr_value, torch.tensor(20.0), rtol=1e-1)
+
+
+def test_snr_complex_signal_batch():
+    """Test SNR computation with batched complex signals."""
+    batch_size = 3
+    signal = torch.complex(torch.randn(batch_size, 100), torch.randn(batch_size, 100))
+    noise = 0.1 * torch.complex(torch.randn_like(signal.real), torch.randn_like(signal.imag))
+    noisy_signal = signal + noise
+
+    snr = SignalToNoiseRatio()
+    snr_values = snr(signal, noisy_signal)
+    
+    assert snr_values.shape == (batch_size,)
+    assert torch.all(snr_values > 0)
+
+
+def test_snr_perfect_signal_batch():
+    """Test SNR computation with perfect signals (no noise) in batch mode."""
+    batch_size = 3
+    signal = torch.randn(batch_size, 100)
+    
+    snr = SignalToNoiseRatio()
+    snr_values = snr(signal, signal)
+    
+    assert snr_values.shape == (batch_size,)
+    assert torch.all(torch.isinf(snr_values))
+
+
+def test_compute_with_stats():
+    """Test the compute_with_stats method."""
+    batch_size = 5
+    signal = torch.randn(batch_size, 100)
+    noise = 0.1 * torch.randn_like(signal)
+    noisy_signal = signal + noise
+
+    snr = SignalToNoiseRatio()
+    mean, std = snr.compute_with_stats(signal, noisy_signal)
+    
+    # Verify the mean is computed correctly
+    snr_values = snr(signal, noisy_signal)
+    expected_mean = snr_values.mean()
+    expected_std = snr_values.std()
+    
+    assert torch.isclose(mean, expected_mean)
+    assert torch.isclose(std, expected_std)
+
+
+def test_reset_method():
+    """Test the reset method doesn't raise errors."""
+    snr = SignalToNoiseRatio()
+    # Since reset doesn't do anything for SNR, just verify it can be called without errors
+    snr.reset()

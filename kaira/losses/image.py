@@ -443,15 +443,25 @@ class StyleLoss(BaseLoss):
     capturing texture information independent of spatial arrangement :cite:`gatys2016image`.
     """
 
-    def __init__(self):
-        """Initialize the StyleLoss module."""
+    def __init__(self, apply_gram=True, normalize=False, layer_weights=None):
+        """Initialize the StyleLoss module.
+
+        Args:
+            apply_gram (bool): Whether to apply Gram matrix computation (True) or use
+                precomputed Gram matrices as input (False). Default is True.
+            normalize (bool): Whether to normalize the Gram matrices. Default is False.
+            layer_weights (dict, optional): Weights for different layers. Default is None
+                (equal weights for all layers).
+        """
         super().__init__()
         # Use VGG16 for feature extraction
         vgg = models.vgg16(weights=models.VGG16_Weights.DEFAULT).features.eval()
         self.feature_extractor = nn.Sequential()
-
         # Use specific layers for style representation
         self.style_layers = [0, 5, 10, 17, 24]
+        self.apply_gram = apply_gram
+        self.normalize = normalize
+        self.layer_weights = layer_weights or {f"layer_{i}": 1.0 for i in range(len(self.style_layers))}
 
         i = 0
         for layer in vgg.children():
@@ -469,6 +479,10 @@ class StyleLoss(BaseLoss):
                 raise RuntimeError(f"Unrecognized layer: {layer.__class__.__name__}")
 
             self.feature_extractor.add_module(name, layer)
+
+        # Freeze parameters
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
 
     def gram_matrix(self, x):
         """Calculate Gram matrix from features.
@@ -589,14 +603,18 @@ class ElasticLoss(BaseLoss):
     offering robustness to outliers while maintaining smoothness :cite:`zou2005regularization`.
     """
 
-    def __init__(self, beta=1.0):
+    def __init__(self, beta=1.0, alpha=0.5, reduction="mean"):
         """Initialize the ElasticLoss module.
 
         Args:
             beta (float): Balance parameter between L1 and L2. Default is 1.0.
+            alpha (float): Weight parameter controlling L1 vs L2 contribution (0.5 means equal mix). Default is 0.5.
+            reduction (str): Reduction method ('mean', 'sum', 'none'). Default is 'mean'.
         """
         super().__init__()
         self.beta = beta
+        self.alpha = alpha
+        self.reduction = reduction
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the ElasticLoss module.
@@ -612,7 +630,19 @@ class ElasticLoss(BaseLoss):
         abs_diff = torch.abs(diff)
         squared_diff = diff**2
 
-        # If abs_diff < beta, use L2 loss, else use L1 loss
-        loss = torch.where(abs_diff < self.beta, 0.5 * squared_diff / self.beta, abs_diff - 0.5 * self.beta)
-
-        return loss.mean()
+        # Compute weighted combination of L1 and L2 loss
+        l1_component = abs_diff
+        l2_component = 0.5 * squared_diff / self.beta
+        
+        # Apply smooth transition between L1 and L2 based on difference magnitude
+        point_losses = torch.where(abs_diff < self.beta, 
+                                 self.alpha * l2_component, 
+                                 (1.0 - self.alpha) * l1_component + self.alpha * self.beta / 2.0)
+        
+        # Apply reduction
+        if self.reduction == "mean":
+            return point_losses.mean()
+        elif self.reduction == "sum":
+            return point_losses.sum()
+        else:  # 'none'
+            return point_losses

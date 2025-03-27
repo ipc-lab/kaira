@@ -102,3 +102,75 @@ def test_add_loss():
     # Adding duplicate should raise error
     with pytest.raises(ValueError):
         composite.add_loss("loss1", MockLoss(3.0))
+
+
+def test_compute_individual():
+    """Test compute_individual method returns the same as get_individual_losses."""
+    loss1 = MockLoss(1.0)
+    loss2 = MockLoss(2.0)
+
+    losses = {"loss1": loss1, "loss2": loss2}
+    composite = CompositeLoss(losses)
+
+    # Get individual losses with both methods
+    individual1 = composite.get_individual_losses(torch.zeros(1), torch.zeros(1))
+    individual2 = composite.compute_individual(torch.zeros(1), torch.zeros(1))
+
+    # Results should be identical
+    assert set(individual1.keys()) == set(individual2.keys())
+    assert individual1["loss1"].item() == individual2["loss1"].item()
+    assert individual1["loss2"].item() == individual2["loss2"].item()
+
+
+def test_loss_return_tuple():
+    """Test handling of losses that return tuples."""
+    class TupleLoss(BaseLoss):
+        def forward(self, *args, **kwargs):
+            return (torch.tensor(3.0), torch.tensor(1.0))
+
+    losses = {"tuple_loss": TupleLoss()}
+    composite = CompositeLoss(losses)
+
+    # Forward should take first element of tuple
+    result = composite(torch.zeros(1), torch.zeros(1))
+    assert pytest.approx(result.item(), abs=1e-5) == 3.0
+
+
+def test_str_representation():
+    """Test the string representation of CompositeLoss."""
+    loss1 = MockLoss(1.0)
+    loss2 = MockLoss(2.0)
+
+    losses = {"loss1": loss1, "loss2": loss2}
+    weights = {"loss1": 0.3, "loss2": 0.7}
+    composite = CompositeLoss(losses, weights)
+
+    # Generate string representation
+    str_repr = str(composite)
+
+    # Check for essential components
+    assert "CompositeLoss" in str_repr
+    assert "ModuleDict" in str_repr
+    assert "loss1" in str_repr
+    assert "loss2" in str_repr
+    assert "MockLoss" in str_repr
+    assert "weight=0.300" in str_repr  # 0.3 formatted with 3 decimal places
+    assert "weight=0.700" in str_repr  # 0.7 formatted with 3 decimal places
+
+
+def test_add_loss_backward_compatibility():
+    """Test add_loss with backwards compatibility mode."""
+    loss1 = MockLoss(1.0)
+    composite = CompositeLoss({"loss1": loss1})
+    
+    # Test old-style add_loss with just a loss object
+    loss2 = MockLoss(2.0)
+    composite.add_loss(loss2)
+    
+    # Should have auto-generated a name
+    assert "loss1" in composite.losses
+    assert len(composite.losses) == 2
+    
+    # Check that weights were normalized
+    total_weight = sum(composite.weights.values())
+    assert pytest.approx(total_weight, abs=1e-5) == 1.0

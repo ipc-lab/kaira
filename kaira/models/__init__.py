@@ -6,6 +6,7 @@ from .feedback_channel import FeedbackChannelModel
 from .multiple_access_channel import MultipleAccessChannelModel
 from .registry import ModelRegistry
 from .wyner_ziv import WynerZivModel
+from .channel_code import ChannelCodeModel
 
 __all__ = [
     # Modules
@@ -17,6 +18,7 @@ __all__ = [
     "BaseModel",
     "ConfigurableModel",
     # Specialized models
+    "ChannelCodeModel",
     "DeepJSCCModel",
     "FeedbackChannelModel",
     "WynerZivModel",

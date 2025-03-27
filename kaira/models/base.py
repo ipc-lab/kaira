@@ -83,3 +83,18 @@ class ConfigurableModel(BaseModel):
             raise IndexError(f"Step index {index} out of range (0-{len(self.steps)-1})")
         self.steps.pop(index)
         return self
+
+    def forward(self, x: Any, **kwargs: Any) -> Any:
+        """Process input through all steps sequentially.
+        
+        Args:
+            x: The input to process
+            **kwargs: Additional keyword arguments passed to each step
+            
+        Returns:
+            The result after applying all steps
+        """
+        result = x
+        for step in self.steps:
+            result = step(result, **kwargs)
+        return result

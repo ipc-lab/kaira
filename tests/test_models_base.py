@@ -78,3 +78,36 @@ def test_base_model_abstract_forward():
     # Verify that calling forward raises NotImplementedError
     with pytest.raises(NotImplementedError):
         model.forward(torch.randn(1, 10))
+
+
+def test_configurable_model_forward_implementation():
+    """Test that ConfigurableModel's forward method correctly processes input through steps."""
+    model = ConfigurableModel()
+    input_tensor = torch.tensor([1.0, 2.0, 3.0])
+    
+    # Test with no steps added
+    output = model(input_tensor)
+    assert torch.allclose(output, input_tensor), "Forward should return input unchanged when no steps exist"
+    
+    # Test with empty steps list
+    model.steps = []
+    output = model(input_tensor)
+    assert torch.allclose(output, input_tensor), "Forward should return input unchanged with empty steps list"
+    
+def test_configurable_model_forward_with_kwargs():
+    """Test that ConfigurableModel's forward method handles kwargs correctly."""
+    model = ConfigurableModel()
+    
+    def step_with_kwargs(x, scale=1):
+        return x * scale
+    
+    model.add_step(step_with_kwargs)
+    input_tensor = torch.tensor([1.0, 2.0, 3.0])
+    
+    # Test with default kwargs
+    output = model(input_tensor)
+    assert torch.allclose(output, input_tensor), "Should use default kwargs value"
+    
+    # Test with custom kwargs
+    output = model(input_tensor, scale=2)
+    assert torch.allclose(output, input_tensor * 2), "Should use provided kwargs value"

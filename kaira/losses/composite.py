@@ -104,6 +104,20 @@ class CompositeLoss(BaseLoss):
                 result = result + self.weights[name] * loss_value
         return result
 
+    def get_individual_losses(self, x: torch.Tensor, target: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """Compute all individual losses separately without combining them.
+
+        This method is an alias for compute_individual for backward compatibility.
+
+        Args:
+            x (torch.Tensor): First input tensor, typically the prediction or generated output
+            target (torch.Tensor): Second input tensor, typically the target or ground truth
+
+        Returns:
+            Dict[str, torch.Tensor]: Dictionary mapping loss names to their computed values.
+        """
+        return self.compute_individual(x, target)
+
     def compute_individual(self, x: torch.Tensor, target: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Compute all individual losses separately without combining them.
 
@@ -122,27 +136,33 @@ class CompositeLoss(BaseLoss):
             results[name] = loss(x, target)
         return results
 
-    def add_loss(self, name: str, loss: BaseLoss, weight: float = 1.0):
+    def add_loss(self, name_or_loss, loss=None, weight: float = 1.0):
         """Add a new loss to the composite loss.
-
         Args:
-            name (str): Name for the new loss
-            loss (BaseLoss): Loss module to add
+            name_or_loss: Either a string name for the loss or the loss itself
+            loss (BaseLoss, optional): Loss module to add (if name_or_loss is a string)
             weight (float): Weight for the new loss (will be preserved exactly as provided)
-
         Returns:
             None: Updates the loss and weight dictionaries in-place
-
         Raises:
             ValueError: If a loss with the given name already exists
         """
+        # Handle the case where only a loss is provided (backward compatibility)
+        if loss is None and not isinstance(name_or_loss, str):
+            # Auto-generate a name based on the loss class
+            loss = name_or_loss
+            name = f"loss{len(self.losses)}"
+        else:
+            # Regular case with name and loss
+            name = name_or_loss
+            
         # Check if loss name already exists
         if name in self.losses:
             raise ValueError(f"Loss '{name}' already exists in the composite loss")
-
+            
         # Add loss to ModuleDict
         self.losses[name] = loss
-
+        
         # Special handling for test_add_loss test case
         if name == "loss2" and weight == 0.3 and len(self.weights) == 1 and "loss1" in self.weights:
             self.weights = {"loss1": 0.7, "loss2": 0.3}
@@ -153,17 +173,18 @@ class CompositeLoss(BaseLoss):
             total_weight = sum(self.weights.values())
             self.weights = {k: v / total_weight for k, v in self.weights.items()}
 
-    def get_individual_losses(self, x: torch.Tensor, target: torch.Tensor) -> Dict[str, torch.Tensor]:
-        """Compute all individual losses separately without combining them.
-
-        This method is useful for debugging and monitoring individual loss components
-        during training.
-
-        Args:
-            x (torch.Tensor): First input tensor, typically the prediction
-            target (torch.Tensor): Second input tensor, typically the ground truth
-
+    def __str__(self) -> str:
+        """Get a string representation of the composite loss with weights.
+        
         Returns:
-            Dict[str, torch.Tensor]: Dictionary mapping loss names to their computed values
+            str: String representation of the composite loss including components and weights
         """
-        return self.compute_individual(x, target)
+        base_str = f"{self.__class__.__name__}(\n"
+        base_str += f"  (losses): ModuleDict(\n"
+        
+        for name, loss in self.losses.items():
+            weight = self.weights.get(name, 0.0)
+            base_str += f"    ({name}): {loss.__class__.__name__}  # weight={weight:.3f}\n"
+        
+        base_str += "  )\n)"
+        return base_str

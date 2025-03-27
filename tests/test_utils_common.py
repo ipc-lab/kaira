@@ -93,3 +93,65 @@ def test_to_tensor():
     # Test with unsupported type
     with pytest.raises(TypeError):
         to_tensor({"key": "value"})
+
+
+def test_to_tensor_with_mixed_dtype():
+    """Test to_tensor function with mixed data types."""
+    # Test with floating point values
+    float_value = 3.14
+    float_tensor = to_tensor(float_value)
+    assert isinstance(float_tensor, torch.Tensor)
+    assert float_tensor.dtype == torch.float32
+    assert float_tensor.item() == pytest.approx(3.14)
+    
+    # Test with integer values
+    int_value = 42
+    int_tensor = to_tensor(int_value)
+    assert isinstance(int_tensor, torch.Tensor)
+    assert int_tensor.item() == 42
+    
+    # Test with mixed precision numpy array
+    np_mixed = np.array([1, 2.5, 3])
+    mixed_tensor = to_tensor(np_mixed)
+    assert isinstance(mixed_tensor, torch.Tensor)
+    assert mixed_tensor.dtype == torch.float64  # NumPy defaults to float64 for mixed arrays
+    assert torch.allclose(mixed_tensor, torch.tensor([1.0, 2.5, 3.0], dtype=torch.float64))
+
+
+def test_to_tensor_error_cases():
+    """Test to_tensor function error handling."""
+    # Test with unsupported types
+    with pytest.raises(TypeError):
+        to_tensor({"key": "value"})
+    
+    with pytest.raises(TypeError):
+        to_tensor(None)
+    
+    with pytest.raises(TypeError):
+        to_tensor((1, 2, 3))  # Tuple is not directly supported
+
+
+def test_to_tensor_device_handling():
+    """Test that to_tensor correctly handles device specification."""
+    # Test with CPU
+    cpu_tensor = to_tensor([1, 2, 3], device="cpu")
+    assert cpu_tensor.device.type == "cpu"
+    
+    # Test with existing tensor and device change
+    existing = torch.tensor([1, 2, 3])
+    assert existing.device.type == "cpu"  # Default is CPU
+    
+    # Only run GPU test if CUDA is available
+    if torch.cuda.is_available():
+        # Move existing tensor to GPU
+        gpu_tensor = to_tensor(existing, device="cuda")
+        assert gpu_tensor.device.type == "cuda"
+        
+        # Direct creation on GPU
+        direct_gpu = to_tensor([4, 5, 6], device="cuda")
+        assert direct_gpu.device.type == "cuda"
+        
+        # Test with device object instead of string
+        device_obj = torch.device("cuda:0")
+        device_obj_tensor = to_tensor([7, 8, 9], device=device_obj)
+        assert device_obj_tensor.device.type == "cuda"

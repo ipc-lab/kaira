@@ -171,3 +171,58 @@ def test_composite_metric_get_metrics():
     assert "metric2" in metrics_dict
     assert metrics_dict["metric1"] is metric1
     assert metrics_dict["metric2"] is metric2
+
+
+def test_composite_metric_with_tuple_return():
+    """Test CompositeMetric handling metrics that return tuples."""
+    
+    class TupleMetric(BaseMetric):
+        """Mock metric that returns a tuple of values."""
+        def __init__(self, mean=0.5, std=0.1):
+            super().__init__()
+            self.mean = mean
+            self.std = std
+            
+        def forward(self, preds, targets):
+            return (torch.tensor(self.mean), torch.tensor(self.std))
+            
+        def reset(self):
+            pass
+    
+    # Create metrics - one regular and one that returns a tuple
+    metric1 = MockMetric(0.3)
+    metric2 = TupleMetric(0.7, 0.2)
+    
+    metrics = {"metric1": metric1, "metric2": metric2}
+    composite = CompositeMetric(metrics)
+    
+    # Forward should only use the first value (mean) from the tuple
+    result = composite(torch.zeros(1), torch.zeros(1))
+    
+    # Should be weighted average: 0.3 * 0.5 + 0.7 * 0.5 = 0.5
+    assert pytest.approx(result.item(), abs=1e-6) == 0.5
+    
+    # Verify that compute_individual preserves the tuple structure
+    individual = composite.compute_individual(torch.zeros(1), torch.zeros(1))
+    assert isinstance(individual["metric2"], tuple)
+    assert len(individual["metric2"]) == 2
+    assert pytest.approx(individual["metric2"][0].item(), abs=1e-6) == 0.7
+    assert pytest.approx(individual["metric2"][1].item(), abs=1e-6) == 0.2
+
+
+def test_add_metric_with_none_weight():
+    """Test adding a metric with None weight (should default and normalize)."""
+    metric1 = MockMetric(0.3)
+    metric2 = MockMetric(0.7)
+    
+    # Start with a single metric
+    metrics = {"metric1": metric1}
+    composite = CompositeMetric(metrics)
+    
+    # Add another metric with None weight (should default and normalize)
+    composite.add_metric("metric2", metric2, weight=None)
+    
+    # Check that weights are normalized and equal (0.5 each)
+    assert pytest.approx(composite.weights["metric1"], abs=1e-6) == 0.5
+    assert pytest.approx(composite.weights["metric2"], abs=1e-6) == 0.5
+    assert pytest.approx(sum(composite.weights.values()), abs=1e-6) == 1.0

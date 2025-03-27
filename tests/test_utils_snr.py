@@ -230,3 +230,172 @@ def test_complete_snr_pipeline():
     # Verify the relationship
     computed_snr = noise_power_to_snr(estimated_power, required_noise_power)
     assert torch.isclose(computed_snr, torch.tensor(target_snr_db))
+
+
+def test_calculate_snr_real_signal():
+    """Test calculate_snr with real signals."""
+    # Create original signal
+    original = torch.ones(100) * 2.0  # Power = 4.0
+    
+    # Create noise with known power
+    noise = torch.ones(100) * 1.0  # Power = 1.0
+    
+    # Create noisy signal
+    noisy = original + noise
+    
+    # Calculate SNR (should be 10*log10(4/1) = 6.02 dB)
+    snr_db = calculate_snr(original, noisy)
+    
+    assert torch.isclose(snr_db, torch.tensor(6.02), rtol=1e-2)
+
+
+def test_calculate_snr_complex_signal():
+    """Test calculate_snr with complex signals."""
+    # Create original signal (1+1j throughout, power = 2)
+    original = torch.complex(torch.ones(100), torch.ones(100))
+    
+    # Create noise with known power (0.5+0.5j throughout, power = 0.5)
+    noise = torch.complex(torch.ones(100) * 0.5, torch.ones(100) * 0.5)
+    
+    # Create noisy signal
+    noisy = original + noise
+    
+    # Calculate SNR (should be 10*log10(2/0.5) = 6.02 dB)
+    snr_db = calculate_snr(original, noisy)
+    
+    assert torch.isclose(snr_db, torch.tensor(6.02), rtol=1e-2)
+
+
+def test_calculate_snr_with_dimensions():
+    """Test calculate_snr with different dimension reductions."""
+    # Create 2D signal with different powers per channel
+    original = torch.zeros(3, 100)
+    original[0, :] = 1.0  # Power = 1.0
+    original[1, :] = 2.0  # Power = 4.0
+    original[2, :] = 3.0  # Power = 9.0
+    
+    # Create noise with known power
+    noise = torch.ones_like(original) * 0.5  # Power = 0.25
+    
+    # Create noisy signal
+    noisy = original + noise
+    
+    # Calculate SNR for each channel
+    snr_db = calculate_snr(original, noisy, dim=1)
+    
+    # Expected SNRs: 10*log10(1/0.25) = 6.02, 10*log10(4/0.25) = 12.04, 10*log10(9/0.25) = 15.56
+    expected_snrs = torch.tensor([6.02, 12.04, 15.56])
+    
+    assert torch.allclose(snr_db, expected_snrs, rtol=1e-2)
+    
+    # Test with keepdim=True
+    snr_db_keepdim = calculate_snr(original, noisy, dim=1, keepdim=True)
+    assert snr_db_keepdim.shape == torch.Size([3, 1])
+
+
+def test_calculate_snr_error_case():
+    """Test calculate_snr with different shaped inputs."""
+    signal1 = torch.ones(100)
+    signal2 = torch.ones(50)
+    
+    with pytest.raises(ValueError, match="Original and noisy signals must have the same shape"):
+        calculate_snr(signal1, signal2)
+
+
+def test_snr_db_to_linear_edge_cases():
+    """Test edge cases for snr_db_to_linear."""
+    # Test with extremely high dB value
+    high_db = 100.0  # 10^10 in linear scale
+    high_linear = snr_db_to_linear(high_db)
+    assert torch.isclose(high_linear, torch.tensor(1e10), rtol=1e-5)
+    
+    # Test with negative dB value
+    negative_db = -10.0  # 0.1 in linear scale
+    negative_linear = snr_db_to_linear(negative_db)
+    assert torch.isclose(negative_linear, torch.tensor(0.1), rtol=1e-5)
+    
+    # Test with zero dB value
+    zero_db = 0.0  # 1.0 in linear scale
+    zero_linear = snr_db_to_linear(zero_db)
+    assert torch.isclose(zero_linear, torch.tensor(1.0), rtol=1e-5)
+    
+    # Test with tensor input
+    tensor_db = torch.tensor([0.0, 10.0, 20.0])
+    tensor_linear = snr_db_to_linear(tensor_db)
+    assert torch.allclose(tensor_linear, torch.tensor([1.0, 10.0, 100.0]), rtol=1e-5)
+
+
+def test_snr_linear_to_db_edge_cases():
+    """Test edge cases for snr_linear_to_db."""
+    # Test with extremely high linear value
+    high_linear = 1e10
+    high_db = snr_linear_to_db(high_linear)
+    assert torch.isclose(high_db, torch.tensor(100.0), rtol=1e-5)
+    
+    # Test with small linear value
+    small_linear = 0.1
+    small_db = snr_linear_to_db(small_linear)
+    assert torch.isclose(small_db, torch.tensor(-10.0), rtol=1e-5)
+    
+    # Test with tensor input
+    tensor_linear = torch.tensor([1.0, 10.0, 100.0])
+    tensor_db = snr_linear_to_db(tensor_linear)
+    assert torch.allclose(tensor_db, torch.tensor([0.0, 10.0, 20.0]), rtol=1e-5)
+    
+    # Test with negative value (should raise error)
+    with pytest.raises(ValueError, match="SNR in linear scale must be positive"):
+        snr_linear_to_db(-1.0)
+    
+    # Test with zero (should result in -inf)
+    zero_db = snr_linear_to_db(0.0)
+    assert torch.isinf(zero_db)
+    assert zero_db < 0  # Negative infinity
+
+
+def test_add_noise_for_snr_with_tensor_snr():
+    """Test add_noise_for_snr with tensor SNR values."""
+    torch.manual_seed(42)
+    
+    # Create a test signal
+    signal = torch.ones(3, 1000) * 2.0
+    
+    # Different SNR for each channel
+    target_snr_db = torch.tensor([10.0, 20.0, 30.0]).view(3, 1)
+    
+    # Add noise
+    noisy_signal, noise = add_noise_for_snr(signal, target_snr_db, dim=1)
+    
+    # Check shapes
+    assert noisy_signal.shape == signal.shape
+    assert noise.shape == signal.shape
+    
+    # Check achieved SNR per channel
+    for i in range(3):
+        signal_power = torch.mean(signal[i]**2)
+        noise_power = torch.mean(noise[i]**2)
+        achieved_snr_db = 10 * torch.log10(signal_power / noise_power)
+        
+        assert torch.isclose(achieved_snr_db, target_snr_db[i], rtol=0.1)
+
+
+def test_estimate_signal_power_multidimensional():
+    """Test estimate_signal_power with multidimensional inputs."""
+    # Create a 3D tensor
+    signal = torch.ones(2, 3, 4) * 2.0  # All values are 2, so power is 4
+    
+    # Test with different dimension reductions
+    power_all = estimate_signal_power(signal)  # Reduce all dimensions
+    assert torch.isclose(power_all, torch.tensor(4.0))
+    
+    power_dim0 = estimate_signal_power(signal, dim=0)  # Reduce first dimension
+    assert power_dim0.shape == torch.Size([3, 4])
+    assert torch.allclose(power_dim0, torch.tensor(4.0))
+    
+    power_dim01 = estimate_signal_power(signal, dim=(0, 1))  # Reduce first two dimensions
+    assert power_dim01.shape == torch.Size([4])
+    assert torch.allclose(power_dim01, torch.tensor(4.0))
+    
+    # Test with keepdim=True
+    power_keepdim = estimate_signal_power(signal, dim=(0, 1), keepdim=True)
+    assert power_keepdim.shape == torch.Size([1, 1, 4])
+    assert torch.allclose(power_keepdim, torch.tensor(4.0))

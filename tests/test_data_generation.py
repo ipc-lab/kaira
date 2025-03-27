@@ -107,6 +107,11 @@ def test_create_uniform_tensor():
     if torch.cuda.is_available():
         tensor_gpu = create_uniform_tensor(shape, device="cuda")
         assert tensor_gpu.device.type == "cuda"
+        
+    # Test with single integer size parameter
+    tensor_single_int = create_uniform_tensor(7)
+    assert tensor_single_int.shape == torch.Size([7])
+    assert 0.0 <= tensor_single_int.min() < tensor_single_int.max() <= 1.0
 
 
 def test_binary_tensor_dataset():

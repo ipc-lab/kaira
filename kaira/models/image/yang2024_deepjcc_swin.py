@@ -121,7 +121,7 @@ class _WindowAttention(nn.Module):
         relative_coords[:, :, 1] += self.window_size[1] - 1
         relative_coords[:, :, 0] *= 2 * self.window_size[1] - 1
         relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
-        self.registerBuffer("relative_position_index", relative_position_index)
+        self.register_buffer("relative_position_index", relative_position_index)
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
@@ -576,7 +576,7 @@ class _SwinTransformerBlock(nn.Module):
         else:
             attn_mask = None
 
-        self.registerBuffer("attn_mask", attn_mask)
+        self.register_buffer("attn_mask", attn_mask)
 
     def forward(self, x):
         """Forward pass of the Swin Transformer block.

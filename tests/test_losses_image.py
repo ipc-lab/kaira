@@ -114,3 +114,102 @@ def test_elastic_loss_forward(sample_preds, sample_targets):
     elastic_loss = ElasticLoss()
     loss = elastic_loss(sample_preds, sample_targets)
     assert isinstance(loss, torch.Tensor)
+
+
+def test_total_variation_loss_different_dimensions():
+    """Test total variation loss with different image dimensions."""
+    # This will test line 278 in TotalVariationLoss (checking larger dimensions)
+    x = torch.randn(2, 3, 64, 64)
+    total_variation_loss = TotalVariationLoss()
+    loss = total_variation_loss(x)
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Should be a scalar
+
+
+def test_focal_loss_with_alpha_multiclass():
+    """Test focal loss with alpha parameter for multiclass case."""
+    # Tests lines 476-479
+    num_classes = 5
+    batch_size = 8
+    inputs = torch.randn(batch_size, num_classes)
+    targets = torch.randint(0, num_classes, (batch_size,))
+    
+    # Create alpha tensor for multiclass case
+    alpha = torch.ones(num_classes) * 0.5
+    
+    focal_loss = FocalLoss(alpha=alpha, gamma=2.0)
+    loss = focal_loss(inputs, targets)
+    
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Should be a scalar
+
+
+def test_elastic_loss_different_reductions():
+    """Test elastic loss with different reduction modes."""
+    # Tests lines 568-575 and part of 581-594
+    x = torch.randn(2, 3, 32, 32)
+    target = torch.randn(2, 3, 32, 32)
+    
+    # Test 'none' reduction
+    elastic_loss = ElasticLoss(reduction="none")
+    loss = elastic_loss(x, target)
+    assert isinstance(loss, torch.Tensor)
+    assert loss.shape == x.shape  # No reduction, so shape should match input
+    
+    # Test 'sum' reduction
+    elastic_loss = ElasticLoss(reduction="sum")
+    loss = elastic_loss(x, target)
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Should be a scalar
+
+
+def test_elastic_loss_beta_transition():
+    """Test elastic loss transition from L1 to L2 based on beta parameter."""
+    # Tests the remaining lines in 581-594
+    x = torch.zeros(1, 3, 16, 16)
+    
+    # Create a target with varying differences
+    target = torch.zeros(1, 3, 16, 16)
+    target[0, 0, 0, 0] = 0.1  # Small difference (< beta)
+    target[0, 0, 0, 1] = 2.0  # Large difference (> beta)
+    
+    beta = 0.5
+    elastic_loss = ElasticLoss(beta=beta, alpha=0.5)
+    loss = elastic_loss(x, target)
+    
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Should be a scalar
+    
+    # Check behavior with custom alpha
+    elastic_loss = ElasticLoss(beta=beta, alpha=0.75)
+    loss_more_l2 = elastic_loss(x, target)
+    
+    elastic_loss = ElasticLoss(beta=beta, alpha=0.25)
+    loss_more_l1 = elastic_loss(x, target)
+    
+    # Higher alpha means more L2 contribution (smoother behavior)
+    # so for same input, it should handle large differences differently
+    assert loss_more_l2 != loss_more_l1
+
+
+def test_style_loss_with_parameters():
+    """Test style loss with different parameter configurations."""
+    # Tests lines 645-648
+    x = torch.randn(1, 3, 64, 64)
+    target = torch.randn(1, 3, 64, 64)
+    
+    # Test with normalization
+    style_loss = StyleLoss(normalize=True)
+    loss_normalized = style_loss(x, target)
+    assert isinstance(loss_normalized, torch.Tensor)
+    
+    # Test with custom layer weights
+    layer_weights = {f"layer_{i}": 0.2 * i for i in range(5)}
+    style_loss = StyleLoss(layer_weights=layer_weights)
+    loss_weighted = style_loss(x, target)
+    assert isinstance(loss_weighted, torch.Tensor)
+    
+    # Test without applying gram matrix (directly compare features)
+    style_loss = StyleLoss(apply_gram=False)
+    loss_no_gram = style_loss(x, target)
+    assert isinstance(loss_no_gram, torch.Tensor)

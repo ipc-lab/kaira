@@ -258,3 +258,43 @@ def test_metric_registry_available_metrics():
     finally:
         # Restore original metrics
         MetricRegistry._metrics = original_metrics
+
+
+def test_metric_registry_register_duplicate():
+    """Test that registering a metric with a duplicate name raises ValueError."""
+    original_metrics = MetricRegistry._metrics.copy()
+    MetricRegistry._metrics.clear()
+
+    try:
+        # Register a metric
+        MetricRegistry.register("duplicate_test", DummyMetric)
+        
+        # Try to register another metric with the same name
+        with pytest.raises(ValueError, match="Metric with name 'duplicate_test' already registered"):
+            MetricRegistry.register("duplicate_test", BaseMetric)
+    finally:
+        # Restore original metrics
+        MetricRegistry._metrics = original_metrics
+
+
+def test_metric_registry_available_metrics_alias():
+    """Test that available_metrics is an alias for list_metrics."""
+    original_metrics = MetricRegistry._metrics.copy()
+    
+    try:
+        # Register some test metrics
+        MetricRegistry._metrics.clear()
+        MetricRegistry.register("alias_test1", DummyMetric)
+        MetricRegistry.register("alias_test2", DummyMetric)
+        
+        # Get metrics using both methods
+        list_result = MetricRegistry.list_metrics()
+        available_result = MetricRegistry.available_metrics()
+        
+        # Verify they return the same result
+        assert sorted(list_result) == sorted(available_result)
+        assert "alias_test1" in available_result
+        assert "alias_test2" in available_result
+    finally:
+        # Restore original metrics
+        MetricRegistry._metrics = original_metrics

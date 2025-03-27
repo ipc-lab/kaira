@@ -75,7 +75,7 @@ class PerfectChannel(BaseChannel):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x: torch.Tensor, *args) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Transmit signal without modification (identity operation).
 
         Implements an ideal noiseless, distortionless channel that perfectly
@@ -83,6 +83,8 @@ class PerfectChannel(BaseChannel):
 
         Args:
             x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (ignored)
+            **kwargs: Additional keyword arguments (ignored)
 
         Returns:
             torch.Tensor: The input tensor without any modification.

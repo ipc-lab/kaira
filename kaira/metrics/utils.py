@@ -30,6 +30,27 @@ def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targ
     return results  # type: ignore
 
 
+def print_metric_table(table: List[List[str]], column_widths: Optional[List[int]] = None) -> None:
+    """Print a formatted table of metrics.
+
+    Args:
+        table (List[List[str]]): Table data as list of rows
+        column_widths (Optional[List[int]]): Optional list of column widths
+    """
+    if not column_widths:
+        # Calculate column widths based on content
+        column_widths = [max(len(row[i]) for row in table) for i in range(len(table[0]))]
+
+    # Print header
+    header = table[0]
+    print(" | ".join(h.ljust(w) for h, w in zip(header, column_widths)))
+    print("-" * (sum(column_widths) + 3 * (len(column_widths) - 1)))
+
+    # Print data rows
+    for row in table[1:]:
+        print(" | ".join(cell.ljust(w) for cell, w in zip(row, column_widths)))
+
+
 def format_metric_results(results: Dict[str, Any]) -> str:
     """Format metric results as a string.
 

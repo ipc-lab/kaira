@@ -60,3 +60,28 @@ def test_seed_everything_cudnn_settings():
     seed_everything(42, cudnn_benchmark=True, cudnn_deterministic=False)
     assert torch.backends.cudnn.deterministic is False
     assert torch.backends.cudnn.benchmark is True
+
+
+def test_seed_everything_global_seed_state():
+    """Test that seed_everything affects the global seed state."""
+    # Set a specific seed
+    seed_value = 42
+    seed_everything(seed_value)
+    
+    # Generate some random values
+    rand1 = torch.rand(5)
+    rand2 = np.random.rand(5)
+    rand3 = [random.random() for _ in range(5)]
+    
+    # Reset with the same seed
+    seed_everything(seed_value)
+    
+    # Generate new random values - they should match the previous ones
+    rand1_new = torch.rand(5)
+    rand2_new = np.random.rand(5)
+    rand3_new = [random.random() for _ in range(5)]
+    
+    # Check if the random values are identical
+    assert torch.all(torch.eq(rand1, rand1_new))
+    assert np.array_equal(rand2, rand2_new)
+    assert rand3 == rand3_new

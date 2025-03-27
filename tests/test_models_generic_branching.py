@@ -99,3 +99,12 @@ def test_branching_model_get_branch_nonexistent():
 
     with pytest.raises(KeyError, match="Branch 'nonexistent' not found"):
         model.get_branch("nonexistent")
+
+
+def test_branching_model_remove_nonexistent_branch():
+    """Test that removing a nonexistent branch raises KeyError."""
+    model = BranchingModel()
+    
+    # Attempt to remove a branch that doesn't exist
+    with pytest.raises(KeyError, match="Branch 'nonexistent' not found"):
+        model.remove_branch("nonexistent")

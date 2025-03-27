@@ -11,7 +11,7 @@ def random_tensor():
     return torch.randn(4, 100)
 
 
-def test_lambda_channel():
+def test_lambda_channel(random_tensor):
     """Test LambdaChannel with a simple doubling function."""
 
     # Define a simple function that doubles the input
@@ -22,7 +22,7 @@ def test_lambda_channel():
     channel = LambdaChannel(fn=double_fn)
 
     # Apply channel to input
-    input_tensor = random_tensor()
+    input_tensor = random_tensor
     output = channel(input_tensor)
 
     # Check output shape matches input
@@ -32,7 +32,7 @@ def test_lambda_channel():
     assert torch.allclose(output, 2 * input_tensor)
 
 
-def test_lambda_channel_complex():
+def test_lambda_channel_complex(random_tensor):
     """Test LambdaChannel with a complex function."""
 
     # Define a function that adds a constant complex value
@@ -43,7 +43,7 @@ def test_lambda_channel_complex():
     channel = LambdaChannel(fn=add_complex_fn)
 
     # Apply channel to input
-    input_tensor = torch.complex(random_tensor(), random_tensor())
+    input_tensor = torch.complex(random_tensor, random_tensor)
     output = channel(input_tensor)
 
     # Check output shape matches input
@@ -54,13 +54,13 @@ def test_lambda_channel_complex():
     assert torch.allclose(output, expected_output)
 
 
-def test_perfect_channel():
+def test_perfect_channel(random_tensor):
     """Test PerfectChannel (identity channel)."""
     # Create PerfectChannel
     channel = PerfectChannel()
 
     # Apply channel to input
-    input_tensor = random_tensor()
+    input_tensor = random_tensor
     output = channel(input_tensor)
 
     # Check output shape matches input
@@ -70,13 +70,13 @@ def test_perfect_channel():
     assert torch.allclose(output, input_tensor)
 
 
-def test_perfect_channel_with_args():
+def test_perfect_channel_with_args(random_tensor):
     """Test PerfectChannel with additional arguments."""
     # Create PerfectChannel
     channel = PerfectChannel()
 
     # Create a random tensor
-    input_tensor = random_tensor()
+    input_tensor = random_tensor
 
     # Pass additional arguments to the forward method
     output = channel(input_tensor, "extra_arg", keyword_arg=123)
@@ -85,8 +85,8 @@ def test_perfect_channel_with_args():
     assert torch.allclose(output, input_tensor)
 
     # Test with multiple tensors as additional args
-    extra_tensor1 = random_tensor()
-    extra_tensor2 = random_tensor()
+    extra_tensor1 = torch.randn(4, 100)
+    extra_tensor2 = torch.randn(4, 100)
     output = channel(input_tensor, extra_tensor1, extra_tensor2)
 
     # Verify the output is still identical to the input
