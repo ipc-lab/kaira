@@ -69,15 +69,37 @@ def test_mel_spectrogram_loss_forward(sample_audio, target_audio):
 
 def test_feature_matching_loss_forward(sample_audio, target_audio):
     """Test FeatureMatchingLoss forward pass."""
-
-    # Assuming a dummy model for feature extraction
-    class DummyModel(torch.nn.Module):
+    
+    # Create a model with proper layers for feature extraction
+    class LayeredModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.layers = torch.nn.ModuleList([
+                torch.nn.Conv1d(1, 4, kernel_size=3, padding=1),
+                torch.nn.Conv1d(4, 8, kernel_size=3, padding=1)
+            ])
+            
         def forward(self, x):
-            return x
-
-    model = DummyModel()
-    feature_matching_loss = FeatureMatchingLoss(model, layers=[0])
-    loss = feature_matching_loss(sample_audio, target_audio)
+            # Make sure input has proper shape for Conv1d (batch, channels, length)
+            if x.dim() == 2:
+                x = x.unsqueeze(1)
+            
+            features = []
+            for layer in self.layers:
+                x = layer(x)
+                features.append(x)
+            return x, features
+    
+    model = LayeredModel()
+    feature_matching_loss = FeatureMatchingLoss(model, layers=[0, 1])
+    
+    # Pass through model first to get features
+    _, real_features = model(sample_audio)
+    _, fake_features = model(target_audio)
+    
+    # Then pass the features to the loss
+    loss = feature_matching_loss(real_features, fake_features)
+    
     assert isinstance(loss, torch.Tensor)
 
 

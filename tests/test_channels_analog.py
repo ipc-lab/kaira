@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 import torch
-
+import math
 from kaira.channels import (
     AWGNChannel,
     FlatFadingChannel,
@@ -418,7 +418,7 @@ def test_nonlinear_channel_invalid_parameters():
     with pytest.raises(ValueError):
         NonlinearChannel(nonlinear_fn=lambda x: x, complex_mode="invalid")
     with pytest.raises(ValueError):
-        NonlinearChannel(nonlinear_fn=lambda x: x, add_noise=True)
+        NonlinearChannel(nonlinear_fn=lambda x: x, add_noise=True, avg_noise_power=None, snr_db=None)
 
 
 def test_laplacian_channel_snr():
@@ -611,7 +611,7 @@ def test_nonlinear_channel_avg_noise_power():
         return x
 
     x = torch.ones(1000)
-    noise_power = 0.1
+    noise_power = torch.tensor(0.1)  # Convert to tensor to avoid the error
 
     channel = NonlinearChannel(nonlinear_fn=nonlinear_fn, add_noise=True, avg_noise_power=noise_power)
 
@@ -625,4 +625,4 @@ def test_nonlinear_channel_avg_noise_power():
     actual_noise_power = torch.mean(noise**2).item()
 
     # Check that actual noise power is close to specified
-    assert abs(actual_noise_power - noise_power) < 0.02
+    assert abs(actual_noise_power - noise_power.item()) < 0.02

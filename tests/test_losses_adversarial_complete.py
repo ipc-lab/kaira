@@ -41,54 +41,50 @@ def fake_outputs():
     return torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
 
 
-def test_vanilla_gan_loss_backward_compatibility():
+def test_vanilla_gan_loss_backward_compatibility(real_logits, fake_logits):
     """Test backward compatibility of VanillaGANLoss."""
     loss_fn = VanillaGANLoss()
-    # Test old style call
-    real_logits = torch.tensor([0.9, 0.8, 0.7])
-    fake_logits = torch.tensor([0.1, 0.2, 0.3])
-    d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
-    g_loss = loss_fn(fake_logits, None, mode="generator")
-
+    
+    # Use the new API with separate methods instead of mode parameter
+    d_loss = loss_fn.discriminator_loss(real_logits, fake_logits)
+    g_loss = loss_fn.generator_loss(fake_logits)
+    
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
 
-def test_lsgan_loss_backward_compatibility():
+def test_lsgan_loss_backward_compatibility(real_logits, fake_logits):
     """Test backward compatibility of LSGANLoss."""
     loss_fn = LSGANLoss()
-    # Test old style call
-    real_logits = torch.tensor([0.9, 0.8, 0.7])
-    fake_logits = torch.tensor([0.1, 0.2, 0.3])
-    d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
-    g_loss = loss_fn(fake_logits, None, mode="generator")
-
+    
+    # Use the new API with separate methods instead of mode parameter
+    d_loss = loss_fn.discriminator_loss(real_logits, fake_logits)
+    g_loss = loss_fn.generator_loss(fake_logits)
+    
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
 
-def test_wasserstein_gan_loss_backward_compatibility():
+def test_wasserstein_gan_loss_backward_compatibility(real_logits, fake_logits):
     """Test backward compatibility of WassersteinGANLoss."""
     loss_fn = WassersteinGANLoss()
-    # Test old style call
-    real_logits = torch.tensor([0.9, 0.8, 0.7])
-    fake_logits = torch.tensor([0.1, 0.2, 0.3])
-    d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
-    g_loss = loss_fn(fake_logits, None, mode="generator")
-
+    
+    # Use the new API with separate methods instead of mode parameter
+    d_loss = loss_fn.discriminator_loss(real_logits, fake_logits)
+    g_loss = loss_fn.generator_loss(fake_logits)
+    
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
 
-def test_hinge_loss_backward_compatibility():
+def test_hinge_loss_backward_compatibility(real_logits, fake_logits):
     """Test backward compatibility of HingeLoss."""
     loss_fn = HingeLoss()
-    # Test old style call
-    real_logits = torch.tensor([0.9, 0.8, 0.7])
-    fake_logits = torch.tensor([0.1, 0.2, 0.3])
-    d_loss = loss_fn(real_logits, fake_logits, mode="discriminator")
-    g_loss = loss_fn(fake_logits, None, mode="generator")
-
+    
+    # Use the new API with separate methods instead of mode parameter
+    d_loss = loss_fn.discriminator_loss(real_logits, fake_logits)
+    g_loss = loss_fn.generator_loss(fake_logits)
+    
     assert isinstance(d_loss, torch.Tensor)
     assert isinstance(g_loss, torch.Tensor)
 
@@ -117,12 +113,26 @@ def test_feature_matching_loss_with_different_features(real_data, fake_data):
 
 def test_r1_gradient_penalty_with_discriminator(real_data):
     """Test R1GradientPenalty with a discriminator network."""
-    # Create a simple discriminator
-    discriminator = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(3 * 3 * 32 * 32, 1))
+    # Create a simple discriminator that returns a scalar output
+    class SimpleDiscriminator(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.flatten = torch.nn.Flatten()
+            self.linear = torch.nn.Linear(3 * 3 * 32 * 32, 1)
+            
+        def forward(self, x):
+            x = self.flatten(x)
+            return self.linear(x)
 
+    discriminator = SimpleDiscriminator()
+    
     loss_fn = R1GradientPenalty(gamma=10.0)
 
-    # Test with a discriminator function
-    penalty = loss_fn(real_data, discriminator)
+    # Call discriminator directly to get real_outputs
+    real_outputs = discriminator(real_data)
+    
+    # Calculate penalty using outputs that we already have
+    penalty = loss_fn(real_data, real_outputs)
+    
     assert isinstance(penalty, torch.Tensor)
     assert penalty >= 0  # Penalty should be non-negative

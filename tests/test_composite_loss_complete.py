@@ -18,16 +18,17 @@ def test_composite_loss_forward_without_weights():
     """Test CompositeLoss forward pass without explicit weights."""
     loss1 = MockLoss(return_value=2.0)
     loss2 = MockLoss(return_value=3.0)
-
-    composite = CompositeLoss()
+    
+    # Initialize with empty list and then add losses
+    composite = CompositeLoss(losses=[])
     composite.add_loss(loss1)
     composite.add_loss(loss2)
-
+    
     # Without weights, it should be a simple average
     x = torch.randn(3, 3)
     y = torch.randn(3, 3)
     result = composite(x, y)
-
+    
     # Expected result: (2.0 + 3.0) / 2 = 2.5
     assert torch.isclose(result, torch.tensor(2.5))
 
@@ -37,7 +38,8 @@ def test_composite_loss_str_representation():
     loss1 = MockLoss(return_value=1.0)
     loss2 = MockLoss(return_value=2.0)
 
-    composite = CompositeLoss()
+    # Initialize with losses list
+    composite = CompositeLoss(losses=[])
     composite.add_loss(loss1, weight=0.3)
     composite.add_loss(loss2, weight=0.7)
 
@@ -51,7 +53,8 @@ def test_composite_loss_str_representation():
 
 def test_composite_loss_empty():
     """Test CompositeLoss behavior when no losses are added."""
-    composite = CompositeLoss()
+    # Initialize with empty list of losses
+    composite = CompositeLoss(losses=[])
 
     # With no losses, it should return zero
     x = torch.randn(3, 3)
