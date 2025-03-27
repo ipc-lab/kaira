@@ -12,9 +12,10 @@ from torch.utils.data import Dataset
 
 
 def create_binary_tensor(
-    size: Union[List[int], torch.Size],
+    size: Union[List[int], torch.Size, int],
     prob: float = 0.5,
     device: Optional[torch.device] = None,
+    dtype: Optional[torch.dtype] = None,
 ) -> torch.Tensor:
     """Create a random binary tensor with specified probability of 1s.
 
@@ -22,18 +23,30 @@ def create_binary_tensor(
         size: Shape of the tensor to generate
         prob: Probability of generating 1s (default: 0.5 for uniform distribution)
         device: Device to create the tensor on (default: None, uses default device)
+        dtype: Data type of the tensor (default: None, uses default dtype)
 
     Returns:
         A binary tensor with random 0s and 1s according to the specified probability
     """
-    return torch.bernoulli(torch.full(size, prob, device=device))
+    # Convert single integer to tuple
+    if isinstance(size, int):
+        size = (size,)
+    
+    result = torch.bernoulli(torch.full(size, prob, device=device))
+    
+    # Convert to requested dtype if specified
+    if dtype is not None:
+        result = result.to(dtype)
+        
+    return result
 
 
 def create_uniform_tensor(
-    size: Union[List[int], torch.Size],
+    size: Union[List[int], torch.Size, int],
     low: float = 0.0,
     high: float = 1.0,
     device: Optional[torch.device] = None,
+    dtype: Optional[torch.dtype] = None,
 ) -> torch.Tensor:
     """Create a tensor with uniformly distributed random values.
 
@@ -42,11 +55,22 @@ def create_uniform_tensor(
         low: Lower bound of the uniform distribution (inclusive)
         high: Upper bound of the uniform distribution (exclusive)
         device: Device to create the tensor on (default: None, uses default device)
+        dtype: Data type of the tensor (default: None, uses default dtype)
 
     Returns:
         A tensor with random values uniformly distributed between low and high
     """
-    return torch.rand(size, device=device) * (high - low) + low
+    # Convert single integer to tuple
+    if isinstance(size, int):
+        size = (size,)
+    
+    result = torch.rand(size, device=device) * (high - low) + low
+    
+    # Convert to requested dtype if specified
+    if dtype is not None:
+        result = result.to(dtype)
+        
+    return result
 
 
 class BinaryTensorDataset(Dataset):
