@@ -71,8 +71,8 @@ class BitErrorRate(BaseMetric):
         errors = (transmitted_bits != received_bits).float()
 
         # Update cumulative statistics
-        self.total_bits += torch.prod(torch.tensor(transmitted.shape))
-        self.error_bits += errors.sum()
+        self.total_bits += torch.prod(torch.tensor(transmitted.shape)).long()
+        self.error_bits += errors.sum().long()  # Convert to long to match buffer type
 
     def compute(self) -> Tensor:
         """Compute the accumulated BER.

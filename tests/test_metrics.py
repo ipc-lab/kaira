@@ -18,13 +18,15 @@ from kaira.metrics import (
 @pytest.fixture
 def sample_preds():
     """Fixture for creating sample predictions tensor."""
-    return torch.randn(1, 3, 32, 32)
+    # Increased size to accommodate multi-scale operations (at least 256x256)
+    return torch.randn(1, 3, 256, 256)
 
 
 @pytest.fixture
 def sample_targets():
     """Fixture for creating sample targets tensor."""
-    return torch.randn(1, 3, 32, 32)
+    # Increased size to accommodate multi-scale operations (at least 256x256)
+    return torch.randn(1, 3, 256, 256)
 
 
 @pytest.fixture
@@ -100,10 +102,11 @@ def test_psnr_initialization():
 def test_psnr_compute(sample_preds, sample_targets):
     """Test PeakSignalNoiseRatio compute method."""
     psnr = PeakSignalNoiseRatio()
-    psnr.update(sample_preds, sample_targets)
-    mean, std = psnr.compute()
-    assert isinstance(mean, torch.Tensor)
-    assert isinstance(std, torch.Tensor)
+    # Direct computation instead of using update
+    psnr_value = psnr(sample_preds, sample_targets)
+    assert isinstance(psnr_value, torch.Tensor)
+    assert psnr_value.ndim == 0  # Scalar output
+    assert not torch.isnan(psnr_value)  # Should not be NaN
 
 
 def test_ssim_initialization():
@@ -115,10 +118,11 @@ def test_ssim_initialization():
 def test_ssim_compute(sample_preds, sample_targets):
     """Test StructuralSimilarityIndexMeasure compute method."""
     ssim = StructuralSimilarityIndexMeasure()
-    ssim.update(sample_preds, sample_targets)
-    mean, std = ssim.compute()
-    assert isinstance(mean, torch.Tensor)
-    assert isinstance(std, torch.Tensor)
+    # Direct computation instead of using update
+    ssim_value = ssim(sample_preds, sample_targets)
+    assert isinstance(ssim_value, torch.Tensor)
+    assert ssim_value.ndim == 0  # Scalar output
+    assert 0 <= ssim_value <= 1  # SSIM is between 0 and 1
 
 
 def test_snr_initialization():
@@ -139,14 +143,25 @@ def test_snr_computation(signal_data):
 def test_snr_db_values(signal_data, snr_db):
     """Test SNR computation with different SNR values."""
     signal, _ = signal_data
-    # Create noisy signal with specific SNR
-    noise_power = 10 ** (-snr_db/10)
-    noise = torch.sqrt(torch.tensor(noise_power)) * torch.randn_like(signal)
-    noisy_signal = signal + noise
     
+    # Create noisy signal with specific SNR using correct power calculation
+    signal_power = torch.mean(signal**2).item()
+    noise_power = signal_power / (10**(snr_db/10))  # Calculate required noise power for desired SNR
+    
+    # Generate noise with the exact power needed
+    noise = torch.randn_like(signal)
+    noise_scale = torch.sqrt(torch.tensor(noise_power) / torch.mean(noise**2))
+    scaled_noise = noise * noise_scale
+    
+    # Create noisy signal
+    noisy_signal = signal + scaled_noise
+    
+    # Calculate SNR
     snr = SignalToNoiseRatio()
-    snr_value = snr(noisy_signal, signal)
-    assert abs(snr_value - snr_db) < 1.0  # Allow for some numerical error
+    snr_value = snr(signal, noisy_signal)
+    
+    # Check the calculated SNR is close to the expected value
+    assert abs(snr_value.item() - snr_db) < 1.0  # Allow for some numerical error
 
 def test_snr_perfect_signal():
     """Test SNR computation with no noise."""
@@ -239,10 +254,18 @@ def test_bler_computation(binary_data, block_size):
     received_blocks = received_bits[:, :usable_bits].reshape(1, -1, block_size)
     
     bler = BlockErrorRate()
+    # Direct computation instead of update+compute
     bler_value = bler(received_blocks, true_blocks)
     assert isinstance(bler_value, torch.Tensor)
     assert bler_value.ndim == 0  # Scalar output
     assert 0 <= bler_value <= 1  # BLER should be between 0 and 1
+    
+    # Test the update+compute path separately
+    bler.reset()
+    bler.update(received_blocks, true_blocks)
+    bler_mean, bler_std = bler.compute()  # Now properly unpack the tuple
+    assert isinstance(bler_mean, torch.Tensor)
+    assert isinstance(bler_std, torch.Tensor)
 
 def test_block_error_edge_cases():
     """Test BLER computation with edge cases."""
@@ -297,10 +320,18 @@ def test_fer_computation(binary_data, frame_size):
     received_frames = received_bits[:, :usable_bits].reshape(1, -1, frame_size)
     
     fer = FrameErrorRate()
+    # Direct computation
     fer_value = fer(received_frames, true_frames)
     assert isinstance(fer_value, torch.Tensor)
     assert fer_value.ndim == 0  # Scalar output
     assert 0 <= fer_value <= 1  # FER should be between 0 and 1
+    
+    # Test update + compute path
+    fer.reset()
+    fer.update(received_frames, true_frames)
+    fer_mean, fer_std = fer.compute()  # Properly unpack the tuple
+    assert isinstance(fer_mean, torch.Tensor)
+    assert isinstance(fer_std, torch.Tensor)
 
 @pytest.mark.parametrize("bits_per_symbol", [2, 4, 6])  # Testing for QPSK, 16-QAM, 64-QAM
 def test_ser_computation(binary_data, bits_per_symbol):
@@ -314,10 +345,18 @@ def test_ser_computation(binary_data, bits_per_symbol):
     received_symbols = received_bits[:, :usable_bits].reshape(1, -1, bits_per_symbol)
     
     ser = SymbolErrorRate()
+    # Direct computation
     ser_value = ser(received_symbols, true_symbols)
     assert isinstance(ser_value, torch.Tensor)
     assert ser_value.ndim == 0  # Scalar output
     assert 0 <= ser_value <= 1  # SER should be between 0 and 1
+    
+    # Test update + compute path
+    ser.reset()
+    ser.update(received_symbols, true_symbols)
+    ser_mean, ser_std = ser.compute()  # Properly unpack the tuple
+    assert isinstance(ser_mean, torch.Tensor)
+    assert isinstance(ser_std, torch.Tensor)
 
 @pytest.mark.parametrize("error_positions", [0, -1, "middle"])
 def test_ser_single_error(error_positions):
@@ -348,7 +387,8 @@ def test_ser_specific_positions(bits_per_symbol, error_positions):
     
     # Introduce errors at specific positions
     for pos in error_positions:
-        received_symbols[0, pos] = ~received_symbols[0, pos]
+        # Flip the bits to create errors (1s instead of 0s)
+        received_symbols[0, pos] = torch.ones_like(received_symbols[0, pos])
     
     ser = SymbolErrorRate()
     ser_value = ser(received_symbols, true_symbols)

@@ -96,8 +96,11 @@ def test_uniform_tensor_dataset():
 
 def test_wyner_ziv_correlation_model():
     """Test WynerZivCorrelationModel functionality."""
-    corr = 0.8
-    model = WynerZivCorrelationModel(correlation=corr)
+    # Use the actual parameters expected by the WynerZivCorrelationModel
+    model = WynerZivCorrelationModel(
+        correlation_type="binary", 
+        correlation_params={"crossover_prob": 0.2}
+    )
     
     # Generate correlated sequences
     x = torch.randint(0, 2, (1000,)).float()
@@ -110,23 +113,31 @@ def test_wyner_ziv_correlation_model():
     assert torch.all((y == 0) | (y == 1))
     
     # Check correlation (approximately)
-    empirical_corr = (x == y).float().mean().item()
-    assert abs(empirical_corr - corr) < 0.05  # Allow some statistical deviation
+    # Expected correlation is 1 - 2*crossover_prob for binary case
+    expected_corr = 1 - 2 * 0.2  # = 0.6
+    empirical_corr = 1 - 2 * ((x != y).float().mean().item())
+    assert abs(empirical_corr - expected_corr) < 0.05  # Allow some statistical deviation
 
 
 def test_wyner_ziv_correlation_dataset():
     """Test WynerZivCorrelationDataset functionality."""
-    size = (100, 20)
-    corr = 0.7
-    dataset = WynerZivCorrelationDataset(size, correlation=corr)
+    # Create source tensor
+    source = torch.randint(0, 2, (100, 20)).float()
+    
+    # Create dataset with the proper parameters
+    dataset = WynerZivCorrelationDataset(
+        source=source,
+        correlation_type="binary",
+        correlation_params={"crossover_prob": 0.15}
+    )
     
     # Check length
-    assert len(dataset) == size[0]
+    assert len(dataset) == 100  # First dimension of source
     
     # Check item retrieval
     x, y = dataset[0]
-    assert x.shape == torch.Size([size[1]])
-    assert y.shape == torch.Size([size[1]])
+    assert x.shape == torch.Size([20])  # Second dimension of source
+    assert y.shape == torch.Size([20])
     
     # Check binary values
     assert torch.all((x == 0) | (x == 1))
@@ -134,5 +145,5 @@ def test_wyner_ziv_correlation_dataset():
     
     # Test batch retrieval
     batch_x, batch_y = dataset[10:20]
-    assert batch_x.shape == torch.Size([10, size[1]])
-    assert batch_y.shape == torch.Size([10, size[1]])
+    assert batch_x.shape == torch.Size([10, 20])
+    assert batch_y.shape == torch.Size([10, 20])

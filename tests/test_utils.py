@@ -11,15 +11,18 @@ def test_snr_linear_to_db(snr_linear):
     """Test snr_linear_to_db function."""
     snr_db = snr_linear_to_db(snr_linear)
     assert isinstance(snr_db, torch.Tensor)
-    assert torch.isclose(snr_db, torch.tensor(10 * np.log10(snr_linear)))
+    # Use torch.isclose with tensor conversion to fix the type mismatch
+    expected = torch.tensor(10 * np.log10(snr_linear), dtype=snr_db.dtype)
+    assert torch.isclose(snr_db, expected)
 
 
 @pytest.mark.parametrize("snr_db", [0.0, 10.0, 20.0])
 def test_snr_db_to_linear(snr_db):
     """Test snr_db_to_linear function."""
     snr_linear = snr_db_to_linear(snr_db)
-    assert isinstance(snr_linear, float)
-    assert np.isclose(snr_linear, 10 ** (snr_db / 10))
+    assert isinstance(snr_linear, torch.Tensor)
+    expected = 10 ** (snr_db / 10)
+    assert torch.isclose(snr_linear, torch.tensor(expected, dtype=snr_linear.dtype))
 
 
 @pytest.mark.parametrize(
@@ -43,7 +46,8 @@ def test_to_tensor_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
         tensor = to_tensor([1, 2, 3], device=device)
-        assert tensor.device == device
+        # Check the device type matches, not necessarily the exact device object
+        assert tensor.device.type == "cuda"
 
 
 @pytest.mark.parametrize("num_strided_layers, bw_ratio", [(1, 1.0), (2, 2.0)])

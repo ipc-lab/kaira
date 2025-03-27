@@ -53,7 +53,10 @@ def wyner_ziv_components():
     encoder = SimpleEncoder()
     decoder = SimpleDecoder()
     channel = IdentityChannel()
-    correlation_model = WynerZivCorrelationModel(correlation=0.8)
+    correlation_model = WynerZivCorrelationModel(
+        correlation_type="binary", 
+        correlation_params={"crossover_prob": 0.1}
+    )
     quantizer = SimpleQuantizer()
     syndrome_generator = SimpleSyndromeGenerator()
     constraint = TotalPowerConstraint(total_power=1.0)
