@@ -77,7 +77,7 @@ def test_composite_metric_individual_metrics():
     composite = CompositeMetric(metrics)
     
     # Get individual metrics
-    individual = composite.get_individual_metrics(torch.zeros(1), torch.zeros(1))
+    individual = composite.compute_individual(torch.zeros(1), torch.zeros(1))
     
     assert "metric1" in individual
     assert "metric2" in individual

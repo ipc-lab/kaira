@@ -70,10 +70,21 @@ class CompositeMetric(BaseMetric):
                 Use negative weights for metrics where lower values indicate better quality
                 (e.g., LPIPS, MSE) when combining with metrics where higher values indicate
                 better quality (e.g., PSNR, SSIM).
+                
+        Raises:
+            ValueError: If weights dictionary contains keys that don't exist in metrics
         """
         super().__init__(name="CompositeMetric")
         self.metrics = nn.ModuleDict(metrics)
-        self.weights = weights or {name: 1.0 for name in metrics}
+        
+        # Validate weights if provided
+        if weights is not None:
+            invalid_keys = set(weights.keys()) - set(metrics.keys())
+            if invalid_keys:
+                raise ValueError(f"Found invalid keys in weights: {invalid_keys}. Valid keys are: {set(metrics.keys())}")
+            self.weights = weights
+        else:
+            self.weights = {name: 1.0 for name in metrics}
 
         # Normalize weights
         total = sum(self.weights.values())
@@ -131,3 +142,35 @@ class CompositeMetric(BaseMetric):
         for name, metric in self.metrics.items():
             results[name] = metric(x, y)
         return results
+
+    def add_metric(self, name: str, metric: BaseMetric, weight: float = None) -> None:
+        """Add a new metric to the composite metric.
+
+        Args:
+            name (str): Name of the metric to add
+            metric (BaseMetric): The metric object to add
+            weight (float, optional): Weight for the new metric. If None, will use 1.0
+                and renormalize all weights. Defaults to None.
+
+        Raises:
+            ValueError: If a metric with the given name already exists
+        """
+        if name in self.metrics:
+            raise ValueError(f"Metric '{name}' already exists in composite metric")
+        
+        # Add the metric
+        self.metrics[name] = metric
+        
+        # Handle weights
+        if weight is None:
+            # Default to equal weights for all metrics
+            total_metrics = len(self.metrics)
+            self.weights = {k: 1.0 / total_metrics for k in self.metrics}
+        else:
+            # Add new weight and renormalize
+            current_total = sum(self.weights.values())
+            new_total = current_total + weight
+            # Scale existing weights
+            self.weights = {k: (v * current_total / new_total) for k, v in self.weights.items()}
+            # Add new weight
+            self.weights[name] = weight / new_total

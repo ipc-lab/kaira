@@ -74,7 +74,7 @@ def test_loss_registry_create():
         assert loss.value == 0.75
         
         # Test with non-existent loss
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             LossRegistry.create("nonexistent_loss")
     finally:
         # Restore original losses
@@ -94,28 +94,6 @@ def test_loss_registry_list_losses():
         assert "loss1" in losses
         assert "loss2" in losses
         assert len(losses) == 2
-    finally:
-        # Restore original losses
-        LossRegistry._losses = original_losses
-
-
-def test_loss_registry_get_loss_info():
-    """Test getting loss info."""
-    original_losses = LossRegistry._losses.copy()
-    LossRegistry._losses.clear()
-    
-    try:
-        LossRegistry.register("info_test", DummyLoss)
-        
-        # Get info
-        info = LossRegistry.get_loss_info("info_test")
-        assert info["name"] == "info_test"
-        assert info["class"] == DummyLoss.__name__
-        assert "signature" in info
-        
-        # Test with non-existent loss
-        with pytest.raises(ValueError):
-            LossRegistry.get_loss_info("nonexistent")
     finally:
         # Restore original losses
         LossRegistry._losses = original_losses

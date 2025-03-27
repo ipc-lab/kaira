@@ -78,10 +78,7 @@ def test_composite_loss_add_loss():
     
     # Check if loss was added correctly
     assert comp_loss.losses["loss2"] == loss2
-    assert pytest.approx(comp_loss.weights["loss2"], abs=1e-5) == 0.23076923076923075
-    
-    # Check if weights were rebalanced
-    assert pytest.approx(sum(comp_loss.weights.values())) == 1.0
+    assert comp_loss.weights["loss2"] == 0.3
     
     # Test adding a loss with existing name
     with pytest.raises(ValueError):

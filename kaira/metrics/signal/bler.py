@@ -91,7 +91,7 @@ class BlockErrorRate(BaseMetric):
             targets (Tensor): Target values
 
         Returns:
-            Tensor: Block Error Rate values
+            Tensor: Block Error Rate value
         """
         if preds.shape != targets.shape:
             raise ValueError(f"Shape mismatch: {preds.shape} vs {targets.shape}")
@@ -107,10 +107,10 @@ class BlockErrorRate(BaseMetric):
             # Reduce along block_size dimension to check if any element has error in each block
             block_errors = errors.any(dim=-1)
         else:
-            # The input is already organized as [batch_size, num_blocks, block_size]
-            # Just check if any element in each block has an error
+            # Each row is already a block
             errors = torch.abs(preds - targets) > self.threshold
-            block_errors = errors.any(dim=-1)
+            errors_flat = errors.reshape(errors.shape[0], -1)
+            block_errors = errors_flat.any(dim=-1)
 
         # Apply reduction
         if self.reduction == "none":
@@ -137,7 +137,7 @@ class BlockErrorRate(BaseMetric):
 
             # Count total blocks and blocks with errors
             self.total_blocks += block_errors.numel()
-            self.error_blocks += block_errors.sum()
+            self.error_blocks += block_errors.sum().item()
         else:
             # Each row is a block
             errors = torch.abs(preds - targets) > self.threshold
@@ -145,18 +145,15 @@ class BlockErrorRate(BaseMetric):
             block_errors = errors_flat.any(dim=-1)
 
             self.total_blocks += block_errors.numel()
-            self.error_blocks += block_errors.sum()
+            self.error_blocks += block_errors.sum().item()
 
-    def compute(self) -> Tuple[Tensor, Tensor]:
+    def compute(self) -> Tensor:
         """Compute accumulated block error rate.
 
         Returns:
-            Tuple[Tensor, Tensor]: Mean block error rate and standard error
+            Tensor: Block error rate value
         """
-        bler_mean = self.error_blocks.float() / self.total_blocks
-        # Standard error for a binomial proportion
-        bler_std = torch.sqrt(bler_mean * (1 - bler_mean) / self.total_blocks)
-        return bler_mean, bler_std
+        return torch.tensor(self.error_blocks / max(self.total_blocks, 1), dtype=torch.float32)
 
     def reset(self) -> None:
         """Reset accumulated statistics."""

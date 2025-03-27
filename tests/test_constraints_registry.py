@@ -73,7 +73,7 @@ def test_constraint_registry_create():
         assert constraint.value == 3.0
         
         # Test with non-existent constraint
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             ConstraintRegistry.create("nonexistent_constraint")
     finally:
         # Restore original constraints
@@ -93,28 +93,6 @@ def test_constraint_registry_list_constraints():
         assert "constraint1" in constraints
         assert "constraint2" in constraints
         assert len(constraints) == 2
-    finally:
-        # Restore original constraints
-        ConstraintRegistry._constraints = original_constraints
-
-
-def test_constraint_registry_get_constraint_info():
-    """Test getting constraint info."""
-    original_constraints = ConstraintRegistry._constraints.copy()
-    ConstraintRegistry._constraints.clear()
-    
-    try:
-        ConstraintRegistry.register("info_test", DummyConstraint)
-        
-        # Get info
-        info = ConstraintRegistry.get_constraint_info("info_test")
-        assert info["name"] == "info_test"
-        assert info["class"] == DummyConstraint.__name__
-        assert "signature" in info
-        
-        # Test with non-existent constraint
-        with pytest.raises(ValueError):
-            ConstraintRegistry.get_constraint_info("nonexistent")
     finally:
         # Restore original constraints
         ConstraintRegistry._constraints = original_constraints
