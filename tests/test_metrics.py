@@ -58,16 +58,17 @@ def test_multiscale_ssim_update(sample_preds, sample_targets):
     """Test MultiScaleSSIM update method."""
     msssim = MultiScaleSSIM()
     msssim.update(sample_preds, sample_targets)
-    assert msssim.sum.shape == torch.Size([])
-    assert msssim.total.shape == torch.Size([])
+    assert msssim.sum_values.shape == torch.Size([])  # Use sum_values instead of sum
+    assert msssim.count.shape == torch.Size([])  # Check count instead of total
 
 
 def test_multiscale_ssim_forward(sample_preds, sample_targets):
     """Test MultiScaleSSIM forward pass."""
     msssim = MultiScaleSSIM()
     msssim.update(sample_preds, sample_targets)
-    value = msssim.compute()
-    assert isinstance(value, torch.Tensor)
+    mean, std = msssim.compute()  # Unpack the tuple correctly
+    assert isinstance(mean, torch.Tensor)
+    assert isinstance(std, torch.Tensor)
 
 
 def test_lpips_initialization():
@@ -400,8 +401,9 @@ def test_multiscale_ssim_different_kernel_sizes(sample_preds, sample_targets, ke
     """Test MultiScaleSSIM with different kernel sizes."""
     msssim = MultiScaleSSIM(kernel_size=kernel_size)
     msssim.update(sample_preds, sample_targets)
-    value = msssim.compute()
-    assert isinstance(value, torch.Tensor)
+    mean, std = msssim.compute()  # Unpack the tuple correctly
+    assert isinstance(mean, torch.Tensor)
+    assert isinstance(std, torch.Tensor)
 
 
 @pytest.mark.parametrize("net_type", ["vgg", "alex", "squeeze"])
