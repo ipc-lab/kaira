@@ -390,3 +390,47 @@ def test_nonlinear_channel_complex_cartesian(complex_tensor):
     # Check real and imaginary parts match expectations
     assert torch.allclose(output.real, expected_real)
     assert torch.allclose(output.imag, expected_imag)
+
+
+def test_laplacian_channel_invalid_parameters():
+    """Test LaplacianChannel with invalid parameters."""
+    with pytest.raises(ValueError):
+        LaplacianChannel()
+    with pytest.raises(ValueError):
+        LaplacianChannel(scale=None, avg_noise_power=None, snr_db=None)
+
+
+def test_poisson_channel_invalid_parameters():
+    """Test PoissonChannel with invalid parameters."""
+    with pytest.raises(ValueError):
+        PoissonChannel(rate_factor=-1.0)
+    with pytest.raises(ValueError):
+        PoissonChannel(rate_factor=0.0)
+
+
+def test_phase_noise_channel_invalid_parameters():
+    """Test PhaseNoiseChannel with invalid parameters."""
+    with pytest.raises(ValueError):
+        PhaseNoiseChannel(phase_noise_std=-0.1)
+
+
+def test_flat_fading_channel_invalid_parameters():
+    """Test FlatFadingChannel with invalid parameters."""
+    with pytest.raises(ValueError):
+        FlatFadingChannel(fading_type="invalid", coherence_time=10, snr_db=15)
+    with pytest.raises(ValueError):
+        FlatFadingChannel(fading_type="rician", coherence_time=10, snr_db=15)
+    with pytest.raises(ValueError):
+        FlatFadingChannel(fading_type="lognormal", coherence_time=10, snr_db=15)
+    with pytest.raises(ValueError):
+        FlatFadingChannel(fading_type="lognormal", coherence_time=10, shadow_sigma_db=None, snr_db=15)
+
+
+def test_nonlinear_channel_invalid_parameters():
+    """Test NonlinearChannel with invalid parameters."""
+    with pytest.raises(ValueError):
+        NonlinearChannel(nonlinear_fn=None)
+    with pytest.raises(ValueError):
+        NonlinearChannel(nonlinear_fn=lambda x: x, complex_mode="invalid")
+    with pytest.raises(ValueError):
+        NonlinearChannel(nonlinear_fn=lambda x: x, add_noise=True)

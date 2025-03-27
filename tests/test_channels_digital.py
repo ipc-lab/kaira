@@ -192,3 +192,21 @@ def test_channel_registry():
     bz = ChannelRegistry.create("binaryzchannel", error_prob=0.3)
     assert isinstance(bz, BinaryZChannel)
     assert abs(bz.error_prob.item() - 0.3) < 1e-6  # Use approximate comparison for float
+
+
+def test_binary_z_channel_neg_one_format():
+    """Test BinaryZChannel with {-1, 1} input format."""
+    torch.manual_seed(42)
+    input_tensor = torch.tensor([-1, 1, -1, 1], dtype=torch.float32)
+    channel = BinaryZChannel(error_prob=0.5)
+    output = channel(input_tensor)
+    assert torch.all((output == -1) | (output == 1))
+
+
+def test_binary_z_channel_no_errors():
+    """Test BinaryZChannel with error probability of 0."""
+    torch.manual_seed(42)
+    input_tensor = torch.tensor([0, 1, 0, 1], dtype=torch.float32)
+    channel = BinaryZChannel(error_prob=0.0)
+    output = channel(input_tensor)
+    assert torch.equal(input_tensor, output)
