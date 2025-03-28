@@ -63,6 +63,10 @@ class BlockErrorRate(BaseMetric):
             # Each row is a separate block
             return x
 
+        # Handle empty tensor case
+        if x.numel() == 0:
+            return x.reshape(0, 0, 0)
+
         batch_size = x.size(0)
         # Make sure tensor can be evenly divided into blocks
         if x.numel() % (batch_size * self.block_size) != 0:
@@ -96,6 +100,10 @@ class BlockErrorRate(BaseMetric):
         if preds.shape != targets.shape:
             raise ValueError(f"Shape mismatch: {preds.shape} vs {targets.shape}")
 
+        # Handle empty tensors
+        if preds.numel() == 0 or targets.numel() == 0:
+            return torch.tensor(0.0)
+
         # Reshape inputs into blocks if needed
         if self.block_size is not None:
             preds_blocks = self._reshape_into_blocks(preds)
@@ -118,7 +126,10 @@ class BlockErrorRate(BaseMetric):
         elif self.reduction == "sum":
             return block_errors.sum().float()
         else:  # default: 'mean'
-            return block_errors.float().mean()
+            num_errors = block_errors.sum().item()
+            total_blocks = block_errors.numel()
+            # Ensure exact fraction for the test cases
+            return torch.tensor(float(num_errors) / float(total_blocks) if total_blocks > 0 else 0.0)
 
     def update(self, preds: Tensor, targets: Tensor) -> None:
         """Update the internal state with a batch of samples.
@@ -127,6 +138,9 @@ class BlockErrorRate(BaseMetric):
             preds (Tensor): Predicted values
             targets (Tensor): Target values
         """
+        if preds.numel() == 0 or targets.numel() == 0:
+            return
+
         if self.block_size is not None:
             preds_blocks = self._reshape_into_blocks(preds)
             targets_blocks = self._reshape_into_blocks(targets)
@@ -153,7 +167,8 @@ class BlockErrorRate(BaseMetric):
         Returns:
             Tensor: Block error rate value
         """
-        return torch.tensor(self.error_blocks / max(self.total_blocks, 1), dtype=torch.float32)
+        # Return exact fraction to avoid floating-point issues in tests
+        return torch.tensor(float(self.error_blocks) / float(max(self.total_blocks, 1)), dtype=torch.float32)
 
     def reset(self) -> None:
         """Reset accumulated statistics."""

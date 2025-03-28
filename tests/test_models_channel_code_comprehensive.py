@@ -101,7 +101,7 @@ def realistic_channel_code_model():
     encoder = SimpleEncoder()
     modulator = PSKModulator(order=4)  # QPSK
     constraint = AveragePowerConstraint(average_power=1.0)
-    channel = AWGNChannel(snr=10.0)
+    channel = AWGNChannel(snr_db=10.0)
     demodulator = PSKDemodulator(order=4)
     decoder = SimpleDecoder()
     

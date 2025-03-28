@@ -19,7 +19,7 @@ def test_sequential_channel_composition(complex_signal):
     """Test that channels can be applied in sequence to model composite effects."""
     # Create individual channels
     phase_noise = PhaseNoiseChannel(phase_noise_std=0.1)
-    fading = RayleighFadingChannel()
+    fading = RayleighFadingChannel(coherence_time=5, snr_db=15)  # Added coherence_time parameter
     awgn = AWGNChannel(snr_db=15)
     
     # Apply channels in sequence
@@ -52,11 +52,20 @@ def test_perfect_channel_in_composition(complex_signal):
     awgn = AWGNChannel(snr_db=15)
     perfect = PerfectChannel()
     
-    # Apply with perfect channel in the middle
+    # Set a fixed seed to ensure identical noise
+    torch.manual_seed(123)
+    
+    # Apply AWGN channel directly
     output1 = awgn(complex_signal)
+    
+    # Reset the seed to get the same noise
+    torch.manual_seed(123)
+    
+    # Apply with perfect channel in the middle
     output2 = awgn(perfect(complex_signal))
     
     # The outputs should be identical since perfect channel is identity
+    # and we use the same noise realization
     assert torch.allclose(output1, output2)
 
 
@@ -89,7 +98,7 @@ def test_phase_and_fading_composition(complex_signal):
     """Test composition of phase noise and fading channels."""
     # Create channels
     phase_noise = PhaseNoiseChannel(phase_noise_std=0.1)
-    fading = RayleighFadingChannel()
+    fading = RayleighFadingChannel(coherence_time=5, snr_db=15)  # Added coherence_time parameter
     
     # Apply channels
     output = fading(phase_noise(complex_signal))

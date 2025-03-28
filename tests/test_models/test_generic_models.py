@@ -186,16 +186,12 @@ def test_identity_model(input_tensor):
 
 def test_lambda_model(input_tensor):
     """Test lambda model applies the provided function."""
-
     # Create a lambda model with a squaring function
     def square_fn(x):
         return x**2
-
-    model = LambdaModel(function=square_fn)
-
+    model = LambdaModel(func=square_fn)
     # Apply model
     output = model(input_tensor)
-
     # Expected: input^2
     expected = input_tensor**2
     assert torch.allclose(output, expected)
@@ -208,7 +204,7 @@ def test_lambda_model_with_args(input_tensor):
     def add_and_scale(x, add_value, scale_factor):
         return (x + add_value) * scale_factor
 
-    model = LambdaModel(function=add_and_scale)
+    model = LambdaModel(func=add_and_scale)
 
     # Apply model with additional args
     output = model(input_tensor, 5.0, 2.0)

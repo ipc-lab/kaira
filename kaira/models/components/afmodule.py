@@ -50,21 +50,30 @@ class AFModule(BaseModel):
             torch.Tensor: The output tensor after passing through the linear layer,
             normalization layer, and activation function.
         """
-        x, side_info = x
+        # Handle both tuple input and separate arguments
+        if isinstance(x, tuple) and len(x) == 2:
+            input_tensor, side_info = x
+        else:
+            # Assume x is the input tensor and side_info is the first arg
+            input_tensor = x
+            if args and len(args) > 0:
+                side_info = args[0]
+            else:
+                raise ValueError("AFModule requires both input tensor and side information")
         
         # Handle different input dimensions
-        input_dims = len(x.shape)
-        batch_size = x.shape[0]
+        input_dims = len(input_tensor.shape)
+        batch_size = input_tensor.shape[0]
         
         # For 4D input (batch, channels, height, width)
         if input_dims == 4:
-            context = torch.mean(x, dim=(2, 3))
+            context = torch.mean(input_tensor, dim=(2, 3))
         # For 3D input (batch, sequence, features)
         elif input_dims == 3:
-            context = torch.mean(x, dim=1)
+            context = torch.mean(input_tensor, dim=1)
         # For 2D input (batch, features)
         else:
-            context = x
+            context = input_tensor
         
         # Ensure side_info has the right shape for concatenation (batch, features)
         if len(side_info.shape) > 2:

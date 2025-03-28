@@ -12,17 +12,30 @@ class ParallelModel(ConfigurableModel):
     All steps receive the same input data and process independently.
     """
 
-    def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None):
+    def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None, 
+                 branches: Optional[List[Callable]] = None, aggregator: Optional[Callable] = None):
         """Initialize the parallel model.
 
         Args:
             max_workers: Maximum number of worker threads (None uses default ThreadPoolExecutor behavior)
             steps: Optional initial list of named processing steps as (name, step) tuples
+            branches: Alternative way to specify processing steps as a list of callables
+            aggregator: Optional function to aggregate results (if None, returns dict of outputs)
         """
         super().__init__()
         self.max_workers = max_workers
+        self.aggregator = aggregator
+        
+        # Initialize steps list
         if steps:
             self.steps = list(steps)
+        else:
+            self.steps = []
+            
+        # Add branches if provided
+        if branches:
+            for i, branch in enumerate(branches):
+                self.add_step(branch, f"branch_{i}")
 
     def add_step(self, step: Callable, name: Optional[str] = None):
         """Add a processing step to the model with an optional name.
@@ -62,7 +75,7 @@ class ParallelModel(ConfigurableModel):
         self.steps.pop(index)
         return self
 
-    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model in parallel on the input data.
 
         Args:
@@ -72,6 +85,7 @@ class ParallelModel(ConfigurableModel):
 
         Returns:
             Dictionary mapping step names to their respective outputs
+            or aggregated results if an aggregator is provided
         """
         if not self.steps:
             return {}
@@ -88,4 +102,8 @@ class ParallelModel(ConfigurableModel):
                 except Exception as exc:
                     results[step_name] = f"Error: {exc}"
 
+        # Apply aggregator if provided
+        if self.aggregator:
+            # Convert dictionary of results to a list of values for the aggregator
+            return self.aggregator(list(results.values()))
         return results

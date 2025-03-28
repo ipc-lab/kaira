@@ -43,11 +43,27 @@ class BranchingModel(BaseModel):
         >>> output = model(input_tensor)
     """
 
-    def __init__(self):
-        """Initialize an empty branching model."""
+    def __init__(self, condition=None, true_branch=None, false_branch=None):
+        """Initialize a branching model.
+        
+        Args:
+            condition: Optional condition function for simple true/false branching
+            true_branch: Model to use when condition is True
+            false_branch: Model to use when condition is False
+        """
         super().__init__()
         self.branches = {}  # Dict mapping names to (condition, model) tuples
         self.default_branch = None
+        
+        # Set up simple binary branching if condition is provided
+        if condition is not None:
+            # Use identity models if branches not specified
+            true_model = true_branch if true_branch is not None else lambda x: x
+            false_model = false_branch if false_branch is not None else lambda x: x
+            
+            # Add branches
+            self.add_branch("true_branch", condition=condition, model=true_model)
+            self.set_default_branch(false_model)
 
     def add_branch(self, name: str, condition: Callable[[Any], bool], model: BaseModel) -> None:
         """Add a new conditional branch.

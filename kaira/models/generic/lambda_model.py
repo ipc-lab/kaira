@@ -39,13 +39,13 @@ class LambdaModel(BaseModel):
 
         Args:
             x (torch.Tensor): Input tensor
-            *args: Additional positional arguments (ignored)
-            **kwargs: Additional keyword arguments (ignored)
+            *args: Additional positional arguments passed to the function
+            **kwargs: Additional keyword arguments passed to the function
 
         Returns:
             torch.Tensor: Result of applying the lambda function to the input
         """
-        return self.func(x)
+        return self.func(x, *args, **kwargs)
 
     def __repr__(self) -> str:
         """Get string representation of the model.

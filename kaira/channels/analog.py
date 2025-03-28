@@ -34,6 +34,10 @@ def _apply_noise(x: torch.Tensor, noise_power=None, snr_db=None) -> torch.Tensor
     if snr_db is not None:
         signal_power = torch.mean(torch.abs(x) ** 2)
         noise_power = snr_to_noise_power(signal_power, snr_db)
+    
+    # Validate that at least one of noise_power or snr_db was provided
+    if noise_power is None:
+        raise ValueError("Either noise_power or snr_db must be provided")
 
     # Add appropriate noise type
     if torch.is_complex(x):
@@ -196,6 +200,7 @@ class LaplacianChannel(BaseChannel):
             # For Laplacian distribution with zero mean, variance = 2*scale²
             scale = torch.sqrt(target_noise_power / 2)
         elif self.avg_noise_power is not None:
+            # For Laplacian distribution with zero mean, variance = 2*scale²
             scale = torch.sqrt(self.avg_noise_power / 2)
 
         # Handle complex input
@@ -248,7 +253,7 @@ class PoissonChannel(BaseChannel):
             phase = torch.angle(x)
 
             # Check if magnitude is non-negative (should always be true)
-            if torch.min(magnitude) < 0:
+            if torch.any(magnitude < 0):
                 raise ValueError("Complex magnitude should be non-negative")
 
             # Apply Poisson noise to magnitude
@@ -262,7 +267,7 @@ class PoissonChannel(BaseChannel):
             # Reconstruct complex signal preserving phase
             return noisy_magnitude * torch.exp(1j * phase)
         else:
-            if torch.min(x) < 0:
+            if torch.any(x < 0):
                 raise ValueError("Input to PoissonChannel must be non-negative")
 
             # Scale the input to get the Poisson rate
@@ -477,7 +482,7 @@ class FlatFadingChannel(BaseChannel):
 
         Args:
             x (torch.Tensor): The input signal tensor of shape (batch_size, seq_length)
-                or (batch_size, channels, seq_length)
+                or (batch_size, channels, seq_length) or (seq_length,)
             csi (torch.Tensor, optional): Channel state information to use instead of generating it
             noise (torch.Tensor, optional): Pre-generated noise to use instead of generating new noise
 
@@ -486,9 +491,15 @@ class FlatFadingChannel(BaseChannel):
         """
         # Handle different input shapes
         original_shape = x.shape
-        if len(original_shape) > 2:
+        is_1d = len(original_shape) == 1
+        
+        if is_1d:
+            # Handle 1D inputs by adding a batch dimension
+            x = x.unsqueeze(0)
+            
+        if len(x.shape) > 2:
             # Reshape to (batch_size, seq_length) for processing
-            x = x.reshape(original_shape[0], -1)
+            x = x.reshape(x.shape[0], -1)
 
         # Ensure input is complex
         if not torch.is_complex(x):
@@ -496,7 +507,7 @@ class FlatFadingChannel(BaseChannel):
 
         batch_size, seq_length = x.shape
         device = x.device
-
+        
         # Use provided CSI if available, otherwise generate fading coefficients
         if csi is not None:
             # Use the provided CSI
@@ -506,10 +517,10 @@ class FlatFadingChannel(BaseChannel):
             h_blocks = self._generate_fading_coefficients(batch_size, seq_length, device)
             # Expand to match sequence length
             h = self._expand_coefficients(h_blocks, seq_length)
-
+            
         # Apply fading
         y = h * x
-
+        
         # Add noise if provided, otherwise generate it
         if noise is not None:
             y = y + noise
@@ -517,17 +528,22 @@ class FlatFadingChannel(BaseChannel):
             noise_power = self.avg_noise_power
             if self.snr_db is not None:
                 signal_power = torch.mean(torch.abs(y) ** 2)
-                noise_power = snr_to_noise_power(signal_power, self.snr_db) * 0.5  # Split between real/imag
-
-            noise_real = torch.randn_like(y.real) * torch.sqrt(noise_power)
-            noise_imag = torch.randn_like(y.imag) * torch.sqrt(noise_power)
+                noise_power = snr_to_noise_power(signal_power, self.snr_db)
+            
+            # Split noise power between real and imaginary components
+            component_noise_power = noise_power * 0.5
+            noise_real = torch.randn_like(y.real) * torch.sqrt(component_noise_power)
+            noise_imag = torch.randn_like(y.imag) * torch.sqrt(component_noise_power)
             noise = torch.complex(noise_real, noise_imag)
             y = y + noise
-
+            
         # Reshape to original dimensions if needed
         if len(original_shape) > 2:
             y = y.reshape(*original_shape)
-
+        elif is_1d:
+            # Remove the batch dimension we added for 1D inputs
+            y = y.squeeze(0)
+            
         return y
 
 
@@ -584,7 +600,9 @@ class NonlinearChannel(BaseChannel):
             raise ValueError("complex_mode must be 'direct', 'cartesian', or 'polar'")
 
         if add_noise:
-            if snr_db is not None:
+            if snr_db is not None and avg_noise_power is not None:
+                raise ValueError("Cannot specify both snr_db and avg_noise_power")
+            elif snr_db is not None:
                 self.snr_db = snr_db
                 self.avg_noise_power = None
             elif avg_noise_power is not None:
@@ -675,9 +693,13 @@ class RayleighFadingChannel(FlatFadingChannel):
         avg_noise_power=None,
         snr_db=None,
     ):
+        # If neither noise parameter is provided, use a default SNR of 15 dB
+        if avg_noise_power is None and snr_db is None:
+            snr_db = 15.0
+            
         super().__init__(
             fading_type="rayleigh",
             coherence_time=coherence_time,
             avg_noise_power=avg_noise_power,
-            snr_db=snr_db if snr_db is not None else 15.0  # Default SNR if nothing specified
+            snr_db=snr_db
         )

@@ -45,6 +45,9 @@ class BitErrorRate(BaseMetric):
         Returns:
             Tensor: BER value as a scalar tensor
         """
+        if transmitted.numel() == 0 or received.numel() == 0:
+            return torch.tensor(0.0)
+            
         # Threshold received values to get binary decisions
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
@@ -52,8 +55,10 @@ class BitErrorRate(BaseMetric):
         # Count errors (using not equal comparison instead of XOR)
         errors = (transmitted_bits != received_bits).float()
 
-        # Calculate overall error rate (scalar)
-        error_rate = errors.sum() / torch.prod(torch.tensor(errors.shape, dtype=torch.float))
+        # Calculate overall error rate more precisely
+        num_errors = errors.sum().item()
+        total_bits = float(transmitted.numel())
+        error_rate = torch.tensor(num_errors / total_bits if total_bits > 0 else 0.0)
 
         return error_rate
 
@@ -64,6 +69,9 @@ class BitErrorRate(BaseMetric):
             transmitted (Tensor): Original transmitted bits
             received (Tensor): Received bits
         """
+        if transmitted.numel() == 0 or received.numel() == 0:
+            return
+            
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
 
@@ -80,7 +88,7 @@ class BitErrorRate(BaseMetric):
         Returns:
             Tensor: Accumulated BER
         """
-        return self.error_bits / self.total_bits if self.total_bits > 0 else torch.tensor(0.0)
+        return self.error_bits.float() / max(self.total_bits, 1)
 
     def reset(self) -> None:
         """Reset accumulated statistics."""
