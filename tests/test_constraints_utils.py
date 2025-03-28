@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from kaira.constraints import BaseConstraint, PAPRConstraint, TotalPowerConstraint
+from kaira.constraints.signal import SpectralMaskConstraint
 from kaira.constraints.utils import (
     apply_constraint_chain,
     combine_constraints,
@@ -299,3 +300,87 @@ def test_create_mimo_constraints():
         spectral_mask=spectral_mask
     )
     assert len(mimo_constraints.constraints) == 3  # All three constraints
+
+
+def test_create_mimo_constraints_with_total_power():
+    """Test creating MIMO constraints with total power instead of per-antenna power."""
+    # Test MIMO constraints with total power constraint (not per-antenna)
+    num_antennas = 4
+    total_power = 1.0
+    
+    # Create a test signal with shape [batch_size, num_antennas, sequence_length]
+    test_signal = torch.randn(2, num_antennas, 32)
+    
+    # Test with total power constraint (uniform_power=None)
+    mimo_constraints = create_mimo_constraints(
+        num_antennas=num_antennas,
+        total_power=total_power,
+        uniform_power=None  # This should trigger the total power constraint
+    )
+    
+    # Apply constraints
+    constrained = mimo_constraints(test_signal)
+    
+    # Check total power constraint
+    total_signal_power = torch.sum(torch.abs(constrained)**2)
+    assert torch.isclose(total_signal_power, torch.tensor(total_power), rtol=1e-4)
+    
+    # Test with both total power and max PAPR
+    mimo_constraints = create_mimo_constraints(
+        num_antennas=num_antennas,
+        total_power=total_power,
+        uniform_power=None,
+        max_papr=3.0
+    )
+    
+    # Apply constraints
+    constrained = mimo_constraints(test_signal)
+    
+    # Check total power
+    total_signal_power = torch.sum(torch.abs(constrained)**2)
+    assert torch.isclose(total_signal_power, torch.tensor(total_power), rtol=1e-4)
+    
+    # Check PAPR
+    props = measure_signal_properties(constrained.reshape(-1))
+    assert props["papr"] <= 3.1  # Allow slight tolerance
+
+
+def test_create_mimo_constraints_with_total_power_and_spectral_mask():
+    """Test creating MIMO constraints with total power and spectral mask."""
+    # Test MIMO constraints with total power constraint and spectral mask
+    num_antennas = 4
+    total_power = 1.0
+    
+    # Create a simple spectral mask
+    spectral_mask = torch.ones(32) * 0.5  # Maximum power 0.5 at each frequency
+    
+    # Create a test signal with shape [batch_size, num_antennas, sequence_length]
+    test_signal = torch.randn(2, num_antennas, 32)
+    
+    # Test with total power constraint and spectral mask (uniform_power=None)
+    # This tests line 98 specifically: if spectral_mask is not None: constraints.append(SpectralMaskConstraint(spectral_mask))
+    mimo_constraints = create_mimo_constraints(
+        num_antennas=num_antennas,
+        uniform_power=None,
+        total_power=total_power,
+        spectral_mask=spectral_mask
+    )
+    
+    # Verify the SpectralMaskConstraint was added
+    assert len(mimo_constraints.constraints) == 2  # Should be TotalPowerConstraint and SpectralMaskConstraint
+    assert any(isinstance(c, SpectralMaskConstraint) for c in mimo_constraints.constraints)
+    
+    # Apply constraints
+    constrained = mimo_constraints(test_signal)
+    
+    # Check that output shape matches input
+    assert constrained.shape == test_signal.shape
+    
+    # Check that spectral constraint is applied - can verify by taking FFT and checking magnitudes
+    fft_constrained = torch.fft.fft(constrained, dim=2)
+    power_spectrum = torch.abs(fft_constrained)**2
+    
+    # Verify that spectrum is below the mask at all frequencies
+    # For real signals, need only check first half of FFT due to symmetry
+    for freq_bin in range(spectral_mask.shape[0]):
+        assert torch.all(power_spectrum[:, :, freq_bin] <= spectral_mask[freq_bin] + 1e-5)
