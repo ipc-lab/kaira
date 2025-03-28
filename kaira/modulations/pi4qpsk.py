@@ -38,14 +38,15 @@ class Pi4QPSKModulator(BaseModulator):
 
     def _create_constellations(self) -> None:
         """Create standard and rotated QPSK constellations."""
-        # Standard QPSK
-        angles = torch.tensor([1, 3, 5, 7]) * np.pi / 4
+        # Fix: Change the constellation points to match standard QPSK ordering
+        # Standard QPSK (Gray coded)
+        angles = torch.tensor([1, 3, 7, 5]) * np.pi / 4  # 00, 01, 11, 10
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
         qpsk = torch.complex(re_part, im_part)
 
         # π/4 rotated QPSK
-        angles_rotated = torch.tensor([0, 2, 4, 6]) * np.pi / 4
+        angles_rotated = torch.tensor([0, 2, 6, 4]) * np.pi / 4  # 00, 01, 11, 10
         re_part_rotated = torch.cos(angles_rotated)
         im_part_rotated = torch.sin(angles_rotated)
         qpsk_rotated = torch.complex(re_part_rotated, im_part_rotated)
@@ -57,8 +58,8 @@ class Pi4QPSKModulator(BaseModulator):
         # Combined constellation for visualization
         self.register_buffer("constellation", torch.cat([qpsk, qpsk_rotated]))
 
-        # Bit patterns for each symbol (same for both constellations)
-        bit_patterns = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=torch.float)
+        # Bit patterns for each symbol (Gray coded)
+        bit_patterns = torch.tensor([[0, 0], [0, 1], [1, 1], [1, 0]], dtype=torch.float)
         self.register_buffer("bit_patterns", bit_patterns)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -81,14 +82,18 @@ class Pi4QPSKModulator(BaseModulator):
         symbol_len = x_reshaped.shape[-2]
 
         # Convert bit pairs to indices
-        indices = x_reshaped[..., 0].long() * 2 + x_reshaped[..., 1].long()
+        # Fix: Map bit pairs to indices correctly using MSB-LSB ordering
+        indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
+        for i in range(2):
+            indices = indices | (x_reshaped[..., i].long() << (1 - i))
 
         # Outputs array
         y = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
 
         # Alternate between standard and rotated constellation for each symbol
         use_rotated = self._use_rotated.clone()
-
+        
+        # Process each symbol
         for i in range(symbol_len):
             if use_rotated:
                 y[..., i] = self.qpsk_rotated[indices[..., i]]
@@ -186,12 +191,30 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             # Process current symbol
             if noise_var is None:
                 # Hard decision
-                distances = torch.abs(y[..., i : i + 1] - constellation.unsqueeze(0))
+                # Fix: Handle different tensor shapes correctly
+                if batch_shape:
+                    # For batched input
+                    y_i = y[..., i].unsqueeze(-1)  # (..., 1)
+                    distances = torch.abs(y_i - constellation.unsqueeze(0))
+                else:
+                    # For single input
+                    y_i = y[i].unsqueeze(0)  # (1,)
+                    distances = torch.abs(y_i - constellation)
+                
                 closest_idx = torch.argmin(distances, dim=-1)
-                bits[..., i, :] = self.modulator.bit_patterns[closest_idx]
+                
+                # Apply bit patterns
+                for b in range(len(self.modulator.bit_patterns)):
+                    mask = (closest_idx == b)
+                    if batch_shape:
+                        mask = mask.unsqueeze(-1)
+                        pattern = self.modulator.bit_patterns[b].expand(*batch_shape, 2)
+                        bits[..., i, :] = torch.where(mask, pattern, bits[..., i, :])
+                    else:
+                        bits[i, :] = self.modulator.bit_patterns[b] if mask.item() else bits[i, :]
             else:
                 # Soft decision (LLR calculation)
-                current_noise_var = noise_var[..., i]
+                current_noise_var = noise_var[..., i] if batch_shape else noise_var[i]
 
                 # Calculate LLRs for each bit position
                 for bit_idx in range(2):
@@ -204,15 +227,31 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                     const_bit_1 = constellation[bit_1_mask]
 
                     # Calculate distances for each bit value
-                    expanded_y = y[..., i : i + 1]  # Keep dimensions for broadcasting
-
-                    # Distance to constellation points where bit is 0
-                    distances_0 = -torch.abs(expanded_y - const_bit_0.unsqueeze(0)) ** 2
-                    min_dist_0 = torch.max(distances_0, dim=-1)[0] / current_noise_var
-
-                    # Distance to constellation points where bit is 1
-                    distances_1 = -torch.abs(expanded_y - const_bit_1.unsqueeze(0)) ** 2
-                    min_dist_1 = torch.max(distances_1, dim=-1)[0] / current_noise_var
+                    if batch_shape:
+                        expanded_y = y[..., i].unsqueeze(-1)  # (..., 1)
+                        
+                        # Distance to constellation points where bit is 0
+                        distances_0 = -torch.abs(expanded_y - const_bit_0.unsqueeze(0)) ** 2
+                        min_dist_0, _ = torch.max(distances_0, dim=-1)
+                        min_dist_0 = min_dist_0 / current_noise_var
+                        
+                        # Distance to constellation points where bit is 1
+                        distances_1 = -torch.abs(expanded_y - const_bit_1.unsqueeze(0)) ** 2
+                        min_dist_1, _ = torch.max(distances_1, dim=-1)
+                        min_dist_1 = min_dist_1 / current_noise_var
+                    else:
+                        # For non-batched input
+                        y_i = y[i]
+                        
+                        # Distance to constellation points where bit is 0
+                        distances_0 = -torch.abs(y_i - const_bit_0) ** 2
+                        min_dist_0, _ = torch.max(distances_0, dim=-1)
+                        min_dist_0 = min_dist_0 / current_noise_var
+                        
+                        # Distance to constellation points where bit is 1
+                        distances_1 = -torch.abs(y_i - const_bit_1) ** 2
+                        min_dist_1, _ = torch.max(distances_1, dim=-1)
+                        min_dist_1 = min_dist_1 / current_noise_var
 
                     # LLR: log(P(bit=0)/P(bit=1))
                     bits[..., i, bit_idx] = min_dist_0 - min_dist_1

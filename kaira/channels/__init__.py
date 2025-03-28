@@ -13,6 +13,7 @@ from .analog import (
     NonlinearChannel,
     PhaseNoiseChannel,
     PoissonChannel,
+    RayleighFadingChannel,
 )
 
 # Base channel classes
@@ -47,6 +48,7 @@ __all__ = [
     "PoissonChannel",
     "PhaseNoiseChannel",
     "FlatFadingChannel",
+    "RayleighFadingChannel",
     "NonlinearChannel",
     # Channel registry
     "ChannelRegistry",

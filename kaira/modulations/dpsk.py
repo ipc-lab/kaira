@@ -103,9 +103,15 @@ class DPSKModulator(BaseModulator):
 
         # Apply differential encoding
         # Start with the reference phase from memory for the first symbol
-        ref_phase = self._phase_memory.expand(*batch_shape)
-        output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
+        # Fixed: Use an appropriate expand that works with all tensor shapes
+        ref_phase = self._phase_memory.clone().detach()
+        if batch_shape:
+            # Expand to match batch dimensions
+            for _ in range(len(batch_shape)):
+                ref_phase = ref_phase.unsqueeze(0)
+            ref_phase = ref_phase.expand(*batch_shape)
 
+        output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
         for i in range(symbol_len):
             # Current symbol = previous symbol × phase shift
             current = ref_phase * phase_shifts[..., i]
@@ -270,10 +276,24 @@ class DPSKDemodulator(BaseDemodulator):
         symbol_shape = y.shape[-1]
         num_points = points.shape[0]
 
+        # Fix: Ensure points_expanded has the right dimensions for all tensor shapes
         # Reshape inputs for broadcasting
-        y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
-        points_expanded = points.reshape(1, 1, -1).expand(*batch_shape, symbol_shape, num_points)
-        noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        y_expanded = y.unsqueeze(-1)
+        if batch_shape:
+            # For multi-dimensional tensors, use proper expand
+            y_expanded = y_expanded.expand(*batch_shape, symbol_shape, num_points)
+            
+            # Create points_expanded to match dimensions
+            points_reshaped = points.reshape(*([1] * len(batch_shape)), 1, -1)
+            points_expanded = points_reshaped.expand(*batch_shape, symbol_shape, num_points)
+            
+            # Expand noise variance similarly
+            noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        else:
+            # For 1D tensors, simpler expansion
+            y_expanded = y_expanded.expand(symbol_shape, num_points)
+            points_expanded = points.reshape(1, -1).expand(symbol_shape, num_points)
+            noise_var_expanded = noise_var.unsqueeze(-1).expand(symbol_shape, num_points)
 
         # Calculate distances (using phase difference for DPSK)
         distances = -torch.abs(y_expanded - points_expanded) ** 2 / noise_var_expanded

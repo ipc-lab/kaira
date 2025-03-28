@@ -65,16 +65,27 @@ def noise_power_to_snr(signal_power: Union[float, torch.Tensor], noise_power: Un
     Raises:
         ValueError: If noise_power contains zero values (would result in infinite SNR).
     """
+    # Convert inputs to tensors with proper handling of mixed float/tensor inputs
     if isinstance(signal_power, float):
         signal_power = torch.tensor(signal_power)
+    
+    # Handle case where signal_power is a tensor and noise_power is float
     if isinstance(noise_power, float):
         noise_power = torch.tensor(noise_power)
-
+        # If signal_power is a tensor with multiple elements, expand noise_power
+        if signal_power.numel() > 1:
+            noise_power = noise_power.expand_as(signal_power)
+    
+    # In case noise_power is a tensor and signal_power is a scalar tensor
+    if noise_power.numel() > 1 and signal_power.numel() == 1:
+        signal_power = signal_power.expand_as(noise_power)
+    
     if torch.any(noise_power == 0):
         raise ValueError("Noise power cannot be zero (would result in infinite SNR)")
-
+    
+    # Calculate linear SNR and convert to dB
     snr_linear = signal_power / noise_power
-    return snr_linear_to_db(snr_linear)
+    return 10 * torch.log10(snr_linear)
 
 
 def calculate_snr(

@@ -424,7 +424,7 @@ def test_nonlinear_channel_invalid_parameters():
 
 def test_laplacian_channel_snr():
     """Test LaplacianChannel with SNR specification."""
-    x = torch.ones(1000)
+    x = torch.ones(10, 1000)  # Use batched tensor [batch_size, seq_length]
     snr_db = 10.0
     channel = LaplacianChannel(snr_db=snr_db)
     y = channel(x)
@@ -443,7 +443,7 @@ def test_laplacian_channel_snr():
 
 def test_laplacian_channel_complex():
     """Test LaplacianChannel with complex input."""
-    x = torch.complex(torch.ones(1000), torch.ones(1000))
+    x = torch.complex(torch.ones(8, 1000), torch.ones(8, 1000))  # Use batched tensor [batch_size, seq_length]
     scale = 0.1
     channel = LaplacianChannel(scale=scale)
     y = channel(x)
@@ -460,8 +460,10 @@ def test_laplacian_channel_complex():
 def test_poisson_channel_complex():
     """Test PoissonChannel with complex input."""
     # Create complex input with non-negative magnitude
-    real = torch.rand(1000) + 0.5  # Make sure values are positive
-    imag = torch.rand(1000) + 0.5
+    batch_size = 6
+    seq_length = 1000
+    real = torch.rand(batch_size, seq_length) + 0.5  # Make sure values are positive
+    imag = torch.rand(batch_size, seq_length) + 0.5
     x = torch.complex(real, imag)
 
     channel = PoissonChannel(rate_factor=10.0, normalize=True)
@@ -487,7 +489,7 @@ def test_poisson_channel_complex():
 
 def test_poisson_channel_negative_input():
     """Test PoissonChannel with negative inputs (should raise error)."""
-    x = torch.randn(100)  # Will contain negative values
+    x = torch.randn(8, 100)  # Will contain negative values, using batched tensor
     channel = PoissonChannel()
 
     # Should raise ValueError due to negative values
@@ -546,7 +548,7 @@ def test_nonlinear_channel_complex_direct():
     def complex_nonlinear(z):
         return z * (1.0 - 0.1 * torch.abs(z))
 
-    x = torch.complex(torch.randn(100), torch.randn(100))
+    x = torch.complex(torch.randn(5, 100), torch.randn(5, 100))  # Use batched tensor [batch_size, seq_length]
 
     channel = NonlinearChannel(nonlinear_fn=complex_nonlinear, complex_mode="direct")
 
@@ -565,7 +567,7 @@ def test_nonlinear_channel_complex_cartesian():
     def real_nonlinear(x):
         return x + 0.1 * x**3
 
-    x = torch.complex(torch.randn(100), torch.randn(100))
+    x = torch.complex(torch.randn(6, 100), torch.randn(6, 100))  # Use batched tensor [batch_size, seq_length]
 
     channel = NonlinearChannel(nonlinear_fn=real_nonlinear, complex_mode="cartesian")
 
@@ -589,7 +591,7 @@ def test_nonlinear_channel_with_noise():
     def nonlinear_fn(x):
         return torch.tanh(x)
 
-    x = torch.randn(1000)
+    x = torch.randn(8, 1000)  # Use batched tensor [batch_size, seq_length]
 
     channel = NonlinearChannel(nonlinear_fn=nonlinear_fn, add_noise=True, snr_db=15.0)
 
@@ -611,7 +613,7 @@ def test_nonlinear_channel_avg_noise_power():
     def nonlinear_fn(x):
         return x
 
-    x = torch.ones(1000)
+    x = torch.ones(4, 1000)  # Use batched tensor [batch_size, seq_length]
     noise_power = torch.tensor(0.1)  # Convert to tensor to avoid the error
 
     channel = NonlinearChannel(nonlinear_fn=nonlinear_fn, add_noise=True, avg_noise_power=noise_power)
@@ -633,7 +635,7 @@ def test_apply_noise_no_parameters():
     """Test that _apply_noise raises error when neither noise_power nor snr_db is provided."""
     from kaira.channels.analog import _apply_noise
     
-    x = torch.randn(10)
+    x = torch.randn(5, 10)  # Use batched tensor [batch_size, seq_length]
     
     # Should raise ValueError when neither parameter is provided
     with pytest.raises(ValueError):
@@ -643,8 +645,10 @@ def test_apply_noise_no_parameters():
 def test_poisson_channel_negative_complex_input():
     """Test PoissonChannel with negative magnitude in complex input (should raise error)."""
     # Create complex input with some negative magnitudes
-    real = torch.randn(100)
-    imag = torch.randn(100)
+    batch_size = 4
+    seq_length = 100
+    real = torch.randn(batch_size, seq_length)
+    imag = torch.randn(batch_size, seq_length)
     # This will have some values with negative magnitude (impossible in practice, but for testing)
     x = torch.complex(-torch.abs(real), torch.zeros_like(imag))
     
@@ -657,7 +661,7 @@ def test_poisson_channel_negative_complex_input():
 
 def test_phase_noise_channel_negative_std():
     """Test PhaseNoiseChannel with negative standard deviation (should raise error)."""
-    x = torch.complex(torch.ones(100), torch.zeros(100))
+    x = torch.complex(torch.ones(6, 100), torch.zeros(6, 100))  # Use batched tensor [batch_size, seq_length]
     
     # Should raise ValueError due to negative phase_noise_std
     with pytest.raises(ValueError):

@@ -107,18 +107,23 @@ class AWGNChannel(BaseChannel):
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi=None, noise=None) -> torch.Tensor:
         """Add Gaussian noise to the input signal.
-
         Automatically handles both real and complex-valued inputs.
 
         Args:
             x (torch.Tensor): The input tensor (real or complex).
+            csi (torch.Tensor, optional): Channel state information, not used in AWGN channel.
+            noise (torch.Tensor, optional): Pre-generated noise to use instead of generating new noise.
 
         Returns:
             torch.Tensor: The output tensor after adding noise.
         """
-        # Use centralized noise application function
+        # If pre-generated noise is provided, use it
+        if noise is not None:
+            return x + noise
+            
+        # Otherwise use centralized noise application function
         if self.snr_db is not None:
             return _apply_noise(x, snr_db=self.snr_db)
         else:
@@ -464,7 +469,7 @@ class FlatFadingChannel(BaseChannel):
 
         return h_expanded
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi=None, noise=None) -> torch.Tensor:
         """Apply flat fading channel effects to the input signal.
 
         Applies block fading coefficients that remain constant over the coherence time
@@ -473,6 +478,8 @@ class FlatFadingChannel(BaseChannel):
         Args:
             x (torch.Tensor): The input signal tensor of shape (batch_size, seq_length)
                 or (batch_size, channels, seq_length)
+            csi (torch.Tensor, optional): Channel state information to use instead of generating it
+            noise (torch.Tensor, optional): Pre-generated noise to use instead of generating new noise
 
         Returns:
             torch.Tensor: The output signal after applying fading and noise
@@ -490,26 +497,32 @@ class FlatFadingChannel(BaseChannel):
         batch_size, seq_length = x.shape
         device = x.device
 
-        # Generate fading coefficients
-        h_blocks = self._generate_fading_coefficients(batch_size, seq_length, device)
-
-        # Expand to match sequence length
-        h = self._expand_coefficients(h_blocks, seq_length)
+        # Use provided CSI if available, otherwise generate fading coefficients
+        if csi is not None:
+            # Use the provided CSI
+            h = csi
+        else:
+            # Generate fading coefficients
+            h_blocks = self._generate_fading_coefficients(batch_size, seq_length, device)
+            # Expand to match sequence length
+            h = self._expand_coefficients(h_blocks, seq_length)
 
         # Apply fading
         y = h * x
 
-        # Add noise
-        noise_power = self.avg_noise_power
-        if self.snr_db is not None:
-            signal_power = torch.mean(torch.abs(y) ** 2)
-            noise_power = snr_to_noise_power(signal_power, self.snr_db) * 0.5  # Split between real/imag
+        # Add noise if provided, otherwise generate it
+        if noise is not None:
+            y = y + noise
+        else:
+            noise_power = self.avg_noise_power
+            if self.snr_db is not None:
+                signal_power = torch.mean(torch.abs(y) ** 2)
+                noise_power = snr_to_noise_power(signal_power, self.snr_db) * 0.5  # Split between real/imag
 
-        noise_real = torch.randn_like(y.real) * torch.sqrt(noise_power)
-        noise_imag = torch.randn_like(y.imag) * torch.sqrt(noise_power)
-        noise = torch.complex(noise_real, noise_imag)
-
-        y = y + noise
+            noise_real = torch.randn_like(y.real) * torch.sqrt(noise_power)
+            noise_imag = torch.randn_like(y.imag) * torch.sqrt(noise_power)
+            noise = torch.complex(noise_real, noise_imag)
+            y = y + noise
 
         # Reshape to original dimensions if needed
         if len(original_shape) > 2:

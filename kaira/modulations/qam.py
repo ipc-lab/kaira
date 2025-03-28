@@ -247,16 +247,29 @@ class QAMDemodulator(BaseDemodulator):
         symbol_shape = y.shape[-1]
         num_points = points.shape[0]
 
-        # Reshape inputs for broadcasting
-        y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
-        points_expanded = points.reshape(1, 1, -1).expand(*batch_shape, symbol_shape, num_points)
-        noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        # Fix: Handle different tensor shapes correctly
+        if batch_shape:
+            # Multi-dimensional tensors
+            # Reshape inputs for broadcasting
+            y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+            
+            # Fix: Properly reshape points for broadcasting with batch dimensions
+            points_expanded = points.reshape(*([1] * len(batch_shape)), 1, -1)
+            points_expanded = points_expanded.expand(*batch_shape, symbol_shape, num_points)
+            
+            noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        else:
+            # 1D tensors
+            y_expanded = y.unsqueeze(-1).expand(symbol_shape, num_points)
+            points_expanded = points.reshape(1, -1).expand(symbol_shape, num_points)
+            noise_var_expanded = noise_var.unsqueeze(-1).expand(symbol_shape, num_points)
 
         # Calculate distances
         distances = -torch.abs(y_expanded - points_expanded) ** 2 / noise_var_expanded
 
         # Return maximum (least negative) value
-        return torch.max(distances, dim=-1)[0]
+        max_values, _ = torch.max(distances, dim=-1)
+        return max_values
 
     @property
     def bits_per_symbol(self) -> int:

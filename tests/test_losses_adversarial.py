@@ -1,9 +1,8 @@
 import pytest
 import torch
 
-# filepath: kaira/losses/test_adversarial.py
 
-from ..losses.adversarial import (
+from kaira.losses.adversarial import (
     FeatureMatchingLoss,
     HingeLoss,
     LSGANLoss,

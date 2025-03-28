@@ -51,10 +51,33 @@ class AFModule(BaseModel):
             normalization layer, and activation function.
         """
         x, side_info = x
-        context = torch.mean(x, dim=(2, 3))
-
+        
+        # Handle different input dimensions
+        input_dims = len(x.shape)
+        batch_size = x.shape[0]
+        
+        # For 4D input (batch, channels, height, width)
+        if input_dims == 4:
+            context = torch.mean(x, dim=(2, 3))
+        # For 3D input (batch, sequence, features)
+        elif input_dims == 3:
+            context = torch.mean(x, dim=1)
+        # For 2D input (batch, features)
+        else:
+            context = x
+        
+        # Ensure side_info has the right shape for concatenation (batch, features)
+        if len(side_info.shape) > 2:
+            side_info = side_info.reshape(batch_size, -1)
+            
         context_input = torch.cat([context, side_info], dim=1)
-        mask = self.layers(context_input).view(-1, self.c_in, 1, 1)
-
+        mask = self.layers(context_input)
+        
+        # Apply the mask according to input dimensions
+        if input_dims == 4:
+            mask = mask.view(-1, self.c_in, 1, 1)
+        elif input_dims == 3:
+            mask = mask.view(-1, 1, self.c_in)
+            
         out = mask * x
         return out
