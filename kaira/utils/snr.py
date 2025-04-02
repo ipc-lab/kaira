@@ -60,7 +60,7 @@ def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[f
     """
     if isinstance(signal_power, float):
         signal_power = torch.tensor(signal_power, dtype=torch.float64)
-    if isinstance(snr_db, float):
+    if isinstance(snr_db, (float, int)):
         snr_db = torch.tensor(snr_db, dtype=torch.float64)
     else:
         snr_db = snr_db.to(torch.float64)
