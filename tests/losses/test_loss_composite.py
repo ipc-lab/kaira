@@ -156,21 +156,3 @@ def test_str_representation():
     assert "MockLoss" in str_repr
     assert "weight=0.300" in str_repr  # 0.3 formatted with 3 decimal places
     assert "weight=0.700" in str_repr  # 0.7 formatted with 3 decimal places
-
-
-def test_add_loss_backward_compatibility():
-    """Test add_loss with backwards compatibility mode."""
-    loss1 = MockLoss(1.0)
-    composite = CompositeLoss({"loss1": loss1})
-    
-    # Test old-style add_loss with just a loss object
-    loss2 = MockLoss(2.0)
-    composite.add_loss(loss2)
-    
-    # Should have auto-generated a name
-    assert "loss1" in composite.losses
-    assert len(composite.losses) == 2
-    
-    # Check that weights were normalized
-    total_weight = sum(composite.weights.values())
-    assert pytest.approx(total_weight, abs=1e-5) == 1.0

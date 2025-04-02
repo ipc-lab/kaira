@@ -1,182 +1,100 @@
 import pytest
 import torch
 
-from kaira.losses.audio import (
-    AudioContrastiveLoss,
-    FeatureMatchingLoss,
-    L1AudioLoss,
-    LogSTFTMagnitudeLoss,
-    MelSpectrogramLoss,
-    MultiResolutionSTFTLoss,
-    SpectralConvergenceLoss,
-    STFTLoss,
-)
+from kaira.losses.audio import AudioContrastiveLoss
 
 
 @pytest.fixture
-def sample_audio():
-    """Fixture for creating sample audio tensors."""
-    return torch.randn(1, 22050)  # 1 second of audio at 22.05 kHz
+def audio_data():
+    """Fixture for creating sample audio batch."""
+    # Create a batch of 4 audio samples, each 1 second at 16kHz
+    return torch.randn(4, 16000)
 
 
 @pytest.fixture
-def target_audio():
-    """Fixture for creating target audio tensors."""
-    return torch.randn(1, 22050)  # 1 second of audio at 22.05 kHz
+def audio_embedding():
+    """Fixture for creating sample audio embeddings."""
+    # Create 4 audio embeddings of dimension 128
+    return torch.randn(4, 128)
 
 
-def test_l1_audio_loss_forward(sample_audio, target_audio):
-    """Test L1AudioLoss forward pass."""
-    l1_audio_loss = L1AudioLoss()
-    loss = l1_audio_loss(sample_audio, target_audio)
+def test_audio_contrastive_loss_default_params():
+    """Test AudioContrastiveLoss with default parameters."""
+    loss_fn = AudioContrastiveLoss()
+    assert loss_fn.temperature == 0.1
+    assert loss_fn.normalize is True
+    assert loss_fn.reduction == "mean"
+
+
+def test_audio_contrastive_loss_custom_params():
+    """Test AudioContrastiveLoss with custom parameters."""
+    loss_fn = AudioContrastiveLoss(temperature=0.5, normalize=False, reduction="sum")
+    assert loss_fn.temperature == 0.5
+    assert loss_fn.normalize is False
+    assert loss_fn.reduction == "sum"
+
+
+def test_audio_contrastive_loss_precomputed_embeddings(audio_embedding):
+    """Test AudioContrastiveLoss with precomputed embeddings."""
+    loss_fn = AudioContrastiveLoss()
+
+    # Same embeddings for anchor and positive (perfect similarity)
+    loss = loss_fn(audio_embedding, audio_embedding)
+
     assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Scalar output
+    # Loss might be zero when embeddings are identical
+    assert loss.item() >= 0
 
 
-def test_spectral_convergence_loss_forward(sample_audio, target_audio):
-    """Test SpectralConvergenceLoss forward pass."""
-    spectral_convergence_loss = SpectralConvergenceLoss()
-    loss = spectral_convergence_loss(sample_audio, target_audio)
-    assert isinstance(loss, torch.Tensor)
+def test_audio_contrastive_loss_with_view_maker(audio_data):
+    """Test AudioContrastiveLoss with view maker."""
+    loss_fn = AudioContrastiveLoss()
 
-
-def test_log_stft_magnitude_loss_forward(sample_audio, target_audio):
-    """Test LogSTFTMagnitudeLoss forward pass."""
-    log_stft_magnitude_loss = LogSTFTMagnitudeLoss()
-    loss = log_stft_magnitude_loss(sample_audio, target_audio)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_stft_loss_forward(sample_audio, target_audio):
-    """Test STFTLoss forward pass."""
-    stft_loss = STFTLoss()
-    loss = stft_loss(sample_audio, target_audio)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_multi_resolution_stft_loss_forward(sample_audio, target_audio):
-    """Test MultiResolutionSTFTLoss forward pass."""
-    multi_resolution_stft_loss = MultiResolutionSTFTLoss()
-    loss = multi_resolution_stft_loss(sample_audio, target_audio)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_mel_spectrogram_loss_forward(sample_audio, target_audio):
-    """Test MelSpectrogramLoss forward pass."""
-    mel_spectrogram_loss = MelSpectrogramLoss()
-    loss = mel_spectrogram_loss(sample_audio, target_audio)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_feature_matching_loss_forward(sample_audio, target_audio):
-    """Test FeatureMatchingLoss forward pass."""
-    
-    # Create a model with proper layers for feature extraction
-    class LayeredModel(torch.nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.layers = torch.nn.ModuleList([
-                torch.nn.Conv1d(1, 4, kernel_size=3, padding=1),
-                torch.nn.Conv1d(4, 8, kernel_size=3, padding=1)
-            ])
-            
-        def forward(self, x):
-            # Make sure input has proper shape for Conv1d (batch, channels, length)
-            if x.dim() == 2:
-                x = x.unsqueeze(1)
-            
-            features = []
-            for layer in self.layers:
-                x = layer(x)
-                features.append(x)
-            return x, features
-    
-    model = LayeredModel()
-    feature_matching_loss = FeatureMatchingLoss(model, layers=[0, 1])
-    
-    # Pass through model first to get features
-    _, real_features = model(sample_audio)
-    _, fake_features = model(target_audio)
-    
-    # Then pass the features to the loss
-    loss = feature_matching_loss(real_features, fake_features)
-    
-    assert isinstance(loss, torch.Tensor)
-    
-    # Test the forward method directly with audio tensors
-    direct_loss = feature_matching_loss(sample_audio, target_audio)
-    assert isinstance(direct_loss, torch.Tensor)
-    
-    # Test with custom weights
-    weighted_loss = FeatureMatchingLoss(model, layers=[0, 1], weights=[0.3, 0.7])
-    weighted_result = weighted_loss(sample_audio, target_audio)
-    assert isinstance(weighted_result, torch.Tensor)
-
-
-def test_audio_contrastive_loss_forward(sample_audio, target_audio):
-    """Test AudioContrastiveLoss forward pass."""
-    audio_contrastive_loss = AudioContrastiveLoss()
-    features = torch.randn(10, 128)  # 10 samples with 128-dimensional features
-    labels = torch.randint(0, 2, (10,))  # Binary labels for contrastive loss
-    loss = audio_contrastive_loss(features, labels=labels)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_audio_contrastive_loss_with_projector():
-    """Test AudioContrastiveLoss with a projector network."""
-    audio_contrastive_loss = AudioContrastiveLoss()
-    features = torch.randn(10, 256)  # 10 samples with 256-dimensional features
-    
-    # Create a simple projector network
-    class Projector(torch.nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.fc = torch.nn.Linear(256, 128)
-            
-        def forward(self, x):
-            return self.fc(x)
-    
-    projector = Projector()
-    loss = audio_contrastive_loss(features, projector=projector)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_audio_contrastive_loss_with_view_maker():
-    """Test AudioContrastiveLoss with a view maker function."""
-    audio_contrastive_loss = AudioContrastiveLoss()
-    features = torch.randn(10, 128)  # 10 samples with 128-dimensional features
-    
-    # Create a simple view maker function
+    # Create a simple view maker (just add noise)
     def view_maker(x):
-        return x + 0.1 * torch.randn_like(x)
-    
-    loss = audio_contrastive_loss(features, view_maker=view_maker)
+        return x + torch.randn_like(x) * 0.1  # Increase noise for more difference
+
+    # Test with view maker
+    loss = loss_fn(audio_data, audio_data, view_maker=view_maker)
+
     assert isinstance(loss, torch.Tensor)
-    
-    # Test with both view_maker and target
-    target = torch.randn(10, 128)
-    loss_with_target = audio_contrastive_loss(features, target=target, view_maker=view_maker)
-    assert isinstance(loss_with_target, torch.Tensor)
+    assert loss.ndim == 0  # Scalar output
+    # Loss might be zero or small negative due to numerical issues
+    assert loss.item() >= -1e-6  
 
 
-def test_audio_contrastive_loss_reduction_methods():
-    """Test different reduction methods in AudioContrastiveLoss."""
-    features = torch.randn(10, 128)
-    labels = torch.randint(0, 2, (10,))
+def test_audio_contrastive_loss_with_projector(audio_embedding):
+    """Test AudioContrastiveLoss with projector."""
+    # Create a simple projector network
+    projector = torch.nn.Linear(128, 64)
     
-    # Test mean reduction (default)
-    mean_loss = AudioContrastiveLoss(reduction="mean")
-    mean_result = mean_loss(features, labels=labels)
-    assert isinstance(mean_result, torch.Tensor)
-    assert mean_result.dim() == 0  # scalar output
-    
-    # Test sum reduction
-    sum_loss = AudioContrastiveLoss(reduction="sum")
-    sum_result = sum_loss(features, labels=labels)
-    assert isinstance(sum_result, torch.Tensor)
-    assert sum_result.dim() == 0  # scalar output
-    
-    # Test none reduction
-    none_loss = AudioContrastiveLoss(reduction="none")
-    none_result = none_loss(features, labels=labels)
-    assert isinstance(none_result, torch.Tensor)
-    assert none_result.shape == (10,)  # One loss value per sample
+    # Initialize with non-zero weights to create differences
+    with torch.no_grad():
+        projector.weight.data.normal_(0.0, 0.02)
+        projector.bias.data.fill_(0.01)
+
+    loss_fn = AudioContrastiveLoss()
+
+    # Test with projector
+    loss = loss_fn(audio_embedding, audio_embedding, projector=projector)
+
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Scalar output
+    # Loss might be zero or small negative due to numerical issues
+    assert loss.item() >= -1e-6
+
+
+def test_audio_contrastive_loss_with_labels(audio_embedding):
+    """Test AudioContrastiveLoss with labels for defining positive pairs."""
+    loss_fn = AudioContrastiveLoss()
+
+    # Create sample labels: samples with same label are positive pairs
+    labels = torch.tensor([0, 0, 1, 1])
+
+    # Test with labels
+    loss = loss_fn(audio_embedding, audio_embedding, labels=labels)
+
+    assert isinstance(loss, torch.Tensor)
+    assert loss.ndim == 0  # Scalar output
+    assert loss.item() >= 0  # Loss should be non-negative

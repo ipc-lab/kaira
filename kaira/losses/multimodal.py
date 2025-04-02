@@ -48,8 +48,9 @@ class ContrastiveLoss(BaseLoss):
 
         # For paired data (default)
         if labels is None:
-            # Positive pairs are on the diagonal
             labels = torch.arange(similarity.size(0), device=similarity.device)
+        else:
+            labels = labels.long()  # Ensure labels are of type Long
 
         # Compute loss
         loss = F.cross_entropy(similarity, labels)
@@ -74,6 +75,8 @@ class TripletLoss(BaseLoss):
         super().__init__()
         self.margin = margin
         self.distance = distance
+        if distance not in ["cosine", "euclidean"]:
+            raise ValueError(f"Unsupported distance metric: {distance}")
 
     def forward(
         self,
@@ -202,7 +205,7 @@ class InfoNCELoss(BaseLoss):
             logits = torch.cat([l_pos, l_neg], dim=1)
 
             # Labels: positives are the 0-th
-            labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
+            labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)  # Ensure labels are Long
         else:
             # Use other samples in the batch as negatives
             l_neg = torch.einsum("nc,kc->nk", [query, key])
@@ -284,6 +287,8 @@ class AlignmentLoss(BaseLoss):
         """
         super().__init__()
         self.alignment_type = alignment_type
+        if alignment_type not in ["l1", "l2", "cosine"]:
+            raise ValueError(f"Unsupported alignment type: {alignment_type}")
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         """Forward pass through the AlignmentLoss module.

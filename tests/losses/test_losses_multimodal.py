@@ -43,6 +43,10 @@ def triplet_data():
     # Negatives are more different from anchors
     negatives = -anchors + 0.5 * torch.randn(batch_size, embed_dim)
     
+    anchors.requires_grad_(True)  # Enable gradient computation
+    positives.requires_grad_(True)  # Enable gradient computation
+    negatives.requires_grad_(True)  # Enable gradient computation
+
     # Create labels (same label for anchor and positive, different for negative)
     labels = torch.arange(batch_size)
     
@@ -80,11 +84,10 @@ class TestContrastiveLoss:
         assert loss_fn.temperature == 0.1
     
     def test_forward_paired_data(self, embedding_pairs):
-        """Test forward pass with paired data (no explicit labels)."""
         embeddings1, embeddings2 = embedding_pairs
+        embeddings1.requires_grad_(True)  # Enable gradient computation
+        embeddings2.requires_grad_(True)  # Enable gradient computation
         loss_fn = ContrastiveLoss()
-        
-        # Forward pass with paired data
         loss = loss_fn(embeddings1, embeddings2)
         
         # Check loss is a scalar tensor with grad_fn
@@ -96,14 +99,11 @@ class TestContrastiveLoss:
         assert loss.item() > 0
     
     def test_forward_with_labels(self, embedding_pairs):
-        """Test forward pass with explicit labels."""
         embeddings1, embeddings2 = embedding_pairs
+        embeddings1.requires_grad_(True)  # Enable gradient computation
+        embeddings2.requires_grad_(True)  # Enable gradient computation
         loss_fn = ContrastiveLoss()
-        
-        # Create custom labels (some matching, some not)
         labels = torch.tensor([0, 1, 0, 3, 4, 5, 6, 7])
-        
-        # Forward pass with explicit labels
         loss = loss_fn(embeddings1, embeddings2, labels)
         
         # Check loss properties
@@ -174,11 +174,8 @@ class TestTripletLoss:
         assert loss_fn.distance == "euclidean"
     
     def test_forward_with_explicit_negatives_cosine(self, triplet_data):
-        """Test forward pass with explicitly provided negatives using cosine distance."""
         anchors, positives, negatives, _ = triplet_data
         loss_fn = TripletLoss(distance="cosine")
-        
-        # Forward pass with explicit negatives
         loss = loss_fn(anchors, positives, negatives)
         
         # Check loss properties
@@ -188,11 +185,11 @@ class TestTripletLoss:
         assert loss.item() >= 0  # Triplet loss is always non-negative
     
     def test_forward_with_explicit_negatives_euclidean(self, triplet_data):
-        """Test forward pass with explicitly provided negatives using euclidean distance."""
         anchors, positives, negatives, _ = triplet_data
+        anchors.requires_grad_(True)  # Enable gradient computation
+        positives.requires_grad_(True)  # Enable gradient computation
+        negatives.requires_grad_(True)  # Enable gradient computation
         loss_fn = TripletLoss(distance="euclidean")
-        
-        # Forward pass with explicit negatives
         loss = loss_fn(anchors, positives, negatives)
         
         # Check loss properties
@@ -204,6 +201,10 @@ class TestTripletLoss:
     def test_forward_with_online_mining_cosine(self, triplet_data):
         """Test forward pass with online mining using cosine distance."""
         anchors, positives, _, labels = triplet_data
+        # Explicitly enable gradient computation for inputs
+        anchors = anchors.clone().detach().requires_grad_(True)
+        positives = positives.clone().detach().requires_grad_(True)
+        
         loss_fn = TripletLoss(distance="cosine")
         
         # Forward pass with online mining
@@ -218,6 +219,10 @@ class TestTripletLoss:
     def test_forward_with_online_mining_euclidean(self, triplet_data):
         """Test forward pass with online mining using euclidean distance."""
         anchors, positives, _, labels = triplet_data
+        # Explicitly enable gradient computation for inputs
+        anchors = anchors.clone().detach().requires_grad_(True)
+        positives = positives.clone().detach().requires_grad_(True)
+        
         loss_fn = TripletLoss(distance="euclidean")
         
         # Forward pass with online mining
@@ -292,6 +297,8 @@ class TestInfoNCELoss:
     def test_forward_without_queue(self, embedding_pairs):
         """Test forward pass without external negative queue."""
         query, key = embedding_pairs
+        query.requires_grad_(True)  # Enable gradient computation
+        key.requires_grad_(True)  # Enable gradient computation
         loss_fn = InfoNCELoss()
         
         # Forward pass using batch samples as negatives
@@ -306,12 +313,14 @@ class TestInfoNCELoss:
     def test_forward_with_queue(self, embedding_pairs):
         """Test forward pass with external negative queue."""
         query, key = embedding_pairs
+        query.requires_grad_(True)  # Enable gradient computation
+        key.requires_grad_(True)  # Enable gradient computation
         loss_fn = InfoNCELoss()
         
         # Create a negative queue
         queue_size = 32
         embed_dim = query.shape[1]
-        queue = torch.randn(queue_size, embed_dim)
+        queue = torch.randn(queue_size, embed_dim, requires_grad=True)  # Enable gradient computation
         
         # Forward pass with external negative queue
         loss = loss_fn(query, key, queue)
@@ -507,6 +516,8 @@ class TestAlignmentLoss:
     def test_l2_alignment(self, embedding_pairs):
         """Test L2 alignment loss."""
         x1, x2 = embedding_pairs
+        x1.requires_grad_(True)  # Enable gradient computation
+        x2.requires_grad_(True)  # Enable gradient computation
         loss_fn = AlignmentLoss(alignment_type="l2")
         
         # Forward pass
@@ -525,6 +536,8 @@ class TestAlignmentLoss:
     def test_l1_alignment(self, embedding_pairs):
         """Test L1 alignment loss."""
         x1, x2 = embedding_pairs
+        x1.requires_grad_(True)  # Enable gradient computation
+        x2.requires_grad_(True)  # Enable gradient computation
         loss_fn = AlignmentLoss(alignment_type="l1")
         
         # Forward pass
@@ -543,6 +556,8 @@ class TestAlignmentLoss:
     def test_cosine_alignment(self, embedding_pairs):
         """Test cosine alignment loss."""
         x1, x2 = embedding_pairs
+        x1.requires_grad_(True)  # Enable gradient computation
+        x2.requires_grad_(True)  # Enable gradient computation
         loss_fn = AlignmentLoss(alignment_type="cosine")
         
         # Forward pass
