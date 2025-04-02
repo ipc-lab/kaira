@@ -231,9 +231,10 @@ def test_complex_power_constraints_multi_channel(complex_signal):
     # Check shape preservation
     assert result.shape == multi_channel.shape
     
-    # Check power constraint is satisfied
-    measured_power = torch.sum(torch.abs(result)**2).item()
-    assert abs(measured_power - power) < 1e-4
+    # Check power constraint is satisfied for each batch item separately
+    for i in range(batch_size):
+        batch_power = torch.sum(torch.abs(result[i])**2).item()
+        assert abs(batch_power - power) < 1e-4
 
 
 def test_composite_power_constraints(multi_dimensional_signal):
