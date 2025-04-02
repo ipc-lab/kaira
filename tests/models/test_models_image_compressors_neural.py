@@ -207,6 +207,32 @@ def test_neural_compressor_get_stats_when_not_collected():
 
 
 @patch("compressai.zoo.bmshj2018_factorized")
+def test_neural_compressor_collect_stats_reset(mock_factory, sample_image, mock_compressai_model):
+    """Test neural compressor stats reset functionality."""
+    mock_model = mock_compressai_model
+    mock_factory.return_value.eval.return_value = mock_model
+
+    # Create compressor with stats collection enabled
+    compressor = NeuralCompressor(method="bmshj2018_factorized", quality=5, collect_stats=True)
+    
+    # Process an image
+    compressor(sample_image)
+    
+    # Get stats after processing
+    stats1 = compressor.get_stats()
+    assert "total_bits" in stats1
+    assert stats1["total_bits"] > 0
+    
+    # Reset stats
+    compressor.reset_stats()
+    
+    # Stats should be reset
+    stats2 = compressor.get_stats()
+    assert "total_bits" in stats2
+    assert stats2["total_bits"] == 0
+
+
+@patch("compressai.zoo.bmshj2018_factorized")
 def test_neural_compressor_get_bits_per_image(mock_factory, sample_image, mock_compressai_model):
     """Test neural compressor get_bits_per_image method."""
     mock_model = mock_compressai_model
