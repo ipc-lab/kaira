@@ -41,7 +41,8 @@ def test_binary_tensor_dataset_prob():
 def test_binary_tensor_dataset_device():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset = BinaryTensorDataset(size=(100, 10), prob=0.5, device=device)
-    assert dataset.data.device == device
+    assert dataset.data.device.type == device.type
+    assert (dataset.data.device.index or 0) == (device.index or 0)
 
 
 def test_create_binary_tensor_shape():
