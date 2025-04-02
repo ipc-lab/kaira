@@ -43,11 +43,14 @@ class BitErrorRate(BaseMetric):
             received (Tensor): Received bits
 
         Returns:
-            Tensor: BER value as a scalar tensor
+            Tensor: BER value as a scalar tensor, or a tensor of BER values for each batch element
         """
         if transmitted.numel() == 0 or received.numel() == 0:
             return torch.tensor(0.0)
             
+        # Check for batch dimension
+        is_batched = transmitted.dim() > 1 and transmitted.size(0) > 1
+        
         # Threshold received values to get binary decisions
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
@@ -55,12 +58,21 @@ class BitErrorRate(BaseMetric):
         # Count errors (using not equal comparison instead of XOR)
         errors = (transmitted_bits != received_bits).float()
 
-        # Calculate overall error rate more precisely
-        num_errors = errors.sum().item()
-        total_bits = float(transmitted.numel())
-        error_rate = torch.tensor(num_errors / total_bits if total_bits > 0 else 0.0)
-
-        return error_rate
+        if is_batched:
+            # Calculate error rate per batch element
+            batch_errors = []
+            for i in range(transmitted.size(0)):
+                batch_error_sum = errors[i].sum().item()
+                batch_total_bits = float(transmitted[i].numel())
+                batch_error_rate = batch_error_sum / batch_total_bits if batch_total_bits > 0 else 0.0
+                batch_errors.append(batch_error_rate)
+            return torch.tensor(batch_errors)
+        else:
+            # Calculate overall error rate more precisely
+            num_errors = errors.sum().item()
+            total_bits = float(transmitted.numel())
+            error_rate = torch.tensor(num_errors / total_bits if total_bits > 0 else 0.0)
+            return error_rate
 
     def update(self, transmitted: Tensor, received: Tensor) -> None:
         """Update the internal state with a batch of samples.

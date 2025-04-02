@@ -266,8 +266,11 @@ def test_composite_power_constraints(multi_dimensional_signal):
     assert measured_papr1 <= papr_max + 1e-5
     
     # For composite2, Total Power should be the key constraint
+    # The batch size needs to be accounted for when checking total power
+    batch_size = multi_dimensional_signal.shape[0]
     measured_total_power2 = torch.sum(torch.abs(result2)**2).item()
-    assert abs(measured_total_power2 - total_power) < 1e-4
+    expected_total_power = total_power * batch_size  # Total power per batch * number of batches
+    assert abs(measured_total_power2 - expected_total_power) < 1e-4
     
     # The results should differ due to different application order
     assert not torch.allclose(result1, result2)

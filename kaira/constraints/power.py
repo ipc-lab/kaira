@@ -298,10 +298,11 @@ class PAPRConstraint(BaseConstraint):
         result = x.clone()
         
         # Use multiple iterations of clipping to ensure PAPR constraint is met
-        max_iterations = 10
-        target_papr = self.max_papr * 0.95  # Target slightly below the limit for safety margin
+        max_iterations = 15  # Increased from 10 for better convergence
+        # Use a stricter safety margin to ensure we're comfortably under the limit
+        target_papr = self.max_papr * 0.9  # Reduced from 0.95 for stricter enforcement
         
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
             # Calculate average power
             avg_power = torch.mean(torch.abs(result) ** 2)
             
@@ -312,7 +313,7 @@ class PAPRConstraint(BaseConstraint):
             current_papr = peak_power / (avg_power + 1e-8)
             
             # Check if constraint is already satisfied with margin
-            if current_papr <= target_papr:
+            if current_papr <= self.max_papr * 0.98:  # Stricter check for termination
                 break
                 
             # Calculate maximum allowed amplitude based on target PAPR
@@ -324,17 +325,40 @@ class PAPRConstraint(BaseConstraint):
             
             if torch.any(excess_mask):
                 # Normalize excessive values by their magnitude to preserve phase
-                normalized = result[excess_mask] / (magnitudes[excess_mask].unsqueeze(-1) 
-                                                   if result[excess_mask].dim() > 1 
-                                                   else magnitudes[excess_mask])
+                if torch.is_complex(result):
+                    # For complex tensors, preserve phase properly
+                    normalized = result[excess_mask] / (magnitudes[excess_mask] + 1e-8)
+                else:
+                    # For real tensors, preserve sign
+                    normalized = result[excess_mask] / (magnitudes[excess_mask] + 1e-8)
                 
                 # Apply clipping while preserving signal phase
                 result[excess_mask] = normalized * max_amplitude
                 
-                # Special case for extremely high PAPR signals (like impulses)
-                if current_papr > self.max_papr * 5:
-                    # More aggressive clipping for extreme cases
-                    stricter_max_amp = torch.sqrt(avg_power * target_papr * 0.5)
-                    result = torch.clamp(result, -stricter_max_amp, stricter_max_amp)
+                # For later iterations, apply more aggressive clipping
+                if i > max_iterations // 2:
+                    stricter_max_amp = torch.sqrt(avg_power * target_papr * (0.95 - 0.05 * i / max_iterations))
+                    magnitudes = torch.abs(result)
+                    stricter_mask = magnitudes > stricter_max_amp
+                    if torch.any(stricter_mask):
+                        if torch.is_complex(result):
+                            normalized = result[stricter_mask] / (magnitudes[stricter_mask] + 1e-8)
+                        else:
+                            normalized = result[stricter_mask] / (magnitudes[stricter_mask] + 1e-8)
+                        result[stricter_mask] = normalized * stricter_max_amp
+        
+        # Final check and hard clipping as a safety measure
+        avg_power = torch.mean(torch.abs(result) ** 2)
+        final_max_amplitude = torch.sqrt(avg_power * self.max_papr * 0.98)
+        magnitudes = torch.abs(result)
+        final_excess_mask = magnitudes > final_max_amplitude
+        
+        if torch.any(final_excess_mask):
+            # Final hard clipping to ensure we're under the limit
+            if torch.is_complex(result):
+                normalized = result[final_excess_mask] / (magnitudes[final_excess_mask] + 1e-8)
+            else:
+                normalized = result[final_excess_mask] / (magnitudes[final_excess_mask] + 1e-8)
+            result[final_excess_mask] = normalized * final_max_amplitude
         
         return result

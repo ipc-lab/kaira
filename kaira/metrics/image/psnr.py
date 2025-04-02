@@ -5,7 +5,7 @@ PSNR is a widely used objective quality metric for image and video processing
 correlation, it remains one of the most common benchmarks for image quality assessment.
 """
 from typing import Any, Optional, Tuple
-
+import torch
 import torchmetrics.image
 from torch import Tensor
 
@@ -68,6 +68,9 @@ class PeakSignalNoiseRatio(BaseMetric):
             Tuple[Tensor, Tensor]: Mean and standard deviation of PSNR values
         """
         values = self.psnr(preds, targets)
+        # Handle single value case to avoid NaN in std calculation
+        if values.numel() <= 1:
+            return values.mean(), torch.tensor(0.0)
         return values.mean(), values.std()
 
 

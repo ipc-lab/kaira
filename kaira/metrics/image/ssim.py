@@ -59,6 +59,9 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         elif self.reduction == "sum":
             return values.sum()
         else:
+            # Ensure the tensor has at least one dimension when not reduced
+            if values.dim() == 0:
+                return values.unsqueeze(0)
             return values
 
     def compute_with_stats(self, preds: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
@@ -72,6 +75,9 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             Tuple[Tensor, Tensor]: Mean and standard deviation of SSIM values
         """
         values = self.forward(preds, targets)
+        # Handle single value case to avoid NaN in std calculation
+        if values.numel() <= 1:
+            return values.mean(), torch.tensor(0.0)
         return values.mean(), values.std()
 
 
@@ -85,19 +91,21 @@ class MultiScaleSSIM(BaseMetric):
     than single-scale methods :cite:`wang2004image`.
     """
 
-    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: Optional[str] = None, weights: Optional[torch.Tensor] = None, **kwargs: Any) -> None:
         """Initialize the MultiScaleSSIM module.
 
         Args:
             kernel_size (int): The size of the Gaussian kernel
             data_range (float): The range of the input data (typically 1.0 or 255)
             reduction (Optional[str]): Reduction method ('mean', 'sum', or None)
+            weights (Optional[torch.Tensor]): Weights for different scales. Default is equal weighting.
             **kwargs: Additional keyword arguments
         """
         super().__init__(name="MS-SSIM")
         self.kernel_size = kernel_size
         self.data_range = data_range
         self.reduction = reduction
+        self.weights = weights
         self.register_buffer("sum_values", torch.tensor(0.0))
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("count", torch.tensor(0))
@@ -118,6 +126,7 @@ class MultiScaleSSIM(BaseMetric):
             data_range=self.data_range,
             size_average=False,
             win_size=self.kernel_size,
+            weights=self.weights,
         )
 
         # Apply reduction if specified

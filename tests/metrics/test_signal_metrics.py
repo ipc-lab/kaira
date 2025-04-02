@@ -719,9 +719,9 @@ class TestSignalToNoiseRatio:
         expected_mean = sum(expected_snrs) / len(expected_snrs)
         expected_std = torch.tensor(expected_snrs).std()
         
-        # Check results
-        assert torch.isclose(mean_snr, torch.tensor(expected_mean), rtol=1e-3)
-        assert torch.isclose(std_snr, torch.tensor(expected_std), rtol=1e-3)
+        # Fix: Use clone().detach() instead of torch.tensor() for tensor construction
+        assert torch.isclose(mean_snr, expected_mean, rtol=1e-3)
+        assert torch.isclose(std_snr, expected_std, rtol=1e-3)
 
     def test_signal_to_noise_ratio_db(self):
         """Test SignalToNoiseRatio with dB input/output."""

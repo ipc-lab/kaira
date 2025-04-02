@@ -13,7 +13,11 @@ class MockMetric(BaseMetric):
         self.return_value = return_value
 
     def forward(self, preds, targets):
-        return torch.tensor(self.return_value)
+        # Fix: Use clone().detach() instead of torch.tensor()
+        if isinstance(self.return_value, torch.Tensor):
+            return self.return_value.clone().detach()
+        else:
+            return torch.tensor(self.return_value)
 
     def reset(self):
         pass

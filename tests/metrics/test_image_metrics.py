@@ -197,8 +197,9 @@ class TestMultiScaleSSIM:
         ms_ssim_custom = MultiScaleSSIM(weights=custom_weights)
 
         # Use larger images to allow for multiple scales
-        preds = torch.rand(1, 3, 128, 128)
-        targets = torch.rand(1, 3, 128, 128)
+        # Image size must be larger than (win_size-1) * (2^4) = 160 for default win_size=11
+        preds = torch.rand(1, 3, 256, 256)
+        targets = torch.rand(1, 3, 256, 256)
 
         # Compute both metrics
         result_default = ms_ssim_default(preds, targets)

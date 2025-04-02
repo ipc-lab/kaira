@@ -23,13 +23,17 @@ class SignalToNoiseRatio(BaseMetric):
     :cite:`shannon1948mathematical`.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: Optional[str] = None, mode: str = "db"):
         """Initialize the SNR metric.
 
         Args:
             name (Optional[str]): Optional name for the metric
+            mode (str): Output mode - "db" for decibels or "linear" for linear ratio
         """
         super().__init__(name=name or "SNR")
+        self.mode = mode.lower()
+        if self.mode not in ["db", "linear"]:
+            raise ValueError("Mode must be either 'db' or 'linear'")
 
     def forward(self, signal: Tensor, noisy_signal: Tensor) -> Tensor:
         """Calculate SNR between original signal and noisy signal.
@@ -39,7 +43,7 @@ class SignalToNoiseRatio(BaseMetric):
             noisy_signal (Tensor): Noisy version of the signal
 
         Returns:
-            Tensor: SNR values in decibels (dB)
+            Tensor: SNR values in decibels (dB) or linear ratio based on mode
         """
         # Check for batch dimension
         is_batched = signal.dim() > 1 and signal.size(0) > 1
@@ -65,10 +69,19 @@ class SignalToNoiseRatio(BaseMetric):
 
                 # For perfect signal (no noise), return very high value approaching infinity
                 if noise_power < eps:
-                    result.append(torch.tensor(float("inf")))
+                    if self.mode == "db":
+                        result.append(torch.tensor(float("inf")))
+                    else:
+                        result.append(torch.tensor(float("inf")))
                 else:
-                    # Calculate SNR in dB: 10 * log10(signal_power / noise_power)
-                    snr = 10 * torch.log10(signal_power / (noise_power + eps))
+                    # Calculate SNR
+                    snr_linear = signal_power / (noise_power + eps)
+                    if self.mode == "db":
+                        # Convert to dB: 10 * log10(signal_power / noise_power)
+                        snr = 10 * torch.log10(snr_linear)
+                    else:
+                        # Return linear ratio
+                        snr = snr_linear
                     result.append(snr)
 
             return torch.stack(result)
@@ -89,8 +102,14 @@ class SignalToNoiseRatio(BaseMetric):
             if noise_power < eps:
                 return torch.tensor(float("inf"))
 
-            # Calculate SNR in dB: 10 * log10(signal_power / noise_power)
-            snr = 10 * torch.log10(signal_power / (noise_power + eps))
+            # Calculate SNR in linear form
+            snr_linear = signal_power / (noise_power + eps)
+            
+            # Convert to dB if needed
+            if self.mode == "db":
+                snr = 10 * torch.log10(snr_linear)
+            else:
+                snr = snr_linear
 
             # Return scalar tensor
             return snr.squeeze()

@@ -40,6 +40,10 @@ class ConcreteMetric(BaseMetric):
 
 
 class DummyMetric(BaseMetric):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+
     def reset(self):
         self.value = 0
 
@@ -48,6 +52,10 @@ class DummyMetric(BaseMetric):
 
     def compute(self):
         return self.value
+        
+    def forward(self, preds, target):
+        self.update(preds, target)
+        return self.compute()
 
 
 def test_base_metric_stateful_computation():
