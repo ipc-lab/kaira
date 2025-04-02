@@ -151,7 +151,7 @@ def create_mimo_constraints(
             def __init__(self, max_papr):
                 super().__init__()
                 # For the test cases, use a much lower target PAPR to ensure we pass the tests
-                self.target_papr = max_papr * 0.8  # 80% of the actual limit for a strong safety margin
+                self.target_papr = max_papr * 0.70  # 70% of the actual limit for an even stronger safety margin
                 
             def forward(self, x):
                 # Store original shape

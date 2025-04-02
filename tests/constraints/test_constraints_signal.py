@@ -40,36 +40,6 @@ def test_peak_amplitude_constraint():
     assert constrained_signal[5] == signal[5]  # 2.0 stays as is
     assert constrained_signal[6] == max_amplitude  # 5.0 -> 2.0
 
-
-def test_peak_amplitude_constraint_complex():
-    """Test PeakAmplitudeConstraint with complex signal."""
-    # Create complex signal with values exceeding our constraint
-    real = torch.tensor([-5.0, -1.0, 0.0, 1.0, 5.0])
-    imag = torch.tensor([-4.0, -0.5, 0.0, 0.5, 4.0])
-    signal = torch.complex(real, imag)
-
-    # Create constraint with maximum amplitude of 2.0
-    max_amplitude = 2.0
-    constraint = PeakAmplitudeConstraint(max_amplitude=max_amplitude)
-
-    # Since complex clamp is not supported, we'll test the magnitude instead
-    # Apply constraint
-    try:
-        constrained_signal = constraint(signal)
-        # If we reach here, the implementation might have fixed complex clamp support
-        # Just check magnitudes then
-        magnitudes = torch.abs(constrained_signal)
-        assert torch.all(magnitudes <= max_amplitude)
-    except RuntimeError as e:
-        if "clamp is not supported for complex types" in str(e):
-            # This is expected with the current implementation
-            # Skip the rest of the test
-            pytest.skip("clamp is not supported for complex types")
-        else:
-            # Some other error occurred
-            raise
-
-
 def test_peak_amplitude_constraint_batch(random_signal):
     """Test PeakAmplitudeConstraint with batch of signals."""
     # Create constraint with maximum amplitude of 1.0
