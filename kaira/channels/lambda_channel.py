@@ -44,16 +44,18 @@ class LambdaChannel(BaseChannel):
         super().__init__()
         self.fn = fn
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Transform input signal using the user-defined function.
 
         Args:
             x (torch.Tensor): Input signal tensor
+            *args: Additional positional arguments to pass to the function
+            **kwargs: Additional keyword arguments to pass to the function
 
         Returns:
             torch.Tensor: Transformed output signal
         """
-        return self.fn(x)
+        return self.fn(x, *args, **kwargs)
 
 
 @ChannelRegistry.register_channel()
