@@ -909,9 +909,6 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
         # Initialize weights
         self.apply(self._init_weights)
 
-        # Logger for warnings and info
-        self.logger = logging.getLogger(__name__)
-
         # Performance optimization settings
         self.use_mixed_precision = use_mixed_precision
         self.memory_efficient = memory_efficient
@@ -934,7 +931,6 @@ class Yang2024DeepJSCCSwinEncoder(BaseModel):
                 downsample=_PatchMerging if i_layer != 0 else None,
             )
 
-            self.logger.info(f"Encoder layer {i_layer}: {layer.extra_repr()}")
             layers.append(layer)
 
         return layers
@@ -1281,9 +1277,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
 
         self.apply(self._init_weights)
 
-        # Logger for warnings and info
-        self.logger = logging.getLogger(__name__)
-
+        
         # Performance optimization settings
         self.use_mixed_precision = use_mixed_precision
         self.memory_efficient = memory_efficient
@@ -1306,7 +1300,6 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
                 upsample=_PatchReverseMerging,
             )
 
-            self.logger.info(f"Decoder layer {i_layer}: {layer.extra_repr()}")
             layers.append(layer)
 
         return layers
@@ -1784,7 +1777,6 @@ def build_model(config):
         Created SwinJSCC encoder with 28.35M parameters
         Estimated FLOPs: 4.56G
     """
-    logger = logging.getLogger(__name__)
 
     try:
         device = getattr(config, "device", torch.device("cuda" if torch.cuda.is_available() else "cpu"))
@@ -1803,13 +1795,7 @@ def build_model(config):
         with torch.no_grad():
             _ = model(test_input)
 
-        # Report statistics
-        size_info = model.get_model_size()
-        logger.info(f"Created SwinJSCC encoder with {size_info['total_params']/1e6:.2f}M parameters")
-        logger.info(f"Estimated FLOPs: {size_info['flops_g']:.2f}G")
-
         return model
 
     except Exception as e:
-        logger.error(f"Failed to build model: {str(e)}")
-        raise
+        raise e

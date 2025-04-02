@@ -8,17 +8,6 @@ from kaira.models.image.yang2024_deepjcc_swin import (
     create_swin_jscc_models,
 )
 
-# Add MockLogger to handle missing logger attribute
-class MockLogger:
-    def info(self, msg):
-        pass
-    def debug(self, msg):
-        pass
-    def warning(self, msg):
-        pass
-    def error(self, msg):
-        pass
-
 @pytest.fixture
 def config():
     # Create a custom config rather than using preset to ensure lengths match
@@ -37,8 +26,6 @@ def config():
 @pytest.fixture
 def encoder(config):
     model = Yang2024DeepJSCCSwinEncoder(**config.get_encoder_kwargs(C=16))
-    # Add mock logger to handle missing attribute
-    model.logger = MockLogger()
     return model
 
 
@@ -50,8 +37,6 @@ def decoder(config):
         decoder_kwargs.pop('in_chans')
     
     model = Yang2024DeepJSCCSwinDecoder(**decoder_kwargs)
-    # Add mock logger to handle missing attribute
-    model.logger = MockLogger()
     return model
 
 
@@ -107,16 +92,14 @@ def test_encoder_decoder_different_sizes(img_size):
         window_size=7,
     )
     
-    # Create encoder and decoder with mock loggers
+    # Create encoder and decoder
     encoder = Yang2024DeepJSCCSwinEncoder(**config.get_encoder_kwargs(C=16))
-    encoder.logger = MockLogger()
     
     decoder_kwargs = config.get_decoder_kwargs(C=16)
     if 'in_chans' in decoder_kwargs:
         decoder_kwargs.pop('in_chans')
     
     decoder = Yang2024DeepJSCCSwinDecoder(**decoder_kwargs)
-    decoder.logger = MockLogger()
     
     sample_image = torch.randn(1, 3, *img_size)
     encoded_image = encoder(sample_image)
@@ -138,10 +121,6 @@ def test_swin_jscc_models_creation():
     # Create models
     encoder, decoder = create_swin_jscc_models(config, channel_dim=16)
     
-    # Add mock loggers
-    encoder.logger = MockLogger()
-    decoder.logger = MockLogger()
-    
     assert isinstance(encoder, Yang2024DeepJSCCSwinEncoder)
     assert isinstance(decoder, Yang2024DeepJSCCSwinDecoder)
 
@@ -157,10 +136,8 @@ def test_swin_jscc_models_forward():
         window_size=7,
     )
     
-    # Create models and add mock loggers
+    # Create models
     encoder, decoder = create_swin_jscc_models(config, channel_dim=16)
-    encoder.logger = MockLogger()
-    decoder.logger = MockLogger()
     
     sample_image = torch.randn(1, 3, 224, 224)
     encoded_image = encoder(sample_image)

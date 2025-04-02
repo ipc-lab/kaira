@@ -17,17 +17,6 @@ from kaira.models.image.yang2024_deepjcc_swin import (
     _window_reverse
 )
 
-# Add logger to handle missing logger attribute
-class MockLogger:
-    def info(self, msg):
-        pass
-    def debug(self, msg):
-        pass
-    def warning(self, msg):
-        pass
-    def error(self, msg):
-        pass
-
 @pytest.fixture
 def device():
     """Device fixture for testing."""
@@ -60,8 +49,6 @@ def tiny_encoder(small_config, device):
         bottleneck_dim=8,
         patch_norm=True
     ).to(device)
-    # Add mock logger to handle missing attribute
-    model.logger = MockLogger()
     return model
 
 @pytest.fixture
@@ -81,8 +68,6 @@ def tiny_decoder(small_config, device):
         patch_norm=True,
         ape=False
     ).to(device)
-    # Add mock logger to handle missing attribute
-    model.logger = MockLogger()
     return model
 
 @pytest.fixture
@@ -277,8 +262,6 @@ def test_encoder_initialization(small_config):
         bottleneck_dim=8,
         patch_norm=True
     )
-    # Add logger attribute
-    encoder.logger = MockLogger()
     assert isinstance(encoder, Yang2024DeepJSCCSwinEncoder)
     
     # Test with different window sizes
@@ -287,7 +270,6 @@ def test_encoder_initialization(small_config):
         C=16,
         window_size=2
     )
-    encoder_small_window.logger = MockLogger()
     assert encoder_small_window.window_size == 2
     
     # Test model size calculation if the method exists
@@ -311,8 +293,6 @@ def test_decoder_initialization(small_config):
         bottleneck_dim=8,
         patch_norm=True
     )
-    # Add logger attribute
-    decoder.logger = MockLogger()
     assert isinstance(decoder, Yang2024DeepJSCCSwinDecoder)
     
     # Test with absolute position embedding if ape parameter exists
@@ -322,7 +302,6 @@ def test_decoder_initialization(small_config):
             C=16,
             ape=True
         )
-        decoder_with_ape.logger = MockLogger()
         assert hasattr(decoder_with_ape, "absolute_pos_embed") or decoder_with_ape.ape == True
     except TypeError:
         # If ape parameter is not accepted, skip this test
@@ -483,10 +462,6 @@ def test_create_swin_jscc_models(device):
     )
     
     encoder, decoder = create_swin_jscc_models(config, channel_dim=16, device=device)
-    
-    # Add mock loggers
-    encoder.logger = MockLogger()
-    decoder.logger = MockLogger()
     
     assert isinstance(encoder, Yang2024DeepJSCCSwinEncoder)
     assert isinstance(decoder, Yang2024DeepJSCCSwinDecoder)
