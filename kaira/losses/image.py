@@ -496,7 +496,12 @@ class StyleLoss(BaseLoss):
         batch_size, channels, height, width = x.size()
         features = x.view(batch_size, channels, height * width)
         features_t = features.transpose(1, 2)
-        gram = features.bmm(features_t) / (channels * height * width)
+        gram = features.bmm(features_t)
+        
+        # Normalize if requested
+        if self.normalize:
+            gram = gram / (channels * height * width)
+            
         return gram
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -509,6 +514,17 @@ class StyleLoss(BaseLoss):
         Returns:
             torch.Tensor: The style loss between the input and the target.
         """
+        # Handle precomputed Gram matrices case
+        if not self.apply_gram:
+            return F.mse_loss(x, target)
+            
+        # Input shape validation for image inputs
+        if x.dim() != 4 or target.dim() != 4:
+            raise ValueError("Input tensors must be 4D (batch, channels, height, width)")
+        
+        if x.size(1) != 3 or target.size(1) != 3:
+            raise ValueError("Input tensors must have 3 channels (RGB)")
+            
         # Normalize to match VGG input requirements
         mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
         std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -517,16 +533,26 @@ class StyleLoss(BaseLoss):
         target = (target - mean) / std
 
         loss = 0.0
+        x_feats = []
+        target_feats = []
 
         # Extract features and calculate gram matrices
         for i, layer in enumerate(self.feature_extractor):
+            # Skip processing if images are too small for further layers
+            if x.size(-1) < 3 or x.size(-2) < 3:
+                break
+                
             x = layer(x)
             target = layer(target)
 
             if i in self.style_layers:
+                layer_idx = self.style_layers.index(i)
+                layer_name = f"layer_{layer_idx}"
+                weight = self.layer_weights.get(layer_name, 1.0)
+                
                 x_gram = self.gram_matrix(x)
                 target_gram = self.gram_matrix(target)
-                loss += F.mse_loss(x_gram, target_gram)
+                loss += weight * F.mse_loss(x_gram, target_gram)
 
         return loss
 
@@ -612,7 +638,7 @@ class ElasticLoss(BaseLoss):
             reduction (str): Reduction method ('mean', 'sum', 'none'). Default is 'mean'.
         """
         super().__init__()
-        self.beta = beta
+        self.beta = max(beta, 1e-8)  # Prevent division by zero
         self.alpha = alpha
         self.reduction = reduction
 
@@ -630,14 +656,20 @@ class ElasticLoss(BaseLoss):
         abs_diff = torch.abs(diff)
         squared_diff = diff**2
 
-        # Compute weighted combination of L1 and L2 loss
-        l1_component = abs_diff
-        l2_component = 0.5 * squared_diff / self.beta
-        
-        # Apply smooth transition between L1 and L2 based on difference magnitude
-        point_losses = torch.where(abs_diff < self.beta, 
-                                 self.alpha * l2_component, 
-                                 (1.0 - self.alpha) * l1_component + self.alpha * self.beta / 2.0)
+        # Handle edge cases based on alpha and beta values
+        if self.alpha >= 0.99:  # Close to 1.0, act like pure L1
+            point_losses = abs_diff
+        elif self.alpha <= 0.01:  # Close to 0.0, act like pure L2
+            point_losses = squared_diff  # Removed 0.5 factor to match standard MSE
+        else:
+            # Compute weighted combination of L1 and L2 loss
+            l1_component = abs_diff
+            l2_component = 0.5 * squared_diff / self.beta
+            
+            # Apply smooth transition between L1 and L2 based on difference magnitude
+            point_losses = torch.where(abs_diff < self.beta, 
+                                    self.alpha * l2_component, 
+                                    (1.0 - self.alpha) * l1_component + self.alpha * self.beta / 2.0)
         
         # Apply reduction
         if self.reduction == "mean":
