@@ -59,15 +59,59 @@ class TotalPowerConstraint(BaseConstraint):
             For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
+        # Handle batched data by processing all batch items in parallel
+        if x.dim() > 1 and x.shape[0] > 1:
+            # For batched data, reshape to [batch_size, -1] to process each batch item independently but in parallel
+            original_shape = x.shape
+            batch_size = original_shape[0]
+            
+            # Reshape for parallel processing
+            x_reshaped = x.reshape(batch_size, -1)
+            
+            # Process all batch items in parallel
+            if torch.is_complex(x):
+                current_power = torch.sum(torch.abs(x_reshaped) ** 2, dim=1, keepdim=True)
+            else:
+                current_power = torch.sum(x_reshaped**2, dim=1, keepdim=True)
+                
+            # Handle zero signals in a vectorized way
+            zero_mask = current_power < 1e-10
+            
+            # Compute scaling factors for all batch items at once
+            scale = torch.sqrt(self.total_power / (current_power + 1e-8))
+            
+            # Create the output tensor
+            output = x_reshaped * scale
+            
+            # Handle zero signals
+            if torch.any(zero_mask):
+                uniform_value = self.total_power_factor / torch.sqrt(torch.tensor(x_reshaped.shape[1]))
+                uniform_signal = torch.ones_like(x_reshaped) * uniform_value
+                output = torch.where(zero_mask, uniform_signal, output)
+            
+            # Reshape back to original shape
+            return output.reshape(original_shape)
+        else:
+            # For non-batched data or single batch item, apply constraint directly
+            return self._apply_constraint_to_single_item(x)
+            
+    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply constraint to a single batch item or non-batched tensor."""
         # Calculate the current total power of the input tensor
         if torch.is_complex(x):
             current_power = torch.sum(torch.abs(x) ** 2)
         else:
             current_power = torch.sum(x**2)
-
+            
+        # For zero signals, create a non-zero uniform signal with the desired power
+        if current_power < 1e-10:
+            # Create a uniform signal with the desired power
+            uniform_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
+            return uniform_signal * self.total_power_factor
+            
         # Compute scaling factor to achieve target power
         scale = torch.sqrt(self.total_power / (current_power + 1e-8))
-
+        
         # Scale the input to achieve desired total power
         return x * scale
 
@@ -120,17 +164,62 @@ class AveragePowerConstraint(BaseConstraint):
             For complex signals, power is distributed between real and imaginary components.
             A small epsilon (1e-8) is added to the denominator to prevent division by zero.
         """
+        # Handle batched data by processing all batch items in parallel
+        if x.dim() > 1 and x.shape[0] > 1:
+            # For batched data, reshape to [batch_size, -1] to process each batch item independently but in parallel
+            original_shape = x.shape
+            batch_size = original_shape[0]
+            
+            # Reshape for parallel processing
+            x_reshaped = x.reshape(batch_size, -1)
+            num_elements = x_reshaped.shape[1]
+            
+            # Process all batch items in parallel
+            if torch.is_complex(x):
+                current_power = torch.sum(torch.abs(x_reshaped) ** 2, dim=1, keepdim=True) / num_elements
+            else:
+                current_power = torch.sum(x_reshaped**2, dim=1, keepdim=True) / num_elements
+                
+            # Handle zero signals in a vectorized way
+            zero_mask = current_power < 1e-10
+            
+            # Compute scaling factors for all batch items at once
+            scale = torch.sqrt(self.average_power / (current_power + 1e-8))
+            
+            # Create the output tensor
+            output = x_reshaped * scale
+            
+            # Handle zero signals
+            if torch.any(zero_mask):
+                uniform_value = self.power_avg_factor * torch.sqrt(torch.tensor(num_elements)) / torch.sqrt(torch.tensor(num_elements))
+                uniform_signal = torch.ones_like(x_reshaped) * uniform_value
+                output = torch.where(zero_mask, uniform_signal, output)
+            
+            # Reshape back to original shape
+            return output.reshape(original_shape)
+        else:
+            # For non-batched data or single batch item, apply constraint directly
+            return self._apply_constraint_to_single_item(x)
+            
+    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply constraint to a single batch item or non-batched tensor."""
         # Calculate the current average power of the input tensor
         num_elements = x.numel()
-
+        
         if torch.is_complex(x):
             current_power = torch.sum(torch.abs(x) ** 2) / num_elements
         else:
             current_power = torch.sum(x**2) / num_elements
-
+        
+        # For zero or near-zero signals, create a non-zero uniform signal with the desired power
+        if current_power < 1e-10:
+            # Create a uniform signal with the desired average power
+            uniform_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
+            return uniform_signal * self.power_avg_factor * torch.sqrt(torch.tensor(num_elements))
+        
         # Compute scaling factor to achieve target average power
         scale = torch.sqrt(self.average_power / (current_power + 1e-8))
-
+        
         # Scale the input to achieve desired average power
         return x * scale
 
@@ -176,31 +265,76 @@ class PAPRConstraint(BaseConstraint):
             torch.Tensor: Signal with constrained PAPR with the same shape as input
 
         Note:
-            This implementation uses a soft clipping approach that only affects
-            portions of the signal where the PAPR constraint would be violated,
-            preserving other parts of the signal unchanged.
+            This implementation uses a multi-iteration approach to ensure the PAPR
+            constraint is strictly enforced even for challenging signals.
         """
+        # For PAPRConstraint, we still process batch items individually but use torch.vmap for parallelization
+        if x.dim() > 1 and x.shape[0] > 1:
+            # Use vmap to parallelize the constraint application across batch dimension
+            # This requires PyTorch 1.9+ for torch.vmap
+            try:
+                # Define a wrapper function that takes a single tensor
+                def apply_constraint(single_x):
+                    return self._apply_constraint_to_single_item(single_x)
+                
+                # Use vmap to vectorize the function across the first dimension (batch)
+                vectorized_constraint = torch.vmap(apply_constraint)
+                return vectorized_constraint(x)
+            except (AttributeError, RuntimeError):
+                # Fallback to original implementation if vmap is not available or fails
+                batch_size = x.shape[0]
+                output = torch.zeros_like(x)
+                
+                # Process in parallel using multiple workers if possible
+                output = torch.stack([self._apply_constraint_to_single_item(x[i]) for i in range(batch_size)])
+                return output
+        else:
+            # For non-batched data or single batch item, apply constraint directly
+            return self._apply_constraint_to_single_item(x)
+
+    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply strict PAPR constraint to a single tensor using multiple iterations."""
         dims = self.get_dimensions(x)
-
-        # Calculate average power
-        avg_power = torch.mean(torch.abs(x) ** 2, dim=dims, keepdim=True)
-
-        # Find peak power - iterate over dimensions to find max value
-        # since torch.max only supports one dimension at a time
-        power_values = torch.abs(x) ** 2
-        for dim in sorted(dims, reverse=True):  # Process from innermost dimension outward
-            power_values, _ = torch.max(power_values, dim=dim, keepdim=True)
-        peak_power = power_values
-
-        # Calculate current PAPR
-        current_papr = peak_power / (avg_power + 1e-8)
-
-        # Apply soft clipping where PAPR exceeds threshold
-        excess_indices = current_papr > self.max_papr
-
-        if torch.any(excess_indices):
-            correction = torch.sqrt(avg_power * self.max_papr / peak_power)
-            scaling = torch.where(excess_indices, correction, torch.ones_like(correction))
-            return x * scaling
-
-        return x
+        result = x.clone()
+        
+        # Use multiple iterations of clipping to ensure PAPR constraint is met
+        max_iterations = 10
+        target_papr = self.max_papr * 0.95  # Target slightly below the limit for safety margin
+        
+        for _ in range(max_iterations):
+            # Calculate average power
+            avg_power = torch.mean(torch.abs(result) ** 2)
+            
+            # Calculate peak power 
+            peak_power = torch.max(torch.abs(result) ** 2)
+            
+            # Calculate current PAPR
+            current_papr = peak_power / (avg_power + 1e-8)
+            
+            # Check if constraint is already satisfied with margin
+            if current_papr <= target_papr:
+                break
+                
+            # Calculate maximum allowed amplitude based on target PAPR
+            max_amplitude = torch.sqrt(avg_power * target_papr)
+            
+            # Apply hard clipping to peaks
+            magnitudes = torch.abs(result)
+            excess_mask = magnitudes > max_amplitude
+            
+            if torch.any(excess_mask):
+                # Normalize excessive values by their magnitude to preserve phase
+                normalized = result[excess_mask] / (magnitudes[excess_mask].unsqueeze(-1) 
+                                                   if result[excess_mask].dim() > 1 
+                                                   else magnitudes[excess_mask])
+                
+                # Apply clipping while preserving signal phase
+                result[excess_mask] = normalized * max_amplitude
+                
+                # Special case for extremely high PAPR signals (like impulses)
+                if current_papr > self.max_papr * 5:
+                    # More aggressive clipping for extreme cases
+                    stricter_max_amp = torch.sqrt(avg_power * target_papr * 0.5)
+                    result = torch.clamp(result, -stricter_max_amp, stricter_max_amp)
+        
+        return result
