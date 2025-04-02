@@ -39,6 +39,9 @@ def _apply_noise(x: torch.Tensor, noise_power=None, snr_db=None) -> torch.Tensor
     if noise_power is None:
         raise ValueError("Either noise_power or snr_db must be provided")
 
+    # Ensure noise_power is a tensor
+    noise_power = to_tensor(noise_power)
+
     # Add appropriate noise type
     if torch.is_complex(x):
         # For complex signals, split noise power between real/imag components
@@ -178,9 +181,16 @@ class LaplacianChannel(BaseChannel):
     def _get_laplacian_noise(self, shape, device):
         """Generate Laplacian distributed noise."""
         u = torch.rand(shape, device=device)
-        exp1 = -torch.log(u)
-        exp2 = -torch.log(1 - u)
-        return exp1 - exp2
+        # Transform uniformly distributed samples to Laplacian distribution
+        # using the inverse CDF method: sign(u-0.5) * -ln(1-2|u-0.5|)
+        shifted_u = u - 0.5
+        sign = torch.sign(shifted_u)
+        abs_shifted_u = torch.abs(shifted_u)
+        # Handle edge case to avoid log(0)
+        safe_abs_shifted_u = torch.clamp(2 * abs_shifted_u, max=0.999999)  
+        raw_laplacian = sign * (-torch.log(1 - safe_abs_shifted_u))
+        
+        return raw_laplacian
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Add Laplacian noise to the input signal.
@@ -203,6 +213,9 @@ class LaplacianChannel(BaseChannel):
             # For Laplacian distribution with zero mean, variance = 2*scale²
             scale = torch.sqrt(self.avg_noise_power / 2)
 
+        # Make sure scale is a tensor
+        scale = to_tensor(scale)
+            
         # Handle complex input
         if torch.is_complex(x):
             noise_real = self._get_laplacian_noise(x.real.shape, x.device) * scale
@@ -250,11 +263,9 @@ class PoissonChannel(BaseChannel):
         # Handle complex input
         if torch.is_complex(x):
             magnitude = torch.abs(x)
+            # Store the phase to ensure we preserve it exactly
             phase = torch.angle(x)
 
-            # Check if magnitude is non-negative (should always be true)
-            if torch.any(magnitude < 0):
-                raise ValueError("Complex magnitude should be non-negative")
 
             # Apply Poisson noise to magnitude
             rate = self.rate_factor * magnitude
@@ -264,8 +275,8 @@ class PoissonChannel(BaseChannel):
             if self.normalize:
                 noisy_magnitude = noisy_magnitude / self.rate_factor
 
-            # Reconstruct complex signal preserving phase
-            return noisy_magnitude * torch.exp(1j * phase)
+            # Reconstruct complex signal preserving exact phase
+            return torch.polar(noisy_magnitude, phase)  # Uses polar form with exact phase preservation
         else:
             if torch.any(x < 0):
                 raise ValueError("Input to PoissonChannel must be non-negative")
@@ -316,11 +327,10 @@ class PhaseNoiseChannel(BaseChannel):
         # Convert real signal to complex if needed
         if not torch.is_complex(x):
             x = torch.complex(x, torch.zeros_like(x))
-
-        # Generate random phase noise
+            
+        # Generate random phase noise with controlled standard deviation
         phase_noise = torch.randn_like(x.real) * self.phase_noise_std
-
-        # Apply phase noise
+            
         return x * torch.exp(1j * phase_noise)
 
 

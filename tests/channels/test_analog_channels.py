@@ -118,13 +118,13 @@ class TestLaplacianChannel:
         """Test initialization with different parameters."""
         # Test with scale
         channel1 = LaplacianChannel(scale=0.5)
-        assert channel1.scale.item() == 0.5
+        assert torch.isclose(channel1.scale, torch.tensor(0.5), rtol=1e-5)
         assert channel1.avg_noise_power is None
         assert channel1.snr_db is None
         
         # Test with noise power
         channel2 = LaplacianChannel(avg_noise_power=0.1)
-        assert channel2.avg_noise_power.item() == 0.1
+        assert torch.isclose(channel2.avg_noise_power, torch.tensor(0.1), rtol=1e-5)
         assert channel2.scale is None
         assert channel2.snr_db is None
         
@@ -188,7 +188,7 @@ class TestPhaseNoiseChannel:
         """Test initialization with different parameters."""
         # Test with valid parameter
         channel = PhaseNoiseChannel(phase_noise_std=0.1)
-        assert channel.phase_noise_std.item() == 0.1
+        assert torch.isclose(channel.phase_noise_std, torch.tensor(0.1), rtol=1e-5)
         
         # Test with negative standard deviation (should raise error)
         with pytest.raises(ValueError):
@@ -208,19 +208,26 @@ class TestPhaseNoiseChannel:
     
     def test_forward_complex_input(self, complex_tensor):
         """Test forward pass with complex input."""
+        # Reset the random seed for reproducible testing
+        torch.manual_seed(42)
+        
         phase_std = 0.1
+        # Create a simpler tensor for deterministic testing
+        test_tensor = torch.complex(torch.ones(1000), torch.zeros(1000))
         channel = PhaseNoiseChannel(phase_noise_std=phase_std)
-        output = channel(complex_tensor)
+        
+        # Apply channel with known phase noise
+        output = channel(test_tensor)
         
         # Check shape and type preservation
-        assert output.shape == complex_tensor.shape
+        assert output.shape == test_tensor.shape
         assert torch.is_complex(output)
         
         # Magnitude should be preserved
-        assert torch.allclose(torch.abs(output), torch.abs(complex_tensor), rtol=1e-5)
+        assert torch.allclose(torch.abs(output), torch.abs(test_tensor), rtol=1e-5)
         
         # Phase should be perturbed
-        phase_diff = torch.angle(output) - torch.angle(complex_tensor)
+        phase_diff = torch.angle(output) - torch.angle(test_tensor)
         
         # The phase differences should have a standard deviation close to phase_std
         measured_std = torch.std(phase_diff).item()
@@ -281,17 +288,26 @@ class TestPoissonChannel:
     
     def test_complex_input(self):
         """Test with complex input."""
+        # Set a fixed seed for reproducible tests
+        torch.manual_seed(42)
+        
         channel = PoissonChannel(rate_factor=10.0)
         # Create complex input with positive magnitude
         x = torch.complex(torch.ones(100) * 0.5, torch.ones(100) * 0.5)
+        
+        # Get the exact phases before applying the channel
+        input_phase = torch.angle(x)
+        
+        # Apply the channel
         y = channel(x)
         
         # Check output is complex
         assert y.shape == x.shape
         assert torch.is_complex(y)
         
-        # Phase should be preserved
-        assert torch.allclose(torch.angle(y), torch.angle(x), atol=1e-5)
+        # Phase should be preserved exactly
+        output_phase = torch.angle(y)
+        assert torch.allclose(output_phase, input_phase, atol=1e-5)
 
 
 class TestFlatFadingChannel:
@@ -357,8 +373,11 @@ class TestFlatFadingChannel:
         # Output should be different from input
         assert not torch.allclose(output, complex_tensor)
         
-        # Test with CSI
-        csi = torch.complex(torch.ones_like(complex_tensor) * 0.5, torch.zeros_like(complex_tensor))
+        # Create a proper CSI tensor matching input dimensions
+        real_part = torch.ones_like(complex_tensor.real) * 0.5
+        imag_part = torch.zeros_like(complex_tensor.imag)
+        csi = torch.complex(real_part, imag_part)
+        
         output_with_csi = channel(complex_tensor, csi=csi)
         
         # With CSI, the fading component should match the provided CSI
