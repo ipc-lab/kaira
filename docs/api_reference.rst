@@ -458,7 +458,7 @@ General utility functions for data manipulation, visualization, and configuratio
 
    seed_everything
    to_tensor
-   calculate_num_filters_image
+   calculate_num_filters_factor_image
    snr_db_to_linear
    snr_linear_to_db
    snr_to_noise_power

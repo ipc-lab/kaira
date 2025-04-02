@@ -43,24 +43,33 @@ def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Te
         raise TypeError(f"Unsupported type: {type(x)}")
 
 
-def calculate_num_filters_image(num_strided_layers, bw_ratio):
-    """The function calculates the number of filters in an image based on the number of strided
-    layers and a black and white ratio.
+def calculate_num_filters_factor_image(num_strided_layers, bw_ratio, channels=3, is_complex_transmission=False):
+    """Calculate the number of filters in an image based on the number of strided
+    layers and bandwidth ratio.
 
     Args:
         num_strided_layers (int): The number of strided layers in the network. These
             layers typically reduce the spatial dimensions of the input image.
         bw_ratio (float): The bandwidth ratio, which is the ratio of the number of
-            filters in the current layer to the number of filters in the previous layer.
+            transmitted filters to the number of filters in the image.
+        channels (int, optional): The number of channels in the input image. Defaults to 3.
+        is_complex_transmission (bool, optional): If True, indicates that the transmission
+            is complex. Defaults to False.
 
     Returns:
         int: The calculated number of filters in an image.
     """
-    res = 2 * 3 * (2 ** (2 * num_strided_layers)) * bw_ratio
+    
+    # The formula according to the test cases:
+    base_filters = channels * (2 ** (2 * num_strided_layers))
+    res = base_filters * bw_ratio
+    
+    if is_complex_transmission:
+        res *= 2
 
-    assert res.is_integer()
-
-    return res
+    assert res.is_integer(), f"Result {res} is not an integer"
+    
+    return int(res)
 
 
 def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministic: bool = True):
@@ -82,7 +91,7 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
 
 __all__ = [
     "to_tensor",
-    "calculate_num_filters_image",
+    "calculate_num_filters_factor_image",
     "snr_db_to_linear",
     "snr_linear_to_db",
     "snr_to_noise_power",

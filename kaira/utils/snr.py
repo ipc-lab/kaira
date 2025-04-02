@@ -27,13 +27,23 @@ def snr_linear_to_db(snr_linear: Union[float, torch.Tensor]) -> torch.Tensor:
         torch.Tensor: SNR in decibel (dB) scale.
 
     Raises:
-        ValueError: If snr_linear contains zero or negative values.
+        ValueError: If snr_linear contains negative values.
     """
     if isinstance(snr_linear, float):
         snr_linear = torch.tensor(snr_linear)
 
-    if torch.any(snr_linear <= 0):
-        raise ValueError("SNR in linear scale must be positive for dB conversion")
+    if torch.any(snr_linear < 0):
+        raise ValueError("SNR in linear scale must be positive")
+
+    # Handle zero explicitly to return -inf
+    if torch.any(snr_linear == 0):
+        if snr_linear.numel() == 1 and snr_linear.item() == 0:
+            return torch.tensor(float('-inf'))
+        else:
+            # For tensors with multiple elements, replace zeros with -inf after conversion
+            result = 10 * torch.log10(torch.clamp(snr_linear, min=torch.finfo(torch.float32).eps))
+            result[snr_linear == 0] = float('-inf')
+            return result
 
     return 10 * torch.log10(snr_linear)
 
@@ -48,8 +58,18 @@ def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[f
     Returns:
         torch.Tensor: Corresponding noise power for the specified SNR.
     """
+    if isinstance(signal_power, float):
+        signal_power = torch.tensor(signal_power, dtype=torch.float64)
+    if isinstance(snr_db, float):
+        snr_db = torch.tensor(snr_db, dtype=torch.float64)
+    else:
+        snr_db = snr_db.to(torch.float64)
+        
+    signal_power = signal_power.to(torch.float64)
     snr_linear = snr_db_to_linear(snr_db)
-    return signal_power / snr_linear
+    result = signal_power / snr_linear
+    
+    return result.to(torch.float32)
 
 
 def noise_power_to_snr(signal_power: Union[float, torch.Tensor], noise_power: Union[float, torch.Tensor]) -> torch.Tensor:
@@ -63,27 +83,22 @@ def noise_power_to_snr(signal_power: Union[float, torch.Tensor], noise_power: Un
         torch.Tensor: Signal-to-Noise Ratio in decibels (dB).
 
     Raises:
-        ValueError: If noise_power contains zero values (would result in infinite SNR).
+        ValueError: If noise_power contains zero values.
     """
-    # Convert inputs to tensors with proper handling of mixed float/tensor inputs
     if isinstance(signal_power, float):
         signal_power = torch.tensor(signal_power)
     
-    # Handle case where signal_power is a tensor and noise_power is float
     if isinstance(noise_power, float):
         noise_power = torch.tensor(noise_power)
-        # If signal_power is a tensor with multiple elements, expand noise_power
         if signal_power.numel() > 1:
             noise_power = noise_power.expand_as(signal_power)
     
-    # In case noise_power is a tensor and signal_power is a scalar tensor
     if noise_power.numel() > 1 and signal_power.numel() == 1:
         signal_power = signal_power.expand_as(noise_power)
     
-    if torch.any(noise_power == 0):
-        raise ValueError("Noise power cannot be zero (would result in infinite SNR)")
+    if torch.any(noise_power <= 0):
+        raise ValueError("Noise power cannot be zero")
     
-    # Calculate linear SNR and convert to dB
     snr_linear = signal_power / noise_power
     return 10 * torch.log10(snr_linear)
 
