@@ -17,7 +17,7 @@ class TestBinarySymmetricChannel:
         """Test initialization with different parameters."""
         # Valid initialization
         channel = BinarySymmetricChannel(crossover_prob=0.1)
-        assert channel.crossover_prob.item() == 0.1
+        assert channel.crossover_prob.item() == pytest.approx(0.1)
         
         # Invalid probability
         with pytest.raises(ValueError):
@@ -73,12 +73,12 @@ class TestBinaryErasureChannel:
         """Test initialization with different parameters."""
         # Default erasure symbol
         channel1 = BinaryErasureChannel(erasure_prob=0.2)
-        assert channel1.erasure_prob.item() == 0.2
+        assert channel1.erasure_prob.item() == pytest.approx(0.2)
         assert channel1.erasure_symbol == -1
         
         # Custom erasure symbol
         channel2 = BinaryErasureChannel(erasure_prob=0.3, erasure_symbol=2)
-        assert channel2.erasure_prob.item() == 0.3
+        assert channel2.erasure_prob.item() == pytest.approx(0.3)
         assert channel2.erasure_symbol == 2
         
         # Invalid probability
@@ -142,7 +142,7 @@ class TestBinaryZChannel:
     def test_initialization(self):
         """Test initialization with different parameters."""
         channel = BinaryZChannel(error_prob=0.2)
-        assert channel.error_prob.item() == 0.2
+        assert channel.error_prob.item() == pytest.approx(0.2)
         
         # Invalid probability
         with pytest.raises(ValueError):
@@ -221,4 +221,4 @@ def test_channel_registry():
     # Test creation through registry
     bsc = ChannelRegistry.create("binarysymmetricchannel", crossover_prob=0.1)
     assert isinstance(bsc, BinarySymmetricChannel)
-    assert bsc.crossover_prob.item() == 0.1
+    assert bsc.crossover_prob.item() == pytest.approx(0.1)
