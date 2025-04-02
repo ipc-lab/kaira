@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from timm.models.layers import to_2tuple, trunc_normal_
+from timm.layers import to_2tuple, trunc_normal_
 
 from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry
