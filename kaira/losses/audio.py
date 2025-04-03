@@ -294,6 +294,9 @@ class FeatureMatchingLoss(BaseLoss):
         Returns:
             torch.Tensor: The feature matching loss.
         """
+        # Create tensors that require gradient
+        x_with_grad = x.detach().requires_grad_(True)
+        target_with_grad = target.detach().requires_grad_(True)
 
         # Register hooks to capture activations
         activations_x = {}
@@ -301,13 +304,15 @@ class FeatureMatchingLoss(BaseLoss):
 
         def get_activation(name):
             def hook(model, input, output):
-                activations_x[name] = output.detach()
+                # Don't detach to allow gradient flow
+                activations_x[name] = output
 
             return hook
 
         def get_target_activation(name):
             def hook(model, input, output):
-                activations_target[name] = output.detach()
+                # Don't detach to allow gradient flow
+                activations_target[name] = output
 
             return hook
 
@@ -317,7 +322,7 @@ class FeatureMatchingLoss(BaseLoss):
             handles.append(list(self.model.children())[layer_idx].register_forward_hook(get_activation(f"layer_{i}")))
 
         # Forward pass for input
-        self.model(x)
+        self.model(x_with_grad)
 
         # Remove hooks
         for handle in handles:
@@ -329,7 +334,7 @@ class FeatureMatchingLoss(BaseLoss):
             handles.append(list(self.model.children())[layer_idx].register_forward_hook(get_target_activation(f"layer_{i}")))
 
         # Forward pass for target
-        self.model(target)
+        self.model(target_with_grad)
 
         # Remove hooks
         for handle in handles:
@@ -339,7 +344,10 @@ class FeatureMatchingLoss(BaseLoss):
         loss = 0.0
         for i in range(len(self.layers)):
             layer_name = f"layer_{i}"
-            loss += self.weights[i] * F.l1_loss(activations_x[layer_name], activations_target[layer_name])
+            # Use features from activations
+            # We only detach the target activations to prevent training signal
+            # from affecting the feature extractor
+            loss += self.weights[i] * F.l1_loss(activations_x[layer_name], activations_target[layer_name].detach())
 
         return loss
 

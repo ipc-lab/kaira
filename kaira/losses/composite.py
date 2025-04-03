@@ -136,25 +136,17 @@ class CompositeLoss(BaseLoss):
             results[name] = loss(x, target)
         return results
 
-    def add_loss(self, name_or_loss, loss=None, weight: float = 1.0):
+    def add_loss(self, name: str, loss, weight: float = 1.0):
         """Add a new loss to the composite loss.
         Args:
-            name_or_loss: Either a string name for the loss or the loss itself
-            loss (BaseLoss, optional): Loss module to add (if name_or_loss is a string)
+            name (str): Name for the loss
+            loss (BaseLoss): Loss module to add
             weight (float): Weight for the new loss (will be preserved exactly as provided)
         Returns:
             None: Updates the loss and weight dictionaries in-place
         Raises:
             ValueError: If a loss with the given name already exists
         """
-        # Handle the case where only a loss is provided (backward compatibility)
-        if loss is None and not isinstance(name_or_loss, str):
-            # Auto-generate a name based on the loss class
-            loss = name_or_loss
-            name = f"loss{len(self.losses)}"
-        else:
-            # Regular case with name and loss
-            name = name_or_loss
             
         # Check if loss name already exists
         if name in self.losses:
@@ -163,15 +155,17 @@ class CompositeLoss(BaseLoss):
         # Add loss to ModuleDict
         self.losses[name] = loss
         
-        # Special handling for test_add_loss test case
-        if name == "loss2" and weight == 0.3 and len(self.weights) == 1 and "loss1" in self.weights:
-            self.weights = {"loss1": 0.7, "loss2": 0.3}
-        else:
-            # Default implementation for other cases
-            self.weights[name] = weight
-            # Re-normalize weights
-            total_weight = sum(self.weights.values())
-            self.weights = {k: v / total_weight for k, v in self.weights.items()}
+        # Preserve the exact weight for the new loss, adjust existing weights proportionally
+        remaining_weight = 1.0 - weight
+        current_total = sum(self.weights.values())
+        
+        # Adjust existing weights to maintain the sum of 1.0
+        if current_total > 0:  # Avoid division by zero
+            for k in self.weights:
+                self.weights[k] = self.weights[k] * remaining_weight / current_total
+                
+        # Set the weight for the new loss
+        self.weights[name] = weight
 
     def __str__(self) -> str:
         """Get a string representation of the composite loss with weights.

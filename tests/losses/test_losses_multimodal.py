@@ -2,6 +2,7 @@
 import pytest
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from kaira.losses.multimodal import (
     ContrastiveLoss,
@@ -11,7 +12,6 @@ from kaira.losses.multimodal import (
     AlignmentLoss,
 )
 from kaira.losses.base import BaseLoss
-
 
 @pytest.fixture
 def embedding_pairs():
@@ -239,9 +239,23 @@ class TestTripletLoss:
         anchors, positives, _, _ = triplet_data
         loss_fn = TripletLoss()
         
-        # Should raise ValueError when neither negatives nor labels are provided
-        with pytest.raises(ValueError):
+        # Should raise ValueError with specific message when neither negatives nor labels are provided
+        with pytest.raises(ValueError, match="Either negative samples or labels must be provided"):
             loss_fn(anchors, positives)
+    
+    def test_error_for_both_distance_metrics(self, triplet_data):
+        """Test that error is raised for both cosine and euclidean metrics when neither negatives nor labels are provided."""
+        anchors, positives, _, _ = triplet_data
+        
+        # Test with cosine distance
+        loss_fn_cosine = TripletLoss(distance="cosine")
+        with pytest.raises(ValueError, match="Either negative samples or labels must be provided"):
+            loss_fn_cosine(anchors, positives)
+        
+        # Test with euclidean distance
+        loss_fn_euclidean = TripletLoss(distance="euclidean")
+        with pytest.raises(ValueError, match="Either negative samples or labels must be provided"):
+            loss_fn_euclidean(anchors, positives)
     
     def test_no_valid_negatives_case(self, triplet_data):
         """Test case when no valid negatives can be found (all same label)."""
@@ -264,13 +278,10 @@ class TestTripletLoss:
         anchors, positives, _, _ = triplet_data
         loss_fn = TripletLoss(distance="euclidean")
         
-        # All samples have the same label
         same_labels = torch.zeros(anchors.size(0), dtype=torch.long)
         
-        # Should return mean of positive distances
         loss = loss_fn(anchors, positives, labels=same_labels)
         
-        # Check result is valid
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
         assert loss.item() >= 0
@@ -378,20 +389,47 @@ class TestInfoNCELoss:
         # Create loss function
         loss_fn = InfoNCELoss()
         
-        # Mock implementation to avoid modifying the original code
-        # In a real implementation, we'd ensure the function supports the mask parameter
-        # This test is to showcase what needs to be added to the test suite
-        try:
-            # Try to call with mask parameter
-            loss = loss_fn(emb1, emb2, mask=mask)
-            
-            # If supported, verify basic properties
-            assert isinstance(loss, torch.Tensor)
-            assert loss.ndim == 0
-            assert loss.item() > 0
-        except TypeError:
-            # If not supported, this is expected
-            pytest.skip("InfoNCELoss doesn't support mask parameter yet")
+        loss = loss_fn(emb1, emb2, mask=mask)
+        
+        # If supported, verify basic properties
+        assert isinstance(loss, torch.Tensor)
+        assert loss.ndim == 0
+        assert loss.item() > 0
+    
+    def test_no_negatives_case(self, query_features, key_features):
+        """Test the case where there are no negative pairs for InfoNCELoss."""
+        query_features.requires_grad_(True)
+        key_features.requires_grad_(True)
+        
+        batch_size = query_features.size(0)
+        
+        # Create a mask where ALL pairs are positive
+        # This will trigger the branch where no negatives are found
+        mask = torch.ones(batch_size, batch_size)
+        
+        loss_fn = InfoNCELoss()
+        loss = loss_fn(query_features, key_features, mask=mask)
+        
+        # Manually compute what we expect: -l_pos.mean()
+        # Normalize features first as the implementation does
+        query_norm = F.normalize(query_features, p=2, dim=1)
+        key_norm = F.normalize(key_features, p=2, dim=1)
+        
+        # Compute similarities
+        similarities = torch.einsum("nc,kc->nk", [query_norm, key_norm])
+        
+        # We expect l_pos to be the max similarity for each query
+        # Since all pairs are positive, this would be the max value in each row
+        l_pos = similarities.max(dim=1, keepdim=True)[0]
+        expected_loss = -l_pos.mean()
+        
+        # Verify the loss matches what we expect
+        assert torch.isclose(loss, expected_loss)
+        
+        # Check gradient flow
+        loss.backward()
+        assert query_features.grad is not None
+        assert key_features.grad is not None
 
 
 class TestCMCLoss:
@@ -589,21 +627,76 @@ class TestAlignmentLoss:
         """Test AlignmentLoss with different projection dimensions."""
         x1, x2 = embedding_pairs
         
-        # Mock test for projection functionality
-        # In a real implementation, we'd ensure the function supports the projection_dim parameter
-        try:
-            # Try different projection options
-            loss_no_proj = AlignmentLoss(projection_dim=None)  # No projection
-            loss_small_proj = AlignmentLoss(projection_dim=32)  # Smaller projection
-            
-            # Compute losses
-            value_no_proj = loss_no_proj(x1, x2)
-            value_small_proj = loss_small_proj(x1, x2)
-            
-            # Verify results
-            assert isinstance(value_no_proj, torch.Tensor)
-            assert isinstance(value_small_proj, torch.Tensor)
-            
-        except (TypeError, AttributeError):
-            # If not supported, this is expected
-            pytest.skip("AlignmentLoss doesn't support projection_dim parameter yet")
+        loss_no_proj = AlignmentLoss(projection_dim=None)  # No projection
+        loss_small_proj = AlignmentLoss(projection_dim=32)  # Smaller projection
+        
+        # Compute losses
+        value_no_proj = loss_no_proj(x1, x2)
+        value_small_proj = loss_small_proj(x1, x2)
+        
+        # Verify results
+        assert isinstance(value_no_proj, torch.Tensor)
+        assert isinstance(value_small_proj, torch.Tensor)
+    
+    def test_unsupported_alignment_type_init(self):
+        """Test AlignmentLoss with unsupported alignment type during initialization."""
+        with pytest.raises(ValueError, match=r"Unsupported alignment type: .*"):
+            AlignmentLoss(alignment_type="invalid_type")
+    
+    def test_unsupported_alignment_type_forward(self):
+        """Test AlignmentLoss with unsupported alignment type during forward pass."""
+        # Create a loss instance with a valid type initially
+        loss_fn = AlignmentLoss(alignment_type="l2")
+        batch_size = 8
+        embed_dim = 32
+        
+        x1 = torch.randn(batch_size, embed_dim)
+        x2 = torch.randn(batch_size, embed_dim)
+        
+        # Manually set an invalid alignment type to trigger the error in forward
+        loss_fn.alignment_type = "invalid_type"
+        
+        with pytest.raises(ValueError, match=r"Unsupported alignment type: .*"):
+            loss_fn(x1, x2)
+    
+    def test_unsupported_alignment_type_forward_case(self):
+        """Test specifically the error case when alignment_type is invalid during forward pass."""
+        # Create a loss instance with a valid type initially
+        loss_fn = AlignmentLoss(alignment_type="l2")
+        batch_size = 8
+        embed_dim = 32
+        
+        x1 = torch.randn(batch_size, embed_dim)
+        x2 = torch.randn(batch_size, embed_dim)
+        
+        # Manually set an invalid alignment type to trigger the error in forward
+        loss_fn.alignment_type = "invalid_type"
+        
+        # This should trigger the specific error case we want to cover
+        with pytest.raises(ValueError, match=r"Unsupported alignment type: invalid_type"):
+            loss_fn(x1, x2)
+
+# Common fixtures
+@pytest.fixture
+def random_tensor():
+    def _random_tensor(shape, normalize=False):
+        tensor = torch.randn(*shape)
+        if normalize:
+            tensor = torch.nn.functional.normalize(tensor, p=2, dim=1)
+        return tensor
+    return _random_tensor
+
+# Fixtures specifically for InfoNCELoss tests
+@pytest.fixture
+def query_features(random_tensor):
+    batch_size = 8
+    dim = 64
+    return random_tensor((batch_size, dim))
+
+@pytest.fixture
+def key_features(random_tensor):
+    batch_size = 8
+    dim = 64
+    return random_tensor((batch_size, dim))
+
+# Test classes for each loss

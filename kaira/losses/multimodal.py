@@ -180,13 +180,15 @@ class InfoNCELoss(BaseLoss):
         super().__init__()
         self.temperature = temperature
 
-    def forward(self, query: torch.Tensor, key: torch.Tensor, queue: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, query: torch.Tensor, key: torch.Tensor, queue: torch.Tensor = None, mask: torch.Tensor = None) -> torch.Tensor:
         """Forward pass through the InfoNCELoss module.
 
         Args:
             query (torch.Tensor): Query embeddings from one modality.
             key (torch.Tensor): Key embeddings from another modality (positives).
             queue (torch.Tensor, optional): Queue of negative samples. Default is None.
+            mask (torch.Tensor, optional): Binary mask defining positive pairs. Default is None.
+                Shape should be [query.size(0), key.size(0)] where 1 indicates a positive pair.
 
         Returns:
             torch.Tensor: The InfoNCE loss.
@@ -195,26 +197,70 @@ class InfoNCELoss(BaseLoss):
         query = F.normalize(query, p=2, dim=1)
         key = F.normalize(key, p=2, dim=1)
 
-        # Positive logits: NxN matrix
-        l_pos = torch.einsum("nc,nc->n", [query, key]).unsqueeze(-1)
-
-        # Negative logits
+        # Handle different masking scenarios
         if queue is not None:
+            # Compute positive logits
+            l_pos = torch.einsum("nc,nc->n", [query, key]).unsqueeze(-1)
+            
+            # Compute negative logits with queue
             queue = F.normalize(queue, p=2, dim=1)
             l_neg = torch.einsum("nc,kc->nk", [query, queue])
             logits = torch.cat([l_pos, l_neg], dim=1)
 
             # Labels: positives are the 0-th
-            labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)  # Ensure labels are Long
-        else:
-            # Use other samples in the batch as negatives
-            l_neg = torch.einsum("nc,kc->nk", [query, key])
-            # Remove diagonal (self-similarity)
-            mask = torch.eye(l_neg.shape[0], device=query.device)
-            l_neg.masked_fill_(mask.bool(), float("-inf"))
-
-            logits = torch.cat([l_pos, l_neg], dim=1)
             labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
+        else:
+            # Compute all pairwise similarities
+            similarities = torch.einsum("nc,kc->nk", [query, key])
+            
+            if mask is not None:
+                # Apply custom masking to define positives and negatives
+                # Make sure the mask is properly shaped
+                assert mask.shape == similarities.shape, "Mask shape must match similarity matrix shape"
+                
+                # For each query, get the positive key with the highest similarity
+                positive_mask = mask.bool()
+                negative_mask = ~positive_mask
+                
+                # Replace non-positive similarities with -inf
+                masked_similarities = similarities.clone()
+                masked_similarities.masked_fill_(negative_mask, float("-inf"))
+                
+                # Get positive logits (max similarity for each query among its positive keys)
+                l_pos = masked_similarities.max(dim=1, keepdim=True)[0]
+                
+                # Prepare negative logits
+                # Replace diagonal with -inf to avoid self-contrast if not already masked
+                diag_mask = torch.eye(similarities.shape[0], device=similarities.device).bool()
+                negative_mask = negative_mask & ~diag_mask  # Remove diagonal from negatives
+                
+                # Extract only negative similarities
+                l_neg = similarities.masked_select(negative_mask).reshape(similarities.shape[0], -1)
+                
+                if l_neg.shape[1] == 0:  # No negatives found
+                    # Just minimize distance between positive pairs
+                    return -l_pos.mean()
+                
+                # Concatenate positive and negative logits
+                logits = torch.cat([l_pos, l_neg], dim=1)
+                
+                # Labels: positives are at index 0
+                labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
+            else:
+                # Default behavior: use diagonal elements as positives
+                # Get positive logits (diagonal elements)
+                l_pos = torch.diag(similarities).unsqueeze(-1)
+                
+                # Remove diagonal from similarities to get negative logits
+                mask = torch.eye(similarities.shape[0], device=similarities.device)
+                similarities.masked_fill_(mask.bool(), float("-inf"))
+                l_neg = similarities
+                
+                # Concatenate positive and negative logits
+                logits = torch.cat([l_pos, l_neg], dim=1)
+                
+                # Labels: positives are at index 0
+                labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
 
         # Scale with temperature
         logits /= self.temperature
@@ -279,16 +325,26 @@ class AlignmentLoss(BaseLoss):
     This module aligns embeddings from different modalities.
     """
 
-    def __init__(self, alignment_type="l2"):
+    def __init__(self, alignment_type="l2", projection_dim=None):
         """Initialize the AlignmentLoss module.
 
         Args:
             alignment_type (str): Type of alignment ('l1', 'l2', or 'cosine'). Default is 'l2'.
+            projection_dim (int, optional): Dimension to project embeddings to before computing loss.
+                If None, no projection is performed. Default is None.
         """
         super().__init__()
         self.alignment_type = alignment_type
+        self.projection_dim = projection_dim
+        
         if alignment_type not in ["l1", "l2", "cosine"]:
             raise ValueError(f"Unsupported alignment type: {alignment_type}")
+            
+        # Create projection layer if needed
+        self.projector = None
+        if self.projection_dim is not None:
+            self.projector = torch.nn.Linear(in_features=1, out_features=projection_dim, bias=False)
+            # We'll initialize the actual weights in the forward pass when we know the input dimension
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
         """Forward pass through the AlignmentLoss module.
@@ -300,6 +356,25 @@ class AlignmentLoss(BaseLoss):
         Returns:
             torch.Tensor: The alignment loss.
         """
+        # Apply projection if needed
+        if self.projection_dim is not None:
+            # Initialize the projector if it's the first call
+            if self.projector.in_features != x1.shape[1]:
+                # Replace the projector with a properly sized one
+                device = x1.device
+                self.projector = torch.nn.Linear(
+                    in_features=x1.shape[1], 
+                    out_features=self.projection_dim,
+                    bias=False
+                ).to(device)
+                # Initialize with orthogonal weights for better preservation of distances
+                torch.nn.init.orthogonal_(self.projector.weight)
+            
+            # Apply projection
+            x1 = self.projector(x1)
+            x2 = self.projector(x2)
+
+        # Compute alignment loss based on the chosen type
         if self.alignment_type == "l1":
             return F.l1_loss(x1, x2)
         elif self.alignment_type == "l2":
