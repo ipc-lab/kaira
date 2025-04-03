@@ -135,7 +135,7 @@ class MultiScaleSSIM(BaseMetric):
         elif self.reduction == "sum":
             return values.sum()
         else:
-            return values
+            return values.unsqueeze(0) if values.dim() == 0 else values
 
     def update(self, preds: torch.Tensor, targets: torch.Tensor) -> None:
         """Update internal state with batch of samples.
@@ -145,6 +145,8 @@ class MultiScaleSSIM(BaseMetric):
             targets (torch.Tensor): Target images
         """
         values = self.forward(preds, targets)
+        if values.numel() == 0:
+            return  # Avoid updating with empty values
         self.sum_values += values.sum()
         self.sum_sq += (values**2).sum()
         self.count += values.numel()

@@ -69,10 +69,7 @@ class SignalToNoiseRatio(BaseMetric):
 
                 # For perfect signal (no noise), return very high value approaching infinity
                 if noise_power < eps:
-                    if self.mode == "db":
-                        result.append(torch.tensor(float("inf")))
-                    else:
-                        result.append(torch.tensor(float("inf")))
+                    result.append(torch.tensor(float("inf")))
                 else:
                     # Calculate SNR
                     snr_linear = signal_power / (noise_power + eps)

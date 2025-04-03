@@ -553,6 +553,54 @@ class TestSNRUtils:
         # Results should be the same as with float scalar
         assert torch.allclose(snr_db_2, expected_snr, rtol=1e-2)
 
+    def test_snr_to_noise_power_tensor_snr_db(self):
+        """Test snr_to_noise_power with tensor snr_db input (tests type conversion branch)."""
+        # Test with snr_db as a tensor (triggering the else branch for type conversion)
+        signal_power = 10.0
+        # Create a tensor for snr_db instead of a scalar
+        snr_db_tensor = torch.tensor([0.0, 10.0, 20.0])
+        
+        noise_power = snr_to_noise_power(signal_power, snr_db_tensor)
+        
+        # Check that it's converted properly and calculations are accurate
+        assert noise_power.dtype == torch.float32  # Final result should be float32
+        expected_noise = torch.tensor([10.0, 1.0, 0.1])  # Signal power / 10^(snr_db/10)
+        assert torch.allclose(noise_power, expected_noise, rtol=1e-5)
+        
+        # Verify the mixed precision handling worked correctly
+        # by comparing with manual calculation using float64
+        signal_power_64 = torch.tensor(10.0, dtype=torch.float64)
+        snr_linear_64 = 10 ** (snr_db_tensor.to(torch.float64) / 10.0)
+        expected_64 = (signal_power_64 / snr_linear_64).to(torch.float32)
+        assert torch.allclose(noise_power, expected_64, rtol=1e-6)
+
+    def test_snr_linear_to_db_tensor_with_zeros(self):
+        """Test snr_linear_to_db with tensor containing zeros (tests zero-handling branch)."""
+        # Create a tensor with multiple elements including zeros
+        snr_linear = torch.tensor([0.0, 1.0, 10.0, 0.0, 100.0])
+        
+        # This should trigger the branch for handling tensors with zero elements
+        snr_db = snr_linear_to_db(snr_linear)
+        
+        # Check results - zeros should become -inf, rest should be converted normally
+        expected_result = torch.tensor([float('-inf'), 0.0, 10.0, float('-inf'), 20.0])
+        
+        # Separately check non-inf values
+        non_inf_mask = ~torch.isinf(expected_result)
+        assert torch.allclose(snr_db[non_inf_mask], expected_result[non_inf_mask])
+        
+        # Check that zeros were properly converted to -inf
+        zero_mask = snr_linear == 0
+        assert torch.all(torch.isinf(snr_db[zero_mask]))
+        assert torch.all(snr_db[zero_mask] < 0)  # Confirm it's negative infinity
+        
+        # Also verify that the high-precision calculation path works correctly
+        # by checking against manual computation
+        manual_result = torch.empty_like(snr_linear)
+        manual_result[zero_mask] = float('-inf')
+        manual_result[~zero_mask] = 10 * torch.log10(snr_linear[~zero_mask])
+        assert torch.all(torch.eq(snr_db, manual_result) | (torch.isnan(snr_db) & torch.isnan(manual_result)))
+
 
 # ===== Seeding Utility Tests =====
 

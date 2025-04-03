@@ -63,7 +63,8 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
             img1 = torch.clamp(img1, 0.0, 1.0)
             img2 = torch.clamp(img2, 0.0, 1.0)
 
-        return self.lpips(img1, img2)
+        result = self.lpips(img1, img2)
+        return result.unsqueeze(0) if result.dim() == 0 else result
 
     def update(self, img1: Tensor, img2: Tensor) -> None:
         """Update the internal state with a batch of samples.
