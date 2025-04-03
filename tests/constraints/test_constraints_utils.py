@@ -149,7 +149,7 @@ def test_apply_constraint_chain():
     x = torch.randn(10)
 
     # Apply constraints without verbose output
-    result = apply_constraint_chain(constraints, x, verbose=False)
+    result = apply_constraint_chain(constraints, x)
 
     # Check that constraints were applied correctly
     # Use a more lenient tolerance for total power
@@ -159,10 +159,6 @@ def test_apply_constraint_chain():
     peak_power = torch.max(result**2)
     papr = peak_power / avg_power
     assert papr <= 3.0  # More lenient PAPR tolerance
-
-    # Test with verbose output (this just checks it doesn't crash)
-    result_verbose = apply_constraint_chain(constraints, x, verbose=True)
-    assert torch.allclose(result, result_verbose)
 
 
 def test_measure_signal_properties():
@@ -507,3 +503,24 @@ def test_total_power_constraint_zero_signal_handling():
     assert torch.allclose(constrained_zero, expected_value * torch.ones_like(constrained_zero), rtol=1e-4)
     # Near zero signal should also produce a flat signal since it falls below the threshold
     assert torch.allclose(constrained_near_zero, expected_value * torch.ones_like(constrained_near_zero), rtol=1e-4)
+
+
+def test_ofdm_constraint_skip_zero_signal():
+    """Test that the OFDM PAPR constraint skips processing for near-zero signals."""
+    near_zero_signal = torch.zeros(64)
+    ofdm_constraints = create_ofdm_constraints(total_power=1.0, max_papr=4.0)
+    papr_constraint = ofdm_constraints.constraints[0]  # Instance of TestSpecificPAPRConstraint
+    output = papr_constraint(near_zero_signal)
+    # Should return the input unchanged if mean_power < 1e-10
+    assert torch.allclose(output, near_zero_signal)
+
+def test_mimo_papr_skip_zero_signal():
+    """Test that the MIMO extremely strict PAPR constraint skips processing for near-zero signals."""
+    near_zero_signal = torch.zeros(2, 4, 32)
+    mimo_constraints = create_mimo_constraints(num_antennas=4, uniform_power=0.25, max_papr=2.0)
+    # Find the PAPR constraint instance (ExtremelyStrictPAPRConstraint)
+    papr_constraint = next((c for c in mimo_constraints.constraints if hasattr(c, "_apply_strict_papr_constraint")), None)
+    assert papr_constraint is not None, "PAPR constraint not found"
+    output = papr_constraint(near_zero_signal)
+    # Should return the input unchanged if mean_power < 1e-10
+    assert torch.allclose(output, near_zero_signal)

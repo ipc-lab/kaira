@@ -542,3 +542,127 @@ def test_uniform_value_for_zero_signals():
         # The average power should match the target
         batch_avg_power = torch.mean(result[i]**2).item()
         assert torch.isclose(torch.tensor(batch_avg_power), torch.tensor(avg_power), rtol=1e-4)
+
+
+def test_papr_constraint_final_hard_clipping_complex():
+    """Test that PAPR constraint applies final hard clipping to complex signals."""
+    n_samples = 1000
+    torch.manual_seed(42)
+    
+    # Create base signal with small values
+    real = torch.randn(n_samples) * 0.1
+    imag = torch.randn(n_samples) * 0.1
+    
+    # Add extreme peaks to trigger final hard clipping
+    real[0] = 20.0
+    imag[100] = 20.0
+    real[500] = 30.0  # Very extreme peak to ensure final_excess_mask is True
+    
+    complex_signal = torch.complex(real, imag)
+    
+    # Use a strict PAPR constraint
+    max_papr = 1.5
+    constraint = PAPRConstraint(max_papr=max_papr)
+    result = constraint(complex_signal)
+    
+    # Calculate resulting PAPR
+    mean_power = torch.mean(torch.abs(result)**2).item()
+    peak_power = torch.max(torch.abs(result)**2).item()
+    measured_papr = peak_power / (mean_power + 1e-8)
+    
+    # PAPR should be constrained
+    assert measured_papr <= max_papr * 1.5
+    
+    # Check phase preservation for clipped values
+    for idx in [0, 100, 500]:
+        original_phase = torch.angle(complex_signal[idx])
+        result_phase = torch.angle(result[idx])
+        assert torch.isclose(original_phase, result_phase, rtol=1e-4, atol=1e-4)
+    
+    # Verify the peak was actually reduced
+    assert torch.max(torch.abs(result)) < torch.max(torch.abs(complex_signal))
+
+
+def test_papr_constraint_stricter_clipping_complex():
+    """Test that PAPR constraint applies stricter clipping for complex signals in later iterations."""
+    n_samples = 1000
+    torch.manual_seed(42)
+    
+    # Create a complex signal with extremely high peaks to force many iterations
+    # This ensures we reach the "i > max_iterations // 2" condition
+    real = torch.zeros(n_samples)
+    imag = torch.zeros(n_samples)
+    
+    # Add many extreme peaks with different heights to ensure multiple iterations
+    for i in range(0, n_samples, 20):  # More frequent peaks to make constraint harder to satisfy
+        peak = 10.0 + (i / 20)  # Steeper gradient for peaks
+        if i % 40 == 0:
+            real[i] = peak
+        else:
+            imag[i] = peak
+    
+    # Add some extreme outliers to definitely trigger the stricter clipping
+    real[100] = 30.0
+    real[300] = 25.0
+    imag[500] = 35.0
+    imag[700] = 40.0
+    
+    complex_signal = torch.complex(real, imag)
+    
+    # Use a very strict PAPR to guarantee multiple iterations and reaching stricter clipping
+    max_papr = 1.2
+    constraint = PAPRConstraint(max_papr=max_papr)
+    
+    # Apply the constraint
+    result = constraint(complex_signal)
+    
+    # Calculate resulting PAPR
+    mean_power = torch.mean(torch.abs(result)**2).item()
+    peak_power = torch.max(torch.abs(result)**2).item()
+    measured_papr = peak_power / (mean_power + 1e-8)
+    
+    # PAPR should be constrained
+    assert measured_papr <= max_papr * 1.5
+    
+    # Verify phase preservation for all non-zero values, especially the extreme peaks
+    for idx in [100, 300, 500, 700]:
+        original_phase = torch.angle(complex_signal[idx])
+        result_phase = torch.angle(result[idx])
+        assert torch.isclose(original_phase, result_phase, rtol=1e-4, atol=1e-4)
+    
+    # The max amplitude should be significantly reduced due to stricter clipping
+    assert torch.max(torch.abs(result)) < 0.3 * torch.max(torch.abs(complex_signal))
+    
+def test_papr_constraint_stricter_clipping_real():
+    """Test that PAPR constraint applies stricter clipping for real signals in later iterations."""
+    
+    # Create a simple real-valued signal with very high peaks
+    n_samples = 100  # Smaller size for simplicity
+    signal = torch.ones(n_samples) * 0.01
+    
+    # Add a few extremely high peaks to guarantee they'll be clipped
+    signal[10] = 1000.0  # Extremely high positive peak
+    signal[20] = -800.0  # Extremely high negative peak
+    signal[30] = 1200.0  # Another extreme peak
+    signal[40] = -900.0  # Another extreme negative peak
+    
+    # Use our constraint with a strict max_papr to force iterative clipping
+    constraint = PAPRConstraint(max_papr=1.1)
+    
+    # Apply the constraint
+    result = constraint(signal)
+    
+    # Verify PAPR was constrained
+    mean_power = torch.mean(result**2).item()
+    peak_power = torch.max(result**2).item()
+    measured_papr = peak_power / (mean_power + 1e-8)
+    assert measured_papr <= 1.1 * 1.5
+    
+    # Verify sign preservation (the most important test for this branch)
+    for idx in [10, 20, 30, 40]:
+        assert torch.sign(result[idx]) == torch.sign(signal[idx])
+    
+    # Verify the stricter clipping was applied (peaks should be significantly reduced)
+    original_max = torch.max(torch.abs(signal)).item()
+    result_max = torch.max(torch.abs(result)).item()
+    assert result_max < original_max * 0.1  # Should be reduced by at least 90%
