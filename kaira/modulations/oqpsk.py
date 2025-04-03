@@ -79,7 +79,7 @@ class OQPSKModulator(BaseModulator):
 
         # Apply half-symbol delay to quadrature component by shifting
         # For first symbol, use the stored delayed value
-        prev_quad = self._delayed_quad.expand(*batch_shape)
+        prev_quad = self._delayed_quad.expand(batch_shape)  # Pass batch_shape as a single tuple argument
 
         # Construct output: first symbol uses previous quad bit, last quad bit is stored
         delayed_quad = torch.cat([prev_quad.unsqueeze(-1), quad[..., :-1]], dim=-1)
