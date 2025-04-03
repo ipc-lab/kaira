@@ -530,6 +530,29 @@ class TestSNRUtils:
         computed_snr = noise_power_to_snr(estimated_power, required_noise_power)
         assert torch.isclose(computed_snr, torch.tensor(target_snr_db))
 
+    def test_noise_power_to_snr_scalar_expansion(self):
+        """Test noise_power_to_snr properly expands scalar noise_power to match signal_power tensor."""
+        # Create a multi-element signal power tensor
+        signal_power = torch.tensor([2.0, 4.0, 8.0, 16.0])
+        # Create a scalar noise power
+        noise_power = 2.0
+        
+        # This should invoke the expansion logic when signal_power.numel() > 1
+        snr_db = noise_power_to_snr(signal_power, noise_power)
+        
+        # Since noise_power is expanded to [2.0, 2.0, 2.0, 2.0], 
+        # the expected SNR values should be [0.0, 3.01, 6.02, 9.03] dB
+        expected_snr = torch.tensor([0.0, 3.01, 6.02, 9.03])
+        
+        assert torch.allclose(snr_db, expected_snr, rtol=1e-2)
+        
+        # Also test with a scalar tensor
+        noise_power_tensor = torch.tensor(2.0)
+        snr_db_2 = noise_power_to_snr(signal_power, noise_power_tensor)
+        
+        # Results should be the same as with float scalar
+        assert torch.allclose(snr_db_2, expected_snr, rtol=1e-2)
+
 
 # ===== Seeding Utility Tests =====
 
