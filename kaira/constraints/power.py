@@ -324,27 +324,21 @@ class PAPRConstraint(BaseConstraint):
             excess_mask = magnitudes > max_amplitude
             
             if torch.any(excess_mask):
-                # Normalize excessive values by their magnitude to preserve phase
-                if torch.is_complex(result):
-                    # For complex tensors, preserve phase properly
-                    normalized = result[excess_mask] / (magnitudes[excess_mask] + 1e-8)
-                else:
-                    # For real tensors, preserve sign
-                    normalized = result[excess_mask] / (magnitudes[excess_mask] + 1e-8)
+                # Normalize excessive values by their magnitude to preserve phase (complex) or sign (real)
+                normalized = result[excess_mask] / (magnitudes[excess_mask] + 1e-8)
                 
-                # Apply clipping while preserving signal phase
+                # Apply clipping while preserving signal phase/sign
                 result[excess_mask] = normalized * max_amplitude
                 
                 # For later iterations, apply more aggressive clipping
                 if i > max_iterations // 2:
-                    stricter_max_amp = torch.sqrt(avg_power * target_papr * (0.95 - 0.05 * i / max_iterations))
+                    factor = 0.95 - 0.05 * (i - max_iterations // 2)
+                    stricter_max_amp = torch.sqrt(avg_power * target_papr) * factor
                     magnitudes = torch.abs(result)
                     stricter_mask = magnitudes > stricter_max_amp
                     if torch.any(stricter_mask):
-                        if torch.is_complex(result):
-                            normalized = result[stricter_mask] / (magnitudes[stricter_mask] + 1e-8)
-                        else:
-                            normalized = result[stricter_mask] / (magnitudes[stricter_mask] + 1e-8)
+                        # Division by magnitude preserves phase (complex) or sign (real)
+                        normalized = result[stricter_mask] / (magnitudes[stricter_mask] + 1e-8)
                         result[stricter_mask] = normalized * stricter_max_amp
         
         # Final check and hard clipping as a safety measure
@@ -355,10 +349,8 @@ class PAPRConstraint(BaseConstraint):
         
         if torch.any(final_excess_mask):
             # Final hard clipping to ensure we're under the limit
-            if torch.is_complex(result):
-                normalized = result[final_excess_mask] / (magnitudes[final_excess_mask] + 1e-8)
-            else:
-                normalized = result[final_excess_mask] / (magnitudes[final_excess_mask] + 1e-8)
+            # This preserves phase for complex signals and sign for real signals
+            normalized = result[final_excess_mask] / (magnitudes[final_excess_mask] + 1e-8)
             result[final_excess_mask] = normalized * final_max_amplitude
         
         return result

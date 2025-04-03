@@ -12,7 +12,7 @@ import torch
 from .antenna import PerAntennaPowerConstraint
 from .base import BaseConstraint
 from .composite import CompositeConstraint
-from .power import PAPRConstraint, TotalPowerConstraint
+from .power import TotalPowerConstraint
 from .signal import PeakAmplitudeConstraint, SpectralMaskConstraint
 
 # Factory functions for common constraint combinations
@@ -349,7 +349,7 @@ def verify_constraint(
     return results
 
 
-def apply_constraint_chain(constraints: List[BaseConstraint], input_tensor: torch.Tensor, verbose: bool = False) -> torch.Tensor:
+def apply_constraint_chain(constraints: List[BaseConstraint], input_tensor: torch.Tensor) -> torch.Tensor:
     """Apply a list of constraints in sequence and optionally print debug info.
 
     Applies multiple constraints to a tensor sequentially and provides optional
@@ -358,8 +358,6 @@ def apply_constraint_chain(constraints: List[BaseConstraint], input_tensor: torc
     Args:
         constraints (List[BaseConstraint]): List of constraint objects to apply in sequence
         input_tensor (torch.Tensor): Input tensor to be constrained
-        verbose (bool, optional): Whether to print debug information about
-            power changes. Defaults to False.
 
     Returns:
         torch.Tensor: Output tensor after applying all constraints
@@ -369,21 +367,12 @@ def apply_constraint_chain(constraints: List[BaseConstraint], input_tensor: torc
         ...     TotalPowerConstraint(1.0),
         ...     PAPRConstraint(4.0)
         ... ]
-        >>> output = apply_constraint_chain(constraints, input_signal, verbose=True)
+        >>> output = apply_constraint_chain(constraints, input_signal)
     """
     x = input_tensor
 
-    if verbose:
-        print(f"Input shape: {x.shape}, power: {torch.mean(torch.abs(x)**2).item():.6f}")
-
-    for i, constraint in enumerate(constraints):
-        x_prev = x
+    for constraint in constraints:
         x = constraint(x)
-
-        if verbose:
-            power_before = torch.mean(torch.abs(x_prev) ** 2).item()
-            power_after = torch.mean(torch.abs(x) ** 2).item()
-            print(f"[{i}] {constraint.__class__.__name__}: " f"power before={power_before:.6f}, " f"after={power_after:.6f}, " f"change={power_after/power_before:.6f}x")
 
     return x
 
