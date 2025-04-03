@@ -375,22 +375,32 @@ def test_setup_py_direct_execution():
 def test_version_info_not_found_error():
     """Test that a RuntimeError is raised when __version_info__ is not found in version.py."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    setup_path = os.path.join(this_directory, "setup.py")
     
-    # Create a mock version.py with missing __version_info__
-    mock_content = "# This file intentionally doesn't contain __version_info__\n__version__ = '0.1.0'"
+    # Mock file contents where version.py is missing __version_info__
+    mock_file_contents = {
+        "README.md": "# Mock README\nTest project",
+        "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0",
+        os.path.join("kaira", "version.py"): "# This file intentionally doesn't contain __version_info__\n__version__ = '0.1.0'"
+    }
     
-    # Use mock to simulate the file read operation in setup.py
+    # Use mock to patch open() to return our mock contents
     with mock.patch('builtins.open') as mock_open:
-        # Configure mock to return our content that's missing __version_info__
-        mock_file = mock.MagicMock()
-        mock_file.__enter__.return_value.read.return_value = mock_content
-        mock_open.return_value = mock_file
+        # Configure mock to return appropriate content for different files
+        def side_effect(filename, *args, **kwargs):
+            for mock_path, content in mock_file_contents.items():
+                if filename.endswith(mock_path):
+                    file_mock = mock.MagicMock()
+                    file_mock.__enter__.return_value.read.return_value = content
+                    return file_mock
+            raise FileNotFoundError(f"Mocked open() doesn't know how to handle {filename}")
         
-        # Directly test the version extraction logic from setup.py
+        mock_open.side_effect = side_effect
+        
+        # Try to load setup.py as a module which should trigger the RuntimeError
+        spec = importlib.util.spec_from_file_location("setup_module", setup_path)
+        setup_module = importlib.util.module_from_spec(spec)
+        
+        # The execution should raise RuntimeError
         with pytest.raises(RuntimeError, match="Unable to find __version_info__ in version.py"):
-            content = mock_content
-            match = re.search(r"__version_info__\s*=\s*(\([^)]+\))", content)
-            if not match:
-                raise RuntimeError("Unable to find __version_info__ in version.py")
-            version_info = ast.literal_eval(match.group(1))
-            VERSION = ".".join(map(str, version_info))
+            spec.loader.exec_module(setup_module)
