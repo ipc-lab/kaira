@@ -14,6 +14,7 @@ from kaira.channels import (
     PerfectChannel
 )
 from .test_channels_base import random_tensor, complex_tensor
+from kaira.channels.analog import _apply_noise  # added import for testing _apply_noise
 
 
 class TestAWGNChannel:
@@ -179,6 +180,30 @@ class TestLaplacianChannel:
         # Check noise added to both real and imaginary parts
         assert not torch.allclose(output.real, complex_tensor.real)
         assert not torch.allclose(output.imag, complex_tensor.imag)
+    
+    def test_forward_with_snr(self, random_tensor):
+        """Test forward pass with SNR specification."""
+        snr_db = 15.0  # 15dB SNR
+        channel = LaplacianChannel(snr_db=snr_db)
+        
+        # Create a test input with known power
+        x = torch.ones(1000) * 0.5  # input with signal power 0.25
+        signal_power = torch.mean(torch.abs(x) ** 2).item()
+        
+        # Calculate expected noise power based on SNR
+        expected_noise_power = signal_power / (10 ** (snr_db / 10))
+        
+        # Calculate expected scale parameter (for Laplacian, variance = 2*scale²)
+        expected_scale = torch.sqrt(torch.tensor(expected_noise_power / 2))
+        
+        output = channel(x)
+        
+        # Check noise statistics
+        noise = output - x
+        measured_noise_power = torch.mean(noise**2).item()
+        
+        # Noise power should be close to the expected value
+        assert np.isclose(measured_noise_power, expected_noise_power, rtol=0.3)
 
 
 class TestPhaseNoiseChannel:
@@ -308,6 +333,33 @@ class TestPoissonChannel:
         # Phase should be preserved exactly
         output_phase = torch.angle(y)
         assert torch.allclose(output_phase, input_phase, atol=1e-5)
+    
+    def test_complex_normalization(self):
+        """Test normalization with complex input."""
+        torch.manual_seed(42)  # For reproducibility
+        
+        # Create channel with normalization enabled
+        channel = PoissonChannel(rate_factor=20.0, normalize=True)
+        
+        # Generate complex input with magnitude 0.5
+        real = torch.ones(1000) * 0.3
+        imag = torch.ones(1000) * 0.4
+        x = torch.complex(real, imag)  # magnitude is 0.5
+        
+        # Save input magnitude and phase
+        input_mag = torch.abs(x)
+        input_phase = torch.angle(x)
+        
+        # Apply channel
+        y = channel(x)
+        
+        # Check normalized output magnitude should be close to input on average
+        output_mag = torch.abs(y)
+        assert 0.45 <= torch.mean(output_mag).item() <= 0.55
+        
+        # Phase should be exactly preserved
+        output_phase = torch.angle(y)
+        assert torch.allclose(output_phase, input_phase, atol=1e-5)
 
 
 class TestFlatFadingChannel:
@@ -405,6 +457,126 @@ class TestFlatFadingChannel:
         
         # Output should be different from input
         assert not torch.allclose(output, complex_tensor)
+    
+    def test_rician_fading(self, complex_tensor):
+        """Test Rician fading channel."""
+        k_factor = 2.0  # Ratio of direct to scattered power
+        channel = FlatFadingChannel(
+            fading_type="rician",
+            coherence_time=5,
+            k_factor=k_factor,
+            snr_db=15
+        )
+        
+        output = channel(complex_tensor)
+        
+        # Check shape and type preservation
+        assert output.shape == complex_tensor.shape
+        assert torch.is_complex(output)
+        
+        # Direct LOS component should be stronger than Rayleigh
+        # We can't directly test the fading coefficients, but we can
+        # verify the output is different from the input
+        assert not torch.allclose(output, complex_tensor)
+        
+        # Test with different k_factors to ensure behavior changes
+        channel_high_k = FlatFadingChannel(
+            fading_type="rician",
+            coherence_time=5,
+            k_factor=10.0,  # Higher K means stronger LOS component
+            snr_db=15
+        )
+        
+        torch.manual_seed(42)
+        output_low_k = channel(complex_tensor)
+        
+        torch.manual_seed(42)
+        output_high_k = channel_high_k(complex_tensor)
+        
+        # Different K factors should produce different outputs
+        # even with the same random seed
+        assert not torch.allclose(output_low_k, output_high_k)
+    
+    def test_lognormal_fading(self, complex_tensor):
+        """Test log-normal shadowing in FlatFadingChannel."""
+        shadow_sigma_db = 4.0  # Standard deviation in dB
+        channel = FlatFadingChannel(
+            fading_type="lognormal",
+            coherence_time=5,
+            shadow_sigma_db=shadow_sigma_db,
+            snr_db=15
+        )
+        
+        output = channel(complex_tensor)
+        
+        # Check shape and type preservation
+        assert output.shape == complex_tensor.shape
+        assert torch.is_complex(output)
+        
+        # Output should be different from input
+        assert not torch.allclose(output, complex_tensor)
+        
+        # Test with different shadow standard deviations
+        channel_high_sigma = FlatFadingChannel(
+            fading_type="lognormal",
+            coherence_time=5,
+            shadow_sigma_db=8.0,  # Higher sigma means more variation
+            snr_db=15
+        )
+        
+        torch.manual_seed(42)
+        output_low_sigma = channel(complex_tensor)
+        
+        torch.manual_seed(42)
+        output_high_sigma = channel_high_sigma(complex_tensor)
+        
+        # Different shadow sigma should produce different outputs
+        assert not torch.allclose(output_low_sigma, output_high_sigma)
+    
+    def test_pregenerated_noise(self, complex_tensor):
+        """Test with pre-generated noise in FlatFadingChannel."""
+        channel = FlatFadingChannel(
+            fading_type="rayleigh",
+            coherence_time=5,
+            snr_db=15
+        )
+    
+        # Create custom noise with a specific pattern
+        custom_noise = torch.complex(
+            torch.ones_like(complex_tensor.real) * 0.1,
+            torch.ones_like(complex_tensor.imag) * 0.1
+        )
+    
+        # Compute expected fading coefficients using manual generation
+        torch.manual_seed(42)
+        batch_size = complex_tensor.shape[0] if len(complex_tensor.shape) > 1 else 1
+        seq_length = complex_tensor.shape[1] if len(complex_tensor.shape) > 1 else complex_tensor.shape[0]
+        h_blocks = channel._generate_fading_coefficients(
+            batch_size,
+            seq_length,
+            complex_tensor.device
+        )
+        h = channel._expand_coefficients(h_blocks, seq_length)
+        if len(complex_tensor.shape) == 1:
+            h = h.squeeze(0)
+    
+        expected_output = h * complex_tensor + custom_noise
+        # Reset seed again so that channel forward() uses the same random state.
+        torch.manual_seed(42)
+        assert torch.allclose(channel(complex_tensor, noise=custom_noise), expected_output)
+    
+# Rename parameter from input_tensor to complex_tensor
+def test_flat_fading_channel_with_custom_noise(complex_tensor):
+    """Test FlatFadingChannel when explicit noise is provided (covers branch: if noise is not None)."""
+    # Force deterministic fading by providing CSI equal to one
+    channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=5, snr_db=15)
+    csi = torch.ones_like(complex_tensor)  # fading coefficient = 1
+    custom_noise = torch.full_like(complex_tensor, 0.05)  # constant complex noise
+    
+    output = channel(complex_tensor, csi=csi, noise=custom_noise)
+    # Since csi=1, output should equal input plus the provided noise.
+    expected = complex_tensor + custom_noise
+    assert torch.allclose(output, expected)
 
 
 class TestNonlinearChannel:
@@ -598,3 +770,92 @@ class TestChannelComposition:
         # Second case should have approximately twice the noise power
         # (allowing for statistical variation)
         assert 1.5 < noise2/noise1 < 2.5
+
+import math
+from kaira.channels.analog import AWGNChannel, LaplacianChannel, NonlinearChannel, FlatFadingChannel
+from kaira.utils import snr_to_noise_power, to_tensor
+
+# Additional tests to cover requested conditions
+
+def test_nonlinear_channel_snr_applied(random_tensor):
+    """Test that NonlinearChannel adds noise via _apply_noise when self.snr_db is provided."""
+    # Use identity nonlinearity; output should be input plus noise
+    snr_db = 10.0
+    channel = NonlinearChannel(lambda x: x, add_noise=True, snr_db=snr_db)
+    output = channel(random_tensor)
+    # Since noise is added, output should not equal input.
+    assert not torch.allclose(output, random_tensor)
+    # Also, test that noise variance is close to expected (derived from _apply_noise)
+    signal_power = torch.mean(random_tensor**2).item()
+    expected_noise_power = snr_to_noise_power(signal_power, snr_db)
+    noise = output - random_tensor
+    measured = torch.mean(noise**2).item()
+    assert math.isclose(measured, expected_noise_power, rel_tol=0.3)
+
+
+def test_nonlinear_channel_conflict_params():
+    """Test that NonlinearChannel raises an error when both snr_db and avg_noise_power are provided."""
+    with pytest.raises(ValueError, match="Cannot specify both snr_db and avg_noise_power"):
+        NonlinearChannel(lambda x: x, add_noise=True, snr_db=10.0, avg_noise_power=0.1)
+
+
+def test_flat_fading_channel_input_shape():
+    """Test FlatFadingChannel processing for 1D and >2D inputs."""
+    # Create a dummy channel with Rayleigh fading (use avg_noise_power branch here)
+    channel = FlatFadingChannel("rayleigh", coherence_time=4, avg_noise_power=0.1)
+    
+    # Test 1D input: branch to add a batch dim and later squeeze it
+    x_1d = torch.ones(20)
+    y_1d = channel(x_1d)
+    # Output should have same shape as x_1d after squeezing
+    assert y_1d.shape == x_1d.shape
+
+    # Test >2D input: e.g., (batch, channels, seq_length)
+    x_3d = torch.ones(2, 3, 16, dtype=torch.cfloat)
+    y_3d = channel(x_3d)
+    # Check that output retains the original 3D shape.
+    assert y_3d.shape == x_3d.shape
+
+
+def test_awgn_channel_with_noise(random_tensor):
+    """Test AWGNChannel when pre-generated noise is provided."""
+    channel = AWGNChannel(avg_noise_power=0.05)
+    noise = torch.randn_like(random_tensor) * 0.3
+    output = channel(random_tensor, noise=noise)
+    # Branch should simply add x and noise.
+    assert torch.allclose(output, random_tensor + noise)
+
+
+def test_awgn_channel_avg_noise_branch(random_tensor):
+    """Test AWGNChannel stores avg_noise_power correctly when provided."""
+    noise_val = 0.07
+    channel = AWGNChannel(avg_noise_power=noise_val)
+    # Check that avg_noise_power is now a tensor and snr_db is None.
+    assert torch.is_tensor(channel.avg_noise_power)
+    assert channel.snr_db is None
+    # Forward pass should work normally.
+    output = channel(random_tensor)
+    assert output.shape == random_tensor.shape
+
+
+def test_laplacian_channel_snr_branch(random_tensor):
+    """Test LaplacianChannel forward path when snr_db is provided (branch computing scale)."""
+    snr_db = 12.0
+    # Create LaplacianChannel using snr_db (which will compute scale from signal power)
+    channel = LaplacianChannel(snr_db=snr_db)
+    # Use a constant signal so that variance is predictable
+    x = torch.ones(1000) * 0.5
+    # Calculate expected noise power and scale
+    signal_power = torch.mean(x**2).item()
+    target_noise_power = snr_to_noise_power(signal_power, snr_db)
+    expected_scale = math.sqrt(target_noise_power / 2)
+    output = channel(x)
+    noise = output - x
+    # For Laplacian distribution with variance = 2*scale², measured variance should be near target_noise_power.
+    measured_variance = torch.var(noise).item()
+    assert math.isclose(measured_variance, target_noise_power, rel_tol=0.3)
+    
+def test_apply_noise_missing_parameters(random_tensor):
+    """Test that _apply_noise raises an error if neither noise_power nor snr_db is provided."""
+    with pytest.raises(ValueError, match="Either noise_power or snr_db must be provided"):
+        _apply_noise(random_tensor)

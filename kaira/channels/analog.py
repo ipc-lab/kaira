@@ -55,24 +55,6 @@ def _apply_noise(x: torch.Tensor, noise_power=None, snr_db=None) -> torch.Tensor
 
     return x + noise
 
-
-def _to_complex(x: torch.Tensor) -> torch.Tensor:
-    """Convert a real tensor to complex by adding zero imaginary part.
-
-    If the input is already complex, it is returned unchanged.
-
-    Args:
-        x (torch.Tensor): Input tensor (real or complex)
-
-    Returns:
-        torch.Tensor: Complex tensor
-    """
-    if torch.is_complex(x):
-        return x
-    else:
-        return torch.complex(x, torch.zeros_like(x))
-
-
 @ChannelRegistry.register_channel()
 class AWGNChannel(BaseChannel):
     """Additive white Gaussian noise (AWGN) channel for signal transmission.
