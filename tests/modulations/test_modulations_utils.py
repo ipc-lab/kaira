@@ -27,8 +27,8 @@ class TestBinaryGrayConversion:
         assert gray_to_binary(2) == 3
         assert gray_to_binary(6) == 4
         assert gray_to_binary(7) == 5
-        assert gray_to_binary(5) == 7
-        assert gray_to_binary(4) == 6
+        assert gray_to_binary(5) == 6
+        assert gray_to_binary(4) == 7
     
     def test_binary_to_gray_conversion(self):
         """Test binary to Gray code conversion."""
