@@ -145,7 +145,7 @@ print(f"  Peak Amplitude: {constrained_props['peak_amplitude']:.4f}")
 print("\nSequential Application of OFDM Constraints:")
 constraints_list = [TotalPowerConstraint(total_power=1.0), PAPRConstraint(max_papr=6.0), PeakAmplitudeConstraint(max_amplitude=2.5)]
 
-sequential_ofdm = apply_constraint_chain(constraints_list, ofdm_iq.clone(), verbose=True)
+sequential_ofdm = apply_constraint_chain(constraints_list, ofdm_iq.clone())
 sequential_props = measure_signal_properties(sequential_ofdm)
 
 # %%

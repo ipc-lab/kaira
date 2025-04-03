@@ -164,7 +164,7 @@ plt.show()
 constraints = [power_constraint, papr_constraint, amplitude_constraint]
 
 # Apply constraints with verbose output
-signal_chain = apply_constraint_chain(constraints, signal.clone(), verbose=True)
+signal_chain = apply_constraint_chain(constraints, signal.clone())
 props_chain = measure_signal_properties(signal_chain)
 
 print("\nConstraint Chain Result:")
