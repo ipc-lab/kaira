@@ -1,13 +1,13 @@
 """Base classes for modulation and demodulation schemes."""
 
-from abc import abstractmethod, abstractproperty
+from abc import ABC, abstractmethod, abstractproperty
 from typing import Optional, Union
 
 import torch
 import torch.nn as nn
 
 
-class BaseModulator(nn.Module):
+class BaseModulator(nn.Module, ABC):
     """Abstract base class for all modulators.
 
     A modulator maps bit sequences to complex symbols according to a specific
@@ -28,8 +28,10 @@ class BaseModulator(nn.Module):
 
     @abstractproperty
     def bits_per_symbol(self) -> int:
-        """:no-index:"""
-        pass
+        """Number of bits per symbol."""
+        if self._bits_per_symbol is None:
+            raise NotImplementedError("bits_per_symbol must be defined in subclass")
+        return self._bits_per_symbol
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -62,7 +64,7 @@ class BaseModulator(nn.Module):
         pass  # Default implementation does nothing
 
 
-class BaseDemodulator(nn.Module):
+class BaseDemodulator(nn.Module, ABC):
     """Abstract base class for all demodulators.
 
     A demodulator maps received complex symbols back to bit sequences according to a specific

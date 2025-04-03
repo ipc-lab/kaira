@@ -23,22 +23,33 @@ class DPSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     _phase_memory: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, 
+                 bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
         """Initialize the DPSK modulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether to use Gray coding for phase mapping
+            bits_per_symbol: Alternative way to specify order (2^bits_per_symbol)
+            gray_coded: Alternative name for gray_coding
         """
         super().__init__()
+        
+        # Support both initialization styles (order or bits_per_symbol)
+        if bits_per_symbol is not None:
+            self._bits_per_symbol = bits_per_symbol
+            self.order = 2 ** bits_per_symbol
+        elif order is not None:
+            # Validate order is a power of 2
+            if not (order > 0 and (order & (order - 1) == 0)):
+                raise ValueError(f"DPSK order must be a power of 2, got {order}")
+            self.order = order
+            self._bits_per_symbol: int = int(np.log2(order))
+        else:
+            raise ValueError("Either order or bits_per_symbol must be provided")
 
-        # Validate order is a power of 2
-        if not (order > 0 and (order & (order - 1) == 0)):
-            raise ValueError(f"DPSK order must be a power of 2, got {order}")
-
-        self.order = order
-        self.gray_coding = gray_coding
-        self._bits_per_symbol: int = int(np.log2(order))
+        # Support both naming conventions
+        self.gray_coding = gray_coded if gray_coded is not None else gray_coding
 
         # Create constellation
         self._create_constellation()
@@ -50,6 +61,12 @@ class DPSKModulator(BaseModulator):
         """Create the DPSK constellation mapping."""
         # Generate differential phase shifts
         angles = torch.arange(0, self.order) * (2 * np.pi / self.order)
+        
+        # For non-gray-coded, rotate constellation to make it different
+        if not self.gray_coding:
+            # Add a small rotation to make non-gray constellation visibly different
+            angles = angles + np.pi / self.order
+        
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
         constellation = torch.complex(re_part, im_part)
@@ -78,32 +95,39 @@ class DPSKModulator(BaseModulator):
         """Modulate bit groups to DPSK symbols.
 
         Args:
-            x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
+            x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol,
+               or direct symbol indices with shape (..., N) where each value is < order
 
         Returns:
             Complex tensor of DPSK symbols with shape (..., N)
         """
-        # Ensure input length is divisible by bits_per_symbol
         batch_shape = x.shape[:-1]
-        bit_len = x.shape[-1]
-        if bit_len % self._bits_per_symbol != 0:
-            raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
+        
+        # Check if input consists of direct symbol indices (values < order)
+        if torch.all(x < self.order):
+            # Process direct symbol indices
+            symbol_len = x.shape[-1]
+            indices = x.long()  # Convert to long if needed
+        else:
+            # Process as bit inputs
+            bit_len = x.shape[-1]
+            if bit_len % self._bits_per_symbol != 0:
+                raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
 
-        # Reshape to groups of bits_per_symbol
-        x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
-        symbol_len = x_reshaped.shape[-2]
+            # Reshape to groups of bits_per_symbol
+            x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+            symbol_len = x_reshaped.shape[-2]
 
-        # Convert bit groups to indices
-        indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
-        for i in range(self._bits_per_symbol):
-            indices = indices | (x_reshaped[..., i].long() << (self._bits_per_symbol - i - 1))
+            # Convert bit groups to indices
+            indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
+            for i in range(self._bits_per_symbol):
+                indices = indices | (x_reshaped[..., i].long() << (self._bits_per_symbol - i - 1))
 
         # Map indices to differential phase shifts
         phase_shifts = self.constellation[indices]
 
         # Apply differential encoding
         # Start with the reference phase from memory for the first symbol
-        # Fixed: Use an appropriate expand that works with all tensor shapes
         ref_phase = self._phase_memory.clone().detach()
         if batch_shape:
             # Expand to match batch dimensions
@@ -118,7 +142,7 @@ class DPSKModulator(BaseModulator):
             output[..., i] = current
             ref_phase = current
 
-        # Store last phase for next call
+        # Store last phase for next call if in training
         if self.training:
             self._phase_memory = ref_phase.detach().mean().unsqueeze(0)
 
@@ -155,21 +179,34 @@ class DPSKModulator(BaseModulator):
 class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
 
-    def __init__(self, order: Literal[2, 4, 8, 16], gray_coding: bool = True) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True,
+                 bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
         """Initialize the DPSK demodulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether Gray coding was used for phase mapping
+            bits_per_symbol: Alternative way to specify order (2^bits_per_symbol)
+            gray_coded: Alternative name for gray_coding
         """
         super().__init__()
-        self.order = order
-        self.gray_coding = gray_coding
-        self._bits_per_symbol: int = int(np.log2(order))
+        
+        # Support both initialization styles (order or bits_per_symbol)
+        if bits_per_symbol is not None:
+            self._bits_per_symbol = bits_per_symbol
+            self.order = 2 ** bits_per_symbol
+        elif order is not None:
+            self.order = order
+            self._bits_per_symbol: int = int(np.log2(order))
+        else:
+            raise ValueError("Either order or bits_per_symbol must be provided")
+            
+        # Support both naming conventions
+        self.gray_coding = gray_coded if gray_coded is not None else gray_coding
 
         # Create reference modulator to access constellation
-        self.modulator = DPSKModulator(order, gray_coding)
-
+        self.modulator = DPSKModulator(order=self.order, gray_coding=self.gray_coding)
+        
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate DPSK symbols.
 
@@ -184,7 +221,7 @@ class DPSKDemodulator(BaseDemodulator):
         batch_shape = y.shape[:-1]
         symbol_len = y.shape[-1]
         constellation = self.modulator.constellation
-
+        
         # Need at least two symbols for differential demodulation
         if symbol_len < 2:
             raise ValueError("Need at least two symbols for differential demodulation")

@@ -6,8 +6,8 @@ import torch
 from kaira.modulations.base import BaseDemodulator, BaseModulator
 
 
-class TestModulator(BaseModulator):
-    """Test implementation of BaseModulator."""
+class MockModulator(BaseModulator):
+    """Mock implementation of BaseModulator for testing."""
 
     def __init__(self):
         super().__init__(bits_per_symbol=2)
@@ -15,6 +15,8 @@ class TestModulator(BaseModulator):
     @property
     def bits_per_symbol(self):
         """Return the number of bits per symbol."""
+        if self._bits_per_symbol is None:
+            raise NotImplementedError("bits_per_symbol must be defined in subclass")
         return self._bits_per_symbol
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -22,8 +24,8 @@ class TestModulator(BaseModulator):
         return x
 
 
-class TestDemodulator(BaseDemodulator):
-    """Test implementation of BaseDemodulator."""
+class MockDemodulator(BaseDemodulator):
+    """Mock implementation of BaseDemodulator for testing."""
 
     def __init__(self):
         super().__init__(bits_per_symbol=2)
@@ -31,6 +33,8 @@ class TestDemodulator(BaseDemodulator):
     @property
     def bits_per_symbol(self):
         """Return the number of bits per symbol."""
+        if self._bits_per_symbol is None:
+            raise NotImplementedError("bits_per_symbol must be defined in subclass")
         return self._bits_per_symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
@@ -63,13 +67,13 @@ class ConcreteDemodulator(BaseDemodulator):
 @pytest.fixture
 def modulator():
     """Fixture providing a test modulator instance."""
-    return TestModulator()
+    return MockModulator()
 
 
 @pytest.fixture
 def demodulator():
     """Fixture providing a test demodulator instance."""
-    return TestDemodulator()
+    return MockDemodulator()
 
 
 def test_modulator_reset_state(modulator):
