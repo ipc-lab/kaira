@@ -384,3 +384,126 @@ def test_create_mimo_constraints_with_total_power_and_spectral_mask():
     # For real signals, need only check first half of FFT due to symmetry
     for freq_bin in range(spectral_mask.shape[0]):
         assert torch.all(power_spectrum[:, :, freq_bin] <= spectral_mask[freq_bin] + 1e-5)
+
+
+def test_create_mimo_constraints_power_validation():
+    """Test the power constraint validation in create_mimo_constraints."""
+    num_antennas = 4
+    
+    # Test case 1: Neither uniform_power nor total_power is provided
+    with pytest.raises(ValueError, match="Either uniform_power or total_power must be provided"):
+        create_mimo_constraints(num_antennas=num_antennas)
+    
+    # Test case 2: Both uniform_power and total_power are provided
+    with pytest.raises(ValueError, match="Cannot specify both uniform_power and total_power"):
+        create_mimo_constraints(
+            num_antennas=num_antennas,
+            uniform_power=0.25,
+            total_power=1.0
+        )
+    
+    # Test valid cases for comparison
+    # With only uniform_power
+    constraints1 = create_mimo_constraints(
+        num_antennas=num_antennas,
+        uniform_power=0.25
+    )
+    assert len(constraints1.constraints) == 1
+    
+    # With only total_power
+    constraints2 = create_mimo_constraints(
+        num_antennas=num_antennas,
+        total_power=1.0
+    )
+    assert len(constraints2.constraints) == 1
+
+
+def test_papr_constraint_tensor_dimension_handling():
+    """Test the PAPR constraint's handling of different tensor dimensions."""
+    # We need to test the code path where 1D or 2D tensors are handled:
+    # else:
+    #     # For 1D or 2D tensors, just flatten and process
+    #     x_flat = x.reshape(-1)
+    #     result = self._apply_strict_papr_constraint(x_flat)
+    #     return result.reshape(original_shape
+    
+    # Create test signals with different dimensions
+    # 1D tensor (vector)
+    signal_1d = torch.cat([torch.ones(50), 3.0 * torch.ones(5), torch.ones(45)])
+    # 2D tensor (matrix)
+    signal_2d = torch.cat([torch.ones(50, 2), 3.0 * torch.ones(5, 2), torch.ones(45, 2)], dim=0)
+    
+    # Create the MIMO constraints with a strict PAPR limit
+    max_papr = 2.0
+    mimo_constraints = create_mimo_constraints(
+        num_antennas=4,
+        uniform_power=0.25,
+        max_papr=max_papr
+    )
+    
+    # Apply to both tensors
+    constrained_1d = mimo_constraints(signal_1d)
+    constrained_2d = mimo_constraints(signal_2d)
+    
+    # Verify shapes are preserved
+    assert constrained_1d.shape == signal_1d.shape
+    assert constrained_2d.shape == signal_2d.shape
+    
+    # Verify PAPR constraint was applied in both cases
+    props_1d = measure_signal_properties(constrained_1d)
+    props_2d = measure_signal_properties(constrained_2d.reshape(-1))
+    
+    assert props_1d["papr"] <= max_papr + 1.0  # Allow tolerance
+    assert props_2d["papr"] <= max_papr + 1.0  # Allow tolerance
+    
+    # Also verify that the PAPR was actually constrained (was higher before)
+    original_props_1d = measure_signal_properties(signal_1d)
+    original_props_2d = measure_signal_properties(signal_2d.reshape(-1))
+    
+    assert original_props_1d["papr"] > props_1d["papr"]
+    assert original_props_2d["papr"] > props_2d["papr"]
+
+
+def test_total_power_constraint_zero_signal_handling():
+    """Test the total power constraint's handling of zero signals.
+    
+    This tests the code path in TestTotalPowerConstraint:
+    else:
+        # For zero signal, generate a flat signal with correct power
+        flat_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
+        return flat_signal * torch.sqrt(self.total_power)
+    """
+    # Create a zero or near-zero signal
+    zero_signal = torch.zeros(64)
+    near_zero_signal = torch.ones(64) * 1e-15
+    
+    # Create the MIMO constraints with total power
+    total_power = 1.0
+    mimo_constraints = create_mimo_constraints(
+        num_antennas=4,
+        total_power=total_power
+    )
+    
+    # Apply to both signals
+    constrained_zero = mimo_constraints(zero_signal)
+    constrained_near_zero = mimo_constraints(near_zero_signal)
+    
+    # Verify shapes are preserved
+    assert constrained_zero.shape == zero_signal.shape
+    assert constrained_near_zero.shape == near_zero_signal.shape
+    
+    # Verify the power was set correctly
+    total_power_zero = torch.sum(constrained_zero**2)
+    total_power_near_zero = torch.sum(constrained_near_zero**2)
+    
+    assert torch.isclose(total_power_zero, torch.tensor(total_power), rtol=1e-4)
+    assert torch.isclose(total_power_near_zero, torch.tensor(total_power), rtol=1e-4)
+    
+    # Verify that all values are uniform (flat signal)
+    # For a flat signal with total power = 1.0, all values should equal 1/sqrt(n)
+    expected_value = 1.0 / torch.sqrt(torch.tensor(zero_signal.numel()))
+    expected_value = expected_value * torch.sqrt(torch.tensor(total_power))
+    
+    assert torch.allclose(constrained_zero, expected_value * torch.ones_like(constrained_zero), rtol=1e-4)
+    # Near zero signal should also produce a flat signal since it falls below the threshold
+    assert torch.allclose(constrained_near_zero, expected_value * torch.ones_like(constrained_near_zero), rtol=1e-4)
