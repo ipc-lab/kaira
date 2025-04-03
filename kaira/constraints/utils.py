@@ -226,7 +226,8 @@ def create_mimo_constraints(
                 else:
                     # For zero signal, generate a flat signal with correct power
                     flat_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
-                    return flat_signal * torch.sqrt(self.total_power)
+                    # Convert total_power to a tensor before using torch.sqrt()
+                    return flat_signal * torch.sqrt(torch.tensor(self.total_power))
         
         constraints.append(TestTotalPowerConstraint(total_power))
     

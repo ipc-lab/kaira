@@ -507,7 +507,7 @@ def test_papr_constraint_complex_signal_phase_preservation():
     
     # Check that the phase is preserved for the modified values
     # Get indices of values that were likely clipped
-    likely_clipped = torch.where(torch.abs(complex_signal) > torch.sqrt(mean_power * max_papr))[0]
+    likely_clipped = torch.where(torch.abs(complex_signal) > torch.sqrt(torch.tensor(mean_power * max_papr)))[0]
     if len(likely_clipped) > 0:
         for idx in likely_clipped:
             # Calculate the phase of original and constrained signals
