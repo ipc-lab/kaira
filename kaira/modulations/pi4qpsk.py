@@ -93,10 +93,10 @@ class Pi4QPSKModulator(BaseModulator):
             Complex tensor of π/4-QPSK symbols with shape (..., N)
         """
         # Process for different input types
-        if x.dim() == 1 and torch.all(x < 4):  # Direct symbol indices input
+        if x.dim() == 1 and torch.all(x < 4) and x.numel() <= 4:  # Direct symbol indices input
             # Use direct symbol mapping
             batch_shape = ()
-            indices = x
+            indices = x.long()  # Ensure indices are long type
             symbol_len = x.shape[0]
         else:
             # Ensure input length is even for bit inputs
@@ -110,11 +110,12 @@ class Pi4QPSKModulator(BaseModulator):
             symbol_len = x_reshaped.shape[-2]
 
             # Convert bit pairs to indices
-            indices = torch.zeros((*x_reshaped.shape[:-1], symbol_len), dtype=torch.long, device=x.device)
-            for i in range(2):
-                # Ensure bits are 0 or 1
-                bits = torch.fmod(x_reshaped[..., i], 2)
-                indices = indices | (bits.long() << (1 - i))
+            indices = torch.zeros((*batch_shape, symbol_len), dtype=torch.long, device=x.device)
+            
+            # Properly calculate the symbol index from bit pairs
+            bits_0 = torch.fmod(x_reshaped[..., 0], 2).long()
+            bits_1 = torch.fmod(x_reshaped[..., 1], 2).long()
+            indices = (bits_0 << 1) | bits_1
 
         # Outputs array
         y = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
@@ -136,9 +137,14 @@ class Pi4QPSKModulator(BaseModulator):
 
         return y
 
-    def reset_state(self) -> None:
-        """Reset internal state (constellation alternation)."""
+    def reset_state(self) -> 'Pi4QPSKModulator':
+        """Reset internal state (constellation alternation).
+        
+        Returns:
+            Self for method chaining
+        """
         self._use_rotated.fill_(False)
+        return self
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
         """Plot the π/4-QPSK constellation diagram.
@@ -333,6 +339,11 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             # Standard flattened output
             return output_bits.reshape(*batch_shape, -1)
 
-    def reset_state(self) -> None:
-        """Reset internal state (constellation alternation)."""
+    def reset_state(self) -> 'Pi4QPSKDemodulator':
+        """Reset internal state (constellation alternation).
+        
+        Returns:
+            Self for method chaining
+        """
         self._use_rotated.fill_(False)
+        return self

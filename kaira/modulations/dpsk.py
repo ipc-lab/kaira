@@ -104,7 +104,7 @@ class DPSKModulator(BaseModulator):
         batch_shape = x.shape[:-1]
 
         # Determine if input contains bit patterns or indices
-        # If all values are binary (0 or 1) AND the length is at least 2, interpret as bit sequence
+        # If all values are binary (0 or 1), interpret as bit sequence
         is_binary_input = torch.all((x == 0) | (x == 1))
         bit_len = x.shape[-1]
         

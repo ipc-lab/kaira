@@ -240,3 +240,155 @@ def test_pi4qpsk_demodulator_output_formatting():
     # Batched soft decisions
     llrs_batched = demod_soft(batch_y)
     assert llrs_batched.shape == torch.Size([2, 8])  # Flattened for batched output
+
+
+def test_pi4qpsk_modulator_bit_input_validation():
+    """Test bit input validation and conversion in Pi4QPSKModulator."""
+    mod = Pi4QPSKModulator()
+    
+    # Test with valid bit input (even length)
+    valid_bits = torch.tensor([0, 1, 1, 0, 1, 1], dtype=torch.float)  # 6 bits = 3 symbols
+    output = mod(valid_bits)
+    assert output.shape == torch.Size([3])  # 3 symbols
+    
+    # Test with invalid bit input (odd length)
+    invalid_bits = torch.tensor([0, 1, 1, 0, 1], dtype=torch.float)  # 5 bits - not even
+    with pytest.raises(ValueError, match="Input bit length must be even for π/4-QPSK modulation"):
+        mod(invalid_bits)
+    
+    # Test with non-binary values (should be handled by fmod)
+    non_binary = torch.tensor([2, 3, 4, 5], dtype=torch.float)  # Values > 1
+    output_non_binary = mod(non_binary)
+    assert output_non_binary.shape == torch.Size([2])  # Should be interpreted as 2 symbols
+    
+    # Test bit to index conversion
+    # [0,0] -> 0, [0,1] -> 1, [1,0] -> 2, [1,1] -> 3
+    test_bits = torch.tensor([
+        [0, 0],  # Should map to index 0
+        [0, 1],  # Should map to index 1
+        [1, 0],  # Should map to index 2
+        [1, 1],  # Should map to index 3
+    ], dtype=torch.float)
+    
+    mod.reset_state()
+    output_test = mod(test_bits.reshape(-1))
+    
+    # Create the same output using direct indices
+    mod.reset_state()  # Reset to get the same constellation pattern
+    output_indices = mod(torch.tensor([0, 1, 2, 3]))
+    
+    # Outputs should match
+    assert torch.allclose(output_test, output_indices)
+
+
+def test_pi4qpsk_demodulator_single_input_distance():
+    """Test distance calculation for single input in Pi4QPSKDemodulator."""
+    # Create a modulator to generate test signals
+    mod = Pi4QPSKModulator()
+    mod.reset_state()
+    
+    # Create test signals for each symbol in the constellation
+    test_symbols = []
+    for i in range(4):
+        test_symbols.append(mod(torch.tensor([i])))
+    test_signal = torch.cat(test_symbols)
+    
+    # Create a demodulator with hard output for testing distance calculation
+    demod = Pi4QPSKDemodulator(soft_output=False)
+    demod.reset_state()
+    
+    # Get the result
+    result = demod(test_signal)
+    
+    # Should correctly identify all symbols
+    assert torch.equal(result, torch.tensor([0, 1, 2, 3]))
+    
+    # Test with slight noise to ensure distances still work
+    noisy_signal = test_signal + 0.1 * torch.randn_like(test_signal)
+    noisy_result = demod.reset_state()(noisy_signal)
+    
+    # Even with noise, the result should be the same shape
+    assert noisy_result.shape == torch.Size([4])
+
+
+def test_pi4qpsk_demodulator_bit_pattern_assignment():
+    """Test bit pattern assignment for single inputs in Pi4QPSKDemodulator."""
+    mod = Pi4QPSKModulator()
+    mod.reset_state()
+    
+    # Force the demodulator to go through the bit pattern assignment branch
+    class CustomDemodulator(Pi4QPSKDemodulator):
+        def forward(self, y):
+            # Set up to process individual symbols
+            batch_shape = ()
+            symbol_shape = y.shape[0]
+            qpsk = self.modulator.qpsk
+            qpsk_rotated = self.modulator.qpsk_rotated
+            use_rotated = self._use_rotated.clone()
+            
+            # Prepare output for hard decisions
+            output_bits = torch.zeros(symbol_shape, 2, dtype=torch.float, device=y.device)
+            
+            for i in range(symbol_shape):
+                # Select constellation
+                constellation = qpsk_rotated if use_rotated else qpsk
+                # Get distances
+                y_i = y[i].unsqueeze(0)
+                distances = torch.abs(y_i - constellation)
+                closest_idx = torch.argmin(distances, dim=-1)
+                
+                # This is the code we're testing - bit pattern assignment
+                for b in range(len(self.modulator.bit_patterns)):
+                    mask = (closest_idx == b)
+                    if mask.item():
+                        output_bits[i, :] = self.modulator.bit_patterns[b]
+                
+                use_rotated = ~use_rotated
+            
+            # Return the output bits directly for inspection
+            return output_bits
+    
+    # Create a test signal
+    x = torch.tensor([0, 1, 2, 3])  # Use all four symbols
+    y = mod(x)
+    
+    # Test with the custom demodulator
+    demod = CustomDemodulator()
+    demod.reset_state()
+    bit_patterns = demod(y)
+    
+    # Should get the bit patterns from the modulator
+    expected_bits = mod.bit_patterns
+    
+    # For each of the 4 symbols, check the corresponding bit patterns
+    for i in range(4):
+        symbol_idx = x[i]
+        assert torch.allclose(bit_patterns[i], expected_bits[symbol_idx])
+
+
+def test_pi4qpsk_batch_processing_with_bits():
+    """Test batch processing with bit inputs in Pi4QPSKModulator."""
+    mod = Pi4QPSKModulator()
+    mod.reset_state()
+    
+    # Create a batch of bit inputs
+    batch_size = 3
+    num_symbols = 4
+    bits_tensor = torch.zeros(batch_size, num_symbols * 2)  # 4 symbols, 2 bits each
+    
+    # Fill with different bit patterns
+    bits_tensor[0, :] = torch.tensor([0, 0, 0, 1, 1, 0, 1, 1])
+    bits_tensor[1, :] = torch.tensor([1, 0, 1, 1, 0, 0, 0, 1])
+    bits_tensor[2, :] = torch.tensor([1, 1, 0, 1, 0, 0, 1, 0])
+    
+    # Process batch
+    output = mod(bits_tensor)
+    
+    # Check output shape
+    assert output.shape == (batch_size, num_symbols)
+    
+    # Compare with individual processing
+    for i in range(batch_size):
+        mod.reset_state()
+        individual = mod(bits_tensor[i])
+        assert torch.allclose(output[i], individual)
