@@ -104,6 +104,23 @@ class TestBitErrorRate:
         ber_value = ber(received_bits, true_bits)
         assert abs(ber_value.item() - error_rate) < 0.05  # Allow for statistical variation
 
+    def test_ber_empty_tensors(self):
+        """Test BER computation with empty tensors."""
+        ber = BitErrorRate()
+        
+        # Create empty tensors
+        empty_preds = torch.zeros((0, 10))
+        empty_targets = torch.zeros((0, 10))
+        
+        # Test forward method with empty tensors
+        result = ber(empty_preds, empty_targets)
+        assert torch.isclose(result, torch.tensor(0.0))
+        
+        # Test update method with empty tensors
+        ber.reset()
+        ber.update(empty_preds, empty_targets)
+        assert torch.isclose(ber.compute(), torch.tensor(0.0))
+
 
 # ===== BlockErrorRate (BLER) Tests =====
 
@@ -397,6 +414,82 @@ class TestBlockErrorRate:
         # This should raise a ValueError
         with pytest.raises(ValueError, match="Shape mismatch"):
             bler(preds, target)
+
+    def test_bler_empty_tensors(self):
+        """Test BLER computation with empty tensors."""
+        bler = BlockErrorRate(block_size=10)
+        
+        # Create empty tensors
+        empty_preds = torch.zeros((0, 10))
+        empty_targets = torch.zeros((0, 10))
+        
+        # Test forward method with empty tensors
+        result = bler(empty_preds, empty_targets)
+        assert torch.isclose(result, torch.tensor(0.0))
+        
+        # Test update method with empty tensors
+        bler.reset()
+        bler.update(empty_preds, empty_targets)
+        assert torch.isclose(bler.compute(), torch.tensor(0.0))
+    
+    def test_bler_reshape_with_none_block_size(self):
+        """Test _reshape_into_blocks with block_size=None."""
+        # Initialize BLER with block_size=None
+        bler = BlockErrorRate(block_size=None)
+        
+        # Create test data
+        preds = torch.zeros((3, 10))
+        targets = torch.zeros((3, 10))
+        targets[1, 5] = 1.0  # Error in second block
+        
+        # Call forward - this will indirectly test _reshape_into_blocks
+        result = bler(preds, targets)
+        
+        # When block_size is None, each row is treated as a separate block
+        # So 1 out of 3 rows/blocks has an error
+        assert torch.isclose(result, torch.tensor(1/3))
+        
+        # Test update path as well
+        bler.reset()
+        bler.update(preds, targets)
+        assert torch.isclose(bler.compute(), torch.tensor(1/3))
+    
+    def test_bler_reshape_with_empty_tensor(self):
+        """Test _reshape_into_blocks with empty tensor."""
+        bler = BlockErrorRate(block_size=10)
+        
+        # Create empty tensor
+        empty_tensor = torch.zeros((0, 0))
+        
+        # Access the private method directly to test the exact line
+        reshaped = bler._reshape_into_blocks(empty_tensor)
+        
+        # Verify shape of reshaped empty tensor
+        assert reshaped.shape == torch.Size([0, 0, 0])
+        assert reshaped.numel() == 0
+
+    def test_bler_reshape_with_none_block_size_direct(self):
+        """Test _reshape_into_blocks with block_size=None directly."""
+        # Initialize BLER with block_size=None
+        bler = BlockErrorRate(block_size=None)
+        
+        # Create test data
+        test_data = torch.zeros((3, 10))
+        
+        # Call _reshape_into_blocks directly to exercise the specific line
+        reshaped = bler._reshape_into_blocks(test_data)
+        
+        # When block_size is None, the method should return the input unchanged
+        assert torch.equal(reshaped, test_data)
+        assert reshaped.shape == test_data.shape
+        
+        # Try with more complex tensor shape
+        complex_data = torch.zeros((2, 4, 5))
+        reshaped_complex = bler._reshape_into_blocks(complex_data)
+        
+        # Should still return unchanged
+        assert torch.equal(reshaped_complex, complex_data)
+        assert reshaped_complex.shape == complex_data.shape
 
 
 # ===== FrameErrorRate (FER) Tests =====
@@ -806,6 +899,68 @@ class TestSignalToNoiseRatio:
         # Invalid mode should raise ValueError
         with pytest.raises(ValueError, match="Mode must be either 'db' or 'linear'"):
             SignalToNoiseRatio(mode="invalid")
+
+    def test_batched_snr_with_zero_noise(self):
+        """Test SNR calculation with batched data where noise is below epsilon."""
+        snr_metric = SignalToNoiseRatio()
+        
+        # Create a batch of signals
+        batch_size = 3
+        signal = torch.ones((batch_size, 10)) * torch.tensor([1.0, 2.0, 3.0]).view(-1, 1)
+        
+        # Create extremely small noise (below epsilon)
+        eps = torch.finfo(torch.float32).eps
+        noise = torch.ones_like(signal) * (eps / 2.0)
+        noisy_signal = signal + noise
+        
+        # Calculate SNR
+        snr_values = snr_metric(signal, noisy_signal)
+        
+        # Check shape and values
+        assert snr_values.shape == torch.Size([batch_size])
+        
+        # All values should be infinity due to the noise_power < eps check in batched mode
+        for value in snr_values:
+            assert torch.isinf(value)
+            assert value > 0  # Positive infinity
+    
+    def test_batched_complex_signal_snr(self):
+        """Test SNR calculation with batched complex signals."""
+        snr_metric = SignalToNoiseRatio()
+        
+        # Create a batch of complex signals
+        batch_size = 2
+        real_part = torch.tensor([[1.0, 0.0, -1.0, 0.0], [2.0, 0.0, -2.0, 0.0]])
+        imag_part = torch.tensor([[0.0, 1.0, 0.0, -1.0], [0.0, 2.0, 0.0, -2.0]])
+        signal = torch.complex(real_part, imag_part)
+        
+        # Create complex noise with different levels for each batch item
+        noise_levels = [0.1, 0.2]
+        noise_real = torch.zeros_like(real_part)
+        noise_imag = torch.zeros_like(imag_part)
+        
+        for i, level in enumerate(noise_levels):
+            noise_real[i] = torch.ones(4) * level
+            noise_imag[i] = torch.ones(4) * level
+            
+        noise = torch.complex(noise_real, noise_imag)
+        noisy_signal = signal + noise
+        
+        # Calculate SNR
+        snr_values = snr_metric(signal, noisy_signal)
+        
+        # Check shape
+        assert snr_values.shape == torch.Size([batch_size])
+        
+        # Check values
+        for i, level in enumerate(noise_levels):
+            # Calculate expected SNR
+            signal_power = torch.mean(torch.abs(signal[i]) ** 2).item()
+            noise_power = torch.mean(torch.abs(noise[i]) ** 2).item()
+            expected_snr = 10 * torch.log10(torch.tensor(signal_power / noise_power))
+            
+            # Check that the calculated SNR matches the expected value
+            assert torch.isclose(snr_values[i], expected_snr, rtol=1e-3)
 
 
 # ===== Common Tests =====
