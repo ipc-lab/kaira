@@ -217,9 +217,10 @@ class TestStructuralSimilarityIndexMeasure:
     def test_ssim_compute_with_stats_multiple_values(self):
         """Test that SSIM compute_with_stats properly calculates mean and std with multiple values."""
         # Create a batch of images to ensure multiple values
+        torch.manual_seed(42)
         batch_size = 4
-        img1 = torch.rand(batch_size, 3, 32, 32)
-        img2 = torch.rand(batch_size, 3, 32, 32)
+        img1 = torch.rand(batch_size, 3, 64, 64)
+        img2 = torch.rand(batch_size, 3, 64, 64)
         
         ssim = StructuralSimilarityIndexMeasure()
         

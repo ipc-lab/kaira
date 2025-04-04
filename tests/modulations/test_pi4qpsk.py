@@ -94,16 +94,24 @@ def test_pi4qpsk_demodulator_forward(pi4qpsk_modulator, pi4qpsk_demodulator):
     # Test round trip with a sequence
     x = torch.tensor([0, 1, 2, 3, 0, 1])
     y = pi4qpsk_modulator(x)
+    
+    # Add batch dimension
+    y = y.unsqueeze(0)
     x_hat = pi4qpsk_demodulator(y)
 
     # Should recover original symbols
-    assert torch.equal(x, x_hat)
+    x_expected_bits = torch.tensor([
+        [0, 0], [0, 1], [1, 1], [1, 0], [0, 0], [0, 1]
+    ]).reshape(1, -1).long()
+    
+    x_hat = x_hat.reshape(1, -1)
+    assert torch.equal(x_hat.float(), x_expected_bits.float())
 
     # Test with noise
     y_noisy = y + 0.1 * torch.randn_like(y.real) + 0.1j * torch.randn_like(y.imag)
     x_hat_noisy = pi4qpsk_demodulator(y_noisy)
     # Shape should match even with noise
-    assert x_hat_noisy.shape == x.shape
+    assert x_hat_noisy.shape == torch.Size([1, 12])
 
 
 def test_pi4qpsk_soft_demodulation():

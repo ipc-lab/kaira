@@ -274,9 +274,7 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                 for b in range(len(self.modulator.bit_patterns)):
                     mask = (closest_idx == b)
                     if batch_shape:
-                        mask = mask.unsqueeze(-1)
-                        pattern = self.modulator.bit_patterns[b].expand(*batch_shape, 2)
-                        output_bits[..., i, :] = torch.where(mask, pattern, output_bits[..., i, :])
+                        output_bits[..., i, :] = self.modulator.bit_patterns[closest_idx, :]
                     else:
                         if mask.item():
                             output_bits[i, :] = self.modulator.bit_patterns[b]

@@ -1,9 +1,11 @@
-"""Comprehensive tests for modulation utility functions."""
+"""Tests for modulation utility functions."""
 
+import numpy as np
 import pytest
 import torch
-import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.text import Annotation
+from scipy import special
 
 from kaira.modulations.utils import (
     binary_to_gray,
@@ -192,15 +194,6 @@ class TestModulationsUtilsComprehensive:
         empty_const = torch.tensor([])
         with pytest.raises(ValueError):
             plot_constellation(empty_const)
-
-"""Tests for modulation utility functions."""
-
-import numpy as np
-import pytest
-import torch
-import matplotlib.pyplot as plt
-from matplotlib.text import Annotation
-from scipy import special  # Add proper import for erfc function
 
 
 class TestBinaryGrayConversion:
