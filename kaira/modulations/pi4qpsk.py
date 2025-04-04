@@ -110,9 +110,11 @@ class Pi4QPSKModulator(BaseModulator):
             symbol_len = x_reshaped.shape[-2]
 
             # Convert bit pairs to indices
-            indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
+            indices = torch.zeros((*x_reshaped.shape[:-1], symbol_len), dtype=torch.long, device=x.device)
             for i in range(2):
-                indices = indices | (x_reshaped[..., i].long() << (1 - i))
+                # Ensure bits are 0 or 1
+                bits = torch.fmod(x_reshaped[..., i], 2)
+                indices = indices | (bits.long() << (1 - i))
 
         # Outputs array
         y = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)

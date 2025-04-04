@@ -103,49 +103,72 @@ class DPSKModulator(BaseModulator):
         """
         batch_shape = x.shape[:-1]
         
-        # Check if input consists of direct symbol indices (values < order)
-        if torch.all(x < self.order):
-            # Process direct symbol indices
-            symbol_len = x.shape[-1]
-            indices = x.long()  # Convert to long if needed
-        else:
-            # Process as bit inputs
+        # Determine if input contains bit patterns or indices
+        # If all values are binary (0 or 1) and the length is divisible by bits_per_symbol,
+        # interpret as bit sequence
+        is_binary_input = torch.all((x == 0) | (x == 1))
+        
+        if is_binary_input and x.shape[-1] % self._bits_per_symbol == 0:
+            # Process as bits
             bit_len = x.shape[-1]
+            
+            # Validate bit length is divisible by bits_per_symbol
             if bit_len % self._bits_per_symbol != 0:
                 raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
-
-            # Reshape to groups of bits_per_symbol
-            x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
-            symbol_len = x_reshaped.shape[-2]
-
+                
+            # Calculate number of symbols
+            symbol_len = bit_len // self._bits_per_symbol
+            
+            # Reshape to groups of bits_per_symbol for processing
+            x_reshaped = x.reshape(*batch_shape, symbol_len, self._bits_per_symbol)
+            
             # Convert bit groups to indices
-            indices = torch.zeros((*x_reshaped.shape[:-1],), dtype=torch.long, device=x.device)
+            indices = torch.zeros((*batch_shape, symbol_len), dtype=torch.long, device=x.device)
             for i in range(self._bits_per_symbol):
                 indices = indices | (x_reshaped[..., i].long() << (self._bits_per_symbol - i - 1))
+        else:
+            # Process as direct indices
+            indices = x.long()
+            
+            # Validate indices are within range
+            if torch.any(indices >= self.order):
+                raise ValueError(f"Symbol indices must be less than order ({self.order})")
+                
+            symbol_len = x.shape[-1]
 
         # Map indices to differential phase shifts
         phase_shifts = self.constellation[indices]
 
         # Apply differential encoding
-        # Start with the reference phase from memory for the first symbol
         ref_phase = self._phase_memory.clone().detach()
+        
+        # Expand reference phase to match batch dimensions if needed
         if batch_shape:
             # Expand to match batch dimensions
             for _ in range(len(batch_shape)):
                 ref_phase = ref_phase.unsqueeze(0)
-            ref_phase = ref_phase.expand(*batch_shape)
-
+            ref_phase = ref_phase.expand(*batch_shape, 1)
+        else:
+            ref_phase = ref_phase.unsqueeze(0)
+            
+        # Create output tensor with the right shape
         output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
-        for i in range(symbol_len):
-            # Current symbol = previous symbol × phase shift
-            current = ref_phase * phase_shifts[..., i]
-            output[..., i] = current
-            ref_phase = current
-
-        # Store last phase for next call if in training
-        if self.training:
-            self._phase_memory = ref_phase.detach().mean().unsqueeze(0)
-
+        
+        if symbol_len > 0:
+            # Initialize first symbol with reference phase
+            output[..., 0] = ref_phase.squeeze(-1)
+            
+            # Apply differential encoding to subsequent symbols
+            for i in range(1, symbol_len):
+                output[..., i] = output[..., i-1] * phase_shifts[..., i-1]
+                
+            # Update phase memory if in training mode
+            if self.training:
+                if batch_shape:
+                    self._phase_memory = output[..., -1].detach().mean().view(1)
+                else:
+                    self._phase_memory = output[..., -1].detach().view(1)
+        
         return output
 
     def reset_state(self) -> None:
@@ -167,7 +190,8 @@ class DPSKModulator(BaseModulator):
             label = "".join(str(int(bit)) for bit in bit_pattern)
             labels.append(label)
 
-        return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs)
+        fig, _ = plot_constellation(self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs)
+        return fig
 
 @ModulationRegistry.register_demodulator()
 class DPSKDemodulator(BaseDemodulator):

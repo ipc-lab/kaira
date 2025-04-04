@@ -439,6 +439,14 @@ def test_min_distance_to_levels():
     
     # Expected distances should be proportional to squared distance normalized by noise variance
     # The specific values depend on implementation details
+    
+    # Test empty levels case
+    empty_levels = torch.tensor([])
+    inf_dists = demod._min_distance_to_levels(y, empty_levels, noise_var)
+    
+    # Check that all distances are infinite
+    assert torch.all(torch.isinf(inf_dists))
+    assert torch.all(inf_dists > 0)  # Positive infinity
 
 
 # ===== End-to-End Tests =====
@@ -538,3 +546,76 @@ def test_pam_different_orders(M):
 
     # Check perfect recovery (noiseless case)
     assert torch.all(recovered_bits == bits)
+
+
+def test_demodulate_1d_input():
+    """Test PAM demodulation with 1D input tensors.
+    
+    Specifically tests the code path:
+    if y_real.dim() == 1:  # Handle 1D case
+        y_sym = y_real[sym_idx:sym_idx+1]  # Keep as [1] for consistency
+        nv_sym = noise_var if noise_var.dim() == 0 else noise_var[sym_idx:sym_idx+1]
+    """
+    # Use a deterministic seed for reproducibility
+    torch.manual_seed(42)
+    
+    # Create 4-PAM modulator and demodulator
+    mod = PAMModulator(order=4, normalize=True)
+    demod = PAMDemodulator(order=4, normalize=True)
+    
+    # Generate 1D bits tensor (just 4 bits for 2 symbols with 4-PAM)
+    bits = torch.tensor([0, 0, 1, 1], dtype=torch.float)
+    
+    # Modulate - should give a 1D tensor of 2 symbols
+    symbols = mod(bits)
+    assert symbols.dim() == 1, "Symbols should be 1D tensor"
+    assert symbols.shape == torch.Size([2]), "Should be 2 symbols for 4 bits with 4-PAM"
+    
+    # Add small noise
+    noise_level = 0.01
+    noisy_symbols = symbols + torch.complex(
+        torch.randn_like(symbols.real) * noise_level,
+        torch.zeros_like(symbols.imag)
+    )
+    
+    # Test with scalar noise variance
+    llrs_scalar = demod(noisy_symbols, noise_var=noise_level**2)
+    assert llrs_scalar.dim() == 1, "Output LLRs should be 1D tensor"
+    assert llrs_scalar.shape == bits.shape, "Output shape should match input shape"
+    
+    # Test with 1D noise variance tensor (should match symbols shape)
+    noise_var_1d = torch.full_like(symbols.real, noise_level**2)
+    assert noise_var_1d.dim() == 1, "Noise variance should be 1D tensor"
+    
+    llrs_1d_var = demod(noisy_symbols, noise_var=noise_var_1d)
+    assert llrs_1d_var.dim() == 1, "Output LLRs should be 1D tensor"
+    assert llrs_1d_var.shape == bits.shape, "Output shape should match input shape"
+    
+    # Values should be close since the noise variance is the same
+    assert torch.allclose(llrs_scalar, llrs_1d_var, rtol=1e-5, atol=1e-5)
+    
+    # Verify LLR properties for correct bit mapping
+    # Create a direct mapping of symbols to bits for verification
+    symbols_for_bits = mod(bits.reshape(1, -1)).reshape(-1)
+    
+    # Map the first symbol back to bits with known noise
+    # Use a controlled noise to ensure predictable LLR signs
+    controlled_noise = 0.01  # Very small noise to maintain bit decisions
+    noisy_symbol_0 = symbols[0] + controlled_noise
+    noisy_symbol_1 = symbols[1] + controlled_noise
+    
+    # Manually demodulate with scalar noise variance
+    llrs_0 = demod(torch.tensor([noisy_symbol_0]), noise_var=noise_level**2)
+    llrs_1 = demod(torch.tensor([noisy_symbol_1]), noise_var=noise_level**2)
+    
+    # LLR sign should match bit pattern: positive for bit 0, negative for bit 1
+    # For first symbol (first two bits)
+    if bits[0] == 0:
+        assert llrs_0[0] > 0, "LLR should be positive for bit 0"
+    else:
+        assert llrs_0[0] < 0, "LLR should be negative for bit 1"
+        
+    if bits[1] == 0:
+        assert llrs_0[1] > 0, "LLR should be positive for bit 0" 
+    else:
+        assert llrs_0[1] < 0, "LLR should be negative for bit 1"

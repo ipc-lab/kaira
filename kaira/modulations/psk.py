@@ -314,25 +314,76 @@ class PSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     bit_to_symbol_map: torch.Tensor  # Type annotation for mapping bit patterns to symbols
 
-    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True) -> None:
+    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, 
+                 constellation: Optional[torch.Tensor] = None) -> None:
         """Initialize the PSK modulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether to use Gray coding for constellation mapping
+            constellation: Optional custom constellation points (overrides order)
         """
         super().__init__()
 
-        # Validate order is a power of 2
-        if not (order > 0 and (order & (order - 1) == 0)):
-            raise ValueError(f"PSK order must be a power of 2, got {order}")
-
-        self.order = order
         self.gray_coding = gray_coding
-        self._bits_per_symbol: int = int(np.log2(order))
+        
+        if constellation is not None:
+            # Use custom constellation
+            self.register_buffer("constellation", constellation)
+            self.order = len(constellation)
+            # Validate order is a power of 2
+            if not (self.order > 0 and (self.order & (self.order - 1) == 0)):
+                raise ValueError(f"Custom constellation length must be a power of 2, got {self.order}")
+            self._bits_per_symbol: int = int(np.log2(self.order))
+        else:
+            # Validate order is a power of 2
+            if not (order > 0 and (order & (order - 1) == 0)):
+                raise ValueError(f"PSK order must be a power of 2, got {order}")
+            
+            self.order = order
+            self._bits_per_symbol: int = int(np.log2(order))
+            
+            # Create standard PSK constellation
+            self._create_constellation()
+            return
 
-        # Create PSK constellation
-        self._create_constellation()
+        # Create bit pattern mapping
+        bit_patterns = torch.zeros(self.order, self._bits_per_symbol)
+
+        if self.gray_coding:
+            # Apply Gray coding - standard digital communications convention
+            # For each index i, calculate corresponding Gray code
+            for i in range(self.order):
+                gray_idx = i ^ (i >> 1)  # Binary to Gray conversion
+                bin_str = format(gray_idx, f"0{self._bits_per_symbol}b")
+                for j, bit in enumerate(bin_str):
+                    bit_patterns[i, j] = int(bit)
+        else:
+            # Standard binary coding
+            for i in range(self.order):
+                bin_str = format(i, f"0{self._bits_per_symbol}b")
+                for j, bit in enumerate(bin_str):
+                    bit_patterns[i, j] = int(bit)
+
+        # Create mapping from bit patterns to constellation indices
+        bit_to_symbol_map = torch.zeros(self.order, dtype=torch.long)
+        
+        # Map each bit pattern to its index in the constellation
+        for i in range(self.order):
+            # Create binary index from bit pattern
+            idx = 0
+            for j in range(self._bits_per_symbol):
+                idx = idx * 2 + int(bit_patterns[i, j])
+            
+            if self.gray_coding:
+                # For Gray coding, we map the bit pattern to the constellation point
+                bit_to_symbol_map[idx] = i
+            else:
+                # For binary coding, the mapping is direct
+                bit_to_symbol_map[i] = i
+
+        self.register_buffer("bit_patterns", bit_patterns)
+        self.register_buffer("bit_to_symbol_map", bit_to_symbol_map)
 
     def _create_constellation(self) -> None:
         """Create the PSK constellation mapping."""
@@ -362,7 +413,6 @@ class PSKModulator(BaseModulator):
                     bit_patterns[i, j] = int(bit)
 
         # Create mapping from bit patterns to constellation indices
-        # This is important for consistent modulation/demodulation
         bit_to_symbol_map = torch.zeros(self.order, dtype=torch.long)
         
         # Map each bit pattern to its index in the constellation

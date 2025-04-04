@@ -180,6 +180,18 @@ class TestModulationRegistry:
         assert "demodulators" in modulations
         assert "test_mod" in modulations["modulators"]
         assert "test_demod" in modulations["demodulators"]
+    
+    def test_get_method_routing(self):
+        """Test that the get method correctly routes to get_modulator or get_demodulator."""
+        # Test get with modulator mode
+        modulator_class = ModulationRegistry.get("test_mod", mode="modulator")
+        assert modulator_class == MockModulator
+        assert modulator_class == ModulationRegistry.get_modulator("test_mod")
+        
+        # Test get with demodulator mode
+        demodulator_class = ModulationRegistry.get("test_demod", mode="demodulator")
+        assert demodulator_class == MockDemodulator
+        assert demodulator_class == ModulationRegistry.get_demodulator("test_demod")
 
 
 class TestModulationRegistryAllSchemes:
