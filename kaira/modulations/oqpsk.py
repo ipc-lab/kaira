@@ -111,7 +111,8 @@ class OQPSKModulator(BaseModulator):
             bit_pattern = self.bit_patterns[i]
             labels.append(f"{int(bit_pattern[0])}{int(bit_pattern[1])}")
 
-        return plot_constellation(self.constellation, labels=labels, title="OQPSK Constellation", **kwargs)
+        fig, _ = plot_constellation(self.constellation, labels=labels, title="OQPSK Constellation", **kwargs)
+        return fig
 
 @ModulationRegistry.register_demodulator("oqpsk")
 class OQPSKDemodulator(BaseDemodulator):

@@ -752,3 +752,49 @@ def test_dpsk_effective_noise_var_conversion():
         noise_cuda = 0.1  # Scalar
         effective_cuda = demodulator.test_process_noise_var(noise_cuda, y_cuda)
         assert effective_cuda.device == y_cuda.device  # Should be on same device
+
+
+def test_dpsk_modulator_bit_length_divisibility_check():
+    """Test specifically that the modulator checks if bit length is divisible by bits_per_symbol."""
+    modulator = DPSKModulator(bits_per_symbol=3)  # Use 3 bits per symbol for testing
+    
+    # Valid case: bit length (6) is divisible by bits_per_symbol (3)
+    valid_bits = torch.tensor([0, 1, 0, 1, 1, 0], dtype=torch.float)
+    modulator(valid_bits)  # Should not raise any error
+    
+    # Invalid case: bit length (7) is not divisible by bits_per_symbol (3)
+    invalid_bits = torch.tensor([0, 1, 0, 1, 1, 0, 1], dtype=torch.float)
+    
+    # Check the exact error message
+    with pytest.raises(ValueError) as excinfo:
+        modulator(invalid_bits)
+    
+    # Verify the error message contains the bit_per_symbol value
+    assert f"Input bit length must be divisible by {modulator.bits_per_symbol}" in str(excinfo.value)
+
+
+def test_dpsk_demodulator_effective_noise_var_tensor_conversion():
+    """Test specifically that effective_noise_var is converted to a tensor."""
+    demodulator = DPSKDemodulator(order=4)
+    
+    # Create input that will go through the noise_var conversion path
+    y = torch.tensor([1.0 + 0.0j, 0.0 + 1.0j, -1.0 + 0.0j], dtype=torch.complex64)
+    
+    # Use a custom noise_var value that's not a tensor
+    float_noise_var = 0.25
+    
+    # Process with the demodulator
+    # This will internally convert noise_var to a tensor using the line we're testing
+    llrs = demodulator(y, noise_var=float_noise_var)
+    
+    # The conversion happens internally, so we can't directly test it
+    # But we can verify the result has the right shape, indicating successful processing
+    assert llrs.shape == ((y.shape[0] - 1) * demodulator.bits_per_symbol,)
+    assert llrs.dtype == torch.float32
+    
+    # Compare with passing a tensor directly
+    tensor_noise_var = torch.tensor(float_noise_var)
+    llrs_tensor = demodulator(y, noise_var=tensor_noise_var)
+    
+    # Results should be identical regardless of input type
+    assert torch.allclose(llrs, llrs_tensor)
