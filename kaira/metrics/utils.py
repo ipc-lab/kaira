@@ -22,10 +22,12 @@ def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targ
     """
     results = {}
     for name, metric in metrics.items():
-        if hasattr(metric, "compute_with_stats"):
+        # Check if compute_with_stats is explicitly defined in the class (not inherited)
+        if 'compute_with_stats' in metric.__class__.__dict__:
             results[name] = metric.compute_with_stats(preds, targets)
         else:
-            results[name] = metric(preds, targets)
+            # If compute_with_stats is not explicitly defined, use forward directly
+            results[name] = metric.forward(preds, targets)
     return results  # type: ignore
 
 def format_metric_results(results: Dict[str, Any]) -> str:
@@ -74,76 +76,46 @@ def visualize_metrics_comparison(
 
     plt.figure(figsize=figsize)
     
-    # Special case handling for test_tensor_tuple_conversion_in_visualization test
-    # This specific code path is needed to pass the test
-    if len(results_list) == 1 and len(common_metrics) > 1:
-        results = results_list[0]
-        label = labels[0]
-        
-        # For the test_tensor_tuple_conversion_in_visualization test
-        # We need to call plt.bar separately for each metric
-        for i, metric in enumerate(common_metrics):
+    # Original implementation for multiple results
+    metric_count = len(common_metrics)
+    bar_width = 0.8 / len(results_list)
+    bar_indices = np.arange(metric_count)
+
+    for i, (results, label) in enumerate(zip(results_list, labels)):
+        means = []
+        errors = []
+
+        for metric in common_metrics:
             value = results[metric]
             if isinstance(value, tuple) and len(value) == 2:
                 mean, std = value
-                mean_float = float(mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean)
-                std_float = float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std)
-                # Call plt.bar once for each individual metric
-                plt.bar(
-                    [i],  # x-position for this bar
-                    [mean_float],  # height of bar
-                    width=0.8,
-                    yerr=[std_float],
-                    label=label,
-                    capsize=5,
-                )
+                means.append(float(mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean))
+                errors.append(float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std))
             else:
-                value_float = float(value.detach().cpu().numpy() if isinstance(value, torch.Tensor) else value)
-                plt.bar(
-                    [i],  # x-position for this bar
-                    [value_float],  # height of bar
-                    width=0.8,
-                    label=label,
-                )
-                
+                means.append(float(value.detach().cpu().numpy() if isinstance(value, torch.Tensor) else value))
+                errors.append(0)
+
+        # Plot bars with error bars, but only include yerr if any errors are non-zero
+        bar_kwargs = {
+            'width': bar_width,
+            'label': label,
+        }
+        
+        # Only include yerr if there are any non-zero error values
+        if any(errors):
+            bar_kwargs['yerr'] = errors
+            bar_kwargs['capsize'] = 5
+            
+        plt.bar(
+            bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2,
+            means,
+            **bar_kwargs
+        )
+
         plt.xlabel("Metrics")
         plt.ylabel("Value")
         plt.title(title)
-        plt.xticks(range(len(common_metrics)), common_metrics, rotation=45)
-    else:
-        # Original implementation for multiple results
-        metric_count = len(common_metrics)
-        bar_width = 0.8 / len(results_list)
-        bar_indices = np.arange(metric_count)
-
-        for i, (results, label) in enumerate(zip(results_list, labels)):
-            means = []
-            errors = []
-
-            for metric in common_metrics:
-                value = results[metric]
-                if isinstance(value, tuple) and len(value) == 2:
-                    mean, std = value
-                    means.append(float(mean.detach().cpu().numpy() if isinstance(mean, torch.Tensor) else mean))
-                    errors.append(float(std.detach().cpu().numpy() if isinstance(std, torch.Tensor) else std))
-                else:
-                    means.append(float(value.detach().cpu().numpy() if isinstance(value, torch.Tensor) else value))
-                    errors.append(0)
-
-            # Plot bars with error bars
-            plt.bar(
-                bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2,
-                means,
-                width=bar_width,
-                yerr=errors,
-                label=label,
-                capsize=5,
-            )
-
-            plt.xlabel("Metrics")
-            plt.ylabel("Value")
-            plt.title(title)
-            plt.xticks(bar_indices, common_metrics, rotation=45)
+        plt.xticks(bar_indices, common_metrics, rotation=45)
 
     plt.legend()
     plt.tight_layout()
@@ -151,6 +123,7 @@ def visualize_metrics_comparison(
     if save_path:
         plt.savefig(save_path)
     plt.show()
+
 def benchmark_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor, repeat: int = 10) -> Dict[str, Dict[str, float]]:
     """Benchmark execution time of metrics.
 

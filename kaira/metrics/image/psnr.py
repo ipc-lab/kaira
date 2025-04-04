@@ -71,6 +71,7 @@ class PeakSignalNoiseRatio(BaseMetric):
         # Handle single value case to avoid NaN in std calculation
         if values.numel() <= 1:
             return values.mean(), torch.tensor(0.0)
+
         return values.mean(), values.std()
 
 

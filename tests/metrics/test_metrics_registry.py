@@ -130,47 +130,52 @@ def test_metric_registry_get_metric_info():
         MetricRegistry._metrics = original_metrics
 
 
-def test_create_image_quality_metrics(monkeypatch):
-    """Test creating image quality metrics with simplified approach."""
-    # Instead of trying to mock the image.py module import, which is complex,
-    # we'll test the structure of the results without checking attribute values
+def test_create_image_quality_metrics():
+    """Test creating actual image quality metrics without mocking."""
+    # Create metrics with default parameters
+    metrics = MetricRegistry.create_image_quality_metrics()
     
-    # Setup a simple mock for the actual PSNR, SSIM, etc. classes
-    from unittest.mock import Mock
-    
-    # Create dummy metrics
-    psnr_metric = Mock()
-    ssim_metric = Mock()
-    ms_ssim_metric = Mock()
-    lpips_metric = Mock()
-    
-    # Make a factory function that returns our mock metrics
-    def mock_factory(*args, **kwargs):
-        metrics = {
-            "psnr": psnr_metric,
-            "ssim": ssim_metric,
-            "ms_ssim": ms_ssim_metric,
-            "lpips": lpips_metric
-        }
-        return metrics
-    
-    # Replace the actual function with our mock
-    monkeypatch.setattr(MetricRegistry, "create_image_quality_metrics", mock_factory)
-    
-    # Call the function
-    metrics = MetricRegistry.create_image_quality_metrics(data_range=2.0)
-    
-    # Verify that the returned dictionary has the expected keys
+    # Verify all expected metrics are created
     assert "psnr" in metrics
     assert "ssim" in metrics
     assert "ms_ssim" in metrics
     assert "lpips" in metrics
     
-    # Verify that the metrics are our mock objects
-    assert metrics["psnr"] is psnr_metric
-    assert metrics["ssim"] is ssim_metric
-    assert metrics["ms_ssim"] is ms_ssim_metric
-    assert metrics["lpips"] is lpips_metric
+    # Check that metrics are the correct type
+    from kaira.metrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure, MultiScaleSSIM, LearnedPerceptualImagePatchSimilarity
+    
+    assert isinstance(metrics["psnr"], PeakSignalNoiseRatio)
+    assert isinstance(metrics["ssim"], StructuralSimilarityIndexMeasure)
+    assert isinstance(metrics["ms_ssim"], MultiScaleSSIM)
+    assert isinstance(metrics["lpips"], LearnedPerceptualImagePatchSimilarity)
+    
+    # Test with custom data_range
+    custom_metrics = MetricRegistry.create_image_quality_metrics(data_range=255.0)
+    assert custom_metrics["psnr"].psnr.data_range == 255.0
+    assert custom_metrics["ssim"].ssim.data_range == 255.0
+    assert custom_metrics["ms_ssim"].data_range == 255.0
+    
+    # Test with custom lpips_net_type
+    lpips_metrics = MetricRegistry.create_image_quality_metrics(lpips_net_type="vgg")
+    assert lpips_metrics["lpips"].net_type == "vgg"
+    
+    # Test device placement
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        gpu_metrics = MetricRegistry.create_image_quality_metrics(device=device)
+        # Check at least one parameter is on the target device
+        psnr_params = list(gpu_metrics["psnr"].parameters())
+        if psnr_params:  # Ensure there are parameters to check
+            assert next(iter(psnr_params)).device == device
+    
+    # Test with sample data - use 192x192 images to satisfy MS-SSIM requirements (needs > 160)
+    sample_preds = torch.rand(2, 3, 192, 192)
+    sample_targets = torch.rand(2, 3, 192, 192)
+    
+    # Ensure all metrics can process the sample data without errors
+    for metric_name, metric in metrics.items():
+        result = metric(sample_preds, sample_targets)
+        assert isinstance(result, torch.Tensor)
 
 
 def test_create_composite_metric():

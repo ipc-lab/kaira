@@ -755,6 +755,58 @@ class TestSignalToNoiseRatio:
         result = snr(signal, noisy_signal)
         assert result.item() == pytest.approx(4.0, abs=0.1)
 
+    def test_snr_near_zero_noise(self):
+        """Test SNR calculation with extremely small noise (approaching epsilon)."""
+        snr_metric = SignalToNoiseRatio()
+        
+        # Create signal
+        signal = torch.tensor([[1.0, -1.0, 1.0, -1.0]])
+        
+        # Create extremely small noise (below epsilon)
+        eps = torch.finfo(torch.float32).eps
+        noise = torch.ones_like(signal) * (eps / 2.0)
+        noisy_signal = signal + noise
+        
+        # Calculate SNR
+        snr_db = snr_metric(signal, noisy_signal)
+        
+        # Result should be infinity due to the noise_power < eps check
+        assert torch.isinf(snr_db)
+        assert snr_db > 0  # Positive infinity
+
+    def test_linear_mode_batch_processing(self):
+        """Test linear mode SNR with batched data to ensure correct path execution."""
+        # Initialize SNR metric in linear mode
+        snr_metric = SignalToNoiseRatio(mode="linear")
+        
+        # Create batched clean signal and noisy signal
+        clean_signal = torch.tensor([[1.0, -1.0, 0.5], [0.5, -0.5, 0.0]])
+        noise = torch.tensor([[0.1, -0.1, 0.05], [0.05, 0.1, -0.05]])
+        noisy_signal = clean_signal + noise
+        
+        # Test forward computation
+        snr_values = snr_metric(clean_signal, noisy_signal)
+        
+        # Check shape
+        assert snr_values.shape == torch.Size([2])
+        
+        # Calculate expected linear SNR for each sample
+        for i in range(2):
+            signal_power = (clean_signal[i] ** 2).mean()
+            noise_power = (noise[i] ** 2).mean()
+            expected_snr = signal_power / noise_power  # Linear ratio, not in dB
+            assert torch.isclose(snr_values[i], expected_snr, rtol=1e-4)
+
+    def test_mode_initialization_validation(self):
+        """Test that the mode validation works properly during initialization."""
+        # Valid modes should initialize correctly
+        snr_db = SignalToNoiseRatio(mode="db")
+        snr_linear = SignalToNoiseRatio(mode="linear")
+        
+        # Invalid mode should raise ValueError
+        with pytest.raises(ValueError, match="Mode must be either 'db' or 'linear'"):
+            SignalToNoiseRatio(mode="invalid")
+
 
 # ===== Common Tests =====
 

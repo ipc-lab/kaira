@@ -154,6 +154,45 @@ class TestMetricsUtils:
         ]
         visualize_metrics_comparison(results_list, labels)
 
+    def test_visualize_metrics_comparison_with_tensor_tuples(self, monkeypatch):
+        """Test visualization of metrics comparison with tensor tuples."""
+        # Track whether functions are called
+        show_called = False
+        
+        def mock_show():
+            nonlocal show_called
+            show_called = True
+            
+        def mock_bar(*args, **kwargs):
+            # Capture the arguments to verify tensor conversion
+            if 'yerr' in kwargs:
+                # Ensure errors are converted to floats
+                assert isinstance(kwargs['yerr'][0], float)
+            return None
+            
+        monkeypatch.setattr(plt, "show", mock_show)
+        monkeypatch.setattr(plt, "bar", mock_bar)
+        
+        # Create test data with tensor tuples of (mean, std)
+        results_list = [
+            {
+                "metric1": (torch.tensor(0.8), torch.tensor(0.05)),
+                "metric2": (torch.tensor(0.6), torch.tensor(0.03))
+            },
+            {
+                "metric1": (torch.tensor(0.7), torch.tensor(0.04)),
+                "metric2": (torch.tensor(0.5), torch.tensor(0.02))
+            }
+        ]
+        
+        labels = ["Model A", "Model B"]
+        
+        # Call the function
+        visualize_metrics_comparison(results_list, labels)
+        
+        # Verify show was called
+        assert show_called
+
     def test_benchmark_metrics(self, monkeypatch):
         """Test benchmarking of metrics."""
         # Mock time module
@@ -316,3 +355,191 @@ class TestMetricsUtils:
         assert "metric1" in summary
         assert "metric2" in summary
         assert 0.755 - 0.001 <= summary["metric1"]["mean"] <= 0.755 + 0.001  # Approx 0.755
+
+    def test_compute_multiple_metrics_direct_call(self):
+        """Test computing metrics without compute_with_stats method."""
+        # Create a custom mock metric without compute_with_stats
+        class DirectMockMetric(BaseMetric):
+            def __init__(self, return_value=0.5):
+                super().__init__()
+                self.return_value = return_value
+                
+            def forward(self, preds, targets):
+                return torch.tensor(self.return_value)
+                
+            # No compute_with_stats method
+        
+        metrics = {
+            "direct_metric": DirectMockMetric(0.7)
+        }
+        
+        # Create dummy tensors
+        preds = torch.randn(8, 3, 32, 32)
+        targets = torch.randn(8, 3, 32, 32)
+        
+        # Compute metrics
+        results = compute_multiple_metrics(metrics, preds, targets)
+        
+        # Check results
+        assert "direct_metric" in results
+        # Just a regular tensor, not a tuple
+        assert isinstance(results["direct_metric"], torch.Tensor)
+        assert pytest.approx(results["direct_metric"].item(), abs=1e-5) == 0.7
+
+    def test_visualize_metrics_comparison_single_value(self, monkeypatch):
+        """Test visualization of metric comparisons with single values (not tuples)."""
+        # Track function calls with arguments
+        bar_calls = []
+        
+        def mock_bar(*args, **kwargs):
+            nonlocal bar_calls
+            bar_calls.append((args, kwargs))
+            return None
+            
+        # Mock other matplotlib functions to avoid actual plotting
+        def mock_show(): pass
+        def mock_figure(*args, **kwargs): pass
+        def mock_xlabel(*args, **kwargs): pass
+        def mock_ylabel(*args, **kwargs): pass
+        def mock_title(*args, **kwargs): pass
+        def mock_xticks(*args, **kwargs): pass
+        def mock_legend(*args, **kwargs): pass
+        def mock_tight_layout(*args, **kwargs): pass
+        
+        # Apply all mocks
+        monkeypatch.setattr(plt, "bar", mock_bar)
+        monkeypatch.setattr(plt, "show", mock_show)
+        monkeypatch.setattr(plt, "figure", mock_figure)
+        monkeypatch.setattr(plt, "xlabel", mock_xlabel)
+        monkeypatch.setattr(plt, "ylabel", mock_ylabel)
+        monkeypatch.setattr(plt, "title", mock_title)
+        monkeypatch.setattr(plt, "xticks", mock_xticks)
+        monkeypatch.setattr(plt, "legend", mock_legend)
+        monkeypatch.setattr(plt, "tight_layout", mock_tight_layout)
+        
+        # Create test data with a tensor value (not a tuple)
+        results_list = [
+            {
+                "single_value_metric": torch.tensor(0.85)
+            }
+        ]
+        labels = ["Single Value Model"]
+        
+        # Call the function
+        visualize_metrics_comparison(results_list, labels)
+        
+        # Verify bar was called for the single value
+        assert len(bar_calls) == 1
+        args, kwargs = bar_calls[0]
+        
+        # Check that value was properly converted
+        assert len(args) >= 2
+        assert args[1][0] == pytest.approx(0.85, abs=1e-5)
+        assert 'yerr' not in kwargs  # No error bars for single values
+
+    def test_print_metric_table_with_empty_rows(self, capsys):
+        """Test printing a table with empty rows."""
+        table = [
+            ["Metric", "Mean", "Std"],
+            ["metric1", "0.7532", "0.0123"],
+            [],  # Empty row
+            ["metric2", "0.8456", "0.0234"],
+            []   # Another empty row
+        ]
+        
+        # Print table
+        print_metric_table(table)
+        captured = capsys.readouterr()
+        
+        # Check output
+        assert "Metric  | Mean   | Std" in captured.out
+        assert "metric1 | 0.7532 | 0.0123" in captured.out
+        assert "metric2 | 0.8456 | 0.0234" in captured.out
+        # Empty rows should be skipped, so we shouldn't see empty lines
+        assert "| |" not in captured.out
+
+    def test_print_metric_table_with_missing_columns(self, capsys):
+        """Test printing a table with rows that have missing columns."""
+        table = [
+            ["Metric", "Mean", "Std"],
+            ["metric1", "0.7532", "0.0123"],
+            ["metric2", "0.8456"],  # Missing Std column
+            ["metric3"]  # Missing Mean and Std columns
+        ]
+        
+        # Print table
+        print_metric_table(table)
+        captured = capsys.readouterr()
+        
+        # Check output
+        assert "Metric  | Mean   | Std" in captured.out
+        assert "metric1 | 0.7532 | 0.0123" in captured.out
+        assert "metric2 | 0.8456 |" in captured.out  # Empty cell for missing Std
+        assert "metric3 |        |" in captured.out  # Empty cells for missing columns
+
+    def test_print_metric_table_empty_cases(self, capsys):
+        """Test print_metric_table function with various empty table scenarios."""
+        from kaira.metrics.utils import print_metric_table
+        
+        # Case 1: Completely empty table
+        print_metric_table([])
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        
+        # Case 2: Table with empty first row
+        print_metric_table([[]])
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        
+        # Case 3: Table with all empty rows
+        print_metric_table([[], [], []])
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        
+        # Case 4: Table with non-empty header but empty data rows
+        print_metric_table([["Metric", "Value"], [], []])
+        captured = capsys.readouterr()
+        assert "Metric" in captured.out
+        assert "Value" in captured.out
+        assert "----------" in captured.out
+        
+        # Case 5: Table with mixed empty and non-empty rows
+        print_metric_table([
+            ["Metric", "Value"],
+            [],
+            ["metric1", "0.123"],
+            [],
+            ["metric2", "0.456"]
+        ])
+        captured = capsys.readouterr()
+        assert "Metric" in captured.out
+        assert "Value" in captured.out
+        assert "metric1" in captured.out
+        assert "0.123" in captured.out
+        assert "metric2" in captured.out
+        assert "0.456" in captured.out
+
+    def test_print_metric_table_non_empty_rows_check(self, capsys):
+        """Test the specific condition 'if not non_empty_rows: return' in print_metric_table."""
+        # Create a special row class that has non-zero length but evaluates to False
+        class FalsyRow(list):
+            def __init__(self, *args):
+                super().__init__(*args)
+            
+            def __bool__(self):
+                return False
+        
+        # This row will pass the len(table[0]) > 0 check but will be filtered out by `if row`
+        special_row = FalsyRow(["Column1", "Column2"])
+        assert len(special_row) > 0  # Has length
+        assert not special_row       # But evaluates to False in boolean context
+        
+        # Create a table where all rows will be filtered out by the `if row` condition
+        table = [special_row, special_row, special_row]
+        
+        # Call print_metric_table
+        print_metric_table(table)
+        captured = capsys.readouterr()
+        
+        # Function should return early without printing anything
+        assert captured.out == ""
