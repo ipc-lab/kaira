@@ -104,15 +104,14 @@ class DPSKModulator(BaseModulator):
         batch_shape = x.shape[:-1]
         
         # Determine if input contains bit patterns or indices
-        # If all values are binary (0 or 1) and the length is divisible by bits_per_symbol,
-        # interpret as bit sequence
+        # If all values are binary (0 or 1), interpret as bit sequence
         is_binary_input = torch.all((x == 0) | (x == 1))
         
-        if is_binary_input and x.shape[-1] % self._bits_per_symbol == 0:
+        if is_binary_input:
             # Process as bits
             bit_len = x.shape[-1]
             
-            # Validate bit length is divisible by bits_per_symbol
+            # Validate bit length is divisible by bits_per_symbol - moved outside the conditional
             if bit_len % self._bits_per_symbol != 0:
                 raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
                 
@@ -154,15 +153,16 @@ class DPSKModulator(BaseModulator):
         # Create output tensor with the right shape
         output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
         
+        # Apply differential modulation to all symbols
         if symbol_len > 0:
-            # Initialize first symbol with reference phase
-            output[..., 0] = ref_phase.squeeze(-1)
+            # First symbol is modulated using the phase memory
+            output[..., 0] = ref_phase.squeeze(-1) * phase_shifts[..., 0]
             
             # Apply differential encoding to subsequent symbols
             for i in range(1, symbol_len):
-                output[..., i] = output[..., i-1] * phase_shifts[..., i-1]
+                output[..., i] = output[..., i-1] * phase_shifts[..., i]
                 
-            # Update phase memory if in training mode
+            # Update phase memory with the last output symbol
             if self.training:
                 if batch_shape:
                     self._phase_memory = output[..., -1].detach().mean().view(1)

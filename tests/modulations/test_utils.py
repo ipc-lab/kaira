@@ -250,6 +250,30 @@ class TestBinaryGrayConversion:
             result = gray_array_to_binary(empty_tensor)
             assert result.device.type == "cuda"
             assert result.dtype == torch.float32
+            
+    def test_float_to_int64_conversion(self):
+        """Test that float arrays are correctly converted to int64 during processing."""
+        # Test with float32 numpy arrays
+        float32_arr = np.array([0, 1, 2, 3], dtype=np.float32)
+        result = binary_array_to_gray(float32_arr)
+        expected = torch.tensor([0, 1, 3, 2])  # Expected Gray code values
+        assert torch.equal(result, expected)
+        
+        # Test with float64 numpy arrays
+        float64_arr = np.array([0, 1, 2, 3], dtype=np.float64)
+        result = binary_array_to_gray(float64_arr)
+        assert torch.equal(result, expected)
+        
+        # Test gray_array_to_binary with float arrays
+        gray_float32 = np.array([0, 1, 3, 2], dtype=np.float32)
+        result = gray_array_to_binary(gray_float32)
+        expected = torch.tensor([0, 1, 2, 3])  # Expected binary values
+        assert torch.equal(result, expected)
+        
+        # Test with float64 numpy arrays
+        gray_float64 = np.array([0, 1, 3, 2], dtype=np.float64)
+        result = gray_array_to_binary(gray_float64)
+        assert torch.equal(result, expected)
 
 
 class TestTheoreticalBER:
@@ -274,6 +298,75 @@ class TestTheoreticalBER:
         ber_qpsk_lower = calculate_theoretical_ber(snr_db, "qpsk")
         ber_qpsk_upper = calculate_theoretical_ber(snr_db, "QPSK")
         assert torch.isclose(ber_qpsk_lower, ber_qpsk_upper)
+    
+    def test_pam_modulation_ber(self):
+        """Test BER calculation for PAM modulation schemes."""
+        snr_db_range = torch.linspace(0, 20, 5)
+        
+        # Test 4-PAM BER calculation
+        ber_4pam = calculate_theoretical_ber(snr_db_range, '4pam')
+        # BER should decrease as SNR increases
+        assert torch.all(ber_4pam[:-1] > ber_4pam[1:])
+        
+        # Test 8-PAM BER calculation
+        ber_8pam = calculate_theoretical_ber(snr_db_range, '8pam')
+        assert torch.all(ber_8pam[:-1] > ber_8pam[1:])
+        
+        # Higher-order PAM should have worse BER at same SNR
+        assert torch.all(ber_8pam > ber_4pam)
+        
+        # For a specific SNR value, verify formula correctness
+        snr = 10.0  # 10 dB
+        snr_linear = 10 ** (snr / 10)
+        
+        # Expected BER for 4-PAM: 0.75 * erfc(sqrt(snr / 5))
+        expected_4pam = 0.75 * torch.tensor(float(np.special.erfc(np.sqrt(snr_linear / 5))))
+        actual_4pam = calculate_theoretical_ber(snr, '4pam')
+        assert torch.isclose(actual_4pam, expected_4pam)
+        
+        # Expected BER for 8-PAM: (7/12) * erfc(sqrt(snr / 21))
+        expected_8pam = (7 / 12) * torch.tensor(float(np.special.erfc(np.sqrt(snr_linear / 21))))
+        actual_8pam = calculate_theoretical_ber(snr, '8pam')
+        assert torch.isclose(actual_8pam, expected_8pam)
+    
+    def test_differential_modulation_ber(self):
+        """Test BER calculation for differential modulation schemes."""
+        snr_db_range = torch.linspace(0, 20, 5)
+        
+        # Test DPSK (DBPSK) BER calculation
+        ber_dpsk = calculate_theoretical_ber(snr_db_range, 'dpsk')
+        # BER should decrease as SNR increases
+        assert torch.all(ber_dpsk[:-1] > ber_dpsk[1:])
+        
+        # Test DBPSK (same as DPSK) for name compatibility
+        ber_dbpsk = calculate_theoretical_ber(snr_db_range, 'dbpsk')
+        assert torch.allclose(ber_dpsk, ber_dbpsk)
+        
+        # Test DQPSK BER calculation
+        ber_dqpsk = calculate_theoretical_ber(snr_db_range, 'dqpsk')
+        assert torch.all(ber_dqpsk[:-1] > ber_dqpsk[1:])
+        
+        # Higher-order differential should have worse BER at high SNR
+        # Only at high SNR, as at low SNR, DQPSK can occasionally outperform DPSK
+        high_snr_db = 15.0
+        high_ber_dpsk = calculate_theoretical_ber(high_snr_db, 'dpsk')
+        high_ber_dqpsk = calculate_theoretical_ber(high_snr_db, 'dqpsk')
+        assert high_ber_dqpsk > high_ber_dpsk
+        
+        # For a specific SNR value, verify formula correctness
+        snr = 10.0  # 10 dB
+        snr_linear = 10 ** (snr / 10)
+        
+        # Expected BER for DPSK: 0.5 * exp(-snr)
+        expected_dpsk = 0.5 * torch.tensor(float(np.exp(-snr_linear)))
+        actual_dpsk = calculate_theoretical_ber(snr, 'dpsk')
+        assert torch.isclose(actual_dpsk, expected_dpsk)
+        
+        # Expected BER for DQPSK: erfc(sqrt(snr/2)) - 0.25 * (erfc(sqrt(snr/2)))^2
+        erfc_term = float(np.special.erfc(np.sqrt(snr_linear / 2)))
+        expected_dqpsk = torch.tensor(erfc_term - 0.25 * erfc_term ** 2)
+        actual_dqpsk = calculate_theoretical_ber(snr, 'dqpsk')
+        assert torch.isclose(actual_dqpsk, expected_dqpsk)
 
 
 class TestConstellationPlotting:
@@ -338,6 +431,27 @@ class TestConstellationPlotting:
         # Verify no annotations exist
         annotations = [child for child in ax.get_children() if isinstance(child, Annotation)]
         assert len(annotations) == 0
+        
+        # Clean up
+        plt.close(fig)
+
+    def test_existing_axes_provided(self):
+        """Test that when an existing axes object is provided, it uses ax.figure."""
+        # Create a matplotlib figure and axes manually first
+        existing_fig, existing_ax = plt.subplots(figsize=(10, 10))
+        
+        # Create a constellation
+        constellation = torch.tensor([1+1j, -1+1j, -1-1j, 1-1j])
+        
+        # Use the existing axes for the plot_constellation function
+        fig, ax = plot_constellation(
+            constellation, 
+            ax=existing_ax  # Pass the existing axes here
+        )
+        
+        # Verify that we got back the same figure and axes objects
+        assert fig == existing_fig
+        assert ax == existing_ax
         
         # Clean up
         plt.close(fig)
@@ -414,3 +528,20 @@ class TestSpectralEfficiency:
         # Test multi-digit orders
         assert calculate_spectral_efficiency("1024QAM") == 10.0
         assert calculate_spectral_efficiency("4096PSK") == 12.0
+        
+    def test_pam_spectral_efficiency(self):
+        """Test spectral efficiency calculations specifically for PAM modulations."""
+        # Test the specific PAM cases
+        assert calculate_spectral_efficiency("4pam") == 2.0
+        assert calculate_spectral_efficiency("8pam") == 3.0
+        assert calculate_spectral_efficiency("16pam") == 4.0
+        
+        # Test case insensitivity
+        assert calculate_spectral_efficiency("4PAM") == 2.0
+        assert calculate_spectral_efficiency("8PAM") == 3.0
+        assert calculate_spectral_efficiency("16PAM") == 4.0
+        
+        # Test with coding rates
+        assert calculate_spectral_efficiency("4pam", coding_rate=0.5) == 1.0
+        assert calculate_spectral_efficiency("8pam", coding_rate=0.75) == 2.25
+        assert calculate_spectral_efficiency("16pam", coding_rate=0.9) == 3.6
