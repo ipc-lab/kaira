@@ -677,8 +677,9 @@ def test_dpsk_modulator_check_divisible_bit_length():
         # Set some bits to 1 (not all, to avoid potential confusion with indices)
         invalid_bits[1::2] = 1.0
         
-        with pytest.raises(ValueError, match=f"Input bit length must be divisible by {bits_per_symbol}"):
-            modulator(invalid_bits)
+        if bits_per_symbol != 1:
+            with pytest.raises(ValueError, match=f"Input bit length must be divisible by {bits_per_symbol}"):
+                modulator(invalid_bits)
 
 
 def test_dpsk_demodulator_noise_var_conversion():
