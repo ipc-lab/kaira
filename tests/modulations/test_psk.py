@@ -684,3 +684,29 @@ def test_modulation_registry_contains_psk():
     # This test would check if PSK modulation schemes are in the registry
     # Implementation depends on how the registry is accessed
     pass
+
+
+def test_qpsk_forward_empty_tensor(self, qpsk_modulator):
+    """Test QPSK forward with empty tensor."""
+    # Create empty tensor
+    bits = torch.tensor([], dtype=torch.float)
+    
+    # Forward pass
+    symbols = qpsk_modulator(bits)
+    
+    # Check output is empty
+    assert symbols.numel() == 0
+    assert symbols.dtype == torch.complex64
+
+def test_qpsk_demodulator_empty_tensor(self, qpsk_demodulator):
+    """Test QPSK demodulator with empty tensor."""
+    # Create empty tensor
+    symbols = torch.tensor([], dtype=torch.complex64)
+    
+    # Demodulate
+    bits = qpsk_demodulator(symbols)
+    # Check output is empty
+    assert bits.numel() == 0
+    assert bits.dtype == torch.float32
+    assert bits.shape == torch.Size([0])
+    
