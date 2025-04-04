@@ -684,3 +684,134 @@ def test_modulation_registry_contains_psk():
     # This test would check if PSK modulation schemes are in the registry
     # Implementation depends on how the registry is accessed
     pass
+
+class TestPSKModulationEdgeCases:
+    """Test edge cases for PSK modulation."""
+
+    def test_psk_modulator_invalid_inputs(self):
+        """Test PSK modulator with invalid inputs."""
+        # Test with non-binary values (should raise ValueError)
+        modulator = PSKModulator(order=4)
+        with pytest.raises(ValueError, match="binary values"):
+            # Input with values other than 0 and 1
+            modulator(torch.tensor([0.2, 0.7, 1.5, -0.3]))
+        
+        # Test with mismatched dimensions
+        with pytest.raises(ValueError, match="must be divisible"):
+            # Input length not divisible by log2(order)
+            modulator(torch.tensor([0, 1, 0]))  # 3 bits, not divisible by log2(4)=2
+
+    def test_psk_demodulator_edge_cases(self):
+        """Test PSK demodulator with edge cases."""
+        demodulator = PSKDemodulator(order=4)
+        
+        # Test with very small magnitude (close to zero)
+        small_input = torch.tensor([1e-10 + 1e-10j, -1e-10 - 1e-10j])
+        # Should still demodulate correctly based on phase
+        result = demodulator(small_input)
+        assert result.shape[1] == 2  # Each symbol maps to 2 bits for QPSK
+        
+        # Test with extremely large magnitude
+        large_input = torch.tensor([1e10 + 1e10j, -1e10 - 1e10j])
+        result = demodulator(large_input)
+        assert result.shape[1] == 2
+
+    def test_psk_modulator_direct_indices(self):
+        """Test PSK modulator with direct constellation indices."""
+        modulator = PSKModulator(order=8)
+        
+        # Test with direct indices
+        indices = torch.tensor([0, 3, 6])
+        result = modulator(indices)
+        
+        # Verify the result matches expected constellation points
+        expected = torch.tensor([1.0 + 0.0j, 0.0 + 1.0j, -1.0 + 0.0j], dtype=torch.complex64)
+        assert torch.allclose(result, expected, atol=1e-6)
+        
+        # Test with a single index (scalar)
+        result_scalar = modulator(torch.tensor(2))
+        expected_scalar = torch.tensor(0.7071 + 0.7071j, dtype=torch.complex64)
+        assert torch.allclose(result_scalar, expected_scalar, atol=1e-4)
+
+    def test_bpsk_modulator_edge_cases(self):
+        """Test BPSK modulator edge cases."""
+        modulator = BPSKModulator()
+        
+        # Test with empty tensor
+        empty_input = torch.tensor([], dtype=torch.float)
+        result = modulator(empty_input)
+        assert result.numel() == 0
+        
+        # Test with single bit
+        single_bit = torch.tensor([1])
+        result = modulator(single_bit)
+        assert result.item() == -1.0 + 0j  # BPSK: 1 -> -1+0j
+
+    def test_qpsk_modulator_all_combinations(self):
+        """Test QPSK modulator with all possible bit combinations."""
+        modulator = QPSKModulator()
+        
+        # All possible 2-bit combinations
+        all_inputs = torch.tensor([
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1]
+        ], dtype=torch.float)
+        
+        result = modulator(all_inputs)
+        
+        # Expected QPSK constellation points for all inputs
+        # Using Gray coding: 00->1+0j, 01->0+1j, 11->-1+0j, 10->0-1j
+        expected = torch.tensor([
+            0.7071 + 0.7071j,
+            -0.7071 + 0.7071j,
+            0.7071 - 0.7071j,
+            -0.7071 - 0.7071j
+        ], dtype=torch.complex64)
+        
+        # Check that all outputs match expected constellation points
+        assert torch.allclose(result, expected, atol=1e-4)
+
+    def test_psk_modulator_demodulator_roundtrip(self):
+        """Test round trip conversion with different PSK orders."""
+        # Test with different constellation sizes
+        for order in [2, 4, 8, 16]:
+            bits_per_symbol = int(np.log2(order))
+            
+            # Create random bits
+            num_symbols = 100
+            random_bits = torch.randint(0, 2, (num_symbols * bits_per_symbol,))
+            
+            # Modulate and demodulate
+            modulator = PSKModulator(order=order)
+            demodulator = PSKDemodulator(order=order)
+            
+            symbols = modulator(random_bits)
+            recovered_bits = demodulator(symbols)
+            
+            # Reshape for comparison
+            random_bits_reshaped = random_bits.reshape(-1, bits_per_symbol)
+            
+            # Verify bits are recovered correctly
+            assert torch.all(random_bits_reshaped == recovered_bits)
+
+    def test_psk_modulator_custom_constellation(self):
+        """Test PSK modulator with custom constellation points."""
+        # Create custom constellation (amplitude-varying PSK)
+        custom_const = torch.tensor([1+0j, 0+2j, -1.5+0j, 0-0.5j], dtype=torch.complex64)
+        
+        modulator = PSKModulator(constellation=custom_const)
+        
+        # Test modulation with this constellation
+        test_bits = torch.tensor([
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1],
+        ], dtype=torch.float)
+        
+        result = modulator(test_bits)
+        
+        # Each row should map to the corresponding constellation point
+        assert torch.allclose(result, custom_const, atol=1e-6)

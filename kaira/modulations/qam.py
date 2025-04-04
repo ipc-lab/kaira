@@ -151,11 +151,6 @@ class QAMModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-QAM Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per QAM symbol."""
-        return self._bits_per_symbol
-
 
 @ModulationRegistry.register_demodulator()
 class QAMDemodulator(BaseDemodulator):
@@ -335,8 +330,3 @@ class QAMDemodulator(BaseDemodulator):
         # Return maximum (least negative) value
         max_values, _ = torch.max(distances, dim=-1)
         return max_values
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per QAM symbol."""
-        return self._bits_per_symbol

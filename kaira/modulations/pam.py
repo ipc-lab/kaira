@@ -143,10 +143,6 @@ class PAMModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-PAM Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per PAM symbol."""
-        return self._bits_per_symbol
 
 
 @ModulationRegistry.register_demodulator()
@@ -324,8 +320,3 @@ class PAMDemodulator(BaseDemodulator):
                 llrs[..., llr_idx] = bit_llr.squeeze(-1)
         
         return llrs
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per PAM symbol."""
-        return self._bits_per_symbol

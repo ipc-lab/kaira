@@ -26,7 +26,7 @@ class BaseModulator(nn.Module, ABC):
         super().__init__()
         self._bits_per_symbol = bits_per_symbol
 
-    @abstractproperty
+    @property
     def bits_per_symbol(self) -> int:
         """Number of bits per symbol."""
         if self._bits_per_symbol is None:
@@ -80,7 +80,7 @@ class BaseDemodulator(nn.Module, ABC):
         super().__init__()
         self._bits_per_symbol = bits_per_symbol
 
-    @abstractproperty
+    @property
     def bits_per_symbol(self) -> int:
         """Number of bits per symbol."""
         if self._bits_per_symbol is None:

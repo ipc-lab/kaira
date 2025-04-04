@@ -31,6 +31,7 @@ class BPSKModulator(BaseModulator):
         re_part = torch.tensor([1.0, -1.0])
         im_part = torch.tensor([0.0, 0.0])
         self.register_buffer("constellation", torch.complex(re_part, im_part))
+        self._bits_per_symbol = 1  # BPSK has 1 bit per symbol
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Modulate binary inputs to BPSK symbols.
@@ -55,11 +56,6 @@ class BPSKModulator(BaseModulator):
         """
         return plot_constellation(self.constellation, labels=["0", "1"], title="BPSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per BPSK symbol."""
-        return 1
-
 
 @ModulationRegistry.register_demodulator()
 class BPSKDemodulator(BaseDemodulator):
@@ -73,6 +69,7 @@ class BPSKDemodulator(BaseDemodulator):
     def __init__(self) -> None:
         """Initialize the BPSK demodulator."""
         super().__init__()
+        self._bits_per_symbol = 1 # BPSK has 1 bit per symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate BPSK symbols.
@@ -99,11 +96,6 @@ class BPSKDemodulator(BaseDemodulator):
             # Negative LLR means bit 1 is more likely, positive means bit 0 is more likely
             # LLR = log(P(y|b=0)/P(y|b=1)) = log(exp(-(y-1)²/2σ²)/exp(-(y+1)²/2σ²)) = 2y/σ²
             return -2.0 * y_real / noise_var
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per BPSK symbol."""
-        return 1
 
 
 @ModulationRegistry.register_modulator()
@@ -144,6 +136,8 @@ class QPSKModulator(BaseModulator):
             [1.0, 1.0],  # Third quadrant
         ], dtype=torch.float)
         self.register_buffer("bit_patterns", bit_patterns)
+        
+        self._bits_per_symbol = 2 # QPSK has 2 bits per symbol
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Modulate bit pairs to QPSK symbols.
@@ -189,11 +183,6 @@ class QPSKModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title="QPSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per QPSK symbol."""
-        return 2
-
 
 @ModulationRegistry.register_demodulator()
 class QPSKDemodulator(BaseDemodulator):
@@ -214,6 +203,8 @@ class QPSKDemodulator(BaseDemodulator):
 
         # Create modulator to access constellation
         self.modulator = QPSKModulator(normalize)
+        
+        self._bits_per_symbol = 2 # QPSK has 2 bits per symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate QPSK symbols.
@@ -309,11 +300,6 @@ class QPSKDemodulator(BaseDemodulator):
         # Return maximum (least negative) value for each symbol
         max_values, _ = torch.max(distances, dim=-1)
         return max_values
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per QPSK symbol."""
-        return 2
 
 
 @ModulationRegistry.register_modulator()
@@ -474,12 +460,6 @@ class PSKModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-PSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per PSK symbol."""
-        return self._bits_per_symbol
-
-
 @ModulationRegistry.register_demodulator()
 class PSKDemodulator(BaseDemodulator):
     """General M-ary Phase-Shift Keying (PSK) demodulator.
@@ -596,8 +576,3 @@ class PSKDemodulator(BaseDemodulator):
                 result = result.squeeze(0)
                 
             return result
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per PSK symbol."""
-        return self._bits_per_symbol

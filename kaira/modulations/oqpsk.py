@@ -44,6 +44,8 @@ class OQPSKModulator(BaseModulator):
 
         # Store delayed quadrature value for stateful modulation
         self.register_buffer("_delayed_quad", torch.tensor(0.0))
+        
+        self._bits_per_symbol = 2  # OQPSK has 2 bits per symbol
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Modulate bit pairs to OQPSK symbols.
@@ -111,12 +113,6 @@ class OQPSKModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title="OQPSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per OQPSK symbol."""
-        return 2
-
-
 @ModulationRegistry.register_demodulator("oqpsk")
 class OQPSKDemodulator(BaseDemodulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) demodulator."""
@@ -130,6 +126,8 @@ class OQPSKDemodulator(BaseDemodulator):
         super().__init__()
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
+        
+        self._bits_per_symbol = 2  # OQPSK has 2 bits per symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate OQPSK symbols.
@@ -167,8 +165,3 @@ class OQPSKDemodulator(BaseDemodulator):
             llr_imag = 2 * y_imag * self._normalization / noise_var
 
             return torch.cat([llr_real.reshape(*batch_shape, 1), llr_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per OQPSK symbol."""
-        return 2

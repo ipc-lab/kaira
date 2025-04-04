@@ -155,11 +155,6 @@ class Pi4QPSKModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title="π/4-QPSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per π/4-QPSK symbol."""
-        return self._bits_per_symbol
-
 
 @ModulationRegistry.register_demodulator("pi4qpsk")
 class Pi4QPSKDemodulator(BaseDemodulator):
@@ -339,8 +334,3 @@ class Pi4QPSKDemodulator(BaseDemodulator):
     def reset_state(self) -> None:
         """Reset internal state (constellation alternation)."""
         self._use_rotated.fill_(False)
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per π/4-QPSK symbol."""
-        return self._bits_per_symbol

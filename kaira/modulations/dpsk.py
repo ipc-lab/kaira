@@ -169,12 +169,6 @@ class DPSKModulator(BaseModulator):
 
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs)
 
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per DPSK symbol."""
-        return self._bits_per_symbol
-
-
 @ModulationRegistry.register_demodulator()
 class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
@@ -337,11 +331,6 @@ class DPSKDemodulator(BaseDemodulator):
 
         # Return maximum (least negative) value
         return torch.max(distances, dim=-1)[0]
-
-    @property
-    def bits_per_symbol(self) -> int:
-        """Number of bits per DPSK symbol."""
-        return self._bits_per_symbol
 
 
 @ModulationRegistry.register_modulator("dbpsk")
