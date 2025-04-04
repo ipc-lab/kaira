@@ -2,6 +2,7 @@
 import pytest
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 from kaira.modulations.psk import PSKModulator, PSKDemodulator
 from kaira.modulations.psk import BPSKModulator, BPSKDemodulator
@@ -174,6 +175,35 @@ class TestBPSK:
         # Verify output values
         expected_values = torch.tensor([1 + 0j, -1 + 0j, 1 + 0j, -1 + 0j], dtype=torch.complex64)
         assert torch.allclose(y, expected_values)
+        
+    def test_bpsk_plot_constellation(self):
+        """Test BPSK plot_constellation method."""
+        modulator = BPSKModulator()
+        result = modulator.plot_constellation()
+        
+        # Check that it returns a tuple containing figure and axes
+        assert isinstance(result, tuple)
+        fig, ax = result
+        assert isinstance(fig, plt.Figure)
+        
+        # Clean up resources
+        plt.close(fig)
+        
+    def test_bpsk_non_binary_validation(self):
+        """Test BPSK modulator with non-binary values.
+        
+        Note: BPSKModulator converts non-binary values to a float and applies (1.0 - 2.0 * x)
+        without explicitly validating the input, so this test just confirms behavior."""
+        # Create BPSK modulator
+        modulator = BPSKModulator()
+        
+        # Test with non-binary values
+        non_binary = torch.tensor([0.5, 1.5, 0.2, 0.8])
+        symbols = modulator(non_binary)
+        
+        # It should convert the values using 1.0 - 2.0 * x
+        expected = torch.complex(1.0 - 2.0 * non_binary.float(), torch.zeros_like(non_binary.float()))
+        assert torch.allclose(symbols, expected)
 
 
 # ===== QPSK Tests =====
@@ -675,6 +705,142 @@ class TestPSK:
         
         # Check perfect recovery (noiseless case)
         assert torch.all(recovered_bits == bits)
+        
+    def test_psk_plot_constellation(self):
+        """Test PSK plot_constellation method."""
+        modulator = PSKModulator(order=8)
+        result = modulator.plot_constellation()
+        
+        # Check that it returns a tuple containing figure and axes
+        assert isinstance(result, tuple)
+        fig, ax = result
+        assert isinstance(fig, plt.Figure)
+        
+        # Clean up resources
+        plt.close(fig)
+
+    def test_psk_demodulator_batch_handling(self):
+        """Test batch handling in PSK demodulator with noise variance."""
+        # Create PSK modulator and demodulator
+        modulator = PSKModulator(order=4)
+        demodulator = PSKDemodulator(order=4)
+        
+        # Test with batch shape
+        batch_size = 3
+        n_symbols = 2
+        
+        # Create batch of symbols
+        symbols = torch.complex(
+            torch.randn(batch_size, n_symbols),
+            torch.randn(batch_size, n_symbols)
+        )
+        
+        # Create per-symbol noise variance
+        noise_var = torch.ones(batch_size, n_symbols) * 0.5
+        
+        # Demodulate with noise variance
+        llrs = demodulator(symbols, noise_var)
+        
+        # Check correct shape of output: [batch_size, n_symbols * bits_per_symbol]
+        expected_shape = (batch_size, n_symbols * demodulator.bits_per_symbol)
+        assert llrs.shape == expected_shape
+        
+    def test_psk_non_batch_handling(self):
+        """Test non-batch handling in PSK demodulator with noise variance."""
+        # Create PSK modulator and demodulator
+        modulator = PSKModulator(order=4)
+        demodulator = PSKDemodulator(order=4)
+        
+        # Test without batch shape
+        n_symbols = 2
+        
+        # Create symbols without batch dimension
+        symbols = torch.complex(
+            torch.randn(n_symbols),
+            torch.randn(n_symbols)
+        )
+        
+        # Create per-symbol noise variance without batch dimension
+        noise_var = torch.ones(n_symbols) * 0.5
+        
+        # Demodulate with noise variance
+        llrs = demodulator(symbols, noise_var)
+        
+        # Check correct shape of output: [n_symbols * bits_per_symbol]
+        expected_shape = (n_symbols * demodulator.bits_per_symbol,)
+        assert llrs.shape == expected_shape
+
+    def test_psk_custom_constellation(self):
+        """Test PSK modulator with custom constellation."""
+        # Create a custom constellation (triangle-shaped QPSK)
+        custom_constellation = torch.tensor([
+            1 + 0j,       # 0 degrees
+            0 + 1j,       # 90 degrees
+            -1 + 0j,      # 180 degrees 
+            0 - 1j        # 270 degrees
+        ], dtype=torch.complex64)
+        
+        # Create modulator with custom constellation
+        modulator = PSKModulator(constellation=custom_constellation)
+        
+        # Verify order and bits_per_symbol were calculated correctly
+        assert modulator.order == 4
+        assert modulator.bits_per_symbol == 2
+        
+        # Test with direct indices into constellation
+        indices = torch.tensor([0, 1, 2, 3])
+        symbols = modulator(indices)
+        
+        # Verify symbols match constellation points
+        assert torch.allclose(symbols, custom_constellation)
+
+    def test_psk_invalid_custom_constellation(self):
+        """Test PSK modulator with invalid custom constellation."""
+        # Create an invalid custom constellation (length not a power of 2)
+        invalid_constellation = torch.tensor([1+0j, 0+1j, -1+0j], dtype=torch.complex64)
+        
+        # Creating modulator with this constellation should raise ValueError
+        with pytest.raises(ValueError, match="Custom constellation length must be a power of 2"):
+            PSKModulator(constellation=invalid_constellation)
+            
+    def test_psk_modulator_scalar_input(self):
+        """Test PSK modulator with scalar input for single symbol.
+        
+        Note: The squeeze behavior in the code is intended to return a shape of [1]
+        rather than a scalar for single symbol output."""
+        # Create PSK modulator
+        modulator = PSKModulator(order=4)
+        
+        # Test with direct index for constellation (must use a value > 1 to trigger special case)
+        idx = torch.tensor(2)  # Single index greater than 1
+        symbol = modulator(idx)
+        
+        # Check that output is a scalar (not a tensor with shape [1])
+        assert symbol.ndim == 0
+        
+        # Test with exact number of bits for one symbol
+        bits = torch.tensor([0., 0.])  # One QPSK symbol worth of bits
+        
+        # Modulate - this actually returns shape [1] per the implementation
+        symbol = modulator(bits)
+        
+        # Check output for correct shape (should be [1])
+        assert symbol.shape == torch.Size([1])
+        
+    def test_psk_non_binary_validation(self):
+        """Test PSK modulator validates binary input."""
+        # Create PSK modulator
+        modulator = PSKModulator(order=4)
+        
+        # Test with non-binary values that aren't valid indices
+        with pytest.raises(ValueError, match="Input tensor must contain only binary values"):
+            modulator(torch.tensor([0.5, 1.5, 0.2, 0.8]))
+            
+        # Test with non-binary values that could be valid indices
+        indices = torch.tensor([0, 1, 2, 3])
+        # This should work since these are valid indices
+        symbols = modulator(indices)
+        assert symbols.shape == (4,)
 
 
 # ===== Registration Tests =====
@@ -709,4 +875,3 @@ def test_qpsk_demodulator_empty_tensor(qpsk_demodulator):
     assert bits.numel() == 0
     assert bits.dtype == torch.float32
     assert bits.shape == torch.Size([0])
-    
