@@ -686,7 +686,7 @@ def test_modulation_registry_contains_psk():
     pass
 
 
-def test_qpsk_forward_empty_tensor(self, qpsk_modulator):
+def test_qpsk_forward_empty_tensor(qpsk_modulator):
     """Test QPSK forward with empty tensor."""
     # Create empty tensor
     bits = torch.tensor([], dtype=torch.float)
@@ -698,7 +698,7 @@ def test_qpsk_forward_empty_tensor(self, qpsk_modulator):
     assert symbols.numel() == 0
     assert symbols.dtype == torch.complex64
 
-def test_qpsk_demodulator_empty_tensor(self, qpsk_demodulator):
+def test_qpsk_demodulator_empty_tensor(qpsk_demodulator):
     """Test QPSK demodulator with empty tensor."""
     # Create empty tensor
     symbols = torch.tensor([], dtype=torch.complex64)
