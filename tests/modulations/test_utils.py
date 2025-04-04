@@ -200,14 +200,7 @@ import pytest
 import torch
 import matplotlib.pyplot as plt
 from matplotlib.text import Annotation
-
-from kaira.modulations.utils import (
-    binary_array_to_gray,
-    gray_array_to_binary,
-    plot_constellation,
-    calculate_theoretical_ber,
-    calculate_spectral_efficiency,
-)
+from scipy import special  # Add proper import for erfc function
 
 
 class TestBinaryGrayConversion:
@@ -320,13 +313,13 @@ class TestTheoreticalBER:
         snr_linear = 10 ** (snr / 10)
         
         # Expected BER for 4-PAM: 0.75 * erfc(sqrt(snr / 5))
-        expected_4pam = 0.75 * torch.tensor(float(np.special.erfc(np.sqrt(snr_linear / 5))))
-        actual_4pam = calculate_theoretical_ber(snr, '4pam')
+        expected_4pam = 0.75 * torch.tensor(float(special.erfc(np.sqrt(snr_linear / 5)))).to(torch.float32)
+        actual_4pam = calculate_theoretical_ber(snr, '4pam').to(torch.float32)
         assert torch.isclose(actual_4pam, expected_4pam)
         
         # Expected BER for 8-PAM: (7/12) * erfc(sqrt(snr / 21))
-        expected_8pam = (7 / 12) * torch.tensor(float(np.special.erfc(np.sqrt(snr_linear / 21))))
-        actual_8pam = calculate_theoretical_ber(snr, '8pam')
+        expected_8pam = (7 / 12) * torch.tensor(float(special.erfc(np.sqrt(snr_linear / 21)))).to(torch.float32)
+        actual_8pam = calculate_theoretical_ber(snr, '8pam').to(torch.float32)
         assert torch.isclose(actual_8pam, expected_8pam)
     
     def test_differential_modulation_ber(self):
@@ -358,14 +351,14 @@ class TestTheoreticalBER:
         snr_linear = 10 ** (snr / 10)
         
         # Expected BER for DPSK: 0.5 * exp(-snr)
-        expected_dpsk = 0.5 * torch.tensor(float(np.exp(-snr_linear)))
-        actual_dpsk = calculate_theoretical_ber(snr, 'dpsk')
+        expected_dpsk = 0.5 * torch.tensor(float(np.exp(-snr_linear))).to(torch.float32)
+        actual_dpsk = calculate_theoretical_ber(snr, 'dpsk').to(torch.float32)
         assert torch.isclose(actual_dpsk, expected_dpsk)
         
         # Expected BER for DQPSK: erfc(sqrt(snr/2)) - 0.25 * (erfc(sqrt(snr/2)))^2
-        erfc_term = float(np.special.erfc(np.sqrt(snr_linear / 2)))
-        expected_dqpsk = torch.tensor(erfc_term - 0.25 * erfc_term ** 2)
-        actual_dqpsk = calculate_theoretical_ber(snr, 'dqpsk')
+        erfc_term = float(special.erfc(np.sqrt(snr_linear / 2)))
+        expected_dqpsk = torch.tensor(erfc_term - 0.25 * erfc_term ** 2).to(torch.float32)
+        actual_dqpsk = calculate_theoretical_ber(snr, 'dqpsk').to(torch.float32)
         assert torch.isclose(actual_dqpsk, expected_dqpsk)
 
 

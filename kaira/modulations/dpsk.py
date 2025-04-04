@@ -102,16 +102,20 @@ class DPSKModulator(BaseModulator):
             Complex tensor of DPSK symbols with shape (..., N)
         """
         batch_shape = x.shape[:-1]
-        
+
         # Determine if input contains bit patterns or indices
-        # If all values are binary (0 or 1), interpret as bit sequence
+        # If all values are binary (0 or 1) AND the length is at least 2, interpret as bit sequence
         is_binary_input = torch.all((x == 0) | (x == 1))
+        bit_len = x.shape[-1]
         
+        # If it's a binary input but the length is 1, it's likely intended to be an index
+        # This handles the case of single-element indices [0] or [1]
+        if is_binary_input and bit_len == 1:
+            is_binary_input = False
+
         if is_binary_input:
             # Process as bits
-            bit_len = x.shape[-1]
-            
-            # Validate bit length is divisible by bits_per_symbol - moved outside the conditional
+            # Validate bit length is divisible by bits_per_symbol
             if bit_len % self._bits_per_symbol != 0:
                 raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
                 
