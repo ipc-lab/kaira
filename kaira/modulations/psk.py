@@ -345,45 +345,6 @@ class PSKModulator(BaseModulator):
             
             # Create standard PSK constellation
             self._create_constellation()
-            return
-
-        # Create bit pattern mapping
-        bit_patterns = torch.zeros(self.order, self._bits_per_symbol)
-
-        if self.gray_coding:
-            # Apply Gray coding - standard digital communications convention
-            # For each index i, calculate corresponding Gray code
-            for i in range(self.order):
-                gray_idx = i ^ (i >> 1)  # Binary to Gray conversion
-                bin_str = format(gray_idx, f"0{self._bits_per_symbol}b")
-                for j, bit in enumerate(bin_str):
-                    bit_patterns[i, j] = int(bit)
-        else:
-            # Standard binary coding
-            for i in range(self.order):
-                bin_str = format(i, f"0{self._bits_per_symbol}b")
-                for j, bit in enumerate(bin_str):
-                    bit_patterns[i, j] = int(bit)
-
-        # Create mapping from bit patterns to constellation indices
-        bit_to_symbol_map = torch.zeros(self.order, dtype=torch.long)
-        
-        # Map each bit pattern to its index in the constellation
-        for i in range(self.order):
-            # Create binary index from bit pattern
-            idx = 0
-            for j in range(self._bits_per_symbol):
-                idx = idx * 2 + int(bit_patterns[i, j])
-            
-            if self.gray_coding:
-                # For Gray coding, we map the bit pattern to the constellation point
-                bit_to_symbol_map[idx] = i
-            else:
-                # For binary coding, the mapping is direct
-                bit_to_symbol_map[i] = i
-
-        self.register_buffer("bit_patterns", bit_patterns)
-        self.register_buffer("bit_to_symbol_map", bit_to_symbol_map)
 
     def _create_constellation(self) -> None:
         """Create the PSK constellation mapping."""
@@ -447,6 +408,13 @@ class PSKModulator(BaseModulator):
         if scalar_input:
             x = x.unsqueeze(0)
         
+        # Normal case: Binary bit values grouped into symbols
+        # Ensure input contains binary values (0s and 1s)
+        if torch.any((x != 0) & (x != 1)):
+            # If there are non-binary values, raise an error *before* attempting to interpret as indices
+            if not ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
+                raise ValueError("Input tensor must contain only binary values (0s and 1s)")
+        
         # Special case for direct constellation indices
         if torch.any(x > 1) and x.numel() == 1:
             # This is a direct index into the constellation
@@ -459,11 +427,6 @@ class PSKModulator(BaseModulator):
                 indices = x.long()
                 return self.constellation[indices]
         
-        # Normal case: Binary bit values grouped into symbols
-        # Ensure input contains binary values
-        if torch.any((x != 0) & (x != 1)):
-            raise ValueError("Input tensor must contain only binary values (0s and 1s)")
-            
         # Get batch shape and bit length
         batch_shape = x.shape[:-1]
         bit_len = x.shape[-1]
