@@ -557,9 +557,6 @@ class StyleLoss(BaseLoss):
 
         # Extract features and calculate gram matrices
         for i, layer in enumerate(self.feature_extractor):
-            # Skip processing if images are too small for further layers
-            if x.size(-1) < 3 or x.size(-2) < 3:
-                break
                 
             x = layer(x)
             target = layer(target)

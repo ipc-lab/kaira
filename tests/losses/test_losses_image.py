@@ -815,3 +815,58 @@ def test_style_loss_layer_types(monkeypatch):
 
     # Restore original forward method
     monkeypatch.setattr(StyleLoss, "forward", original_forward)
+
+
+def test_style_loss_fallback_configuration(monkeypatch):
+    """Test fallback configuration for StyleLoss when VGG initialization fails."""
+    import torchvision.models as models
+    from kaira.losses.image import StyleLoss
+    # Force an exception during VGG initialization.
+    def raise_exception(*args, **kwargs):
+        raise Exception("Forced exception")
+    monkeypatch.setattr(models, "vgg16", raise_exception)
+    
+    loss_fn = StyleLoss()
+    import torch.nn as nn
+    assert isinstance(loss_fn.feature_extractor, nn.Sequential)
+    assert loss_fn.style_layers == [0]
+    assert loss_fn.layer_weights == {"layer_0": 1.0}
+
+
+def test_style_loss_batchnorm_layer(monkeypatch):
+    """Test that StyleLoss correctly names BatchNorm2d layers."""
+    import torch.nn as nn
+    from kaira.losses.image import StyleLoss
+    import torchvision.models as models
+
+    # Create a fake VGG model with proper structure to match what StyleLoss expects
+    class FakeFeatures(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv = nn.Conv2d(3, 8, kernel_size=3, padding=1)
+            self.bn = nn.BatchNorm2d(8)
+            self.relu = nn.ReLU()
+            
+        def children(self):
+            return iter([self.conv, self.bn, self.relu])
+            
+        def eval(self):
+            return self
+
+    class FakeVGG(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.features = FakeFeatures()
+            
+        def eval(self):
+            return self
+
+    # Monkeypatch vgg16 and VGG16_Weights to use the fake model.
+    monkeypatch.setattr(models, "vgg16", lambda **kwargs: FakeVGG())
+    fake_weight = object()
+    monkeypatch.setattr(models, "VGG16_Weights", type("dummy", (), {"DEFAULT": fake_weight}))
+
+    loss_fn = StyleLoss()
+    # Expect the feature_extractor to have modules: "conv_1", "bn_1", "relu_1"
+    modules = loss_fn.feature_extractor._modules
+    assert "bn_1" in modules
