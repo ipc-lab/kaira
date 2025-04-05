@@ -408,22 +408,21 @@ class PSKModulator(BaseModulator):
         if scalar_input:
             x = x.unsqueeze(0)
         
-        # Normal case: Binary bit values grouped into symbols
-        # Ensure input contains binary values (0s and 1s)
-        if torch.any((x != 0) & (x != 1)):
-            # If there are non-binary values, raise an error *before* attempting to interpret as indices
-            if not ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
-                raise ValueError("Input tensor must contain only binary values (0s and 1s)")
-        
-        # Special case for direct constellation indices
-        if torch.any(x > 1) and x.numel() == 1:
+        # Special case for direct constellation indices as scalar or single-element tensor
+        if x.numel() == 1 and ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
             # This is a direct index into the constellation
             return self.constellation[x.long()].squeeze()  # Return scalar output for scalar input
         
-        # Special case for direct indices in a tensor
-        if torch.any(x > 1) and x.dim() == 1:
-            # Check if these could be direct indices
-            if torch.all(x < self.order):
+        # Normal case: Binary bit values grouped into symbols
+        # Ensure input contains binary values (0s and 1s)
+        if torch.any((x != 0) & (x != 1)):
+            # If there are non-binary values, check if they are valid indices
+            if not ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
+                raise ValueError("Input tensor must contain only binary values (0s and 1s)")
+            
+            # Special case for direct indices in a tensor
+            if x.dim() == 1:
+                # These are valid indices
                 indices = x.long()
                 return self.constellation[indices]
         
