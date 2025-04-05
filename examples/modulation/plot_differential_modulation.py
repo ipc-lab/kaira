@@ -86,7 +86,8 @@ ber_dqpsk_fading = []
 
 for snr_db in snr_db_range:
     # Setup channels
-    noise_power = snr_to_noise_power(1.0, snr_db)
+    # Convert numpy value to torch tensor before passing to snr_to_noise_power
+    noise_power = snr_to_noise_power(1.0, torch.tensor(snr_db))
     awgn_channel = AWGNChannel(avg_noise_power=noise_power)
     fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=noise_power)  # Use Rayleigh fading  # Fading remains constant for 10 symbols
 
