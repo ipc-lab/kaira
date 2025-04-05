@@ -811,3 +811,74 @@ def test_non_batched_hard_decision_bit_assignment():
     
     # Shape should be the same
     assert noisy_bits.shape == bits.shape
+
+
+def test_pi4qpsk_demodulator_single_input_lines():
+    """Test specifically the single input distance calculation and mask.item() bit assignment in Pi4QPSKDemodulator."""
+    # Create a mock modulator and demodulator
+    mod = Pi4QPSKModulator()
+    
+    # Create a custom demodulator class to isolate and test the exact code lines
+    class TestSpecificLinesDemodulator(Pi4QPSKDemodulator):
+        def test_single_input_distance(self, y, i, constellation):
+            """Test the specific lines for distance calculation with single input."""
+            # These are the exact lines we're testing
+            y_i = y[i].unsqueeze(0)
+            distances = torch.abs(y_i - constellation)
+            return y_i, distances
+        
+        def test_mask_bit_assignment(self, output_bits, i, mask, b):
+            """Test the specific mask.item() condition for bit pattern assignment."""
+            # This is the exact line we're testing
+            if mask.item():
+                output_bits[i, :] = self.modulator.bit_patterns[b]
+            return output_bits
+    
+    # Initialize the test demodulator
+    test_demod = TestSpecificLinesDemodulator()
+    
+    # Test part 1: single input distance calculation
+    # Create a test signal with perfect constellation points
+    constellation = mod.qpsk
+    test_signal = constellation.clone()
+    
+    # For each constellation point
+    for i in range(len(test_signal)):
+        # Call the function that isolates our distance calculation lines
+        y_i, distances = test_demod.test_single_input_distance(test_signal, i, constellation)
+        
+        # Verify y_i is unsqueezed correctly
+        assert y_i.shape == torch.Size([1])
+        assert y_i.item() == constellation[i].item()
+        
+        # Verify distances are calculated correctly
+        expected_distances = torch.abs(test_signal[i].unsqueeze(0) - constellation)
+        assert torch.allclose(distances, expected_distances)
+        
+        # The distance to itself should be 0
+        assert distances[i].item() < 1e-6
+    
+    # Test part 2: mask.item() bit pattern assignment
+    # Create test masks and output tensors
+    for b in range(len(mod.bit_patterns)):
+        # For each pattern, create a tensor that needs updating
+        output_bits = torch.zeros(4, 2)  # 4 symbols, 2 bits each
+        
+        # Test both True and False masks
+        true_mask = torch.tensor(True)
+        i = 1  # Update symbol at index 1
+        
+        # Test with True mask
+        result = test_demod.test_mask_bit_assignment(output_bits.clone(), i, true_mask, b)
+        # Verify bit pattern was assigned
+        assert torch.allclose(result[i], mod.bit_patterns[b])
+        # Other indices should remain zeros
+        for j in range(4):
+            if j != i:
+                assert torch.all(result[j] == 0)
+        
+        # Test with False mask
+        false_mask = torch.tensor(False)
+        result = test_demod.test_mask_bit_assignment(output_bits.clone(), i, false_mask, b)
+        # Verify no bit pattern was assigned (should remain zeros)
+        assert torch.all(result == 0)

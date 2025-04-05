@@ -98,13 +98,13 @@ def test_qam_modulator_perfect_square_validation():
     # Test with non-perfect square values (should raise ValueError)
     non_perfect_squares = [2, 8, 32, 128]
     for order in non_perfect_squares:
-        with pytest.raises(ValueError, match=f"QAM order must be a perfect square, got {order}"):
+        with pytest.raises(ValueError, match=f"QAM order must be a valid power of 4 \\(4, 16, 64, or 256\\), got {order}"):
             QAMModulator(order=order)
             
     # Test with perfect squares that are not powers of 4
     invalid_perfect_squares = [9, 25, 36, 49, 100]
     for order in invalid_perfect_squares:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=f"QAM order must be a valid power of 4 \\(4, 16, 64, or 256\\), got {order}"):
             QAMModulator(order=order)
 
 

@@ -35,10 +35,7 @@ class QAMModulator(BaseModulator):
         if not isinstance(order, int) or order <= 0 or order not in (4, 16, 64, 256):
             raise ValueError(f"QAM order must be a valid power of 4 (4, 16, 64, or 256), got {order}")
         
-        # Validate order is a perfect square
         sqrt_order = int(np.sqrt(order))
-        if sqrt_order**2 != order:
-            raise ValueError(f"QAM order must be a perfect square, got {order}")
 
         self.order = order
         self.gray_coding = gray_coding
