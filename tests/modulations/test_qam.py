@@ -88,6 +88,26 @@ def test_qam_demodulator_initialization(order):
     assert demod.modulator.normalize is True
 
 
+def test_qam_modulator_perfect_square_validation():
+    """Test that QAM modulator validates if order is a perfect square."""
+    # Test with valid perfect square values (should pass)
+    valid_orders = [4, 16, 64, 256]
+    for order in valid_orders:
+        mod = QAMModulator(order=order)  # Should not raise
+        
+    # Test with non-perfect square values (should raise ValueError)
+    non_perfect_squares = [2, 8, 32, 128]
+    for order in non_perfect_squares:
+        with pytest.raises(ValueError, match=f"QAM order must be a perfect square, got {order}"):
+            QAMModulator(order=order)
+            
+    # Test with perfect squares that are not powers of 4
+    invalid_perfect_squares = [9, 25, 36, 49, 100]
+    for order in invalid_perfect_squares:
+        with pytest.raises(ValueError):
+            QAMModulator(order=order)
+
+
 # ===== Constellation Tests =====
 
 def test_qam_constellation_creation():
