@@ -842,6 +842,45 @@ class TestPSK:
         symbols = modulator(indices)
         assert symbols.shape == (4,)
 
+    def test_psk_demodulator_scalar_input(self):
+        """Test PSK demodulator with scalar input.
+        
+        This test specifically verifies that when a scalar input is provided to the 
+        demodulator, the result is properly squeezed to maintain the scalar nature.
+        """
+        # Create PSK modulator and demodulator
+        modulator = PSKModulator(order=4)  # QPSK
+        demodulator = PSKDemodulator(order=4)
+        
+        # Get a single constellation point by using a scalar index
+        idx = torch.tensor(2)  # Single index
+        # This gives a scalar output (not a tensor with shape [1])
+        symbol = modulator(idx)
+        
+        # Verify the input is indeed a scalar (0-dim tensor)
+        assert symbol.ndim == 0
+        
+        # Demodulate the scalar symbol
+        bits = demodulator(symbol)
+        
+        # Check that output bits are the expected bit pattern for constellation point 2
+        expected_bits = modulator.bit_patterns[2]
+        assert torch.allclose(bits, expected_bits)
+        
+        # Also test with soft output (LLR)
+        noise_var = 0.5
+        llrs = demodulator(symbol, noise_var)
+        
+        # Verify the LLR output has the right shape (bits_per_symbol,)
+        assert llrs.shape == (modulator.bits_per_symbol,)
+        
+        # Test with a slightly noisy version to ensure realistic handling
+        noisy_symbol = symbol + 0.01 * (torch.randn(()) + 1j * torch.randn(()))
+        noisy_bits = demodulator(noisy_symbol)
+        
+        # With very small noise, should still recover the same bit pattern
+        assert torch.allclose(noisy_bits, expected_bits)
+
 
 # ===== Registration Tests =====
 
