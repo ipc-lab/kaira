@@ -518,6 +518,43 @@ def test_qam_soft_demodulation_with_different_noise_vars():
     assert llrs_varying.shape == bits.shape
 
 
+def test_qam_demodulator_min_squared_distance_1d_tensors():
+    """Test the 1D tensor handling in the _min_squared_distance method of QAMDemodulator."""
+    # Initialize a demodulator
+    demod = QAMDemodulator(order=4)  # Using 4-QAM for simplicity
+    
+    # Create 1D received symbols
+    y = torch.tensor([1+1j, -1-1j, -1+1j], dtype=torch.complex64)
+    symbol_shape = y.shape[0]
+    
+    # Create constellation points
+    points = torch.tensor([1+1j, 1-1j, -1+1j, -1-1j], dtype=torch.complex64)
+    
+    # Call _min_squared_distance directly to test 1D tensor handling
+    min_distances = demod._min_squared_distance(y, points)
+    
+    # Expected shape should match the symbol shape
+    assert min_distances.shape == (symbol_shape,)
+    
+    # For each symbol in y, it should have 0 distance to a matching point in constellation
+    # and non-zero distance to others
+    expected_distances = torch.zeros(symbol_shape)
+    
+    # Each symbol in y is present in points, so minimum distance should be 0
+    assert torch.allclose(min_distances, expected_distances)
+    
+    # Test with a symbol not in the constellation
+    y_not_in_const = torch.tensor([0+0j], dtype=torch.complex64)
+    min_dist_not_in_const = demod._min_squared_distance(y_not_in_const, points)
+    
+    # Non-zero distance is expected
+    assert min_dist_not_in_const.item() > 0
+    
+    # The minimum distance should be to the nearest constellation point
+    # For 0+0j, all constellation points are at distance √2, so squared distance is 2
+    assert torch.isclose(min_dist_not_in_const, torch.tensor(2.0), atol=1e-5)
+
+
 # ===== End-to-End Tests =====
 
 def test_qam_modulation_demodulation_loop():
