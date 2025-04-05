@@ -282,27 +282,16 @@ class DPSKDemodulator(BaseDemodulator):
             return bits.reshape(*batch_shape, -1)
         else:
             # Soft decision
-            if not isinstance(noise_var, torch.Tensor):
-                noise_var = torch.tensor(noise_var, device=y.device)
-
             # For differential demodulation with noise, the effective noise variance is doubled
             # because noise affects both current and previous symbols
-            effective_noise_var = 2.0 * noise_var
             
-            # Always create a new tensor to avoid issues with patched isinstance in tests
-            # Clone the tensor or create a new one from the value
-            try:
-                # Try to extract value and create new tensor (works for scalars and simple tensors)
-                scalar_value = float(effective_noise_var.item() if hasattr(effective_noise_var, 'item') else effective_noise_var)
-                effective_noise_var = torch.tensor(scalar_value, device=y.device)
-            except (ValueError, TypeError, RuntimeError):
-                # If we can't extract a simple scalar, create a clone of the tensor
-                if hasattr(effective_noise_var, 'clone'):
-                    effective_noise_var = effective_noise_var.clone()
-                else:
-                    # Last resort - create tensor directly from effective_noise_var
-                    effective_noise_var = torch.tensor(effective_noise_var, device=y.device)
-
+            # Convert noise_var to appropriate tensor form and apply 2x factor for differential detection
+            if not isinstance(noise_var, torch.Tensor):
+                effective_noise_var = torch.tensor(2.0 * noise_var, device=y.device)
+            else:
+                effective_noise_var = 2.0 * noise_var.to(device=y.device)
+                
+            # Handle scalar noise variance
             if effective_noise_var.dim() == 0:  # scalar
                 effective_noise_var = effective_noise_var.expand(*batch_shape, symbol_len - 1)
 
