@@ -118,7 +118,9 @@ class WynerZivModel(BaseModel):
         if side_info is None:
             if self.correlation_model is None:
                 raise ValueError("Side information must be provided when correlation_model is not available")
-            return self.correlation_model(source)
+            # Generate side information from correlation model
+            generated_side_info = self.correlation_model(source)
+            return generated_side_info
         return side_info
 
     def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
