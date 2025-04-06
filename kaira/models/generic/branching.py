@@ -126,7 +126,14 @@ class BranchingModel(BaseModel):
         """
         # Check each branch condition
         for name, (condition, model) in self.branches.items():
-            if condition(x):
+            # Convert PyTorch tensor to Python bool if needed
+            condition_result = condition(x)
+            if hasattr(condition_result, 'item'):
+                condition_result = bool(condition_result.item())
+            else:
+                condition_result = bool(condition_result)
+                
+            if condition_result:
                 output = model(x, *args, **kwargs)
                 return (output, name) if return_branch else output
 
@@ -151,4 +158,14 @@ class BranchingModel(BaseModel):
         """
         if name not in self.branches:
             raise KeyError(f"Branch '{name}' not found")
-        return self.branches[name]
+            
+        # Return a wrapped condition function that converts PyTorch tensors to Python bools
+        original_condition, model = self.branches[name]
+        
+        def wrapped_condition(x):
+            result = original_condition(x)
+            if hasattr(result, 'item'):
+                return bool(result.item())
+            return bool(result)
+            
+        return wrapped_condition, model
