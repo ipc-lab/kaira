@@ -80,7 +80,16 @@ class CombinedLoss(BaseLoss):
         loss = torch.tensor(0.0, device=x.device)
 
         for i, cur_loss in enumerate(self.losses):
-            loss += self.weights[i] * cur_loss(x, target)
+            # Compute current loss
+            current_loss_value = cur_loss(x, target)
+            
+            # Ensure scalar tensors are properly handled
+            if current_loss_value.ndim == 0:
+                current_loss_value = current_loss_value.unsqueeze(0)
+                
+            # Apply weight and add to total loss
+            loss = loss + self.weights[i] * current_loss_value
+            
         return loss
 
 
