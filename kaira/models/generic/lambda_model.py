@@ -53,4 +53,11 @@ class LambdaModel(BaseModel):
         Returns:
             str: Description including model name and function
         """
-        return f"{self.__class__.__name__}(name={self.name}, func={self.func})"
+        # Check if the function is a lambda by examining its name and code
+        if self.func.__name__ == "<lambda>" or (hasattr(self.func, "__code__") and 
+                                               self.func.__code__.co_name == "<lambda>"):
+            func_repr = "<lambda>"
+        else:
+            func_repr = str(self.func)
+            
+        return f"{self.__class__.__name__}(name={self.name}, func={func_repr})"

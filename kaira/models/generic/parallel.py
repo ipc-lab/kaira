@@ -25,6 +25,7 @@ class ParallelModel(ConfigurableModel):
         super().__init__()
         self.max_workers = max_workers
         self.aggregator = aggregator
+        self._step_counter = 0  # Counter for auto-naming steps
         
         # Initialize steps list
         if steps:
@@ -54,7 +55,8 @@ class ParallelModel(ConfigurableModel):
             raise TypeError("Step must be callable")
 
         if name is None:
-            name = f"step_{len(self.steps)}"
+            name = f"step_{self._step_counter}"
+            self._step_counter += 1
         self.steps.append((name, step))
         return self
 

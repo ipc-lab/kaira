@@ -47,7 +47,7 @@ def test_yilmaz2023_deepjscc_noma_decoder():
 
 def test_yilmaz2023_deepjscc_noma_instantiation():
     """Test that Yilmaz2023DeepJSCCNOMA can be instantiated with default components."""
-    channel = AWGNChannel()
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
     model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,

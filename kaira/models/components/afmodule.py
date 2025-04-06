@@ -65,28 +65,50 @@ class AFModule(BaseModel):
         input_dims = len(input_tensor.shape)
         batch_size = input_tensor.shape[0]
         
-        # For 4D input (batch, channels, height, width)
+        # Get the actual number of channels from the input tensor
         if input_dims == 4:
+            actual_channels = input_tensor.shape[1]
             context = torch.mean(input_tensor, dim=(2, 3))
-        # For 3D input (batch, sequence, features)
         elif input_dims == 3:
+            actual_channels = input_tensor.shape[2]
             context = torch.mean(input_tensor, dim=1)
-        # For 2D input (batch, features)
         else:
+            actual_channels = input_tensor.shape[1] if len(input_tensor.shape) > 1 else 1
             context = input_tensor
-        
-        # Ensure side_info has the right shape for concatenation (batch, features)
-        if len(side_info.shape) > 2:
-            side_info = side_info.reshape(batch_size, -1)
             
+        # Ensure side_info has the right shape for concatenation
+        if len(side_info.shape) > 2:
+            side_info = side_info.flatten(start_dim=1)
+            
+        # Make sure the context and side_info dimensions match what the linear layer expects
+        # The first linear layer expects N + csi_length input features
+        expected_context_dim = self.layers[0].in_features - side_info.shape[1]
+        
+        if context.shape[1] != expected_context_dim:
+            if context.shape[1] > expected_context_dim:
+                # Trim extra dimensions if needed
+                context = context[:, :expected_context_dim]
+            else:
+                # Pad with zeros if needed
+                padding = torch.zeros(batch_size, expected_context_dim - context.shape[1], 
+                                    device=context.device)
+                context = torch.cat([context, padding], dim=1)
+        
         context_input = torch.cat([context, side_info], dim=1)
+        
         mask = self.layers(context_input)
         
-        # Apply the mask according to input dimensions
+        # Apply the mask according to input dimensions and actual channels
         if input_dims == 4:
-            mask = mask.view(-1, self.c_in, 1, 1)
+            # Reshape mask to match the actual number of channels in the input tensor
+            mask = mask[:, :actual_channels]
+            mask = mask.view(-1, actual_channels, 1, 1)
         elif input_dims == 3:
-            mask = mask.view(-1, 1, self.c_in)
+            mask = mask[:, :actual_channels]
+            mask = mask.view(-1, 1, actual_channels)
+        else:
+            mask = mask[:, :actual_channels]
             
-        out = mask * x
+        # Apply mask to the input tensor
+        out = mask * input_tensor
         return out

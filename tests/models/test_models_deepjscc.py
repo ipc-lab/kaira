@@ -52,7 +52,7 @@ def test_deepjscc_model_forward(deepjscc_model):
 def test_deepjscc_model_registry():
     assert "deepjscc" in ModelRegistry._models
     encoder = SimpleEncoder()
-    constraint = PeakAmplitudeConstraint(max_power=1.0)
+    constraint = PeakAmplitudeConstraint(max_amplitude=1.0)
     channel = AWGNChannel(avg_noise_power=0.1)
     decoder = SimpleDecoder()
     model = ModelRegistry.create("deepjscc", encoder=encoder, constraint=constraint, channel=channel, decoder=decoder)

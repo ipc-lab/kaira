@@ -29,10 +29,25 @@ DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
 class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
     """DeepJSCC-NOMA Encoder Module :cite:`yilmaz2023distributed`.
 
-    This encoder transforms input images into latent representations. This class directly extends the Tung2022DeepJSCCQ2Encoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
+    This encoder transforms input images into latent representations. This class extends the 
+    Tung2022DeepJSCCQ2Encoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
-    pass
+    def __init__(self, C=None, latent_dim=None, N=None, M=None, csi_length=1):
+        """Initialize the DeepJSCCNOMAEncoder.
+
+        Args:
+            C (int, optional): Number of input channels (same as N).
+            latent_dim (int, optional): Dimension of latent space (same as M).
+            N (int, optional): The number of input channels (if not specified, uses C or 64).
+            M (int, optional): The number of output channels (if not specified, uses latent_dim or 16).
+            csi_length (int, optional): The number of dimensions in the CSI data.
+        """
+        # Map parameters to Tung2022DeepJSCCQ2Encoder parameters
+        N = N or C or 64  # Default to 64 if neither is provided
+        M = M or latent_dim or 16  # Default to 16 if neither is provided
+        
+        super().__init__(N=N, M=M, csi_length=csi_length)
 
 
 @ModelRegistry.register_model()
@@ -40,10 +55,30 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
     """DeepJSCC-NOMA Decoder Module :cite:`yilmaz2023distributed`.
 
     This decoder reconstructs images from received channel signals, supporting both
-    individual device decoding and shared decoding for multiple devices. This class directly extends the Tung2022DeepJSCCQ2Decoder class without any modifications as in the paper :cite:t:`yilmaz2023distributed`.
+    individual device decoding and shared decoding for multiple devices. This class extends 
+    the Tung2022DeepJSCCQ2Decoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
-    pass
+    def __init__(self, latent_dim=None, N=None, M=None, csi_length=1, num_devices=1, shared_decoder=False):
+        """Initialize the DeepJSCCNOMADecoder.
+
+        Args:
+            latent_dim (int, optional): Dimension of latent space (maps to both N and M).
+            N (int, optional): The number of channels (if not specified, uses latent_dim or 64).
+            M (int, optional): The number of input channels (if not specified, uses latent_dim or 16).
+            csi_length (int, optional): The number of dimensions in the CSI data.
+            num_devices (int, optional): Number of devices (used for shared decoder).
+            shared_decoder (bool, optional): Whether this is a shared decoder.
+        """
+        # Map parameters to Tung2022DeepJSCCQ2Decoder parameters
+        N = N or latent_dim or 64  # Default to 64 if neither is provided
+        M = M or latent_dim or 16  # Default to 16 if neither is provided
+        
+        # Store additional parameters
+        self.num_devices = num_devices
+        self.shared_decoder = shared_decoder
+        
+        super().__init__(N=N, M=M, csi_length=csi_length)
 
 
 @ModelRegistry.register_model("deepjscc_noma")
