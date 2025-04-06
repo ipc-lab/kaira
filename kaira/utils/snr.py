@@ -58,14 +58,24 @@ def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[f
     Returns:
         torch.Tensor: Corresponding noise power for the specified SNR.
     """
-    if isinstance(signal_power, float):
+    # Handle signal_power
+    if isinstance(signal_power, float) or isinstance(signal_power, int):
         signal_power = torch.tensor(signal_power, dtype=torch.float64)
-    if isinstance(snr_db, (float, int)):
+    elif not isinstance(signal_power, torch.Tensor):
+        # Handle NumPy arrays and other numeric types
+        signal_power = torch.tensor(float(signal_power), dtype=torch.float64)
+    else:
+        signal_power = signal_power.to(torch.float64)
+    
+    # Handle snr_db
+    if isinstance(snr_db, float) or isinstance(snr_db, int):
         snr_db = torch.tensor(snr_db, dtype=torch.float64)
+    elif not isinstance(snr_db, torch.Tensor):
+        # Handle NumPy arrays and other numeric types
+        snr_db = torch.tensor(float(snr_db), dtype=torch.float64)
     else:
         snr_db = snr_db.to(torch.float64)
-        
-    signal_power = signal_power.to(torch.float64)
+    
     snr_linear = snr_db_to_linear(snr_db)
     result = signal_power / snr_linear
     
