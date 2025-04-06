@@ -367,3 +367,96 @@ def test_wyner_ziv_model_without_correlation_model():
         model(source)
 
 
+def test_wyner_ziv_model_with_kwargs(wyner_ziv_components):
+    """Test WynerZivModel forward pass with additional keyword arguments."""
+    model = WynerZivModel(**wyner_ziv_components)
+
+    # Create test input
+    source = torch.randn(5, 10)
+
+    # Run model with additional kwargs
+    result = model(source, additional_param="test", snr_db=15.0)
+
+    # Basic checks to ensure the model runs with kwargs
+    assert "decoded" in result
+    assert result["decoded"].shape == source.shape
+
+
+def test_wyner_ziv_model_without_quantizer(wyner_ziv_components):
+    """Test WynerZivModel behavior when quantizer is None."""
+    # Remove quantizer
+    components = {k: v for k, v in wyner_ziv_components.items() if k != "quantizer"}
+    
+    model = WynerZivModel(**components)
+    
+    # Create test input
+    source = torch.randn(5, 10)
+    
+    # Run model
+    result = model(source)
+    
+    # Check that quantized equals encoded when no quantizer is present
+    assert torch.all(result["quantized"] == result["encoded"])
+
+
+def test_wyner_ziv_model_without_syndrome_generator(wyner_ziv_components):
+    """Test WynerZivModel behavior when syndrome_generator is None."""
+    # Remove syndrome_generator
+    components = {k: v for k, v in wyner_ziv_components.items() if k != "syndrome_generator"}
+    
+    model = WynerZivModel(**components)
+    
+    # Create test input
+    source = torch.randn(5, 10)
+    
+    # Run model
+    
+    result = model(source)
+    
+    # Check that syndromes equals quantized when no syndrome_generator is present
+    assert torch.all(result["syndromes"] == result["quantized"])
+
+
+def test_wyner_ziv_model_without_constraint(wyner_ziv_components):
+    """Test WynerZivModel behavior when constraint is None."""
+    # Remove constraint
+    components = {k: v for k, v in wyner_ziv_components.items() if k != "constraint"}
+    
+    model = WynerZivModel(**components)
+    
+    # Create test input
+    source = torch.randn(5, 10)
+    
+    # Run model
+    result = model(source)
+    
+    # Check that constrained equals syndromes when no constraint is present
+    assert torch.all(result["constrained"] == result["syndromes"])
+
+
+def test_wyner_ziv_model_device_compatibility(wyner_ziv_components):
+    """Test WynerZivModel compatibility with different devices."""
+    model = WynerZivModel(**wyner_ziv_components)
+    
+    # Create test input
+    source = torch.randn(5, 10)
+    
+    # Move model to CPU explicitly
+    model = model.to("cpu")
+    source = source.to("cpu")
+    
+    # Forward pass should work on CPU
+    output_cpu = model(source)
+    assert output_cpu["decoded"].device.type == "cpu"
+    
+    # Skip GPU test if not available
+    if torch.cuda.is_available():
+        # Move model to GPU
+        model = model.to("cuda")
+        source = source.to("cuda")
+        
+        # Forward pass should work on GPU
+        output_gpu = model(source)
+        assert output_gpu["decoded"].device.type == "cuda"
+
+

@@ -196,3 +196,72 @@ def test_feedback_channel_model_registry():
     assert isinstance(model, FeedbackChannelModel)
     # Default max_iterations should be 1
     assert model.max_iterations == 1
+
+
+def test_feedback_channel_model_with_kwargs(feedback_components):
+    """Test FeedbackChannelModel with additional keyword arguments."""
+    model = FeedbackChannelModel(**feedback_components)
+
+    # Create test input
+    batch_size = 4
+    input_data = torch.randn(batch_size, 10)
+
+    # Run model with additional kwargs
+    result = model(input_data, additional_kwarg="test")
+
+    # Basic checks to ensure the model runs with kwargs
+    assert "final_output" in result
+    assert "iterations" in result
+    assert result["final_output"].shape == input_data.shape
+
+
+def test_feedback_channel_model_device_compatibility(feedback_components):
+    """Test FeedbackChannelModel compatibility with different devices."""
+    model = FeedbackChannelModel(**feedback_components)
+
+    # Create test input
+    batch_size = 4
+    input_data = torch.randn(batch_size, 10)
+
+    # Move model to CPU explicitly
+    model = model.to("cpu")
+    input_data = input_data.to("cpu")
+
+    # Forward pass should work on CPU
+    output_cpu = model(input_data)
+    assert output_cpu["final_output"].device.type == "cpu"
+
+    # Skip GPU test if not available
+    if torch.cuda.is_available():
+        # Move model to GPU
+        model = model.to("cuda")
+        input_data = input_data.to("cuda")
+
+        # Forward pass should work on GPU
+        output_gpu = model(input_data)
+        assert output_gpu["final_output"].device.type == "cuda"
+
+
+def test_feedback_channel_model_zero_iterations(feedback_components):
+    """Test FeedbackChannelModel with zero iterations (edge case)."""
+    # Set max_iterations to 0
+    components = feedback_components.copy()
+    components["max_iterations"] = 0
+
+    model = FeedbackChannelModel(**components)
+
+    # Create test input
+    batch_size = 4
+    input_data = torch.randn(batch_size, 10)
+
+    # Run model - should still function but produce empty results
+    result = model(input_data)
+
+    # Check output structure
+    assert "final_output" not in result  # Final output should not exist
+    assert "iterations" in result
+    assert "feedback_history" in result
+
+    # Iterations and feedback history should be empty
+    assert len(result["iterations"]) == 0
+    assert len(result["feedback_history"]) == 0
