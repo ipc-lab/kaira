@@ -787,6 +787,121 @@ class _BasicLayer(nn.Module):
             self.downsample.input_resolution = (H * 2, W * 2)
 
 
+class _UpsamplingBasicLayer(nn.Module):
+    """A basic Swin Transformer layer for one stage with upsampling capabilities.
+
+    This layer is similar to _BasicLayer but designed for the decoder path with upsampling
+    instead of downsampling.
+
+    Args:
+        dim: Number of input channels
+        out_dim: Number of output channels
+        input_resolution: Tuple of (H, W) representing resolution of input feature
+        depth: Number of blocks in this layer
+        num_heads: Number of attention heads
+        window_size: Size of attention window
+        mlp_ratio: Ratio of mlp hidden dim to embedding dim (default: 4.0)
+        qkv_bias: If True, add a learnable bias to query, key, value (default: True)
+        qk_scale: Override default qk scale of head_dim ** -0.5 if set (default: None)
+        norm_layer: Normalization layer (default: nn.LayerNorm)
+        upsample: Upsampling layer at the beginning of the layer (default: None)
+    """
+
+    def __init__(self, dim, out_dim, input_resolution, depth, num_heads, window_size, mlp_ratio=4.0, qkv_bias=True, qk_scale=None, norm_layer=nn.LayerNorm, upsample=None):
+        super().__init__()
+        self.dim = dim
+        self.input_resolution = input_resolution
+        self.depth = depth
+        
+        # For the final RGB output layer (when out_dim=3), use a smaller number of heads
+        # to avoid division by zero in _WindowAttention (dim // num_heads must be > 0)
+        effective_num_heads = min(num_heads, out_dim) if out_dim == 3 else num_heads
+        
+        self.blocks = nn.ModuleList(
+            [
+                _SwinTransformerBlock(
+                    dim=out_dim, 
+                    input_resolution=(input_resolution[0] * 2, input_resolution[1] * 2), 
+                    num_heads=effective_num_heads,
+                    window_size=window_size, 
+                    shift_size=0 if (i % 2 == 0) else window_size // 2, 
+                    mlp_ratio=mlp_ratio, 
+                    qkv_bias=qkv_bias, 
+                    qk_scale=qk_scale, 
+                    norm_layer=norm_layer
+                )
+                for i in range(depth)
+            ]
+        )
+
+        # Upsampling layer
+        if upsample is not None:
+            self.upsample = upsample(input_resolution, dim=dim, out_dim=out_dim, norm_layer=norm_layer)
+        else:
+            self.upsample = None
+
+    def forward(self, x):
+        """Forward pass of the basic layer with upsampling.
+
+        Applies upsampling at the beginning of the layer (if available), 
+        followed by a series of transformer blocks.
+
+        Args:
+            x: Input feature tensor
+
+        Returns:
+            Processed feature tensor after all blocks
+        """
+        # Apply upsampling first (opposite of _BasicLayer)
+        if self.upsample is not None:
+            x = self.upsample(x)
+            
+        # Then apply transformer blocks
+        for _, blk in enumerate(self.blocks):
+            x = blk(x)
+            
+        return x
+
+    def extra_repr(self) -> str:
+        """Return extra representation string for the layer.
+
+        Includes information about dimension, resolution, and depth.
+
+        Returns:
+            String representation with layer parameters
+        """
+        return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
+
+    def flops(self):
+        """Calculate FLOPs for the entire layer.
+
+        Computes the total floating point operations for all blocks
+        and the optional upsampling operation.
+
+        Returns:
+            Total FLOPs required for the layer
+        """
+        flops = 0
+        for blk in self.blocks:
+            flops += blk.flops()
+        if self.upsample is not None:
+            flops += self.upsample.flops()
+        return flops
+
+    def update_resolution(self, H, W):
+        """Update the resolution of each block in the layer.
+
+        Args:
+            H: New height resolution
+            W: New width resolution
+        """
+        for _, blk in enumerate(self.blocks):
+            blk.input_resolution = (H * 2, W * 2)
+            blk.update_mask()
+        if self.upsample is not None:
+            self.upsample.input_resolution = (H, W)
+
+
 class _AdaptiveModulator(nn.Module):
     """Adaptive modulator for rate and SNR adaptation.
 
@@ -1286,7 +1401,7 @@ class Yang2024DeepJSCCSwinDecoder(BaseModel):
         """Build the transformer layers of the decoder."""
         layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
-            layer = _BasicLayer(
+            layer = _UpsamplingBasicLayer(
                 dim=int(embed_dims[i_layer]),
                 out_dim=int(embed_dims[i_layer + 1]) if (i_layer < self.num_layers - 1) else 3,
                 input_resolution=(self.patches_resolution[0] * (2**i_layer), self.patches_resolution[1] * (2**i_layer)),
