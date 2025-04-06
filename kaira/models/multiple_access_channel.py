@@ -156,7 +156,7 @@ class MultipleAccessChannelModel(BaseModel):
             Default implementation returns a list of decoded tensors.
         """
         # Handle the case when called with positional arguments per original signature
-        if len(args) > 0 and isinstance(args[0], list):
+        if len(args) == 1 and isinstance(args[0], list):
             inputs = args[0]
             csi = kwargs.get("csi", None)
             noise = kwargs.get("noise", None)
