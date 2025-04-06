@@ -107,6 +107,38 @@ class ModelRegistry:
         return cls._models[name]
 
     @classmethod
+    def get_model_info(cls, name: str) -> Dict:
+        """Get information about a registered model.
+
+        This method provides detailed information about a model registered in the registry,
+        including its name, class name, and constructor signature.
+
+        Args:
+            name (str): The registered name of the model to get information about
+
+        Returns:
+            Dict: A dictionary containing information about the model:
+                - name: The registered name of the model
+                - class: The class name of the model
+                - signature: The constructor signature of the model
+
+        Raises:
+            ValueError: If no model is registered under the given name
+        """
+        import inspect
+
+        if name not in cls._models:
+            raise ValueError(f"Model '{name}' not found in registry")
+        
+        model_class = cls._models[name]
+        
+        return {
+            "name": name,
+            "class": model_class.__name__,
+            "signature": str(inspect.signature(model_class.__init__))
+        }
+
+    @classmethod
     def create(cls, name: str, **kwargs) -> BaseModel:
         """Create a model instance by name.
 
