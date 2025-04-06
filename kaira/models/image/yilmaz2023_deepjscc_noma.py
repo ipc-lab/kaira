@@ -20,11 +20,6 @@ from kaira.models.image.tung2022_deepjscc_q import (
 from kaira.models.multiple_access_channel import MultipleAccessChannelModel
 from kaira.models.registry import ModelRegistry
 
-# Use Tung2022DeepJSCCQ2 models as default
-DEFAULT_ENCODER = Tung2022DeepJSCCQ2Encoder
-DEFAULT_DECODER = Tung2022DeepJSCCQ2Decoder
-
-
 @ModelRegistry.register_model()
 class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
     """DeepJSCC-NOMA Encoder Module :cite:`yilmaz2023distributed`.
@@ -47,7 +42,7 @@ class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
         N = N or C or 64  # Default to 64 if neither is provided
         M = M or latent_dim or 16  # Default to 16 if neither is provided
         
-        super().__init__(N=N, M=M, csi_length=csi_length)
+        super().__init__(N=N, M=M, in_ch=4, csi_length=csi_length)
 
 
 @ModelRegistry.register_model()
@@ -78,8 +73,11 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
         self.num_devices = num_devices
         self.shared_decoder = shared_decoder
         
-        super().__init__(N=N, M=M, csi_length=csi_length)
+        super().__init__(N=N, M=M, out_ch=self.num_devices*3, csi_length=csi_length)
 
+# Use Tung2022DeepJSCCQ2 models as default
+DEFAULT_ENCODER = Yilmaz2023DeepJSCCNOMAEncoder
+DEFAULT_DECODER = Yilmaz2023DeepJSCCNOMADecoder
 
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):

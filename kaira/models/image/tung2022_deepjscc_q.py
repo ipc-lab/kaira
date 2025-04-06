@@ -23,18 +23,19 @@ class Tung2022DeepJSCCQEncoder(BaseModel):
     layers and AFModules.
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, in_ch: int = 3) -> None:
         """Initialize the DeepJSCCQEncoder.
 
         Args:
             N (int): The number of output channels for the ResidualBlocks in the g_a module.
             M (int): The number of output channels in the last convolutional layer of the network.
+            in_ch (int, optional): The number of input channels. Defaults to 3.
         """
         super().__init__()
 
         self.g_a = nn.ModuleList(
             [
-                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                ResidualBlockWithStride(in_ch=in_ch, out_ch=N, stride=2),
                 ResidualBlock(in_ch=N, out_ch=N),
                 ResidualBlockWithStride(in_ch=N, out_ch=N, stride=2),
                 AttentionBlock(N),
@@ -72,12 +73,13 @@ class Tung2022DeepJSCCQDecoder(BaseModel):
     layers and AFModules.
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, out_ch: int = 3) -> None:
         """Initialize the DeepJSCCQDecoder.
 
         Args:
             N (int): The number of input channels.
             M (int): The number of output channels.
+            out_ch (int, optional): The number of output channels. Defaults to 3.
         """
         super().__init__()
 
@@ -92,7 +94,7 @@ class Tung2022DeepJSCCQDecoder(BaseModel):
                 ResidualBlock(in_ch=N, out_ch=N),
                 ResidualBlockUpsample(in_ch=N, out_ch=N, upsample=2),
                 ResidualBlock(in_ch=N, out_ch=N),
-                ResidualBlockUpsample(in_ch=N, out_ch=3, upsample=2),
+                ResidualBlockUpsample(in_ch=N, out_ch=out_ch, upsample=2),
             ]
         )
 
@@ -125,19 +127,20 @@ class Tung2022DeepJSCCQ2Encoder(BaseModel):
     layers and AFModules.
     """
 
-    def __init__(self, N: int, M: int, csi_length: int = 1) -> None:
+    def __init__(self, N: int, M: int, in_ch: int = 3, csi_length: int = 1) -> None:
         """Initialize the DeepJSCCQ2Encoder.
 
         Args:
             N (int): The number of input channels or feature maps in the neural network model.
             M (int): The number of output channels in the final layer of the neural network.
+            in_ch (int, optional): The number of input channels. Defaults to 3.
             csi_length (int, optional): The number of dimensions in the CSI (Channel State Information) data.
         """
         super().__init__()
 
         self.g_a = nn.ModuleList(
             [
-                ResidualBlockWithStride(in_ch=3, out_ch=N, stride=2),
+                ResidualBlockWithStride(in_ch=in_ch, out_ch=N, stride=2),
                 AFModule(N=N, csi_length=csi_length),
                 ResidualBlock(in_ch=N, out_ch=N),
                 ResidualBlock(in_ch=N, out_ch=N),
@@ -200,12 +203,13 @@ class Tung2022DeepJSCCQ2Decoder(BaseModel):
     layers and AFModules.
     """
 
-    def __init__(self, N: int, M: int, csi_length: int = 1) -> None:
+    def __init__(self, N: int, M: int, out_ch: int = 3, csi_length: int = 1) -> None:
         """Initialize the DeepJSCCQ2Decoder.
 
         Args:
             N (int): The number of channels in the input and output feature maps of the neural network.
             M (int): The number of input channels for the AttentionBlock and ResidualBlock modules.
+            out_ch (int, optional): The number of output channels. Defaults to 3.
             csi_length (int, optional): The number of dimensions in the CSI (Channel State Information) data.
         """
         super().__init__()
@@ -224,8 +228,8 @@ class Tung2022DeepJSCCQ2Decoder(BaseModel):
                 ResidualBlock(in_ch=N, out_ch=N),
                 AFModule(N=N, csi_length=csi_length),
                 ResidualBlock(in_ch=N, out_ch=N),
-                ResidualBlockUpsample(in_ch=N, out_ch=3, upsample=2),
-                AFModule(N=3, csi_length=csi_length),
+                ResidualBlockUpsample(in_ch=N, out_ch=out_ch, upsample=2),
+                AFModule(N=out_ch, csi_length=csi_length),
             ]
         )
 

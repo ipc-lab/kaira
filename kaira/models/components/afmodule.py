@@ -75,9 +75,11 @@ class AFModule(BaseModel):
         else:
             actual_channels = input_tensor.shape[1] if len(input_tensor.shape) > 1 else 1
             context = input_tensor
-            
-        # Ensure side_info has the right shape for concatenation
-        if len(side_info.shape) > 2:
+        
+        # Convert side_info to 2D tensor if needed
+        if len(side_info.shape) == 1:
+            side_info = side_info.view(batch_size, 1)
+        elif len(side_info.shape) > 2:
             side_info = side_info.flatten(start_dim=1)
             
         # Make sure the context and side_info dimensions match what the linear layer expects
