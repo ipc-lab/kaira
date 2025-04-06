@@ -77,18 +77,27 @@ class CombinedLoss(BaseLoss):
         Returns:
             torch.Tensor: The combined loss between the input and the target.
         """
+        # Start with a scalar tensor on the correct device
         loss = torch.tensor(0.0, device=x.device)
 
         for i, cur_loss in enumerate(self.losses):
             # Compute current loss
             current_loss_value = cur_loss(x, target)
             
-            # Ensure scalar tensors are properly handled
-            if current_loss_value.ndim == 0:
-                current_loss_value = current_loss_value.unsqueeze(0)
-                
-            # Apply weight and add to total loss
-            loss = loss + self.weights[i] * current_loss_value
+            # Apply weight to the loss value
+            weighted_loss = self.weights[i] * current_loss_value
+            
+            # Add to total loss, preserving shape if the loss returns a non-scalar tensor
+            if isinstance(weighted_loss, torch.Tensor):
+                # Handle different tensor dimensions - if loss is a tensor with dimensions
+                # we need to make sure it's properly aggregated
+                if weighted_loss.ndim > 0:
+                    loss = loss + weighted_loss.mean()
+                else:
+                    loss = loss + weighted_loss
+            else:
+                # Handle case where loss might be a Python scalar
+                loss = loss + torch.tensor(weighted_loss, device=x.device)
             
         return loss
 
