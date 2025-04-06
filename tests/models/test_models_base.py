@@ -68,16 +68,19 @@ def test_base_model_abstract_forward():
     """Test that BaseModel's forward method raises NotImplementedError if not implemented in
     subclass."""
 
-    # Create a class that inherits from BaseModel but doesn't implement forward
+    # Create a class that inherits from BaseModel and implements forward
+    # but calls the parent's implementation which should raise NotImplementedError
     class IncompleteModel(BaseModel):
-        pass
+        def forward(self, *args, **kwargs):
+            # Call parent's forward method which should raise NotImplementedError
+            return super().forward(*args, **kwargs)
 
     # Instantiate the incomplete model
     model = IncompleteModel()
 
     # Verify that calling forward raises NotImplementedError
     with pytest.raises(NotImplementedError):
-        model.forward(torch.randn(1, 10))
+        model(torch.randn(1, 10))
 
 
 def test_configurable_model_forward_implementation():
