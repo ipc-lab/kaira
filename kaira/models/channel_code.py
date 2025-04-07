@@ -94,6 +94,8 @@ class ChannelCodeModel(SequentialModel):
         # Encode the input
         encoded = self.encoder(input_data, *args, **kwargs)
 
+        encoded = (encoded > 0).float()
+
         # Modulation of the encoded data
         modulated = self.modulator(encoded)
 

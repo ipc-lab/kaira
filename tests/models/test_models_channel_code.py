@@ -215,7 +215,7 @@ class TestChannelCodeModel:
         # Create a test input tensor
         batch_size = 2
         input_dim = 10
-        input_data = torch.rand(batch_size, input_dim)
+        input_data = torch.rand(batch_size, input_dim) 
         
         # Process the input through the model
         output = model(input_data)
@@ -273,8 +273,13 @@ class TestChannelCodeModel:
         """Test forward pass with a realistic noisy channel."""
         model = realistic_channel_code_model
         batch_size = 5
-        input_data = torch.randn(batch_size, 10)
+        # Generate random continuous values
+        continuous_input = torch.randn(batch_size, 10)
+        # Convert to binary values (0s and 1s) for the PSKModulator
+        input_data = (continuous_input > 0).float()  # Use float() instead of long() for binary values
         
+        # First run using this input
+        torch.manual_seed(42)  # Set seed for first run
         output = model(input_data)
         
         # Check output structure
@@ -287,7 +292,11 @@ class TestChannelCodeModel:
         assert len(output["history"]) == 1
         
         # With a noisy channel, each run should give slightly different results
+        # Store result from first run
         first_run = output["final_output"].clone()
+        
+        # Second run with a different random seed
+        torch.manual_seed(43)  # Set a different seed for the second run
         second_output = model(input_data)
         second_run = second_output["final_output"]
         
