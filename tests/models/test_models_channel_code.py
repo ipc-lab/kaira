@@ -270,6 +270,7 @@ class TestChannelCodeModel:
         
     def test_forward_noisy_channel(self, realistic_channel_code_model):
         """Test forward pass with a realistic noisy channel."""
+        torch.manual_seed(41)  # Set seed for first run
         model = realistic_channel_code_model
         batch_size = 5
         # Generate random continuous values
