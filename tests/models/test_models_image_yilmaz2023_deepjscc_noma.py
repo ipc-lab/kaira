@@ -48,7 +48,7 @@ def test_yilmaz2023_deepjscc_noma_decoder():
 
 def test_yilmaz2023_deepjscc_noma_instantiation():
     """Test that Yilmaz2023DeepJSCCNOMA can be instantiated with default components."""
-    channel = AWGNChannel(snr_db=10.0)  # Added SNR parameter
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
     model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
@@ -68,7 +68,7 @@ def test_yilmaz2023_deepjscc_noma_instantiation():
 
 def test_yilmaz2023_deepjscc_noma_forward():
     """Test the forward pass of Yilmaz2023DeepJSCCNOMA with default components."""
-    channel = AWGNChannel(snr_db=10.0)  # Added SNR parameter
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
     model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
@@ -94,7 +94,7 @@ def test_yilmaz2023_deepjscc_noma_registry():
     assert "deepjscc_noma" in ModelRegistry._models
 
     # Check model can be created from registry
-    channel = AWGNChannel(snr_db=10.0)  # Added SNR parameter
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
 
     model = ModelRegistry.create(
@@ -111,7 +111,7 @@ def test_yilmaz2023_deepjscc_noma_registry():
 
 def test_yilmaz2023_deepjscc_noma_shared_components():
     """Test Yilmaz2023DeepJSCCNOMA with shared encoder/decoder."""
-    channel = AWGNChannel(snr_db=10.0)  # Added SNR parameter
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
     model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
@@ -140,7 +140,7 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
 
 def test_yilmaz2023_deepjscc_noma_perfect_sic():
     """Test Yilmaz2023DeepJSCCNOMA with perfect successive interference cancellation."""
-    channel = AWGNChannel(snr_db=10.0)  # Added SNR parameter
+    channel = AWGNChannel(snr_db=10.0)
     constraint = TotalPowerConstraint(total_power=1.0)
     model = Yilmaz2023DeepJSCCNOMAModel(
         channel=channel,
