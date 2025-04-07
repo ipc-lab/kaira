@@ -80,7 +80,7 @@ class FeedbackChannelModel(BaseModel):
 
         Returns:
             Dict[str, Any]: A dictionary containing:
-                - final_output: The final decoded output
+                - final_output: The final decoded output (only if at least one iteration)
                 - iterations: List of per-iteration results
                 - feedback_history: History of feedback signals
         """
@@ -90,6 +90,7 @@ class FeedbackChannelModel(BaseModel):
         # Storage for results
         iterations = []
         feedback_history = []
+        final_output = None
 
         # Initial state - no feedback yet
         feedback = torch.zeros(batch_size, self.feedback_processor.input_size, device=device)
@@ -101,15 +102,17 @@ class FeedbackChannelModel(BaseModel):
 
             # Encode the input (with adaptation if not first iteration)
             if encoder_state is not None:
-                encoded = self.encoder(input_data, state=encoder_state, *args, **kwargs)
+                # Only pass the state parameter to encoder, not all kwargs
+                encoded = self.encoder(input_data, state=encoder_state)
             else:
-                encoded = self.encoder(input_data, *args, **kwargs)
+                # Don't pass any additional kwargs to encoder
+                encoded = self.encoder(input_data)
 
             # Transmit through forward channel
             received = self.forward_channel(encoded)
 
-            # Decode the received signal
-            decoded = self.decoder(received, *args, **kwargs)
+            # Decode the received signal - don't pass additional kwargs to decoder
+            decoded = self.decoder(received)
 
             # Generate feedback
             feedback = self.feedback_generator(decoded, input_data)
@@ -128,9 +131,15 @@ class FeedbackChannelModel(BaseModel):
             )
 
             feedback_history.append(feedback)
+            final_output = decoded
 
-        return {
-            "final_output": decoded,
+        result = {
             "iterations": iterations,
             "feedback_history": feedback_history,
         }
+        
+        # Only include final_output if we have run at least one iteration
+        if final_output is not None:
+            result["final_output"] = final_output
+            
+        return result

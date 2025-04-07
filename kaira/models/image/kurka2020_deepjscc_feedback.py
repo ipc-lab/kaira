@@ -7,12 +7,13 @@ layers for iterative image quality improvement.
 """
 
 
-from typing import Any
+from typing import Any, Tuple
 
 import torch
 import torch.nn as nn
 from compressai.layers import GDN
 
+from kaira.channels import AWGNChannel, BaseChannel, IdentityChannel
 from kaira.models.base import BaseModel
 from kaira.models.feedback_channel import FeedbackChannelModel
 from kaira.models.registry import ModelRegistry
@@ -212,21 +213,30 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         target_analysis=False,
         max_iterations=3,
     ):
+        # Define components for parent FeedbackChannelModel
         n_channels = 3  # change this if working with BW images
-        self.refinement_layer = refinement_layer
-        self.feedback_snr = feedback_snr
-        self.layer = layer_id
-        self.conv_depth = conv_depth
-
-        # Define encoder and decoder
+        
+        # Create encoder and decoder instances
         encoder = DeepJSCCFeedbackEncoder(conv_depth)
         decoder = DeepJSCCFeedbackDecoder(n_channels)
-
-        # Create feedback components
+        
+        # Create the feedback components
         feedback_generator = OutputsCombiner()
         feedback_processor = OutputsCombiner()
-
-        # Initialize the pipeline
+        
+        # Initialize channels if not provided
+        if forward_channel is None:
+            forward_channel = AWGNChannel(snr_db=channel_snr)
+            
+        if feedback_channel is None:
+            if feedback_snr is None:
+                # Perfect feedback channel
+                feedback_channel = IdentityChannel()
+            else:
+                # Noisy feedback channel
+                feedback_channel = AWGNChannel(snr_db=feedback_snr)
+        
+        # Initialize the parent class with our components
         super().__init__(
             encoder=encoder,
             forward_channel=forward_channel,
@@ -236,8 +246,12 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             feedback_processor=feedback_processor,
             max_iterations=max_iterations,
         )
-
-        # Store parameters
+        
+        # Store additional parameters specific to this model
+        self.refinement_layer = refinement_layer
+        self.feedback_snr = feedback_snr
+        self.layer = layer_id
+        self.conv_depth = conv_depth
         self.target_analysis = target_analysis
 
     def forward(self, input_data, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -283,15 +297,19 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         # Encode the input
         chn_in = self.encoder(img_in)
 
-        # Pass through the channel
-        chn_out, avg_power, chn_gain = self.forward_channel((chn_in, prev_chn_gain))
+        # Process through the forward channel
+        chn_out = self.forward_channel(chn_in)
+        
+        # Calculate average power and channel gain
+        avg_power = torch.mean(chn_in ** 2)
+        chn_gain = torch.ones_like(chn_in[:, :1, :, :])
 
         # Add feedback noise to channel output
         if self.feedback_snr is None:  # No feedback noise
             chn_out_fb = chn_out
         else:
             # Use feedback channel for noisy feedback
-            chn_out_fb, _, _ = self.feedback_channel((chn_out, None))
+            chn_out_fb = self.feedback_channel(chn_out)
 
         if self.refinement_layer:
             # Combine channel output with previous stored channel outputs
@@ -305,9 +323,25 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             residual_img_fb = self.decoder(chn_out_exp_fb)
             decoded_img_fb = self.feedback_processor((prev_img_out_fb, residual_img_fb))
         else:
+            # For base layer, adapt the channel dimensions to match decoder input
+            # The original encoder outputs conv_depth channels, but decoder expects 256 channels
+            batch_size, _, height, width = chn_out.shape
+            
+            # Create a temporary tensor with the right number of channels for the decoder (256)
+            temp_input = torch.zeros(batch_size, 256, height, width, device=chn_out.device)
+            # Copy the encoder output into the first conv_depth channels
+            temp_input[:, :chn_out.shape[1], :, :] = chn_out
+            
+            # Use the adapted tensor for the decoder
+            decoded_img = self.decoder(temp_input)
+            
+            # Do the same for feedback path
+            temp_input_fb = torch.zeros(batch_size, 256, height, width, device=chn_out_fb.device)
+            temp_input_fb[:, :chn_out_fb.shape[1], :, :] = chn_out_fb
+            decoded_img_fb = self.decoder(temp_input_fb)
+            
+            # Keep the original channel outputs for the return dictionary
             chn_out_exp = chn_out
-            decoded_img = self.decoder(chn_out_exp)
             chn_out_exp_fb = chn_out_fb
-            decoded_img_fb = self.decoder(chn_out_exp_fb)
 
         return {"decoded_img": decoded_img, "decoded_img_fb": decoded_img_fb, "channel_output": chn_out_exp, "feedback_channel_output": chn_out_exp_fb, "channel_gain": chn_gain}

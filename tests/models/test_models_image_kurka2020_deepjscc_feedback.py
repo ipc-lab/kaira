@@ -7,6 +7,7 @@ from kaira.models.image.kurka2020_deepjscc_feedback import (
     DeepJSCCFeedbackModel,
     OutputsCombiner,
 )
+from kaira.channels import AWGNChannel, IdentityChannel
 
 
 @pytest.fixture
@@ -21,6 +22,9 @@ def decoder():
 
 @pytest.fixture
 def model():
+    # Create with explicit channel objects to avoid None errors
+    forward_channel = AWGNChannel(snr_db=10)
+    feedback_channel = IdentityChannel()
     return DeepJSCCFeedbackModel(
         channel_snr=10,
         conv_depth=64,
@@ -28,6 +32,8 @@ def model():
         feedback_snr=10,
         refinement_layer=False,
         layer_id=0,
+        forward_channel=forward_channel,
+        feedback_channel=feedback_channel
     )
 
 
@@ -50,7 +56,8 @@ def test_encoder_forward(encoder):
 
 
 def test_decoder_forward(decoder):
-    input_tensor = torch.randn(4, 64, 8, 8)
+    # Use 256 channels to match the decoder's expected input channels
+    input_tensor = torch.randn(4, 256, 8, 8)
     output = decoder(input_tensor)
     assert output.shape == (4, 3, 32, 32)
 
