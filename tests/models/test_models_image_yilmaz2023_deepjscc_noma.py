@@ -13,8 +13,8 @@ from kaira.models.registry import ModelRegistry
 
 def test_yilmaz2023_deepjscc_noma_encoder():
     """Test the encoder component."""
-    encoder = Yilmaz2023DeepJSCCNOMAEncoder(C=3, latent_dim=16)
-    x = torch.randn(4, 3, 32, 32)
+    encoder = Yilmaz2023DeepJSCCNOMAEncoder(latent_dim=16)
+    x = torch.randn(4, 4, 32, 32)
     csi = torch.ones(4)
 
     output = encoder((x, csi))
@@ -42,8 +42,8 @@ def test_yilmaz2023_deepjscc_noma_decoder():
 
     output = shared_decoder((x, csi))
 
-    # Output should include channels for all devices
-    assert output.shape == (4, 3, 32, 32)  # [batch_size, channels, height, width]
+    # Output should include channels for all devices (2 devices × 3 channels each)
+    assert output.shape == (4, 6, 32, 32)  # [batch_size, num_devices*channels, height, width]
 
 
 def test_yilmaz2023_deepjscc_noma_instantiation():
@@ -76,6 +76,7 @@ def test_yilmaz2023_deepjscc_noma_forward():
         num_devices=2,
         M=0.5,
         latent_dim=16,
+        use_device_embedding=False,  # Disable device embedding to use 3-channel input
     )
 
     # Create dummy input: [batch_size, num_devices, channels, height, width]
@@ -121,6 +122,7 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
         latent_dim=16,
         shared_encoder=True,
         shared_decoder=True,
+        use_device_embedding=False,  # Disable device embedding
     )
 
     # Check that we only have one encoder and one decoder
@@ -149,6 +151,7 @@ def test_yilmaz2023_deepjscc_noma_perfect_sic():
         M=0.5,
         latent_dim=16,
         use_perfect_sic=True,
+        use_device_embedding=False,  # Disable device embedding
     )
 
     # Create dummy input

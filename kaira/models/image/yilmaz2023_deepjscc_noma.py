@@ -28,21 +28,16 @@ class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
     Tung2022DeepJSCCQ2Encoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
-    def __init__(self, C=None, latent_dim=None, N=None, M=None, csi_length=1):
+    def __init__(self, N=64, M=16, in_ch=4, csi_length=1):
         """Initialize the DeepJSCCNOMAEncoder.
 
         Args:
-            C (int, optional): Number of input channels (same as N).
-            latent_dim (int, optional): Dimension of latent space (same as M).
-            N (int, optional): The number of input channels (if not specified, uses C or 64).
-            M (int, optional): The number of output channels (if not specified, uses latent_dim or 16).
-            csi_length (int, optional): The number of dimensions in the CSI data.
-        """
-        # Map parameters to Tung2022DeepJSCCQ2Encoder parameters
-        N = N or C or 64  # Default to 64 if neither is provided
-        M = M or latent_dim or 16  # Default to 16 if neither is provided
-        
-        super().__init__(N=N, M=M, in_ch=4, csi_length=csi_length)
+            N (int, optional): Number of channels in the network.
+            M (int, optional): Latent dimension of the bottleneck representation.
+            in_ch (int, optional): Number of input channels. Defaults to 4.
+            csi_length (int, optional): The number of dimensions in the CSI data. Defaults to 1.
+        """        
+        super().__init__(N=N, M=M, in_ch=in_ch, csi_length=csi_length)
 
 
 @ModelRegistry.register_model()
@@ -54,26 +49,22 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
     the Tung2022DeepJSCCQ2Decoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
-    def __init__(self, latent_dim=None, N=None, M=None, csi_length=1, num_devices=1, shared_decoder=False):
+    def __init__(self, N=64, M=16, out_ch_per_device=3, csi_length=1, num_devices=1, shared_decoder=False):
         """Initialize the DeepJSCCNOMADecoder.
 
         Args:
-            latent_dim (int, optional): Dimension of latent space (maps to both N and M).
-            N (int, optional): The number of channels (if not specified, uses latent_dim or 64).
-            M (int, optional): The number of input channels (if not specified, uses latent_dim or 16).
-            csi_length (int, optional): The number of dimensions in the CSI data.
-            num_devices (int, optional): Number of devices (used for shared decoder).
-            shared_decoder (bool, optional): Whether this is a shared decoder.
-        """
-        # Map parameters to Tung2022DeepJSCCQ2Decoder parameters
-        N = N or latent_dim or 64  # Default to 64 if neither is provided
-        M = M or latent_dim or 16  # Default to 16 if neither is provided
-        
+            N (int, optional): Number of channels in the network. Defaults to 64 if not provided.
+            M (int, optional): Latent dimension of the bottleneck representation. Defaults to 16 if not provided.
+            out_ch_per_device (int, optional): Number of output channels per device. Defaults to 3.
+            csi_length (int, optional): The number of dimensions in the CSI data. Defaults to 1.
+            num_devices (int, optional): Number of devices. Used for shared decoder. Defaults to 1.
+            shared_decoder (bool, optional): Whether this is a shared decoder. Defaults to False.
+        """        
         # Store additional parameters
         self.num_devices = num_devices
         self.shared_decoder = shared_decoder
         
-        super().__init__(N=N, M=M, out_ch=self.num_devices*3, csi_length=csi_length)
+        super().__init__(N=N, M=M, out_ch=self.num_devices*out_ch_per_device, csi_length=csi_length)
 
 # Use Tung2022DeepJSCCQ2 models as default
 DEFAULT_ENCODER = Yilmaz2023DeepJSCCNOMAEncoder
@@ -158,24 +149,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         for _ in range(encoder_count):
             # Create new encoder instance based on whether encoder_cls is a class or object instance
             if isinstance(encoder_cls, type):  # It's a class
-                try:
-                    # Try instantiating with Tung2022DeepJSCCQ2Encoder expected parameters
-                    enc = encoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
-                except (TypeError, ValueError):
-                    try:
-                        # Try with C parameter (common in image encoders)
-                        enc = encoder_cls(C=encoder_channels, latent_dim=latent_dim)
-                    except (TypeError, ValueError):
-                        try:
-                            # Try with in_channels parameter (common alternative)
-                            enc = encoder_cls(in_channels=encoder_channels, latent_dim=latent_dim)
-                        except (TypeError, ValueError):
-                            try:
-                                # Try just with latent_dim
-                                enc = encoder_cls(latent_dim=latent_dim)
-                            except (TypeError, ValueError):
-                                # Last resort: try with no parameters
-                                enc = encoder_cls()
+                enc = encoder_cls()
             else:  # It's already an instance
                 enc = encoder_cls
 
@@ -185,20 +159,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         for _ in range(decoder_count):
             # Create new decoder instance based on whether decoder_cls is a class or object instance
             if isinstance(decoder_cls, type):  # It's a class
-                try:
-                    # Try instantiating with Tung2022DeepJSCCQ2Decoder expected parameters
-                    dec = decoder_cls(N=latent_dim, M=latent_dim, csi_length=csi_length)
-                except (TypeError, ValueError):
-                    try:
-                        # Try with standard parameter set
-                        dec = decoder_cls(latent_dim=latent_dim, num_devices=num_devices, shared_decoder=shared_decoder)
-                    except (TypeError, ValueError):
-                        try:
-                            # Try with just latent_dim
-                            dec = decoder_cls(latent_dim=latent_dim)
-                        except (TypeError, ValueError):
-                            # Last resort: try with no parameters
-                            dec = decoder_cls()
+                dec = decoder_cls()
             else:  # It's already an instance
                 dec = decoder_cls
 
