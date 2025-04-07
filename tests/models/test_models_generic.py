@@ -362,6 +362,82 @@ class TestBranchingModel:
         false_output = model(false_input)
         assert torch.allclose(false_output, false_input * 0.5)
 
+    def test_branching_model_get_branch_condition_wrapper(self):
+        """Test that condition wrapper returned by get_branch handles tensor and non-tensor results."""
+        model = BranchingModel()
+        
+        # Test with a condition that returns a tensor with item() method
+        def tensor_condition(x):
+            # Use recommended clone().detach() instead of torch.tensor()
+            return (x.sum() > 5).clone().detach()
+            
+        model.add_branch("tensor_branch", tensor_condition, DummyModel())
+        wrapper, _ = model.get_branch("tensor_branch")
+        
+        # Verify tensor result is converted to Python bool
+        result_true = wrapper(torch.tensor([3.0, 3.0]))  # Sum = 6 > 5
+        result_false = wrapper(torch.tensor([2.0, 2.0]))  # Sum = 4 < 5
+        assert isinstance(result_true, bool)
+        assert isinstance(result_false, bool)
+        assert result_true is True
+        assert result_false is False
+        
+        # Test with a condition that returns a Python bool directly
+        def bool_condition(x):
+            return x.sum() > 5
+            
+        model.add_branch("bool_branch", bool_condition, DummyModel())
+        wrapper, _ = model.get_branch("bool_branch")
+        
+        # Verify Python bool result is preserved
+        result_true = wrapper(torch.tensor([3.0, 3.0]))  # Sum = 6 > 5
+        result_false = wrapper(torch.tensor([2.0, 2.0]))  # Sum = 4 < 5
+        assert isinstance(result_true, bool)
+        assert isinstance(result_false, bool)
+        assert result_true is True
+        assert result_false is False
+
+    def test_branching_model_non_boolean_condition(self):
+        """Test that non-boolean, non-tensor condition results are properly converted to booleans."""
+        model = BranchingModel()
+        
+        # Create a custom class with __bool__ method
+        class CustomBooleanable:
+            def __init__(self, value):
+                self.value = value
+                
+            def __bool__(self):
+                return self.value > 0
+        
+        # Add a branch with a condition that returns our custom object
+        def custom_condition(x):
+            # Return an object that's neither a tensor nor a boolean
+            return CustomBooleanable(x.sum().item())
+            
+        model.add_branch("custom_branch", custom_condition, DummyModel())
+        wrapper, _ = model.get_branch("custom_branch")
+        
+        # Test with values that should convert to True and False
+        result_true = wrapper(torch.tensor([1.0, 2.0]))  # Sum = 3 > 0
+        result_false = wrapper(torch.tensor([-2.0, -2.0]))  # Sum = -4 < 0
+        
+        # Verify the results are converted to Python booleans
+        assert isinstance(result_true, bool)
+        assert isinstance(result_false, bool)
+        assert result_true is True
+        assert result_false is False
+        
+        # Test the forward method with the custom condition
+        output_true, branch = model(torch.tensor([1.0, 2.0]), return_branch=True)
+        assert branch == "custom_branch"
+        
+        # Set a default branch for the False case
+        default_model = AnotherDummyModel()
+        model.set_default_branch(default_model)
+        
+        output_false, branch = model(torch.tensor([-2.0, -2.0]), return_branch=True)
+        assert branch == "default"
+
 
 # IdentityModel tests
 
