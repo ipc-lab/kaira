@@ -307,15 +307,16 @@ class TestChannelCodeModel:
         """Test a simple parity encoder/decoder scenario."""
         model = parity_channel_code_model
         
-        # Create a test input tensor
+        # Create a test input tensor with binary values (0s and 1s)
         batch_size = 3
         input_dim = 5
-        input_data = torch.rand(batch_size, input_dim)
+        # Use binary inputs to ensure consistent behavior
+        input_data = torch.randint(0, 2, (batch_size, input_dim)).float()
         
         # Process the input through the model
         output = model(input_data)
         
-        # Check the output
+        # Check the output matches the input after encoding/decoding
         assert torch.allclose(output["final_output"], input_data)
         assert len(output["history"]) == 1
         
