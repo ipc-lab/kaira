@@ -94,17 +94,20 @@ class NeuralCompressor(BaseModel):
             Tensor containing bits per image
         """
         likelihoods = r["likelihoods"].values()
+        
         n = r["x_hat"].shape[0]
-
-        # More efficient vectorized implementation
-        all_num_bits = torch.zeros(n, device=r["x_hat"].device)
-
+        device = r["x_hat"].device
+        
+        # Create output tensor
+        all_num_bits = torch.zeros(n, device=device)
+    
+        # Calculate bits for each image
         for i in range(n):
             for likelihood in likelihoods:
                 all_num_bits[i] += -torch.log2(likelihood[i]).sum()
-
+                
         return all_num_bits
-
+    
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, List[Dict]]]:
         """Forward pass of the neural compressor.
 
@@ -123,7 +126,7 @@ class NeuralCompressor(BaseModel):
 
         # Initialize stats if collecting
         if self.collect_stats:
-            self.stats = {"total_bits": 0, "avg_quality": 0, "img_stats": [], "model_name": self.method, "metric": self.metric}
+            self.stats = {"total_bits": 0, "avg_quality": 0, "img_stats": [], "model_name": self.method, "metric": self.metric, "processing_time": 0}
 
         if self.quality is not None:
             # When quality is specified, use that directly
@@ -142,6 +145,8 @@ class NeuralCompressor(BaseModel):
             res = model(x)
             bits = self.compute_bits_compressai(res)
 
+            reconstructed = res["x_hat"]
+
             if self.max_bits_per_image is not None and torch.any(bits > self.max_bits_per_image):
                 warnings.warn(f"Some images exceed the max_bits_per_image constraint ({self.max_bits_per_image})")
 
@@ -150,22 +155,28 @@ class NeuralCompressor(BaseModel):
                 original_size = x.shape[1] * x.shape[2] * x.shape[3] * 8  # Original size in bits (8 bits per channel)
                 self.stats["total_bits"] = bits.sum().item()
                 self.stats["avg_quality"] = self.quality
+                self.stats["processing_time"] = time.time() - start_time
 
                 for i in range(x.shape[0]):
-                    self.stats["img_stats"].append({"quality": self.quality, "bits": bits[i].item(), "bpp": bits[i].item() / (x.shape[2] * x.shape[3]), "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0})
+                    self.stats["img_stats"].append({
+                        "quality": self.quality,
+                        "bits": bits[i].item(),
+                        "bpp": bits[i].item() / (x.shape[2] * x.shape[3]),
+                        "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0
+                    })
 
                 self.stats["avg_bpp"] = self.stats["total_bits"] / (x.shape[0] * x.shape[2] * x.shape[3])
                 self.stats["avg_compression_ratio"] = sum(s["compression_ratio"] for s in self.stats["img_stats"]) / x.shape[0]
 
             # Determine what to return based on flags
             if self.return_bits and self.return_compressed_data:
-                return res["x_hat"], bits, compressed_data
+                return reconstructed, bits, compressed_data
             elif self.return_bits:
-                return res["x_hat"], bits
+                return reconstructed, bits
             elif self.return_compressed_data:
-                return res["x_hat"], compressed_data
+                return reconstructed, compressed_data
             else:
-                return res["x_hat"]
+                return reconstructed
 
         # Find optimal quality for each image based on bit constraint
         available_qualities = sorted(self.possible_qualities[self.method], reverse=True)
@@ -212,16 +223,13 @@ class NeuralCompressor(BaseModel):
                             assert optimal_compressed_data is not None
                             optimal_compressed_data[orig_idx.item()] = temp_comp_data
 
-                # Continue with existing code for selecting images that meet the constraint
-                # ...
-
                 # Mark images that satisfy the constraint with this quality
                 satisfies_constraint = bits <= self.max_bits_per_image
 
                 # Get indices in the original batch
                 original_indices = torch.nonzero(remaining_images).squeeze(1)
 
-                # Update for images that satisfy the constraint
+                # Regular case with real tensors
                 for i, orig_idx in enumerate(original_indices[satisfies_constraint]):
                     x_hat[orig_idx] = res["x_hat"][i]
                     output_bits[orig_idx] = bits[i]
@@ -229,7 +237,12 @@ class NeuralCompressor(BaseModel):
 
                     # Collect stats if needed
                     if self.collect_stats:
-                        img_stats[orig_idx.item()] = {"quality": quality, "bits": bits[i].item(), "bpp": bits[i].item() / (x.shape[2] * x.shape[3]), "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0}
+                        img_stats[orig_idx.item()] = {
+                            "quality": quality,
+                            "bits": bits[i].item(),
+                            "bpp": bits[i].item() / (x.shape[2] * x.shape[3]),
+                            "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0
+                        }
 
                 # Update remaining_images mask
                 remaining_images[original_indices[satisfies_constraint]] = False
@@ -312,3 +325,20 @@ class NeuralCompressor(BaseModel):
             self.return_bits = original_return_bits
 
         return bits_per_image
+
+    def reset_stats(self):
+        """Reset all collected statistics."""
+        if not self.collect_stats:
+            warnings.warn("Statistics not collected. Initialize with collect_stats=True to enable.")
+            return
+            
+        self.stats = {
+            "total_bits": 0, 
+            "avg_quality": 0, 
+            "img_stats": [], 
+            "model_name": self.method, 
+            "metric": self.metric,
+            "processing_time": 0,
+            "avg_bpp": 0,
+            "avg_compression_ratio": 0
+        }
