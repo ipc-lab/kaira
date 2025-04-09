@@ -642,6 +642,7 @@ def test_dpsk_bit_to_index_conversion():
 
 def test_dpsk_modulator_invalid_order():
     """Test that DPSKModulator raises an error for invalid (non-power-of-2) orders."""
+    torch.manual_seed(42)  # For reproducibility
     # Test with valid orders
     valid_orders = [2, 4, 8, 16]
     for order in valid_orders:
@@ -657,6 +658,7 @@ def test_dpsk_modulator_invalid_order():
 
 def test_dpsk_modulator_check_divisible_bit_length():
     """Test checking that bit length is divisible by bits_per_symbol in DPSK modulator."""
+    torch.manual_seed(42)  # For reproducibility
     # Create modulator with different bits_per_symbol values
     for bits_per_symbol in [1, 2, 3]:
         modulator = DPSKModulator(bits_per_symbol=bits_per_symbol)

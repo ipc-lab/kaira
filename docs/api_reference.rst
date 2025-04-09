@@ -275,8 +275,6 @@ Models specialized for image transmission and reconstruction.
    Tung2022DeepJSCCQDecoder
    Tung2022DeepJSCCQ2Encoder
    Tung2022DeepJSCCQ2Decoder
-   Yang2024DeepJSCCSwinEncoder
-   Yang2024DeepJSCCSwinDecoder
    Yilmaz2023DeepJSCCNOMAModel
 
 Image Compressors
