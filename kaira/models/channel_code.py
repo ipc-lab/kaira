@@ -103,7 +103,9 @@ class ChannelCodeModel(SequentialModel):
         constrained = self.constraint(modulated)
 
         # Transmit through the channel
-        received = self.channel(constrained)
+        # Generate fresh noise for each forward pass to ensure randomness
+        noise = kwargs.get("noise", None)
+        received = self.channel(constrained, noise=noise)
 
         # Demodulate and decode the received signal
         decoded, soft_estimate = self.decoder(self.demodulator(received), *args, **kwargs)
