@@ -11,10 +11,11 @@ from kaira.models.registry import ModelRegistry
 class MockEncoder(torch.nn.Module):
     """Mock encoder for testing."""
     
-    def __init__(self, output_dim=16):
+    def __init__(self, output_dim=16, binary_output=False):
         super().__init__()
         self.output_dim = output_dim
         self.linear = torch.nn.Linear(10, output_dim)
+        self.binary_output = binary_output
 
     def forward(self, x, *args, **kwargs):
         """Mock forward pass."""
@@ -37,7 +38,14 @@ class MockEncoder(torch.nn.Module):
             padding = torch.zeros(*x.shape[:-1], 10 - x.shape[-1], device=x.device)
             x = torch.cat([x, padding], dim=-1)
             
-        return self.linear(x)
+        output = self.linear(x)
+        
+        # If binary output is needed (for PSK modulation), round to 0 or 1
+        if self.binary_output:
+            output = torch.sigmoid(output)
+            output = torch.round(output)
+            
+        return output
 
 
 class MockDecoder(torch.nn.Module):
@@ -203,7 +211,7 @@ def test_transcoder_forward_with_tc():
 def test_transcoder_forward_without_tc():
     """Test forward pass of TransCoder model without TransCoder neural encoder/decoder."""
     # Create components
-    encoder_ec = MockEncoder(output_dim=10)
+    encoder_ec = MockEncoder(output_dim=10, binary_output=True)  # Set binary_output=True for PSK modulation
     constraint = TotalPowerConstraint(total_power=1.0)
     modulator = PSKModulator(order=4)
     channel = AWGNChannel(snr_db=10.0)
@@ -298,7 +306,8 @@ def test_transcoder_configurations(use_tc_encoder, use_tc_decoder):
     """Test different configurations of the TransCoder model."""
     # Create components
     encoder_tc = MockEncoder(output_dim=16) if use_tc_encoder else None
-    encoder_ec = MockEncoder(output_dim=10)
+    # When not using TransCoder encoder, we need binary output for PSK modulation
+    encoder_ec = MockEncoder(output_dim=10, binary_output=(not use_tc_encoder))
     constraint = TotalPowerConstraint(total_power=1.0)
     modulator = PSKModulator(order=4)
     channel = AWGNChannel(snr_db=10.0)  # Providing SNR in dB
