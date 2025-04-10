@@ -43,7 +43,7 @@ def test_neural_compressor_initialization():
 def test_neural_compressor_initialization_errors():
     """Test NeuralCompressor initialization with invalid parameters."""
     # Test missing both parameters
-    with pytest.raises(ValueError, match="At least one of the two parameters must be provided"):
+    with pytest.raises(ValueError, match="At least one of max_bits_per_image or quality must be provided"):
         NeuralCompressor(method="bmshj2018_factorized")
 
     # Test invalid method

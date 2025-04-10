@@ -6,8 +6,10 @@ import compressai.zoo
 import torch
 
 from kaira.models.base import BaseModel
+from kaira.models.registry import ModelRegistry
 
 
+@ModelRegistry.register_model()
 class NeuralCompressor(BaseModel):
     """Neural network-based image compression model.
 
@@ -15,9 +17,24 @@ class NeuralCompressor(BaseModel):
     from the CompressAI library. It can operate in two modes:
     1. Fixed quality mode: directly uses the specified quality level
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
+    
+    The implementation efficiently manages model loading to minimize memory usage
+    and supports a variety of modern image compression methods.
     """
 
-    def __init__(self, method: str, metric: str = "mse", max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, lazy_loading: bool = True, return_bits: bool = True, collect_stats: bool = False, return_compressed_data: bool = False):
+    def __init__(
+        self, 
+        method: str, 
+        metric: str = "mse", 
+        max_bits_per_image: Optional[int] = None, 
+        quality: Optional[int] = None, 
+        lazy_loading: bool = True, 
+        return_bits: bool = True, 
+        collect_stats: bool = False, 
+        return_compressed_data: bool = False,
+        device: Optional[Union[str, torch.device]] = None,
+        early_stopping_threshold: Optional[float] = None
+    ):
         """Initialize the neural compressor.
 
         Args:
@@ -29,14 +46,18 @@ class NeuralCompressor(BaseModel):
             return_bits: Whether to return bits per image in forward pass
             collect_stats: Whether to collect and return compression statistics
             return_compressed_data: Whether to return compressed representation
+            device: Device to load models on (e.g., "cuda", "cpu")
+            early_stopping_threshold: Bit threshold below which to stop quality search
+                                     (e.g., 0.95 means stop if within 5% of bit budget)
         """
         super().__init__()
 
         # At least one of the two parameters must be provided
         if max_bits_per_image is None and quality is None:
-            raise ValueError("At least one of the two parameters must be provided")
+            raise ValueError("At least one of max_bits_per_image or quality must be provided")
 
         self.possible_qualities = {
+            # Standard models from CompressAI
             "cheng2020_anchor": list(range(1, 7)),
             "cheng2020_attn": list(range(1, 7)),
             "bmshj2018_factorized": list(range(1, 9)),
@@ -47,7 +68,8 @@ class NeuralCompressor(BaseModel):
         }
 
         if method not in self.possible_qualities:
-            raise ValueError(f"Method '{method}' is not supported. Available methods: {list(self.possible_qualities.keys())}")
+            available_methods = list(self.possible_qualities.keys())
+            raise ValueError(f"Method '{method}' is not supported. Available methods: {available_methods}")
 
         if quality is not None and quality not in self.possible_qualities[method]:
             raise ValueError(f"Quality must be in {str(self.possible_qualities[method])}")
@@ -63,6 +85,8 @@ class NeuralCompressor(BaseModel):
         self.return_bits = return_bits
         self.collect_stats = collect_stats
         self.return_compressed_data = return_compressed_data
+        self.device = device if device is not None else "cuda" if torch.cuda.is_available() else "cpu"
+        self.early_stopping_threshold = early_stopping_threshold
         self.stats: Dict[str, Any] = {}
         self._models_cache = {}
 
@@ -71,12 +95,14 @@ class NeuralCompressor(BaseModel):
             if quality is not None:
                 self._models_cache[quality] = self._load_model(quality)
             else:
-                for q in self.possible_qualities[method]:
+                # If bit-constrained mode, we'll likely need multiple qualities
+                # Load models from highest to lowest quality for better user experience
+                for q in reversed(self.possible_qualities[method]):
                     self._models_cache[q] = self._load_model(q)
 
     def _load_model(self, quality: int) -> torch.nn.Module:
         """Load a model with the specified quality."""
-        return getattr(compressai.zoo, self.method)(quality=quality, pretrained=True, metric=self.metric).eval()
+        return getattr(compressai.zoo, self.method)(quality=quality, pretrained=True, metric=self.metric).to(self.device).eval()
 
     def get_model(self, quality: int) -> torch.nn.Module:
         """Get a model with the specified quality, using cache if available."""
@@ -246,6 +272,11 @@ class NeuralCompressor(BaseModel):
 
                 # Update remaining_images mask
                 remaining_images[original_indices[satisfies_constraint]] = False
+
+                # Early stopping if within threshold
+                if self.early_stopping_threshold is not None:
+                    if torch.all(bits <= self.max_bits_per_image * self.early_stopping_threshold):
+                        break
 
             current_quality_idx += 1
 
