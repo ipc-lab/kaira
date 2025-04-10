@@ -270,38 +270,65 @@ class TestChannelCodeModel:
         
     def test_forward_noisy_channel(self, realistic_channel_code_model):
         """Test forward pass with a realistic noisy channel."""
-        torch.manual_seed(41)  # Set seed for first run
-        model = realistic_channel_code_model
+        # Create a fresh model with new components to ensure random state isolation
+        encoder = SimpleEncoder()
+        modulator = PSKModulator(order=4)  # QPSK
+        constraint = AveragePowerConstraint(average_power=1.0)
+        channel1 = AWGNChannel(snr_db=10.0)  # Create a separate channel for first run
+        demodulator = PSKDemodulator(order=4)
+        decoder = SimpleDecoder()
+        
+        model1 = ChannelCodeModel(
+            encoder=encoder,
+            modulator=modulator,
+            constraint=constraint,
+            channel=channel1,
+            demodulator=demodulator,
+            decoder=decoder
+        )
+        
         batch_size = 5
+        torch.manual_seed(41)  # Set seed for generating input data
         # Generate random continuous values
         continuous_input = torch.randn(batch_size, 10)
         # Convert to binary values (0s and 1s) for the PSKModulator
         input_data = (continuous_input > 0).float()  # Use float() instead of long() for binary values
-        
+    
         # First run using this input
         torch.manual_seed(42)  # Set seed for first run
-        output = model(input_data)
-        
+        model1.train()
+        output = model1(input_data)
+    
         # Check output structure
         assert isinstance(output, dict)
         assert "final_output" in output
         assert "history" in output
-        
+    
         # Check output shapes
         assert output["final_output"].shape == (batch_size, 10)
         assert len(output["history"]) == 1
-        
-        # With a noisy channel, each run should give slightly different results
+    
         # Store result from first run
         first_run = output["final_output"].clone()
-        
+    
+        # Create a completely separate model for the second run to avoid any state sharing
+        channel2 = AWGNChannel(snr_db=10.0)  # Create a separate channel for second run
+        model2 = ChannelCodeModel(
+            encoder=SimpleEncoder(),  # New instance
+            modulator=PSKModulator(order=4),  # New instance
+            constraint=AveragePowerConstraint(average_power=1.0),  # New instance
+            channel=channel2,
+            demodulator=PSKDemodulator(order=4),  # New instance
+            decoder=SimpleDecoder()  # New instance
+        )
+    
         # Second run with a different random seed
         torch.manual_seed(43)  # Set a different seed for the second run
-        second_output = model(input_data)
+        model2.train()
+        second_output = model2(input_data)
         second_run = second_output["final_output"]
-        
+    
         # The outputs should be different due to the random noise in the channel
-        # This is only true if the channel adds noise, which the AWGNChannel does
         assert not torch.allclose(first_run, second_run, atol=1e-5)
 
     def test_parity_encoding(self, parity_channel_code_model):
