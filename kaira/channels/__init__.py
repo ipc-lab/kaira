@@ -14,6 +14,8 @@ from .analog import (
     PhaseNoiseChannel,
     PoissonChannel,
     RayleighFadingChannel,
+    RicianFadingChannel,
+    LogNormalFadingChannel,
 )
 
 # Base channel classes
@@ -49,6 +51,8 @@ __all__ = [
     "PhaseNoiseChannel",
     "FlatFadingChannel",
     "RayleighFadingChannel",
+    "RicianFadingChannel",
+    "LogNormalFadingChannel",
     "NonlinearChannel",
     # Channel registry
     "ChannelRegistry",
