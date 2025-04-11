@@ -275,7 +275,10 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                             output_bits[i, :] = self.modulator.bit_patterns[b]
             else:
                 # Soft decision (LLR calculation)
-                current_noise_var = noise_var[..., i] if batch_shape else noise_var[i]
+                if noise_var is not None:  # Add type check before indexing
+                    current_noise_var = noise_var[..., i] if batch_shape else noise_var[i]
+                else:
+                    raise ValueError("noise_var cannot be None when soft_output is enabled")
 
                 # Calculate LLRs for each bit position
                 for bit_idx in range(2):

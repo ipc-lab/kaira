@@ -14,8 +14,6 @@ We'll visualize the effect of different K-factors in Rician fading and compare w
 # %%
 # Imports and Setup
 # -------------------------------
-from typing import List
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -72,10 +70,10 @@ ser_metric = SymbolErrorRate()
 ber_metric = BitErrorRate()
 
 # Process signals and collect results
-channel_outputs = []
-fading_coefficients: List[torch.Tensor] = []
-ser_results = []
-ber_results = []
+channel_outputs: list[tuple[str, torch.Tensor]] = []
+fading_coefficients: list[tuple[str, torch.Tensor]] = []
+ser_results: list[tuple[str, float]] = []
+ber_results: list[tuple[str, float]] = []
 
 for name, channel in channels:
     # Get index of symbols from original bits for later decoding
@@ -195,8 +193,8 @@ plt.tight_layout()
 # Now let's see how each channel performs across different SNR levels
 
 snr_range_db = list(range(0, 31, 2))
-ser_vs_snr = {name: [] for name, _ in channels}
-ber_vs_snr = {name: [] for name, _ in channels}
+ser_vs_snr: dict[str, list[float]] = {name: [] for name, _ in channels}
+ber_vs_snr: dict[str, list[float]] = {name: [] for name, _ in channels}
 
 for snr_db in snr_range_db:
     for name, channel_type in channels:

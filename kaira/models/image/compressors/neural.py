@@ -264,7 +264,7 @@ class NeuralCompressor(BaseModel):
                 remaining_images[original_indices[satisfies_constraint]] = False
 
                 # Early stopping if within threshold
-                if self.early_stopping_threshold is not None:
+                if self.early_stopping_threshold is not None and self.max_bits_per_image is not None:
                     threshold_bits = self.max_bits_per_image * self.early_stopping_threshold
                     if torch.all(bits <= threshold_bits):
                         break

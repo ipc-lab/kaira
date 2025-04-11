@@ -4,7 +4,7 @@ This module contains the TransCoderModel, which is a model for channel transmiss
 TransCoder pipeline.
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import torch
 
@@ -141,7 +141,7 @@ class Kurmukova2025TransCoder(BaseModel):
                 demodulated = self.demodulator(received)
 
             # Channel decoding
-            decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)  # type: Tuple[torch.Tensor, torch.Tensor]
+            decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)
 
             # Store results for this iteration
             iterations.append(
