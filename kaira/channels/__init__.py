@@ -10,12 +10,12 @@ from .analog import (
     FlatFadingChannel,
     GaussianChannel,
     LaplacianChannel,
+    LogNormalFadingChannel,
     NonlinearChannel,
     PhaseNoiseChannel,
     PoissonChannel,
     RayleighFadingChannel,
     RicianFadingChannel,
-    LogNormalFadingChannel,
 )
 
 # Base channel classes

@@ -44,8 +44,8 @@ def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Te
 
 
 def calculate_num_filters_factor_image(num_strided_layers, bw_ratio, channels=3, is_complex_transmission=False):
-    """Calculate the number of filters in an image based on the number of strided
-    layers and bandwidth ratio.
+    """Calculate the number of filters in an image based on the number of strided layers and
+    bandwidth ratio.
 
     Args:
         num_strided_layers (int): The number of strided layers in the network. These
@@ -59,16 +59,16 @@ def calculate_num_filters_factor_image(num_strided_layers, bw_ratio, channels=3,
     Returns:
         int: The calculated number of filters in an image.
     """
-    
+
     # The formula according to the test cases:
     base_filters = channels * (2 ** (2 * num_strided_layers))
     res = base_filters * bw_ratio
-    
+
     if is_complex_transmission:
         res *= 2
 
     assert res.is_integer(), f"Result {res} is not an integer"
-    
+
     return int(res)
 
 

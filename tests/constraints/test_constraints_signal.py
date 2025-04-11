@@ -40,6 +40,7 @@ def test_peak_amplitude_constraint():
     assert constrained_signal[5] == signal[5]  # 2.0 stays as is
     assert constrained_signal[6] == max_amplitude  # 5.0 -> 2.0
 
+
 def test_peak_amplitude_constraint_batch(random_signal):
     """Test PeakAmplitudeConstraint with batch of signals."""
     # Create constraint with maximum amplitude of 1.0

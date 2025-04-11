@@ -124,6 +124,7 @@ def test_compute_individual():
 
 def test_loss_return_tuple():
     """Test handling of losses that return tuples."""
+
     class TupleLoss(BaseLoss):
         def forward(self, *args, **kwargs):
             return (torch.tensor(3.0), torch.tensor(1.0))

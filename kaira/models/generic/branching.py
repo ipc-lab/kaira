@@ -45,7 +45,7 @@ class BranchingModel(BaseModel):
 
     def __init__(self, condition=None, true_branch=None, false_branch=None):
         """Initialize a branching model.
-        
+
         Args:
             condition: Optional condition function for simple true/false branching
             true_branch: Model to use when condition is True
@@ -54,13 +54,13 @@ class BranchingModel(BaseModel):
         super().__init__()
         self.branches = {}  # Dict mapping names to (condition, model) tuples
         self.default_branch = None
-        
+
         # Set up simple binary branching if condition is provided
         if condition is not None:
             # Use identity models if branches not specified
             true_model = true_branch if true_branch is not None else lambda x: x
             false_model = false_branch if false_branch is not None else lambda x: x
-            
+
             # Add branches
             self.add_branch("true_branch", condition=condition, model=true_model)
             self.set_default_branch(false_model)
@@ -128,11 +128,11 @@ class BranchingModel(BaseModel):
         for name, (condition, model) in self.branches.items():
             # Convert PyTorch tensor to Python bool if needed
             condition_result = condition(x)
-            if hasattr(condition_result, 'item'):
+            if hasattr(condition_result, "item"):
                 condition_result = bool(condition_result.item())
             else:
                 condition_result = bool(condition_result)
-                
+
             if condition_result:
                 output = model(x, *args, **kwargs)
                 return (output, name) if return_branch else output
@@ -158,14 +158,14 @@ class BranchingModel(BaseModel):
         """
         if name not in self.branches:
             raise KeyError(f"Branch '{name}' not found")
-            
+
         # Return a wrapped condition function that converts PyTorch tensors to Python bools
         original_condition, model = self.branches[name]
-        
+
         def wrapped_condition(x):
             result = original_condition(x)
-            if hasattr(result, 'item'):
+            if hasattr(result, "item"):
                 return bool(result.item())
             return bool(result)
-            
+
         return wrapped_condition, model

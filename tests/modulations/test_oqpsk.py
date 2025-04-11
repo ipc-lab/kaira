@@ -31,10 +31,7 @@ def test_oqpsk_modulator():
     # The first quadrature bit is set to 0.0 (from _delayed_quad)
     # The subsequent quadrature bits are from the input, but shifted
     norm = 1 / np.sqrt(2)
-    expected = torch.complex(
-        torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype), 
-        torch.tensor([0.0, norm, -norm, norm], dtype=symbols.imag.dtype)
-    )
+    expected = torch.complex(torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype), torch.tensor([0.0, norm, -norm, norm], dtype=symbols.imag.dtype))
 
     assert torch.allclose(symbols, expected)
     assert modulator.bits_per_symbol == 2

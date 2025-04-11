@@ -108,7 +108,7 @@ def test_add_metric():
     assert "metric1" in composite.weights
     assert "metric2" in composite.weights
     assert pytest.approx(sum(composite.weights.values()), abs=1e-6) == 1.0
-    
+
     # The actual expected value based on the implementation's normalization
     # When we add weight=0.3 for metric2, the implementation normalizes it to 0.23076923...
     assert pytest.approx(composite.weights["metric2"], abs=1e-6) == 0.23076923076923075
@@ -122,18 +122,18 @@ def test_composite_metric_get_individual_metrics():
     """Test getting individual metric values from CompositeMetric."""
     metric1 = MockMetric(return_value=torch.tensor(1.0))
     metric2 = MockMetric(return_value=torch.tensor(2.0))
-    
+
     # Create with metrics dictionary instead of empty constructor
     metrics = {"metric1": metric1, "metric2": metric2}
     composite = CompositeMetric(metrics)
-    
+
     # Setup mock inputs
     preds = torch.randn(1, 3, 10, 10)
     target = torch.randn(1, 3, 10, 10)
-    
+
     # Get individual metrics using compute_individual method
     individual_metrics = composite.compute_individual(preds, target)
-    
+
     assert isinstance(individual_metrics, dict)
     assert "metric1" in individual_metrics
     assert "metric2" in individual_metrics
@@ -168,7 +168,7 @@ def test_composite_metric_get_metrics():
 
     # Access the metrics dictionary directly
     metrics_dict = composite.metrics
-    
+
     # Check keys and values - note that metrics is stored as ModuleDict, not a regular dict
     assert isinstance(metrics_dict, torch.nn.ModuleDict)
     assert "metric1" in metrics_dict
@@ -179,33 +179,34 @@ def test_composite_metric_get_metrics():
 
 def test_composite_metric_with_tuple_return():
     """Test CompositeMetric handling metrics that return tuples."""
-    
+
     class TupleMetric(BaseMetric):
         """Mock metric that returns a tuple of values."""
+
         def __init__(self, mean=0.5, std=0.1):
             super().__init__()
             self.mean = mean
             self.std = std
-            
+
         def forward(self, preds, targets):
             return (torch.tensor(self.mean), torch.tensor(self.std))
-            
+
         def reset(self):
             pass
-    
+
     # Create metrics - one regular and one that returns a tuple
     metric1 = MockMetric(0.3)
     metric2 = TupleMetric(0.7, 0.2)
-    
+
     metrics = {"metric1": metric1, "metric2": metric2}
     composite = CompositeMetric(metrics)
-    
+
     # Forward should only use the first value (mean) from the tuple
     result = composite(torch.zeros(1), torch.zeros(1))
-    
+
     # Should be weighted average: 0.3 * 0.5 + 0.7 * 0.5 = 0.5
     assert pytest.approx(result.item(), abs=1e-6) == 0.5
-    
+
     # Verify that compute_individual preserves the tuple structure
     individual = composite.compute_individual(torch.zeros(1), torch.zeros(1))
     assert isinstance(individual["metric2"], tuple)
@@ -218,14 +219,14 @@ def test_add_metric_with_none_weight():
     """Test adding a metric with None weight (should default and normalize)."""
     metric1 = MockMetric(0.3)
     metric2 = MockMetric(0.7)
-    
+
     # Start with a single metric
     metrics = {"metric1": metric1}
     composite = CompositeMetric(metrics)
-    
+
     # Add another metric with None weight (should default and normalize)
     composite.add_metric("metric2", metric2, weight=None)
-    
+
     # Check that weights are normalized and equal (0.5 each)
     assert pytest.approx(composite.weights["metric1"], abs=1e-6) == 0.5
     assert pytest.approx(composite.weights["metric2"], abs=1e-6) == 0.5

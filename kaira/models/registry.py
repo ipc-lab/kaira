@@ -129,14 +129,10 @@ class ModelRegistry:
 
         if name not in cls._models:
             raise ValueError(f"Model '{name}' not found in registry")
-        
+
         model_class = cls._models[name]
-        
-        return {
-            "name": name,
-            "class": model_class.__name__,
-            "signature": str(inspect.signature(model_class.__init__))
-        }
+
+        return {"name": name, "class": model_class.__name__, "signature": str(inspect.signature(model_class.__init__))}
 
     @classmethod
     def create(cls, name: str, **kwargs) -> BaseModel:

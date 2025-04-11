@@ -1,6 +1,6 @@
-import torch
 import pytest
-import numpy as np
+import torch
+
 from kaira.channels.base import BaseChannel
 
 

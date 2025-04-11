@@ -25,11 +25,11 @@ class Pi4QPSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     _use_rotated: torch.Tensor  # Type annotation for the buffer
     _even_symbols: bool = True  # Used for test verification
-    _odd_symbols: bool = True   # Used for test verification
+    _odd_symbols: bool = True  # Used for test verification
 
     def __init__(self, gray_coded: bool = True) -> None:
         """Initialize the π/4-QPSK modulator.
-        
+
         Args:
             gray_coded: Whether to use Gray coding for mapping (default: True)
         """
@@ -51,7 +51,7 @@ class Pi4QPSKModulator(BaseModulator):
         else:
             # Standard QPSK without Gray coding (00, 01, 10, 11)
             angles = torch.tensor([1, 3, 5, 7]) * np.pi / 4
-            
+
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
         qpsk = torch.complex(re_part, im_part)
@@ -63,7 +63,7 @@ class Pi4QPSKModulator(BaseModulator):
         else:
             # Rotated QPSK without Gray coding (00, 01, 10, 11)
             angles_rotated = torch.tensor([0, 2, 4, 6]) * np.pi / 4
-            
+
         re_part_rotated = torch.cos(angles_rotated)
         im_part_rotated = torch.sin(angles_rotated)
         qpsk_rotated = torch.complex(re_part_rotated, im_part_rotated)
@@ -80,7 +80,7 @@ class Pi4QPSKModulator(BaseModulator):
             bit_patterns = torch.tensor([[0, 0], [0, 1], [1, 1], [1, 0]], dtype=torch.float)
         else:
             bit_patterns = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=torch.float)
-            
+
         self.register_buffer("bit_patterns", bit_patterns)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -111,7 +111,7 @@ class Pi4QPSKModulator(BaseModulator):
 
             # Convert bit pairs to indices
             indices = torch.zeros((*batch_shape, symbol_len), dtype=torch.long, device=x.device)
-            
+
             # Properly calculate the symbol index from bit pairs
             bits_0 = torch.fmod(x_reshaped[..., 0], 2).long()
             bits_1 = torch.fmod(x_reshaped[..., 1], 2).long()
@@ -122,7 +122,7 @@ class Pi4QPSKModulator(BaseModulator):
 
         # Alternate between standard and rotated constellation for each symbol
         use_rotated = self._use_rotated.clone()
-        
+
         # Process each symbol
         for i in range(symbol_len):
             if use_rotated:
@@ -137,9 +137,9 @@ class Pi4QPSKModulator(BaseModulator):
 
         return y
 
-    def reset_state(self) -> 'Pi4QPSKModulator':
+    def reset_state(self) -> "Pi4QPSKModulator":
         """Reset internal state (constellation alternation).
-        
+
         Returns:
             Self for method chaining
         """
@@ -172,7 +172,7 @@ class Pi4QPSKDemodulator(BaseDemodulator):
 
     def __init__(self, soft_output: bool = False) -> None:
         """Initialize the π/4-QPSK demodulator.
-        
+
         Args:
             soft_output: Whether to output soft LLR values even when noise_var is not provided
         """
@@ -209,27 +209,27 @@ class Pi4QPSKDemodulator(BaseDemodulator):
         if not batch_shape and not self.soft_output and noise_var is None:
             # Prepare output
             symbols = torch.zeros(symbol_shape, dtype=torch.long, device=y.device)
-            
+
             # Demodulate each symbol using the appropriate constellation
             use_rotated = self._use_rotated.clone()
-            
+
             for i in range(symbol_shape):
                 # Select current constellation
                 constellation = qpsk_rotated if use_rotated else qpsk
-                
+
                 # Find closest constellation point
                 distances = torch.abs(y[i] - constellation)
                 symbols[i] = torch.argmin(distances)
-                
+
                 # Toggle constellation for next symbol
                 use_rotated = ~use_rotated
-                
+
             # Store state for next call if in training
             if self.training:
                 self._use_rotated = use_rotated.detach()
-                
+
             return symbols
-        
+
         # For soft decisions or batched input, return bits
         # Prepare output array
         if noise_var is None and not self.soft_output:
@@ -238,7 +238,7 @@ class Pi4QPSKDemodulator(BaseDemodulator):
         else:
             # Soft LLR values
             output_bits = torch.zeros(*batch_shape, symbol_shape, 2, dtype=torch.float, device=y.device)
-            
+
             # Handle noise variance
             if noise_var is not None:
                 if not isinstance(noise_var, torch.Tensor):
@@ -248,14 +248,14 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             else:
                 # Default noise variance for soft decisions when not provided
                 noise_var = torch.ones(*batch_shape, symbol_shape, device=y.device)
-        
+
         # Demodulate each symbol using the appropriate constellation
         use_rotated = self._use_rotated.clone()
-        
+
         for i in range(symbol_shape):
             # Select current constellation
             constellation = qpsk_rotated if use_rotated else qpsk
-            
+
             # Process current symbol
             if noise_var is None and not self.soft_output:
                 # Hard decision
@@ -267,12 +267,12 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                     # For single input
                     y_i = y[i].unsqueeze(0)
                     distances = torch.abs(y_i - constellation)
-                
+
                 closest_idx = torch.argmin(distances, dim=-1)
-                
+
                 # Apply bit patterns
                 for b in range(len(self.modulator.bit_patterns)):
-                    mask = (closest_idx == b)
+                    mask = closest_idx == b
                     if batch_shape:
                         output_bits[..., i, :] = self.modulator.bit_patterns[closest_idx, :]
                     else:
@@ -281,26 +281,26 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             else:
                 # Soft decision (LLR calculation)
                 current_noise_var = noise_var[..., i] if batch_shape else noise_var[i]
-                
+
                 # Calculate LLRs for each bit position
                 for bit_idx in range(2):
                     # Create masks for symbols where bit is 0 or 1
                     bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
                     bit_1_mask = ~bit_0_mask
-                    
+
                     # Get constellation points for each bit value
                     const_bit_0 = constellation[bit_0_mask]
                     const_bit_1 = constellation[bit_1_mask]
-                    
+
                     # Calculate distances for each bit value
                     if batch_shape:
                         expanded_y = y[..., i].unsqueeze(-1)
-                        
+
                         # Distance to constellation points where bit is 0
                         distances_0 = -torch.abs(expanded_y - const_bit_0.unsqueeze(0)) ** 2
                         min_dist_0, _ = torch.max(distances_0, dim=-1)
                         min_dist_0 = min_dist_0 / current_noise_var
-                        
+
                         # Distance to constellation points where bit is 1
                         distances_1 = -torch.abs(expanded_y - const_bit_1.unsqueeze(0)) ** 2
                         min_dist_1, _ = torch.max(distances_1, dim=-1)
@@ -308,27 +308,27 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                     else:
                         # For non-batched input
                         y_i = y[i]
-                        
+
                         # Distance to constellation points where bit is 0
                         distances_0 = -torch.abs(y_i - const_bit_0) ** 2
                         min_dist_0, _ = torch.max(distances_0, dim=-1)
                         min_dist_0 = min_dist_0 / current_noise_var
-                        
+
                         # Distance to constellation points where bit is 1
                         distances_1 = -torch.abs(y_i - const_bit_1) ** 2
                         min_dist_1, _ = torch.max(distances_1, dim=-1)
                         min_dist_1 = min_dist_1 / current_noise_var
-                    
+
                     # LLR: log(P(bit=0)/P(bit=1))
                     output_bits[..., i, bit_idx] = min_dist_0 - min_dist_1
-                    
+
             # Toggle constellation for next symbol
             use_rotated = ~use_rotated
-            
+
         # Store state for next call if in training
         if self.training:
             self._use_rotated = use_rotated.detach()
-            
+
         # Format output based on context
         if self.soft_output and not batch_shape:
             # For soft demodulation of non-batched input, maintain bit structure
@@ -337,9 +337,9 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             # Standard flattened output
             return output_bits.reshape(*batch_shape, -1)
 
-    def reset_state(self) -> 'Pi4QPSKDemodulator':
+    def reset_state(self) -> "Pi4QPSKDemodulator":
         """Reset internal state (constellation alternation).
-        
+
         Returns:
             Self for method chaining
         """

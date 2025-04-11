@@ -262,18 +262,14 @@ def test_mac_model_without_encoders_decoders():
     """Test MultipleAccessChannelModel initialization without encoders/decoders."""
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
-    
+
     # Create model without encoder and decoder
-    model = MultipleAccessChannelModel(
-        channel=channel, 
-        power_constraint=power_constraint, 
-        num_devices=2
-    )
-    
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, num_devices=2)
+
     # Check lists are empty
     assert len(model.encoders) == 0
     assert len(model.decoders) == 0
-    
+
     # Verify that attempting to run forward without encoders/decoders raises error
     inputs = [torch.randn(2, 10) for _ in range(2)]
     with pytest.raises(ValueError, match="Encoders and decoders must be initialized"):
@@ -284,23 +280,17 @@ def test_mac_model_encode_decode_invalid_indices():
     """Test error handling for invalid device indices in encode and decode functions."""
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
-    model = MultipleAccessChannelModel(
-        channel=channel,
-        power_constraint=power_constraint,
-        encoder=SimpleEncoder,
-        decoder=SimpleDecoder,
-        num_devices=2
-    )
-    
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoder=SimpleEncoder, decoder=SimpleDecoder, num_devices=2)
+
     # Test encode with invalid device index
     inputs = [torch.randn(2, 10)]
     with pytest.raises(IndexError):
         model.encode(inputs, device_indices=[5])
-        
+
     # Test encode with mismatched number of inputs and indices
     with pytest.raises(ValueError):
         model.encode([torch.randn(2, 10), torch.randn(2, 10)], device_indices=[0])
-        
+
     # Test decode with invalid device index
     received = torch.randn(2, 5)
     with pytest.raises(IndexError):
@@ -311,24 +301,18 @@ def test_mac_model_with_csi_and_noise():
     """Test MultipleAccessChannelModel forward pass with explicit CSI and noise."""
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
-    model = MultipleAccessChannelModel(
-        channel=channel,
-        power_constraint=power_constraint,
-        encoder=SimpleEncoder,
-        decoder=SimpleDecoder,
-        num_devices=2
-    )
-    
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoder=SimpleEncoder, decoder=SimpleDecoder, num_devices=2)
+
     # Create inputs
     inputs = [torch.randn(2, 10) for _ in range(2)]
-    
+
     # Create CSI and noise
     csi = torch.randn(2, 5)  # Channel state information
     noise = torch.randn(2, 5)  # Explicit noise
-    
+
     # Run forward pass with CSI and noise
     outputs = model(inputs, csi=csi, noise=noise)
-    
+
     # Basic output validation
     assert len(outputs) == 2
     for output in outputs:
@@ -339,18 +323,12 @@ def test_mac_model_invalid_function_call():
     """Test error handling for invalid function calls."""
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
-    model = MultipleAccessChannelModel(
-        channel=channel,
-        power_constraint=power_constraint,
-        encoder=SimpleEncoder,
-        decoder=SimpleDecoder,
-        num_devices=2
-    )
-    
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoder=SimpleEncoder, decoder=SimpleDecoder, num_devices=2)
+
     # Test with incorrect positional argument (not a list)
     with pytest.raises(ValueError, match="Invalid arguments"):
         model(torch.randn(2, 10))
-        
+
     # Test with too many positional arguments
     with pytest.raises(ValueError, match="Invalid arguments"):
         model([torch.randn(2, 10), torch.randn(2, 10)], torch.randn(2, 5))
@@ -359,24 +337,24 @@ def test_mac_model_invalid_function_call():
 def test_mac_model_device_compatibility(mac_components):
     """Test MultipleAccessChannelModel compatibility with different devices."""
     model = MultipleAccessChannelModel(**mac_components)
-    
+
     # Create test inputs
     inputs = [torch.randn(2, 10) for _ in range(model.num_devices)]
-    
+
     # Move model to CPU explicitly
     model = model.to("cpu")
     cpu_inputs = [x.to("cpu") for x in inputs]
-    
+
     # Forward pass should work on CPU
     outputs_cpu = model(cpu_inputs)
     assert all(output.device.type == "cpu" for output in outputs_cpu)
-    
+
     # Skip GPU test if not available
     if torch.cuda.is_available():
         # Move model to GPU
         model = model.to("cuda")
         cuda_inputs = [x.to("cuda") for x in inputs]
-        
+
         # Forward pass should work on GPU
         outputs_gpu = model(cuda_inputs)
         assert all(output.device.type == "cuda" for output in outputs_gpu)
@@ -385,19 +363,19 @@ def test_mac_model_device_compatibility(mac_components):
 def test_mac_model_gradient_flow(mac_components):
     """Test gradient flow through the MultipleAccessChannelModel."""
     model = MultipleAccessChannelModel(**mac_components)
-    
+
     # Create test inputs with requires_grad
     inputs = [torch.randn(2, 10, requires_grad=True) for _ in range(model.num_devices)]
-    
+
     # Forward pass
     outputs = model(inputs)
-    
+
     # Calculate loss (sum of all outputs)
     loss = sum(output.sum() for output in outputs)
-    
+
     # Backward pass
     loss.backward()
-    
+
     # Check gradients
     for input_tensor in inputs:
         assert input_tensor.grad is not None
@@ -409,36 +387,36 @@ def test_shared_encoder_decoder_set_methods(mac_components):
     components = mac_components.copy()
     components["shared_encoder"] = True
     components["shared_decoder"] = True
-    
+
     model = MultipleAccessChannelModel(**components)
-    
+
     # Define new component types
     class NewEncoder(nn.Module):
         def __init__(self):
             super().__init__()
             self.layer = nn.Linear(10, 5)
-            
+
         def forward(self, x):
             return self.layer(x)
-            
+
     class NewDecoder(nn.Module):
         def __init__(self):
             super().__init__()
             self.layer = nn.Linear(5, 10)
-            
+
         def forward(self, x):
             return self.layer(x)
-    
+
     # Set new shared encoder
     model.set_encoder(NewEncoder)
-    
+
     # Verify all encoders are the same instance
     for i in range(model.num_devices - 1):
-        assert model.encoders[i] is model.encoders[i+1]
-        
+        assert model.encoders[i] is model.encoders[i + 1]
+
     # Set new shared decoder
     model.set_decoder(NewDecoder)
-    
+
     # Verify all decoders are the same instance
     for i in range(model.num_devices - 1):
-        assert model.decoders[i] is model.decoders[i+1]
+        assert model.decoders[i] is model.decoders[i + 1]

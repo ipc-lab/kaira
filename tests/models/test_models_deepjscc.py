@@ -84,21 +84,21 @@ def test_deepjscc_model_sequential_inheritance(deepjscc_model):
 def test_deepjscc_model_device_compatibility(deepjscc_model):
     """Test DeepJSCCModel compatibility with different devices."""
     input_data = torch.randn(4, 10)
-    
+
     # Move model to CPU explicitly
     deepjscc_model = deepjscc_model.to("cpu")
     input_data = input_data.to("cpu")
-    
+
     # Forward pass should work on CPU
     output_cpu = deepjscc_model(input_data)
     assert output_cpu.device.type == "cpu"
-    
+
     # Skip GPU test if not available
     if torch.cuda.is_available():
         # Move model to GPU
         deepjscc_model = deepjscc_model.to("cuda")
         input_data = input_data.to("cuda")
-        
+
         # Forward pass should work on GPU
         output_gpu = deepjscc_model(input_data)
         assert output_gpu.device.type == "cuda"
@@ -110,7 +110,7 @@ def test_deepjscc_model_with_different_batch_sizes(deepjscc_model):
     input_data_single = torch.randn(1, 10)
     output_single = deepjscc_model(input_data_single)
     assert output_single.shape == (1, 10)
-    
+
     # Test with a larger batch size
     input_data_large = torch.randn(16, 10)
     output_large = deepjscc_model(input_data_large)
@@ -120,16 +120,16 @@ def test_deepjscc_model_with_different_batch_sizes(deepjscc_model):
 def test_deepjscc_model_gradient_flow(deepjscc_model):
     """Test gradient flow through the entire DeepJSCCModel."""
     input_data = torch.randn(4, 10, requires_grad=True)
-    
+
     # Forward pass
     output = deepjscc_model(input_data)
-    
+
     # Calculate loss
     loss = torch.mean(output)
-    
+
     # Backward pass
     loss.backward()
-    
+
     # Check that gradients flow through the model components
     for name, param in deepjscc_model.named_parameters():
         if param.requires_grad:

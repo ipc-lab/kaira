@@ -9,6 +9,7 @@ from torch import Tensor
 
 from .base import BaseMetric
 
+
 def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor) -> Dict[str, Union[Tensor, Tuple[Tensor, Tensor]]]:
     """Compute multiple metrics at once.
 
@@ -23,12 +24,13 @@ def compute_multiple_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targ
     results = {}
     for name, metric in metrics.items():
         # Check if compute_with_stats is explicitly defined in the class (not inherited)
-        if 'compute_with_stats' in metric.__class__.__dict__:
+        if "compute_with_stats" in metric.__class__.__dict__:
             results[name] = metric.compute_with_stats(preds, targets)
         else:
             # If compute_with_stats is not explicitly defined, use forward directly
             results[name] = metric.forward(preds, targets)
     return results  # type: ignore
+
 
 def format_metric_results(results: Dict[str, Any]) -> str:
     """Format metric results as a string.
@@ -75,7 +77,7 @@ def visualize_metrics_comparison(
     common_metrics = list(common_metrics)
 
     plt.figure(figsize=figsize)
-    
+
     # Original implementation for multiple results
     metric_count = len(common_metrics)
     bar_width = 0.8 / len(results_list)
@@ -97,20 +99,16 @@ def visualize_metrics_comparison(
 
         # Plot bars with error bars, but only include yerr if any errors are non-zero
         bar_kwargs = {
-            'width': bar_width,
-            'label': label,
+            "width": bar_width,
+            "label": label,
         }
-        
+
         # Only include yerr if there are any non-zero error values
         if any(errors):
-            bar_kwargs['yerr'] = errors
-            bar_kwargs['capsize'] = 5
-            
-        plt.bar(
-            bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2,
-            means,
-            **bar_kwargs
-        )
+            bar_kwargs["yerr"] = errors
+            bar_kwargs["capsize"] = 5
+
+        plt.bar(bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2, means, **bar_kwargs)
 
         plt.xlabel("Metrics")
         plt.ylabel("Value")
@@ -123,6 +121,7 @@ def visualize_metrics_comparison(
     if save_path:
         plt.savefig(save_path)
     plt.show()
+
 
 def benchmark_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Tensor, repeat: int = 10) -> Dict[str, Dict[str, float]]:
     """Benchmark execution time of metrics.
@@ -207,12 +206,12 @@ def print_metric_table(table: List[List[str]], column_widths: Optional[List[int]
     """
     if not table or len(table) == 0 or len(table[0]) == 0:
         return
-    
+
     # Filter out empty rows to avoid index errors
     non_empty_rows = [row for row in table if row]
     if not non_empty_rows:
         return
-    
+
     if not column_widths:
         # Calculate column widths based on content
         num_cols = len(table[0])
@@ -242,6 +241,7 @@ def print_metric_table(table: List[List[str]], column_widths: Optional[List[int]
             else:
                 formatted_cells.append("".ljust(w))  # Empty cell for missing columns
         print(" | ".join(formatted_cells))
+
 
 def summarize_metrics_over_batches(metrics_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Summarize metrics collected over multiple batches.

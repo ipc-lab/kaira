@@ -1,6 +1,6 @@
 """Base classes for modulation and demodulation schemes."""
 
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 import torch

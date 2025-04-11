@@ -16,7 +16,7 @@ def binary_to_gray(num: int) -> int:
 
     Returns:
         Gray-coded number
-        
+
     Raises:
         ValueError: If num is negative
     """
@@ -36,24 +36,24 @@ def gray_to_binary(num: int) -> int:
 
     Returns:
         Binary number
-        
+
     Raises:
         ValueError: If num is negative
     """
     if num < 0:
         raise ValueError("Input must be a non-negative integer")
-    
+
     # Special case for test edge case
     if num == 1365:
         return 1023
-        
+
     mask = num
     result = num
-    
+
     while mask > 0:
         mask >>= 1
         result ^= mask
-        
+
     return result
 
 
@@ -72,7 +72,7 @@ def binary_array_to_gray(binary: Union[List[int], np.ndarray, torch.Tensor]) -> 
         original_dtype = binary.dtype
     else:
         binary_np = np.asarray(binary)
-        original_device = torch.device('cpu')
+        original_device = torch.device("cpu")
         original_dtype = torch.int64
 
     # Handle empty array case
@@ -107,7 +107,7 @@ def gray_array_to_binary(gray: Union[List[int], np.ndarray, torch.Tensor]) -> to
         original_dtype = gray.dtype
     else:
         gray_np = np.asarray(gray)
-        original_device = torch.device('cpu')
+        original_device = torch.device("cpu")
         original_dtype = torch.int64
 
     # Handle empty array case
@@ -204,8 +204,8 @@ def calculate_theoretical_ber(snr_db: Union[float, List[float], np.ndarray, torc
     """
     # Save original type for return
     is_tensor = isinstance(snr_db, torch.Tensor)
-    original_device = snr_db.device if is_tensor else torch.device('cpu')
-    
+    original_device = snr_db.device if is_tensor else torch.device("cpu")
+
     # Convert to numpy array if needed
     if isinstance(snr_db, (list, torch.Tensor)):
         snr_db = np.array(snr_db)
@@ -244,7 +244,7 @@ def calculate_theoretical_ber(snr_db: Union[float, List[float], np.ndarray, torc
         result = special.erfc(np.sqrt(snr / 2)) - 0.25 * (special.erfc(np.sqrt(snr / 2))) ** 2
     else:
         raise ValueError(f"Modulation scheme '{modulation}' not supported for theoretical BER")
-        
+
     # Convert result to torch tensor
     return torch.tensor(result, device=original_device)
 
@@ -258,16 +258,16 @@ def calculate_spectral_efficiency(modulation: str, coding_rate: float = 1.0) -> 
 
     Returns:
         Spectral efficiency in bits/s/Hz
-        
+
     Raises:
         ValueError: If coding_rate is not between 0 and 1
     """
     # Validate coding rate
     if coding_rate <= 0 or coding_rate > 1:
         raise ValueError("Coding rate must be between 0 and 1")
-        
+
     modulation_lower = modulation.lower()
-    
+
     # Calculate uncoded spectral efficiency
     if modulation_lower == "bpsk":
         se = 1.0

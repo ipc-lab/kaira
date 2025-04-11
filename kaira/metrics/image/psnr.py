@@ -5,6 +5,7 @@ PSNR is a widely used objective quality metric for image and video processing
 correlation, it remains one of the most common benchmarks for image quality assessment.
 """
 from typing import Any, Optional, Tuple
+
 import torch
 import torchmetrics.image
 from torch import Tensor

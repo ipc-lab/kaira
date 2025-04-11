@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from ..base import ConfigurableModel
 from ..registry import ModelRegistry
@@ -12,8 +12,7 @@ class ParallelModel(ConfigurableModel):
     All steps receive the same input data and process independently.
     """
 
-    def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None, 
-                 branches: Optional[List[Callable]] = None, aggregator: Optional[Callable] = None):
+    def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None, branches: Optional[List[Callable]] = None, aggregator: Optional[Callable] = None):
         """Initialize the parallel model.
 
         Args:
@@ -26,13 +25,13 @@ class ParallelModel(ConfigurableModel):
         self.max_workers = max_workers
         self.aggregator = aggregator
         self._step_counter = 0  # Counter for auto-naming steps
-        
+
         # Initialize steps list
         if steps:
             self.steps = list(steps)
         else:
             self.steps = []
-            
+
         # Add branches if provided
         if branches:
             for i, branch in enumerate(branches):

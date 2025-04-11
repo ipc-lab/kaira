@@ -7,7 +7,6 @@ computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
 
 
 from typing import Sequence
-import sys
 
 import torch
 import torch.nn as nn
@@ -83,10 +82,10 @@ class CombinedLoss(BaseLoss):
         for i, cur_loss in enumerate(self.losses):
             # Compute current loss
             current_loss_value = cur_loss(x, target)
-            
+
             # Apply weight to the loss value
             weighted_loss = self.weights[i] * current_loss_value
-            
+
             # Add to total loss, preserving shape if the loss returns a non-scalar tensor
             if isinstance(weighted_loss, torch.Tensor):
                 # Handle different tensor dimensions - if loss is a tensor with dimensions
@@ -98,7 +97,7 @@ class CombinedLoss(BaseLoss):
             else:
                 # Handle case where loss might be a Python scalar
                 loss = loss + torch.tensor(weighted_loss, device=x.device)
-            
+
         return loss
 
 
@@ -304,7 +303,7 @@ class VGGLoss(BaseLoss):
             param.requires_grad = False
 
         # For test compatibility - handle direct access to _params
-        if hasattr(self.vgg, '_params'):
+        if hasattr(self.vgg, "_params"):
             for param in self.vgg._params:
                 param.requires_grad = False
 
@@ -478,11 +477,11 @@ class StyleLoss(BaseLoss):
                 (equal weights for all layers).
         """
         super().__init__()
-        
+
         # Initialize common parameters
         self.apply_gram = apply_gram
         self.normalize = normalize
-        
+
         # Try to initialize VGG-based feature extractor
         try:
             vgg = models.vgg16(weights=models.VGG16_Weights.DEFAULT).features.eval()
@@ -512,7 +511,7 @@ class StyleLoss(BaseLoss):
             # Freeze parameters
             for param in self.feature_extractor.parameters():
                 param.requires_grad = False
-                
+
         except Exception:
             # Fall back to minimal configuration for graceful degradation
             self.feature_extractor = nn.Sequential()
@@ -534,11 +533,11 @@ class StyleLoss(BaseLoss):
         features = x_cont.view(batch_size, channels, height * width)
         features_t = features.transpose(1, 2)
         gram = features.bmm(features_t)
-        
+
         # Normalize if requested
         if self.normalize:
             gram = gram / (channels * height * width)
-            
+
         return gram
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -554,14 +553,14 @@ class StyleLoss(BaseLoss):
         # Handle precomputed Gram matrices case
         if not self.apply_gram:
             return F.mse_loss(x, target)
-            
+
         # Input shape validation for image inputs
         if x.dim() != 4 or target.dim() != 4:
             raise ValueError("Input tensors must be 4D (batch, channels, height, width)")
-        
+
         if x.size(1) != 3 or target.size(1) != 3:
             raise ValueError("Input tensors must have 3 channels (RGB)")
-            
+
         # Normalize to match VGG input requirements
         mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(x.device)
         std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(x.device)
@@ -570,12 +569,9 @@ class StyleLoss(BaseLoss):
         target = (target - mean) / std
 
         loss = 0.0
-        x_feats = []
-        target_feats = []
 
         # Extract features and calculate gram matrices
         for i, layer in enumerate(self.feature_extractor):
-                
             x = layer(x)
             target = layer(target)
 
@@ -583,7 +579,7 @@ class StyleLoss(BaseLoss):
                 layer_idx = self.style_layers.index(i)
                 layer_name = f"layer_{layer_idx}"
                 weight = self.layer_weights.get(layer_name, 1.0)
-                
+
                 x_gram = self.gram_matrix(x)
                 target_gram = self.gram_matrix(target)
                 loss += weight * F.mse_loss(x_gram, target_gram)
@@ -699,12 +695,10 @@ class ElasticLoss(BaseLoss):
             # Compute weighted combination of L1 and L2 loss
             l1_component = abs_diff
             l2_component = 0.5 * squared_diff / self.beta
-            
+
             # Apply smooth transition between L1 and L2 based on difference magnitude
-            point_losses = torch.where(abs_diff < self.beta, 
-                                    self.alpha * l2_component, 
-                                    (1.0 - self.alpha) * l1_component + self.alpha * self.beta / 2.0)
-        
+            point_losses = torch.where(abs_diff < self.beta, self.alpha * l2_component, (1.0 - self.alpha) * l1_component + self.alpha * self.beta / 2.0)
+
         # Apply reduction
         if self.reduction == "mean":
             return point_losses.mean()

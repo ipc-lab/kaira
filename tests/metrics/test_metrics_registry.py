@@ -134,31 +134,36 @@ def test_create_image_quality_metrics():
     """Test creating actual image quality metrics without mocking."""
     # Create metrics with default parameters
     metrics = MetricRegistry.create_image_quality_metrics()
-    
+
     # Verify all expected metrics are created
     assert "psnr" in metrics
     assert "ssim" in metrics
     assert "ms_ssim" in metrics
     assert "lpips" in metrics
-    
+
     # Check that metrics are the correct type
-    from kaira.metrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure, MultiScaleSSIM, LearnedPerceptualImagePatchSimilarity
-    
+    from kaira.metrics.image import (
+        LearnedPerceptualImagePatchSimilarity,
+        MultiScaleSSIM,
+        PeakSignalNoiseRatio,
+        StructuralSimilarityIndexMeasure,
+    )
+
     assert isinstance(metrics["psnr"], PeakSignalNoiseRatio)
     assert isinstance(metrics["ssim"], StructuralSimilarityIndexMeasure)
     assert isinstance(metrics["ms_ssim"], MultiScaleSSIM)
     assert isinstance(metrics["lpips"], LearnedPerceptualImagePatchSimilarity)
-    
+
     # Test with custom data_range
     custom_metrics = MetricRegistry.create_image_quality_metrics(data_range=255.0)
     assert custom_metrics["psnr"].psnr.data_range == 255.0
     assert custom_metrics["ssim"].ssim.data_range == 255.0
     assert custom_metrics["ms_ssim"].data_range == 255.0
-    
+
     # Test with custom lpips_net_type
     lpips_metrics = MetricRegistry.create_image_quality_metrics(lpips_net_type="vgg")
     assert lpips_metrics["lpips"].net_type == "vgg"
-    
+
     # Test device placement
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -167,11 +172,11 @@ def test_create_image_quality_metrics():
         psnr_params = list(gpu_metrics["psnr"].parameters())
         if psnr_params:  # Ensure there are parameters to check
             assert next(iter(psnr_params)).device == device
-    
+
     # Test with sample data - use 192x192 images to satisfy MS-SSIM requirements (needs > 160)
     sample_preds = torch.rand(2, 3, 192, 192)
     sample_targets = torch.rand(2, 3, 192, 192)
-    
+
     # Ensure all metrics can process the sample data without errors
     for metric_name, metric in metrics.items():
         result = metric(sample_preds, sample_targets)
@@ -273,7 +278,7 @@ def test_metric_registry_register_duplicate():
     try:
         # Register a metric
         MetricRegistry.register("duplicate_test", DummyMetric)
-        
+
         # Try to register another metric with the same name
         with pytest.raises(ValueError, match="Metric with name 'duplicate_test' already registered"):
             MetricRegistry.register("duplicate_test", BaseMetric)
@@ -285,17 +290,17 @@ def test_metric_registry_register_duplicate():
 def test_metric_registry_available_metrics_alias():
     """Test that available_metrics is an alias for list_metrics."""
     original_metrics = MetricRegistry._metrics.copy()
-    
+
     try:
         # Register some test metrics
         MetricRegistry._metrics.clear()
         MetricRegistry.register("alias_test1", DummyMetric)
         MetricRegistry.register("alias_test2", DummyMetric)
-        
+
         # Get metrics using both methods
         list_result = MetricRegistry.list_metrics()
         available_result = MetricRegistry.available_metrics()
-        
+
         # Verify they return the same result
         assert sorted(list_result) == sorted(available_result)
         assert "alias_test1" in available_result

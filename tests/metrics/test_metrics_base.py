@@ -53,7 +53,7 @@ class DummyMetric(BaseMetric):
 
     def compute(self):
         return self.value
-        
+
     def forward(self, preds, target):
         self.update(preds, target)
         return self.compute()
@@ -131,27 +131,27 @@ def test_base_metric_forward_calls_update_compute():
 def test_compute_with_stats():
     """Test computing metric with statistics."""
     metric = ConcreteMetric(reduction="none")
-    
+
     # Create test data with predictable variance
     preds = torch.tensor([1.0, 2.0, 3.0, 4.0])
     targets = torch.tensor([1.5, 2.5, 3.5, 4.5])
-    
+
     # Call compute_with_stats
     mean, std = metric.compute_with_stats(preds, targets)
-    
+
     # Check return types
     assert isinstance(mean, torch.Tensor)
     assert isinstance(std, torch.Tensor)
-    
+
     # Check values are correct
     # Forward returns absolute difference which is 0.5 for all values
     assert mean.item() == 0.5
     assert std.item() == 0.0
-    
+
     # Test with data that has non-zero standard deviation
     preds = torch.tensor([1.0, 2.0, 3.0, 4.0])
     targets = torch.tensor([1.1, 2.4, 2.7, 4.2])
-    
+
     mean, std = metric.compute_with_stats(preds, targets)
     # Absolute differences should be [0.1, 0.4, 0.3, 0.2]
     assert pytest.approx(mean.item()) == 0.25  # Using pytest.approx to handle floating-point precision
@@ -163,7 +163,7 @@ def test_string_representation():
     # Test with default name (class name)
     metric = DummyMetric()
     assert str(metric) == "DummyMetric Metric"
-    
+
     # Test with custom name
     metric_custom = ConcreteMetric()
     metric_custom.name = "CustomName"

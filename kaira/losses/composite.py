@@ -138,6 +138,7 @@ class CompositeLoss(BaseLoss):
 
     def add_loss(self, name: str, loss, weight: float = 1.0):
         """Add a new loss to the composite loss.
+
         Args:
             name (str): Name for the loss
             loss (BaseLoss): Loss module to add
@@ -147,38 +148,38 @@ class CompositeLoss(BaseLoss):
         Raises:
             ValueError: If a loss with the given name already exists
         """
-            
+
         # Check if loss name already exists
         if name in self.losses:
             raise ValueError(f"Loss '{name}' already exists in the composite loss")
-            
+
         # Add loss to ModuleDict
         self.losses[name] = loss
-        
+
         # Preserve the exact weight for the new loss, adjust existing weights proportionally
         remaining_weight = 1.0 - weight
         current_total = sum(self.weights.values())
-        
+
         # Adjust existing weights to maintain the sum of 1.0
         if current_total > 0:  # Avoid division by zero
             for k in self.weights:
                 self.weights[k] = self.weights[k] * remaining_weight / current_total
-                
+
         # Set the weight for the new loss
         self.weights[name] = weight
 
     def __str__(self) -> str:
         """Get a string representation of the composite loss with weights.
-        
+
         Returns:
             str: String representation of the composite loss including components and weights
         """
         base_str = f"{self.__class__.__name__}(\n"
-        base_str += f"  (losses): ModuleDict(\n"
-        
+        base_str += "  (losses): ModuleDict(\n"
+
         for name, loss in self.losses.items():
             weight = self.weights.get(name, 0.0)
             base_str += f"    ({name}): {loss.__class__.__name__}  # weight={weight:.3f}\n"
-        
+
         base_str += "  )\n)"
         return base_str

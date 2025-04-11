@@ -54,41 +54,41 @@ def create_ofdm_constraints(
     class TestSpecificPAPRConstraint(BaseConstraint):
         def __init__(self, max_papr):
             super().__init__()
-            # Use a stricter threshold to ensure we stay well under the limit 
+            # Use a stricter threshold to ensure we stay well under the limit
             self.max_papr = 0.95 * max_papr  # Use 95% of limit to provide margin
-            
+
         def forward(self, x):
             # Preserve original shape
             original_shape = x.shape
-            
+
             # Flatten for simpler processing
             x_flat = x.view(-1)
-            
+
             # Calculate power metrics
             mean_power = torch.mean(x_flat**2)
-            
+
             if mean_power > 1e-10:
                 # Calculate maximum allowed amplitude for this mean power
                 max_amp = torch.sqrt(mean_power * self.max_papr)
-                
+
                 # Apply very strict clipping
                 x_flat = torch.clamp(x_flat, -max_amp, max_amp)
-                
+
             # Reshape to original
             return x_flat.view(original_shape)
-    
+
     constraints = []
-    
+
     # Add PAPR constraint first
     constraints.append(TestSpecificPAPRConstraint(max_papr))
-    
+
     # Add peak amplitude if specified
     if peak_amplitude is not None:
         constraints.append(PeakAmplitudeConstraint(peak_amplitude))
-    
+
     # Add power constraint last
     constraints.append(TotalPowerConstraint(total_power))
-    
+
     return CompositeConstraint(constraints)
 
 
@@ -147,26 +147,27 @@ def create_mimo_constraints(
     # For the test constraints, we need an extremely aggressive PAPR constraint
     # that guarantees we're under the required limit
     if max_papr is not None:
+
         class ExtremelyStrictPAPRConstraint(BaseConstraint):
             def __init__(self, max_papr):
                 super().__init__()
                 # For the test cases, use a much lower target PAPR to ensure we pass the tests
                 self.target_papr = max_papr * 0.70  # 70% of the actual limit for an even stronger safety margin
-                
+
             def forward(self, x):
                 # Store original shape
                 original_shape = x.shape
-                
+
                 # Handle different tensor shapes
                 if len(original_shape) > 2:  # [batch, antennas, samples]
                     # Reshape to [batch, -1] to apply constraint batch-wise
                     x_reshaped = x.reshape(original_shape[0], -1)
                     result = torch.zeros_like(x_reshaped)
-                    
+
                     # Process each batch independently
                     for b in range(original_shape[0]):
                         result[b] = self._apply_strict_papr_constraint(x_reshaped[b])
-                    
+
                     # Reshape back to original
                     return result.reshape(original_shape)
                 else:
@@ -174,37 +175,37 @@ def create_mimo_constraints(
                     x_flat = x.reshape(-1)
                     result = self._apply_strict_papr_constraint(x_flat)
                     return result.reshape(original_shape)
-            
+
             def _apply_strict_papr_constraint(self, x):
-                """Apply very strict PAPR constraint to a 1D tensor"""
+                """Apply very strict PAPR constraint to a 1D tensor."""
                 # Calculate mean power
                 mean_power = torch.mean(x**2)
-                
+
                 # Skip if signal is effectively zero
                 if mean_power < 1e-10:
                     return x
-                
+
                 # Set maximum allowed amplitude based on target PAPR
                 max_allowed_amp = torch.sqrt(mean_power * self.target_papr)
-                
+
                 # First pass: Apply hard clipping
                 x_clipped = torch.clamp(x, -max_allowed_amp, max_allowed_amp)
-                
+
                 # Second pass: Calculate new mean power and apply more aggressive clipping if needed
                 new_mean_power = torch.mean(x_clipped**2)
                 if new_mean_power > 1e-10:
                     # Recalculate clipping with even stricter threshold
                     stricter_max_amp = torch.sqrt(new_mean_power * self.target_papr * 0.9)
                     x_clipped = torch.clamp(x_clipped, -stricter_max_amp, stricter_max_amp)
-                
+
                 return x_clipped
-                
+
         constraints.append(ExtremelyStrictPAPRConstraint(max_papr))
-    
+
     # Add spectral mask constraint if specified
     if spectral_mask is not None:
         constraints.append(SpectralMaskConstraint(spectral_mask))
-    
+
     # Add power constraint last
     if uniform_power is not None:
         constraints.append(PerAntennaPowerConstraint(uniform_power=uniform_power))
@@ -214,11 +215,11 @@ def create_mimo_constraints(
             def __init__(self, total_power):
                 super().__init__()
                 self.total_power = total_power
-                
+
             def forward(self, x):
                 # Calculate current total power
                 current_power = torch.sum(x**2)
-                
+
                 # Scale to achieve exactly the target power
                 if current_power > 1e-10:
                     scale = torch.sqrt(self.total_power / current_power)
@@ -228,9 +229,9 @@ def create_mimo_constraints(
                     flat_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
                     # Convert total_power to a tensor before using torch.sqrt()
                     return flat_signal * torch.sqrt(torch.tensor(self.total_power))
-        
+
         constraints.append(TestTotalPowerConstraint(total_power))
-    
+
     return CompositeConstraint(constraints)
 
 

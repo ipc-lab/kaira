@@ -1,18 +1,19 @@
-"""Tests for generic model classes (LambdaModel, ParallelModel, BranchingModel, SequentialModel)."""
+"""Tests for generic model classes (LambdaModel, ParallelModel, BranchingModel,
+SequentialModel)."""
 import pytest
 import torch
 
 from kaira.models.base import BaseModel
 from kaira.models.generic import (
+    BranchingModel,
     IdentityModel,
     LambdaModel,
     ParallelModel,
-    BranchingModel,
     SequentialModel,
 )
 
-
 # Shared test fixtures and utility classes
+
 
 class DummyModel(BaseModel):
     """A simple dummy model for testing."""
@@ -74,6 +75,7 @@ def branching_model():
 
 # SequentialModel tests
 
+
 def test_sequential_model(input_tensor):
     """Test sequential model processes steps in order."""
     # Create steps that will be applied in sequence
@@ -118,6 +120,7 @@ def test_sequential_model_invalid_step():
 
 # LambdaModel tests
 
+
 class TestLambdaModel:
     """Tests for the LambdaModel class."""
 
@@ -131,6 +134,7 @@ class TestLambdaModel:
 
     def test_lambda_model_with_args(self):
         """Test that LambdaModel can pass additional args to the lambda function."""
+
         def add_and_scale(x, add_value, scale_factor):
             return (x + add_value) * scale_factor
 
@@ -148,6 +152,7 @@ class TestLambdaModel:
 
 
 # ParallelModel tests
+
 
 class TestParallelModel:
     """Tests for the ParallelModel class."""
@@ -232,7 +237,7 @@ class TestParallelModel:
         assert "error_step" in results
         assert isinstance(results["error_step"], str)
         assert "Error: Simulated error" in results["error_step"]
-    
+
     def test_parallel_model_branches_and_aggregator(self, input_tensor):
         """Test parallel model with branches and custom aggregator."""
         # Create branches for parallel processing
@@ -255,6 +260,7 @@ class TestParallelModel:
 
 
 # BranchingModel tests
+
 
 class TestBranchingModel:
     """Tests for the BranchingModel class."""
@@ -334,13 +340,14 @@ class TestBranchingModel:
     def test_branching_model_remove_nonexistent_branch(self):
         """Test that removing a nonexistent branch raises KeyError."""
         model = BranchingModel()
-        
+
         # Attempt to remove a branch that doesn't exist
         with pytest.raises(KeyError, match="Branch 'nonexistent' not found"):
             model.remove_branch("nonexistent")
-    
+
     def test_branching_model_with_condition(self):
         """Test branching model with condition-based routing."""
+
         # Create a condition function that routes based on sum of input
         def condition(x):
             return torch.sum(x) > 5.0
@@ -363,17 +370,18 @@ class TestBranchingModel:
         assert torch.allclose(false_output, false_input * 0.5)
 
     def test_branching_model_get_branch_condition_wrapper(self):
-        """Test that condition wrapper returned by get_branch handles tensor and non-tensor results."""
+        """Test that condition wrapper returned by get_branch handles tensor and non-tensor
+        results."""
         model = BranchingModel()
-        
+
         # Test with a condition that returns a tensor with item() method
         def tensor_condition(x):
             # Use recommended clone().detach() instead of torch.tensor()
             return (x.sum() > 5).clone().detach()
-            
+
         model.add_branch("tensor_branch", tensor_condition, DummyModel())
         wrapper, _ = model.get_branch("tensor_branch")
-        
+
         # Verify tensor result is converted to Python bool
         result_true = wrapper(torch.tensor([3.0, 3.0]))  # Sum = 6 > 5
         result_false = wrapper(torch.tensor([2.0, 2.0]))  # Sum = 4 < 5
@@ -381,14 +389,14 @@ class TestBranchingModel:
         assert isinstance(result_false, bool)
         assert result_true is True
         assert result_false is False
-        
+
         # Test with a condition that returns a Python bool directly
         def bool_condition(x):
             return x.sum() > 5
-            
+
         model.add_branch("bool_branch", bool_condition, DummyModel())
         wrapper, _ = model.get_branch("bool_branch")
-        
+
         # Verify Python bool result is preserved
         result_true = wrapper(torch.tensor([3.0, 3.0]))  # Sum = 6 > 5
         result_false = wrapper(torch.tensor([2.0, 2.0]))  # Sum = 4 < 5
@@ -398,48 +406,50 @@ class TestBranchingModel:
         assert result_false is False
 
     def test_branching_model_non_boolean_condition(self):
-        """Test that non-boolean, non-tensor condition results are properly converted to booleans."""
+        """Test that non-boolean, non-tensor condition results are properly converted to
+        booleans."""
         model = BranchingModel()
-        
+
         # Create a custom class with __bool__ method
         class CustomBooleanable:
             def __init__(self, value):
                 self.value = value
-                
+
             def __bool__(self):
                 return self.value > 0
-        
+
         # Add a branch with a condition that returns our custom object
         def custom_condition(x):
             # Return an object that's neither a tensor nor a boolean
             return CustomBooleanable(x.sum().item())
-            
+
         model.add_branch("custom_branch", custom_condition, DummyModel())
         wrapper, _ = model.get_branch("custom_branch")
-        
+
         # Test with values that should convert to True and False
         result_true = wrapper(torch.tensor([1.0, 2.0]))  # Sum = 3 > 0
         result_false = wrapper(torch.tensor([-2.0, -2.0]))  # Sum = -4 < 0
-        
+
         # Verify the results are converted to Python booleans
         assert isinstance(result_true, bool)
         assert isinstance(result_false, bool)
         assert result_true is True
         assert result_false is False
-        
+
         # Test the forward method with the custom condition
         output_true, branch = model(torch.tensor([1.0, 2.0]), return_branch=True)
         assert branch == "custom_branch"
-        
+
         # Set a default branch for the False case
         default_model = AnotherDummyModel()
         model.set_default_branch(default_model)
-        
+
         output_false, branch = model(torch.tensor([-2.0, -2.0]), return_branch=True)
         assert branch == "default"
 
 
 # IdentityModel tests
+
 
 def test_identity_model():
     """Test identity model passes input unchanged."""
@@ -460,15 +470,13 @@ def test_identity_model():
 
 # Model composition tests
 
+
 def test_model_composition():
     """Test composition of different generic models."""
     # Create components
     seq_model = SequentialModel([SimpleLayer(add_value=1.0), ScaleLayer(scale_factor=2.0)])
 
-    parallel_model = ParallelModel(
-        branches=[lambda x: x + 3.0, lambda x: x * 0.5], 
-        aggregator=lambda outputs: sum(outputs)
-    )
+    parallel_model = ParallelModel(branches=[lambda x: x + 3.0, lambda x: x * 0.5], aggregator=lambda outputs: sum(outputs))
 
     # Compose models: sequential followed by parallel
     composed_model = SequentialModel([seq_model, parallel_model])

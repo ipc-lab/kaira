@@ -27,7 +27,7 @@ class IdentityModulator(BaseModulator):
         """Initialize the identity modulator."""
         super().__init__()
         self.constellation = self._create_constellation()
-        
+
         self._bits_per_symbol = 1  # Always 1 for identity modulation
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -88,7 +88,7 @@ class IdentityDemodulator(BaseDemodulator):
         """Initialize the identity demodulator."""
         super().__init__()
         self.constellation = torch.tensor([0.0, 1.0], dtype=torch.complex64)
-        
+
         self._bits_per_symbol = 1  # Always 1 for identity demodulation
 
     def forward(self, y: torch.Tensor, noise_var=None) -> torch.Tensor:

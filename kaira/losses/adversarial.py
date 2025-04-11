@@ -80,7 +80,7 @@ class LSGANLoss(BaseLoss):
         """
         super().__init__()
         self.reduction = reduction
-    
+
     def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
@@ -136,7 +136,7 @@ class WassersteinGANLoss(BaseLoss):
     def __init__(self):
         """Initialize the WassersteinGANLoss module."""
         super().__init__()
-                
+
     def forward_discriminator(self, real_pred: torch.Tensor, fake_pred: torch.Tensor) -> torch.Tensor:
         """Forward pass for discriminator.
 
@@ -294,18 +294,13 @@ class R1GradientPenalty(BaseLoss):
         if not real_data.requires_grad:
             # If not, issue a warning and return zero penalty
             import warnings
-            warnings.warn(f"The real_data tensor does not require gradients. The grad will be treated as zero.")
+
+            warnings.warn("The real_data tensor does not require gradients. The grad will be treated as zero.")
             return torch.tensor(0.0, device=real_data.device)
 
         # Create gradient graph
-        grad_real = torch.autograd.grad(
-            outputs=real_outputs.sum(), 
-            inputs=real_data, 
-            create_graph=True, 
-            retain_graph=True,
-            allow_unused=True  # Allow unused gradients
-        )[0]
-        
+        grad_real = torch.autograd.grad(outputs=real_outputs.sum(), inputs=real_data, create_graph=True, retain_graph=True, allow_unused=True)[0]  # Allow unused gradients
+
         # If gradient is None, return zero penalty
         if grad_real is None:
             return torch.tensor(0.0, device=real_data.device)

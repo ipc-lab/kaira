@@ -60,7 +60,7 @@ class BPSKModulator(BaseModulator):
 @ModulationRegistry.register_demodulator()
 class BPSKDemodulator(BaseDemodulator):
     """Binary Phase-Shift Keying (BPSK) demodulator.
-    
+
     Following standard convention where:
     - Positive values map to bit 0
     - Negative values map to bit 1
@@ -69,7 +69,7 @@ class BPSKDemodulator(BaseDemodulator):
     def __init__(self) -> None:
         """Initialize the BPSK demodulator."""
         super().__init__()
-        self._bits_per_symbol = 1 # BPSK has 1 bit per symbol
+        self._bits_per_symbol = 1  # BPSK has 1 bit per symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate BPSK symbols.
@@ -129,15 +129,18 @@ class QPSKModulator(BaseModulator):
         self.register_buffer("constellation", torch.complex(re_part, im_part))
 
         # Bit patterns for each symbol - Gray coded
-        bit_patterns = torch.tensor([
-            [0.0, 0.0],  # First quadrant
-            [0.0, 1.0],  # Fourth quadrant
-            [1.0, 0.0],  # Second quadrant
-            [1.0, 1.0],  # Third quadrant
-        ], dtype=torch.float)
+        bit_patterns = torch.tensor(
+            [
+                [0.0, 0.0],  # First quadrant
+                [0.0, 1.0],  # Fourth quadrant
+                [1.0, 0.0],  # Second quadrant
+                [1.0, 1.0],  # Third quadrant
+            ],
+            dtype=torch.float,
+        )
         self.register_buffer("bit_patterns", bit_patterns)
-        
-        self._bits_per_symbol = 2 # QPSK has 2 bits per symbol
+
+        self._bits_per_symbol = 2  # QPSK has 2 bits per symbol
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Modulate bit pairs to QPSK symbols.
@@ -187,7 +190,7 @@ class QPSKModulator(BaseModulator):
 @ModulationRegistry.register_demodulator()
 class QPSKDemodulator(BaseDemodulator):
     """Quadrature Phase-Shift Keying (QPSK) demodulator.
-    
+
     Demodulates QPSK symbols back to bit pairs following Gray coding convention.
     """
 
@@ -203,8 +206,8 @@ class QPSKDemodulator(BaseDemodulator):
 
         # Create modulator to access constellation
         self.modulator = QPSKModulator(normalize)
-        
-        self._bits_per_symbol = 2 # QPSK has 2 bits per symbol
+
+        self._bits_per_symbol = 2  # QPSK has 2 bits per symbol
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate QPSK symbols.
@@ -218,23 +221,23 @@ class QPSKDemodulator(BaseDemodulator):
         """
         batch_shape = y.shape[:-1]
         symbol_shape = y.shape[-1]
-        
+
         if noise_var is None:
             # Hard decision: Find the closest constellation point
             expanded_y = y.unsqueeze(-1)  # (..., N, 1)
             expanded_const = self.modulator.constellation.expand(*([1] * len(batch_shape)), symbol_shape, 4)  # (..., N, 4)
-            
+
             # Calculate distances
             distances = torch.abs(expanded_y - expanded_const)
             closest_idx = torch.argmin(distances, dim=-1)  # (..., N)
-            
+
             # Get bit patterns for each closest constellation point
             bits = torch.zeros((*batch_shape, symbol_shape, 2), dtype=torch.float, device=y.device)
             for i in range(4):
                 mask = (closest_idx == i).unsqueeze(-1).expand(*batch_shape, symbol_shape, 2)
                 bit_pattern = self.modulator.bit_patterns[i].expand(*batch_shape, symbol_shape, 2)
                 bits = torch.where(mask, bit_pattern, bits)
-                
+
             # Reshape to final bit sequence
             return bits.reshape(*batch_shape, -1)
         else:
@@ -254,18 +257,18 @@ class QPSKDemodulator(BaseDemodulator):
                 # Separate constellation points for bit=0 and bit=1
                 bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
                 bit_1_mask = ~bit_0_mask
-                
+
                 # Get corresponding constellation points
                 const_bit_0 = self.modulator.constellation[bit_0_mask]
                 const_bit_1 = self.modulator.constellation[bit_1_mask]
-                
-                # Calculate minimum distances 
+
+                # Calculate minimum distances
                 min_dist_0 = self._min_distance_to_points(y, const_bit_0, noise_var)
                 min_dist_1 = self._min_distance_to_points(y, const_bit_1, noise_var)
-                
+
                 # LLR = log(P(bit=0|y)/P(bit=1|y))
                 llrs[..., bit_idx] = min_dist_1 - min_dist_0
-            
+
             # Reshape to final sequence
             return llrs.reshape(*batch_shape, -1)
 
@@ -287,11 +290,11 @@ class QPSKDemodulator(BaseDemodulator):
         num_points = points.shape[0]
 
         # Reshape inputs for broadcasting
-        y_expanded = y.unsqueeze(-1)  # (..., N, 1)
-        
+        y.unsqueeze(-1)  # (..., N, 1)
+
         # Fix the dimension mismatch by directly calculating distances for each point
         distances = torch.zeros((*batch_shape, symbol_shape, num_points), device=y.device)
-        
+
         for i in range(num_points):
             point = points[i]
             # Calculate squared distance between each symbol and this point
@@ -306,16 +309,15 @@ class QPSKDemodulator(BaseDemodulator):
 class PSKModulator(BaseModulator):
     """General M-ary Phase-Shift Keying (PSK) modulator.
 
-    Maps groups of bits to complex constellation points around the unit circle.
-    Follows standard digital communications convention with Gray coding.
+    Maps groups of bits to complex constellation points around the unit circle. Follows standard
+    digital communications convention with Gray coding.
     """
 
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     bit_to_symbol_map: torch.Tensor  # Type annotation for mapping bit patterns to symbols
 
-    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, 
-                 constellation: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, constellation: Optional[torch.Tensor] = None) -> None:
         """Initialize the PSK modulator.
 
         Args:
@@ -326,7 +328,7 @@ class PSKModulator(BaseModulator):
         super().__init__()
 
         self.gray_coding = gray_coding
-        
+
         if constellation is not None:
             # Use custom constellation
             self.register_buffer("constellation", constellation)
@@ -339,10 +341,10 @@ class PSKModulator(BaseModulator):
             # Validate order is a power of 2
             if not (order > 0 and (order & (order - 1) == 0)):
                 raise ValueError(f"PSK order must be a power of 2, got {order}")
-            
+
             self.order = order
             self._bits_per_symbol: int = int(np.log2(order))
-            
+
             # Create standard PSK constellation
             self._create_constellation()
 
@@ -375,14 +377,14 @@ class PSKModulator(BaseModulator):
 
         # Create mapping from bit patterns to constellation indices
         bit_to_symbol_map = torch.zeros(self.order, dtype=torch.long)
-        
+
         # Map each bit pattern to its index in the constellation
         for i in range(self.order):
             # Create binary index from bit pattern
             idx = 0
             for j in range(self._bits_per_symbol):
                 idx = idx * 2 + int(bit_patterns[i, j])
-            
+
             if self.gray_coding:
                 # For Gray coding, we map the bit pattern to the constellation point
                 bit_to_symbol_map[idx] = i
@@ -407,36 +409,36 @@ class PSKModulator(BaseModulator):
         scalar_input = x.dim() == 0
         if scalar_input:
             x = x.unsqueeze(0)
-        
+
         # Special case for direct constellation indices as scalar or single-element tensor
         if x.numel() == 1 and ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
             # This is a direct index into the constellation
             return self.constellation[x.long()].squeeze()  # Return scalar output for scalar input
-        
+
         # Normal case: Binary bit values grouped into symbols
         # Ensure input contains binary values (0s and 1s)
         if torch.any((x != 0) & (x != 1)):
             # If there are non-binary values, check if they are valid indices
             if not ((x == x.long()).all() and torch.all(x < self.order) and torch.all(x >= 0)):
                 raise ValueError("Input tensor must contain only binary values (0s and 1s)")
-            
+
             # Special case for direct indices in a tensor
             if x.dim() == 1:
                 # These are valid indices
                 indices = x.long()
                 return self.constellation[indices]
-        
+
         # Get batch shape and bit length
         batch_shape = x.shape[:-1]
         bit_len = x.shape[-1]
-        
+
         # Ensure input length is a multiple of bits_per_symbol
         if bit_len % self._bits_per_symbol != 0:
             raise ValueError(f"Input bit length must be a multiple of {self._bits_per_symbol} for {self.order}-PSK modulation")
 
         # Reshape to groups of bits
         x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
-        
+
         # Convert bit groups to indices
         indices = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.long, device=x.device)
         for i in range(self._bits_per_symbol):
@@ -448,11 +450,11 @@ class PSKModulator(BaseModulator):
 
         # Map indices to symbols
         symbols = self.constellation[symbol_indices]
-        
+
         # Handle scalar output if input was scalar
         if scalar_input and bit_len == self._bits_per_symbol:
             symbols = symbols.squeeze()
-            
+
         return symbols
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
@@ -471,6 +473,7 @@ class PSKModulator(BaseModulator):
             labels.append(label)
 
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-PSK Constellation", **kwargs)
+
 
 @ModulationRegistry.register_demodulator()
 class PSKDemodulator(BaseDemodulator):
@@ -508,7 +511,7 @@ class PSKDemodulator(BaseDemodulator):
         scalar_input = y.dim() == 0
         if scalar_input:
             y = y.unsqueeze(0)
-        
+
         batch_shape = y.shape[:-1]
         symbol_shape = y.shape[-1]
         constellation = self.modulator.constellation
@@ -517,25 +520,25 @@ class PSKDemodulator(BaseDemodulator):
             # Hard decision: find closest constellation point
             expanded_y = y.unsqueeze(-1)  # (..., N, 1)
             expanded_const = constellation.unsqueeze(0).expand(*([1] * len(batch_shape)), symbol_shape, self.order)
-            
+
             # Calculate distances to constellation points
             distances = torch.abs(expanded_y - expanded_const)
             closest_indices = torch.argmin(distances, dim=-1)  # (..., N)
-            
+
             # Map to bit patterns
             bits = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), dtype=torch.float, device=y.device)
             for i in range(self.order):
                 mask = (closest_indices == i).unsqueeze(-1).expand(*batch_shape, symbol_shape, self._bits_per_symbol)
                 bit_pattern = self.modulator.bit_patterns[i].expand(*batch_shape, symbol_shape, self._bits_per_symbol)
                 bits = torch.where(mask, bit_pattern, bits)
-            
+
             # Reshape to final bit sequence
             result = bits.reshape(*batch_shape, -1).float()  # Ensure consistent float output
-            
+
             # Handle scalar output if input was scalar
             if scalar_input:
                 result = result.squeeze(0)
-                
+
             return result
         else:
             # Soft decision: LLR calculation
@@ -545,20 +548,20 @@ class PSKDemodulator(BaseDemodulator):
             # Handle broadcasting dimensions for noise_var
             if noise_var.dim() == 0:  # scalar
                 noise_var = noise_var.expand(*batch_shape, symbol_shape)
-                
+
             # Calculate LLRs for each bit position
             llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
-            
+
             # For each bit position
             for bit_idx in range(self._bits_per_symbol):
                 # Get constellation points where bit is 0 or 1
                 bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
                 bit_1_mask = ~bit_0_mask
-                
+
                 # Get corresponding points
                 const_bit_0 = constellation[bit_0_mask]
                 const_bit_1 = constellation[bit_1_mask]
-                
+
                 # Process each symbol individually for clearer computation
                 for b_idx in np.ndindex(batch_shape):
                     for s_idx in range(symbol_shape):
@@ -569,22 +572,22 @@ class PSKDemodulator(BaseDemodulator):
                         else:
                             sym = y[s_idx]
                             nvar = noise_var[s_idx]
-                        
+
                         # Calculate distances to constellation points
-                        dist_0 = torch.min(torch.abs(sym - const_bit_0)**2) / nvar
-                        dist_1 = torch.min(torch.abs(sym - const_bit_1)**2) / nvar
-                        
+                        dist_0 = torch.min(torch.abs(sym - const_bit_0) ** 2) / nvar
+                        dist_1 = torch.min(torch.abs(sym - const_bit_1) ** 2) / nvar
+
                         # LLR = log(P(bit=0|y)/P(bit=1|y)) = log(exp(-dist_0)/exp(-dist_1)) = -dist_0 + dist_1
                         if batch_shape:
                             llrs[b_idx][s_idx][bit_idx] = -dist_0 + dist_1
                         else:
                             llrs[s_idx][bit_idx] = -dist_0 + dist_1
-            
+
             # Reshape to final LLR sequence
             result = llrs.reshape(*batch_shape, -1)
-            
+
             # Handle scalar output if input was scalar
             if scalar_input:
                 result = result.squeeze(0)
-                
+
             return result

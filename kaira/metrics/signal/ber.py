@@ -47,10 +47,10 @@ class BitErrorRate(BaseMetric):
         """
         if transmitted.numel() == 0 or received.numel() == 0:
             return torch.tensor(0.0)
-            
+
         # Check for batch dimension
         is_batched = transmitted.dim() > 1 and transmitted.size(0) > 1
-        
+
         # Threshold received values to get binary decisions
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
@@ -83,7 +83,7 @@ class BitErrorRate(BaseMetric):
         """
         if transmitted.numel() == 0 or received.numel() == 0:
             return
-            
+
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
 

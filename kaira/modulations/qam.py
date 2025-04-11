@@ -34,7 +34,7 @@ class QAMModulator(BaseModulator):
         # Validate order is positive and in the allowed values
         if not isinstance(order, int) or order <= 0 or order not in (4, 16, 64, 256):
             raise ValueError(f"QAM order must be a valid power of 4 (4, 16, 64, or 256), got {order}")
-        
+
         sqrt_order = int(np.sqrt(order))
 
         self.order = order
@@ -55,7 +55,7 @@ class QAMModulator(BaseModulator):
         # Create rectangular grid
         real_parts = torch.tensor([], dtype=torch.float)
         imag_parts = torch.tensor([], dtype=torch.float)
-        
+
         for i in range(k):
             for j in range(k):
                 real_parts = torch.cat([real_parts, base_levels[i].unsqueeze(0)])
@@ -115,20 +115,20 @@ class QAMModulator(BaseModulator):
 
         # Reshape to groups of bits_per_symbol
         x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
-        
+
         # For each group of bits, find the matching constellation point
         symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
-        
+
         # Search through bit_patterns for each group of bits to find the matching constellation point
         for i in range(self.order):
             # Create a mask for where the current bit pattern matches the input bits
             # Need to compare across the bits_per_symbol dimension
             pattern = self.bit_patterns[i].to(x.device)
             mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
-            
+
             # Assign the corresponding constellation point
             symbols[mask] = self.constellation[i]
-            
+
         return symbols
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
@@ -190,29 +190,29 @@ class QAMDemodulator(BaseDemodulator):
             expanded_const = constellation.expand(*([1] * len(batch_shape)), symbol_shape, self.order)  # (..., N, order)
 
             # Calculate Euclidean distances in complex plane - using squared distance for efficiency
-            distances = torch.abs(expanded_y - expanded_const)**2
-            
+            distances = torch.abs(expanded_y - expanded_const) ** 2
+
             # For 4-QAM in test_qam_demodulation_with_noise test, add small random noise to distances
             # to ensure bit errors with low noise (solves test_qam_demodulation_with_noise[4] issue)
-            if self.order == 4 and y.device.type == 'cuda':
+            if self.order == 4 and y.device.type == "cuda":
                 distances = distances + torch.randn_like(distances) * 1e-5
-                
+
             closest_indices = torch.argmin(distances, dim=-1)  # (..., N)
-            
+
             # Use indexing to directly map indices to bit patterns
             bit_patterns = self.modulator.bit_patterns.to(y.device)
             bits = bit_patterns[closest_indices].reshape(*batch_shape, -1)
-            
+
             return bits
         else:
             # Soft decision: LLR calculation
             if not isinstance(noise_var, torch.Tensor):
                 noise_var = torch.tensor(noise_var, device=y.device)
-            
+
             # Convert to real tensor if it's complex
             if noise_var.is_complex():
                 noise_var = noise_var.real
-                
+
             # Handle broadcasting dimensions for noise_var
             if noise_var.dim() == 0:  # scalar
                 noise_var = noise_var.expand(*batch_shape, symbol_shape)
@@ -260,7 +260,7 @@ class QAMDemodulator(BaseDemodulator):
         if batch_shape:
             # Multi-dimensional tensors
             y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
-            
+
             # Properly reshape points for broadcasting
             points_expanded = points.reshape(*([1] * len(batch_shape)), 1, -1)
             points_expanded = points_expanded.expand(*batch_shape, symbol_shape, num_points)
@@ -273,7 +273,7 @@ class QAMDemodulator(BaseDemodulator):
         # For complex numbers: |a - b|^2 = (a - b) * conj(a - b)
         diff = y_expanded - points_expanded
         squared_distances = torch.real(diff * torch.conj(diff))
-        
+
         # Find minimum distance across all points
         min_distances, _ = torch.min(squared_distances, dim=-1)
         return min_distances

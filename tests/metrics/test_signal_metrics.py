@@ -2,7 +2,6 @@
 """Tests for signal metrics including BER, BLER, FER, SER, SNR."""
 import pytest
 import torch
-import numpy as np
 
 from kaira.metrics.signal import (
     BER,
@@ -17,8 +16,8 @@ from kaira.metrics.signal import (
     SymbolErrorRate,
 )
 
-
 # ===== BitErrorRate (BER) Tests =====
+
 
 class TestBitErrorRate:
     """Test suite for BitErrorRate metrics."""
@@ -76,7 +75,7 @@ class TestBitErrorRate:
         assert error_rate.shape == torch.Size([2])
         assert error_rate[0].item() == 0.25  # 1/4 errors in first sample
         assert error_rate[1].item() == 0.5  # 2/4 errors in second sample
-        
+
     def test_ber_zero_errors(self, binary_data):
         """Test BER computation with zero errors."""
         true_bits, _ = binary_data
@@ -107,15 +106,15 @@ class TestBitErrorRate:
     def test_ber_empty_tensors(self):
         """Test BER computation with empty tensors."""
         ber = BitErrorRate()
-        
+
         # Create empty tensors
         empty_preds = torch.zeros((0, 10))
         empty_targets = torch.zeros((0, 10))
-        
+
         # Test forward method with empty tensors
         result = ber(empty_preds, empty_targets)
         assert torch.isclose(result, torch.tensor(0.0))
-        
+
         # Test update method with empty tensors
         ber.reset()
         ber.update(empty_preds, empty_targets)
@@ -124,9 +123,10 @@ class TestBitErrorRate:
 
 # ===== BlockErrorRate (BLER) Tests =====
 
+
 class TestBlockErrorRate:
     """Test suite for BlockErrorRate metrics."""
-    
+
     def test_block_error_rate_computation(self):
         """Test BlockErrorRate computation."""
         # Create test data - 1st block correct, 2nd has errors, 3rd correct, 4th has errors
@@ -201,32 +201,27 @@ class TestBlockErrorRate:
         bler_value = bler(corrupted_blocks, clean_blocks)
         assert bler_value == 1.0
 
-    @pytest.mark.parametrize("block_size,error_pattern", [
-        (10, [0]),          # Error in first block
-        (20, [1, 3]),       # Errors in middle blocks
-        (50, [-1]),         # Error in last block
-        (100, [0, -1])      # Errors in first and last blocks
-    ])
+    @pytest.mark.parametrize("block_size,error_pattern", [(10, [0]), (20, [1, 3]), (50, [-1]), (100, [0, -1])])  # Error in first block  # Errors in middle blocks  # Error in last block  # Errors in first and last blocks
     def test_bler_specific_patterns(self, block_size, error_pattern):
         """Test BLER computation with specific error patterns."""
         n_blocks = 10
         n_bits = block_size * n_blocks
         true_bits = torch.zeros((1, n_bits))
         received_bits = true_bits.clone()
-        
+
         # Introduce errors in specific blocks
         for block_idx in error_pattern:
             idx = block_idx if block_idx >= 0 else n_blocks + block_idx
             start_idx = idx * block_size
             received_bits[0, start_idx] = 1  # Introduce an error in the block
-        
+
         blocks = true_bits.reshape(1, n_blocks, block_size)
         received_blocks = received_bits.reshape(1, n_blocks, block_size)
-        
+
         bler = BlockErrorRate(block_size=block_size)  # Explicitly set block_size
         bler.update(received_blocks, blocks)
         bler_value = bler.compute()
-        
+
         # If there's any bit error in a block, the entire block is counted as an error
         expected_bler = len(error_pattern) / n_blocks
         assert abs(bler_value.item() - expected_bler) < 1e-6
@@ -234,17 +229,17 @@ class TestBlockErrorRate:
     def test_bler_with_small_batch(self):
         """Test BlockErrorRate with a small batch to avoid empty tensor issues."""
         bler = BlockErrorRate(block_size=10)
-        
+
         # Create small batch tensors instead of empty ones
         small_preds = torch.zeros((1, 10))
         small_target = torch.zeros((1, 10))
-        
+
         # Update with small batch data
         bler.update(small_preds, small_target)
-        
+
         # Compute result
         result = bler.compute()
-        
+
         # Should return 0 for a perfect match
         assert isinstance(result, torch.Tensor)
         assert torch.isclose(result, torch.tensor(0.0))
@@ -277,26 +272,20 @@ class TestBlockErrorRate:
     def test_bler_with_threshold(self):
         """Test BlockErrorRate with different thresholds."""
         # Create data with values that will give different results with different thresholds
-        soft_preds = torch.tensor([
-            [0.45, 0.55, 0.45, 0.55, 0.45, 0.55],  # All close to threshold
-            [0.45, 0.55, 0.45, 0.55, 0.45, 0.55]
-        ])
+        soft_preds = torch.tensor([[0.45, 0.55, 0.45, 0.55, 0.45, 0.55], [0.45, 0.55, 0.45, 0.55, 0.45, 0.55]])  # All close to threshold
         # Intentionally mismatch the targets from what a 0.5 threshold would give
-        target = torch.tensor([
-            [0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
-            [0.0, 0.0, 0.0, 1.0, 0.0, 1.0]
-        ])
-        
+        target = torch.tensor([[0.0, 0.0, 0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 0.0, 1.0, 0.0, 1.0]])
+
         # With threshold 0.5
         bler_default = BlockErrorRate(block_size=2, threshold=0.5)
         bler_default.update(soft_preds, target)
         result_default = bler_default.compute()
-        
+
         # With threshold 0.6 - this should change which predictions are considered 1s vs 0s
         bler_higher = BlockErrorRate(block_size=2, threshold=0.6)
         bler_higher.update(soft_preds, target)
         result_higher = bler_higher.compute()
-        
+
         # Verify that the results are different due to different thresholds
         assert not torch.allclose(result_default, result_higher)
 
@@ -326,11 +315,11 @@ class TestBlockErrorRate:
         """Test error handling in reshape_into_blocks method."""
         # Test case where input size is not divisible by block_size
         bler = BlockErrorRate(block_size=3)  # Block size that doesn't evenly divide the input
-        
+
         # Create inputs with length not divisible by block_size
         preds = torch.zeros((2, 10))  # 10 is not divisible by 3
         target = torch.zeros((2, 10))
-        
+
         # This should raise a ValueError
         with pytest.raises(ValueError, match="Input size .* is not divisible by"):
             bler(preds, target)
@@ -339,14 +328,14 @@ class TestBlockErrorRate:
         """Test BlockErrorRate with multidimensional inputs."""
         # Create 3D input tensors
         bler = BlockErrorRate(block_size=2)
-        
+
         # Create 3D tensors (batch, height, width) that can be reshaped into blocks
         preds = torch.zeros((2, 2, 4))  # Can be reshaped to (2, 4, 2)
         target = torch.zeros((2, 2, 4))
-        
+
         # This should process without errors
         result = bler(preds, target)
-        
+
         # Should return 0 for a perfect match
         assert isinstance(result, torch.Tensor)
         assert torch.isclose(result, torch.tensor(0.0))
@@ -356,61 +345,61 @@ class TestBlockErrorRate:
         # Create test data with known errors
         preds = torch.zeros((2, 6))
         target = torch.zeros((2, 6))
-        
+
         # Introduce errors in specific blocks
         preds[0, 0] = 1  # Error in first block of first batch
         preds[1, 3] = 1  # Error in second block of second batch
-        
+
         # Test with 'none' reduction
-        bler_none = BlockErrorRate(block_size=3, reduction='none')
+        bler_none = BlockErrorRate(block_size=3, reduction="none")
         result_none = bler_none(preds, target)
-        
+
         # Should return a tensor with shape [2, 2] (batch_size x num_blocks)
         assert result_none.shape[0] == 2
         assert torch.allclose(result_none, torch.tensor([[1.0, 0.0], [0.0, 1.0]]).float())
-        
+
         # Test with 'sum' reduction
-        bler_sum = BlockErrorRate(block_size=3, reduction='sum')
+        bler_sum = BlockErrorRate(block_size=3, reduction="sum")
         result_sum = bler_sum(preds, target)
-        
+
         # Should return the sum of error blocks (2 in this case)
         assert torch.isclose(result_sum, torch.tensor(2.0))
-        
+
         # Test with default 'mean' reduction for comparison
         bler_mean = BlockErrorRate(block_size=3)
         result_mean = bler_mean(preds, target)
-        
+
         # Should return the average (2/4 = 0.5 in this case)
         assert torch.isclose(result_mean, torch.tensor(0.5))
 
     def test_bler_empty_state(self):
         """Test compute method when no updates have been made."""
         bler = BlockErrorRate(block_size=10)
-        
+
         # Compute without any updates
         result = bler.compute()
-        
+
         # Should return 0 when no updates have been made
         assert torch.isclose(result, torch.tensor(0.0))
-        
+
         # Test with intentionally empty batches
         empty_preds = torch.zeros((0, 10))
         empty_target = torch.zeros((0, 10))
-        
+
         bler.update(empty_preds, empty_target)
         result_after_empty = bler.compute()
-        
+
         # Should still return 0
         assert torch.isclose(result_after_empty, torch.tensor(0.0))
 
     def test_bler_shape_mismatch(self):
         """Test BlockErrorRate with mismatched shapes."""
         bler = BlockErrorRate(block_size=10)
-        
+
         # Create mismatched shapes
         preds = torch.zeros((2, 20))
         target = torch.zeros((2, 10))
-        
+
         # This should raise a ValueError
         with pytest.raises(ValueError, match="Shape mismatch"):
             bler(preds, target)
@@ -418,52 +407,52 @@ class TestBlockErrorRate:
     def test_bler_empty_tensors(self):
         """Test BLER computation with empty tensors."""
         bler = BlockErrorRate(block_size=10)
-        
+
         # Create empty tensors
         empty_preds = torch.zeros((0, 10))
         empty_targets = torch.zeros((0, 10))
-        
+
         # Test forward method with empty tensors
         result = bler(empty_preds, empty_targets)
         assert torch.isclose(result, torch.tensor(0.0))
-        
+
         # Test update method with empty tensors
         bler.reset()
         bler.update(empty_preds, empty_targets)
         assert torch.isclose(bler.compute(), torch.tensor(0.0))
-    
+
     def test_bler_reshape_with_none_block_size(self):
         """Test _reshape_into_blocks with block_size=None."""
         # Initialize BLER with block_size=None
         bler = BlockErrorRate(block_size=None)
-        
+
         # Create test data
         preds = torch.zeros((3, 10))
         targets = torch.zeros((3, 10))
         targets[1, 5] = 1.0  # Error in second block
-        
+
         # Call forward - this will indirectly test _reshape_into_blocks
         result = bler(preds, targets)
-        
+
         # When block_size is None, each row is treated as a separate block
         # So 1 out of 3 rows/blocks has an error
-        assert torch.isclose(result, torch.tensor(1/3))
-        
+        assert torch.isclose(result, torch.tensor(1 / 3))
+
         # Test update path as well
         bler.reset()
         bler.update(preds, targets)
-        assert torch.isclose(bler.compute(), torch.tensor(1/3))
-    
+        assert torch.isclose(bler.compute(), torch.tensor(1 / 3))
+
     def test_bler_reshape_with_empty_tensor(self):
         """Test _reshape_into_blocks with empty tensor."""
         bler = BlockErrorRate(block_size=10)
-        
+
         # Create empty tensor
         empty_tensor = torch.zeros((0, 0))
-        
+
         # Access the private method directly to test the exact line
         reshaped = bler._reshape_into_blocks(empty_tensor)
-        
+
         # Verify shape of reshaped empty tensor
         assert reshaped.shape == torch.Size([0, 0, 0])
         assert reshaped.numel() == 0
@@ -472,27 +461,28 @@ class TestBlockErrorRate:
         """Test _reshape_into_blocks with block_size=None directly."""
         # Initialize BLER with block_size=None
         bler = BlockErrorRate(block_size=None)
-        
+
         # Create test data
         test_data = torch.zeros((3, 10))
-        
+
         # Call _reshape_into_blocks directly to exercise the specific line
         reshaped = bler._reshape_into_blocks(test_data)
-        
+
         # When block_size is None, the method should return the input unchanged
         assert torch.equal(reshaped, test_data)
         assert reshaped.shape == test_data.shape
-        
+
         # Try with more complex tensor shape
         complex_data = torch.zeros((2, 4, 5))
         reshaped_complex = bler._reshape_into_blocks(complex_data)
-        
+
         # Should still return unchanged
         assert torch.equal(reshaped_complex, complex_data)
         assert reshaped_complex.shape == complex_data.shape
 
 
 # ===== FrameErrorRate (FER) Tests =====
+
 
 class TestFrameErrorRate:
     """Test suite for FrameErrorRate metrics."""
@@ -546,6 +536,7 @@ class TestFrameErrorRate:
 
 
 # ===== SymbolErrorRate (SER) Tests =====
+
 
 class TestSymbolErrorRate:
     """Test suite for SymbolErrorRate metrics."""
@@ -601,15 +592,11 @@ class TestSymbolErrorRate:
 
         received_symbols[0, error_pos, 0] = 1  # Introduce single error
         ser_value = ser(received_symbols, true_symbols)
-        
+
         assert 0 <= ser_value <= 1.0
         assert ser_value > 0  # Ensure errors are detected
 
-    @pytest.mark.parametrize("bits_per_symbol,error_positions", [
-        (2, [0]),          # QPSK with error in first symbol
-        (4, [1, 2]),       # 16-QAM with errors in middle symbols
-        (6, [-1])          # 64-QAM with error in last symbol
-    ])
+    @pytest.mark.parametrize("bits_per_symbol,error_positions", [(2, [0]), (4, [1, 2]), (6, [-1])])  # QPSK with error in first symbol  # 16-QAM with errors in middle symbols  # 64-QAM with error in last symbol
     def test_ser_specific_positions(self, bits_per_symbol, error_positions):
         """Test SER computation with errors in specific positions."""
         n_symbols = 10
@@ -623,12 +610,13 @@ class TestSymbolErrorRate:
 
         ser = SymbolErrorRate()
         ser_value = ser(received_symbols, true_symbols)
-        
+
         assert 0 <= ser_value <= 1.0  # SER should be in valid range
         assert ser_value > 0  # Should detect at least some errors
 
 
 # ===== SignalToNoiseRatio (SNR) Tests =====
+
 
 class TestSignalToNoiseRatio:
     """Test suite for SignalToNoiseRatio metrics."""
@@ -659,41 +647,39 @@ class TestSignalToNoiseRatio:
     def test_snr_complex_signals(self):
         """Test SNR calculation with complex signals."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create complex signal
-        signal = torch.complex(torch.tensor([1.0, 0.0, -1.0, 0.0]), 
-                              torch.tensor([0.0, 1.0, 0.0, -1.0]))
-        
+        signal = torch.complex(torch.tensor([1.0, 0.0, -1.0, 0.0]), torch.tensor([0.0, 1.0, 0.0, -1.0]))
+
         # Create complex noise
-        noise = torch.complex(torch.tensor([0.1, 0.1, 0.1, 0.1]), 
-                             torch.tensor([0.1, 0.1, 0.1, 0.1]))
-        
+        noise = torch.complex(torch.tensor([0.1, 0.1, 0.1, 0.1]), torch.tensor([0.1, 0.1, 0.1, 0.1]))
+
         noisy_signal = signal + noise
-        
+
         # Calculate SNR
         snr_db = snr_metric(signal, noisy_signal)
-        
+
         # Calculate expected SNR for complex signals
-        signal_power = torch.mean(torch.abs(signal)**2)
-        noise_power = torch.mean(torch.abs(noise)**2)
+        signal_power = torch.mean(torch.abs(signal) ** 2)
+        noise_power = torch.mean(torch.abs(noise) ** 2)
         expected_snr_db = 10 * torch.log10(signal_power / noise_power)
-        
+
         # Check result
         assert torch.isclose(snr_db, expected_snr_db, rtol=1e-4)
 
     def test_snr_zero_noise(self):
         """Test SNR calculation with zero noise (perfect signal)."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create signal
         signal = torch.tensor([1.0, -1.0, 1.0, -1.0])
-        
+
         # Perfect reproduction (zero noise)
         noisy_signal = signal.clone()
-        
+
         # Calculate SNR
         snr_db = snr_metric(signal, noisy_signal)
-        
+
         # Result should be infinity
         assert torch.isinf(snr_db)
         assert snr_db > 0  # Positive infinity
@@ -701,17 +687,17 @@ class TestSignalToNoiseRatio:
     def test_snr_zero_signal(self):
         """Test SNR calculation with zero signal."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Zero signal
         signal = torch.zeros(4)
-        
+
         # Some noise
         noise = torch.tensor([0.1, -0.1, 0.1, -0.1])
         noisy_signal = signal + noise
-        
+
         # Calculate SNR
         snr_db = snr_metric(signal, noisy_signal)
-        
+
         # Result should be very negative (approaching -infinity)
         # But due to epsilon in the calculation, it won't be exactly -infinity
         assert snr_db < -100
@@ -746,32 +732,32 @@ class TestSignalToNoiseRatio:
         signal_1d = torch.randn(100)
         noise_1d = 0.1 * torch.randn(100)
         noisy_1d = signal_1d + noise_1d
-        
+
         # Create 2D signals (batch of 1D signals)
         signal_2d = torch.randn(2, 100)
         noise_2d = 0.1 * torch.randn(2, 100)
         noisy_2d = signal_2d + noise_2d
-        
+
         # Create 3D signals (e.g., spectrograms)
         signal_3d = torch.randn(2, 10, 10)
         noise_3d = 0.1 * torch.randn(2, 10, 10)
         noisy_3d = signal_3d + noise_3d
-        
+
         # Compute SNR for each
         snr_metric = SignalToNoiseRatio()
-        
+
         snr_1d = snr_metric(signal_1d, noisy_1d)
         snr_2d = snr_metric(signal_2d, noisy_2d)
         snr_3d = snr_metric(signal_3d, noisy_3d)
-        
+
         # Check that results are valid
         assert isinstance(snr_1d, torch.Tensor)
         assert isinstance(snr_2d, torch.Tensor)
         assert isinstance(snr_3d, torch.Tensor)
-        
+
         # Check dimensions
         assert snr_1d.ndim == 0  # Scalar
-        
+
         # Per the implementation, if signal has batch dimension > 1, output is a tensor with batch size
         assert snr_2d.ndim == 1  # Vector (one SNR per batch item)
         assert snr_3d.ndim == 1  # Vector (one SNR per batch item)
@@ -779,39 +765,35 @@ class TestSignalToNoiseRatio:
     def test_snr_compute_with_stats(self):
         """Test compute_with_stats method of SNR metric."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create a batch of signals with different SNRs
-        signal = torch.tensor([
-            [1.0, -1.0, 1.0, -1.0],
-            [1.0, -1.0, 1.0, -1.0],
-            [1.0, -1.0, 1.0, -1.0]
-        ])
-        
+        signal = torch.tensor([[1.0, -1.0, 1.0, -1.0], [1.0, -1.0, 1.0, -1.0], [1.0, -1.0, 1.0, -1.0]])
+
         # Different noise levels
         noise_levels = [0.1, 0.2, 0.3]
         noises = []
         for level in noise_levels:
             noise = torch.tensor([level, -level, level, -level])
             noises.append(noise)
-        
+
         noisy_signal = signal.clone()
         for i, noise in enumerate(noises):
             noisy_signal[i] = signal[i] + noise
-        
+
         # Calculate mean and std of SNR
         mean_snr, std_snr = snr_metric.compute_with_stats(signal, noisy_signal)
-        
+
         # Calculate expected SNRs
         expected_snrs = []
         for i, level in enumerate(noise_levels):
-            signal_power = torch.mean(signal[i]**2)
+            signal_power = torch.mean(signal[i] ** 2)
             noise_power = level**2
             expected_snr = 10 * torch.log10(signal_power / noise_power)
             expected_snrs.append(expected_snr)
-        
+
         expected_mean = sum(expected_snrs) / len(expected_snrs)
         expected_std = torch.tensor(expected_snrs).std()
-        
+
         # Fix: Use clone().detach() instead of torch.tensor() for tensor construction
         assert torch.isclose(mean_snr, expected_mean, rtol=1e-3)
         assert torch.isclose(std_snr, expected_std, rtol=1e-3)
@@ -851,18 +833,18 @@ class TestSignalToNoiseRatio:
     def test_snr_near_zero_noise(self):
         """Test SNR calculation with extremely small noise (approaching epsilon)."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create signal
         signal = torch.tensor([[1.0, -1.0, 1.0, -1.0]])
-        
+
         # Create extremely small noise (below epsilon)
         eps = torch.finfo(torch.float32).eps
         noise = torch.ones_like(signal) * (eps / 2.0)
         noisy_signal = signal + noise
-        
+
         # Calculate SNR
         snr_db = snr_metric(signal, noisy_signal)
-        
+
         # Result should be infinity due to the noise_power < eps check
         assert torch.isinf(snr_db)
         assert snr_db > 0  # Positive infinity
@@ -871,18 +853,18 @@ class TestSignalToNoiseRatio:
         """Test linear mode SNR with batched data to ensure correct path execution."""
         # Initialize SNR metric in linear mode
         snr_metric = SignalToNoiseRatio(mode="linear")
-        
+
         # Create batched clean signal and noisy signal
         clean_signal = torch.tensor([[1.0, -1.0, 0.5], [0.5, -0.5, 0.0]])
         noise = torch.tensor([[0.1, -0.1, 0.05], [0.05, 0.1, -0.05]])
         noisy_signal = clean_signal + noise
-        
+
         # Test forward computation
         snr_values = snr_metric(clean_signal, noisy_signal)
-        
+
         # Check shape
         assert snr_values.shape == torch.Size([2])
-        
+
         # Calculate expected linear SNR for each sample
         for i in range(2):
             signal_power = (clean_signal[i] ** 2).mean()
@@ -893,9 +875,9 @@ class TestSignalToNoiseRatio:
     def test_mode_initialization_validation(self):
         """Test that the mode validation works properly during initialization."""
         # Valid modes should initialize correctly
-        snr_db = SignalToNoiseRatio(mode="db")
-        snr_linear = SignalToNoiseRatio(mode="linear")
-        
+        SignalToNoiseRatio(mode="db")
+        SignalToNoiseRatio(mode="linear")
+
         # Invalid mode should raise ValueError
         with pytest.raises(ValueError, match="Mode must be either 'db' or 'linear'"):
             SignalToNoiseRatio(mode="invalid")
@@ -903,67 +885,68 @@ class TestSignalToNoiseRatio:
     def test_batched_snr_with_zero_noise(self):
         """Test SNR calculation with batched data where noise is below epsilon."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create a batch of signals
         batch_size = 3
         signal = torch.ones((batch_size, 10)) * torch.tensor([1.0, 2.0, 3.0]).view(-1, 1)
-        
+
         # Create extremely small noise (below epsilon)
         eps = torch.finfo(torch.float32).eps
         noise = torch.ones_like(signal) * (eps / 2.0)
         noisy_signal = signal + noise
-        
+
         # Calculate SNR
         snr_values = snr_metric(signal, noisy_signal)
-        
+
         # Check shape and values
         assert snr_values.shape == torch.Size([batch_size])
-        
+
         # All values should be infinity due to the noise_power < eps check in batched mode
         for value in snr_values:
             assert torch.isinf(value)
             assert value > 0  # Positive infinity
-    
+
     def test_batched_complex_signal_snr(self):
         """Test SNR calculation with batched complex signals."""
         snr_metric = SignalToNoiseRatio()
-        
+
         # Create a batch of complex signals
         batch_size = 2
         real_part = torch.tensor([[1.0, 0.0, -1.0, 0.0], [2.0, 0.0, -2.0, 0.0]])
         imag_part = torch.tensor([[0.0, 1.0, 0.0, -1.0], [0.0, 2.0, 0.0, -2.0]])
         signal = torch.complex(real_part, imag_part)
-        
+
         # Create complex noise with different levels for each batch item
         noise_levels = [0.1, 0.2]
         noise_real = torch.zeros_like(real_part)
         noise_imag = torch.zeros_like(imag_part)
-        
+
         for i, level in enumerate(noise_levels):
             noise_real[i] = torch.ones(4) * level
             noise_imag[i] = torch.ones(4) * level
-            
+
         noise = torch.complex(noise_real, noise_imag)
         noisy_signal = signal + noise
-        
+
         # Calculate SNR
         snr_values = snr_metric(signal, noisy_signal)
-        
+
         # Check shape
         assert snr_values.shape == torch.Size([batch_size])
-        
+
         # Check values
         for i, level in enumerate(noise_levels):
             # Calculate expected SNR
             signal_power = torch.mean(torch.abs(signal[i]) ** 2).item()
             noise_power = torch.mean(torch.abs(noise[i]) ** 2).item()
             expected_snr = 10 * torch.log10(torch.tensor(signal_power / noise_power))
-            
+
             # Check that the calculated SNR matches the expected value
             assert torch.isclose(snr_values[i], expected_snr, rtol=1e-3)
 
 
 # ===== Common Tests =====
+
 
 def test_metrics_aliases():
     """Test that metric aliases work properly."""

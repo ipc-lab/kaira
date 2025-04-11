@@ -365,7 +365,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                 ResidualBlock(in_ch=3 * 2, out_ch=3),
             ]
         )
-        
+
         # Add the g_a2 module list for processing side information
         self.g_a2 = nn.ModuleList(
             [
@@ -407,32 +407,32 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
         # Process side information through g_a2 to extract features
         xs_list = []
         xs = x_side  # Use side information as initial input
-        
+
         # First collect features from side information at different resolutions
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(xs)  # Save feature before downsampling
-            
+
             if isinstance(layer, AFModule):
                 xs = layer((xs, csi_sideinfo))
             else:
                 xs = layer(xs)  # Apply the layer
-        
+
         # Add the final feature map
         xs_list.append(xs)
-        
+
         # Decode process - fuse features from side_info at multiple scales
         for idx, layer in enumerate(self.g_s):
             if idx in [0, 3, 6, 10, 13]:
                 # Fusion points: concatenate with side info features
                 last_xs = xs_list.pop()
                 x = torch.cat([x, last_xs], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi))
             else:
                 x = layer(x)
-        
+
         return x
 
 
@@ -616,7 +616,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 ResidualBlock(in_ch=3 * 2, out_ch=3),
             ]
         )
-        
+
         # Add the g_a2 module list for processing side information
         self.g_a2 = nn.ModuleList(
             [
@@ -660,32 +660,32 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
         # Process side information through g_a2 to extract features
         xs_list = []
         xs = x_side  # Use side information as initial input
-        
+
         # First collect features from side information at different resolutions
         for idx, layer in enumerate(self.g_a2):
             if isinstance(layer, ResidualBlockWithStride):
                 xs_list.append(xs)  # Save feature before downsampling
-            
+
             if isinstance(layer, AFModule):
                 xs = layer((xs, csi_sideinfo))
             else:
                 xs = layer(xs)  # Apply the layer
-        
+
         # Add the final feature map
         xs_list.append(xs)
-        
+
         # Decode process - fuse features from side_info at multiple scales
         for idx, layer in enumerate(self.g_s):
             if idx in [0, 3, 6, 10, 13]:
                 # Fusion points: concatenate with side info features
                 last_xs = xs_list.pop()
                 x = torch.cat([x, last_xs], dim=1)
-            
+
             if isinstance(layer, AFModule):
                 x = layer((x, csi))
             else:
                 x = layer(x)
-        
+
         return x
 
 

@@ -17,23 +17,23 @@ class NeuralCompressor(BaseModel):
     from the CompressAI library. It can operate in two modes:
     1. Fixed quality mode: directly uses the specified quality level
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
-    
+
     The implementation efficiently manages model loading to minimize memory usage
     and supports a variety of modern image compression methods.
     """
 
     def __init__(
-        self, 
-        method: str, 
-        metric: str = "mse", 
-        max_bits_per_image: Optional[int] = None, 
-        quality: Optional[int] = None, 
-        lazy_loading: bool = True, 
-        return_bits: bool = True, 
-        collect_stats: bool = False, 
+        self,
+        method: str,
+        metric: str = "mse",
+        max_bits_per_image: Optional[int] = None,
+        quality: Optional[int] = None,
+        lazy_loading: bool = True,
+        return_bits: bool = True,
+        collect_stats: bool = False,
         return_compressed_data: bool = False,
         device: Optional[Union[str, torch.device]] = None,
-        early_stopping_threshold: Optional[float] = None
+        early_stopping_threshold: Optional[float] = None,
     ):
         """Initialize the neural compressor.
 
@@ -120,20 +120,20 @@ class NeuralCompressor(BaseModel):
             Tensor containing bits per image
         """
         likelihoods = r["likelihoods"].values()
-        
+
         n = r["x_hat"].shape[0]
         device = r["x_hat"].device
-        
+
         # Create output tensor
         all_num_bits = torch.zeros(n, device=device)
-    
+
         # Calculate bits for each image
         for i in range(n):
             for likelihood in likelihoods:
                 all_num_bits[i] += -torch.log2(likelihood[i]).sum()
-                
+
         return all_num_bits
-    
+
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, List[Dict]]]:
         """Forward pass of the neural compressor.
 
@@ -184,12 +184,7 @@ class NeuralCompressor(BaseModel):
                 self.stats["processing_time"] = time.time() - start_time
 
                 for i in range(x.shape[0]):
-                    self.stats["img_stats"].append({
-                        "quality": self.quality,
-                        "bits": bits[i].item(),
-                        "bpp": bits[i].item() / (x.shape[2] * x.shape[3]),
-                        "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0
-                    })
+                    self.stats["img_stats"].append({"quality": self.quality, "bits": bits[i].item(), "bpp": bits[i].item() / (x.shape[2] * x.shape[3]), "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0})
 
                 self.stats["avg_bpp"] = self.stats["total_bits"] / (x.shape[0] * x.shape[2] * x.shape[3])
                 self.stats["avg_compression_ratio"] = sum(s["compression_ratio"] for s in self.stats["img_stats"]) / x.shape[0]
@@ -263,12 +258,7 @@ class NeuralCompressor(BaseModel):
 
                     # Collect stats if needed
                     if self.collect_stats:
-                        img_stats[orig_idx.item()] = {
-                            "quality": quality,
-                            "bits": bits[i].item(),
-                            "bpp": bits[i].item() / (x.shape[2] * x.shape[3]),
-                            "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0
-                        }
+                        img_stats[orig_idx.item()] = {"quality": quality, "bits": bits[i].item(), "bpp": bits[i].item() / (x.shape[2] * x.shape[3]), "compression_ratio": original_size / bits[i].item() if bits[i].item() > 0 else 0}
 
                 # Update remaining_images mask
                 remaining_images[original_indices[satisfies_constraint]] = False
@@ -362,14 +352,5 @@ class NeuralCompressor(BaseModel):
         if not self.collect_stats:
             warnings.warn("Statistics not collected. Initialize with collect_stats=True to enable.")
             return
-            
-        self.stats = {
-            "total_bits": 0, 
-            "avg_quality": 0, 
-            "img_stats": [], 
-            "model_name": self.method, 
-            "metric": self.metric,
-            "processing_time": 0,
-            "avg_bpp": 0,
-            "avg_compression_ratio": 0
-        }
+
+        self.stats = {"total_bits": 0, "avg_quality": 0, "img_stats": [], "model_name": self.method, "metric": self.metric, "processing_time": 0, "avg_bpp": 0, "avg_compression_ratio": 0}

@@ -137,9 +137,9 @@ class FeedbackChannelModel(BaseModel):
             "iterations": iterations,
             "feedback_history": feedback_history,
         }
-        
+
         # Only include final_output if we have run at least one iteration
         if final_output is not None:
             result["final_output"] = final_output
-            
+
         return result

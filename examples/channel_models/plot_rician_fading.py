@@ -16,12 +16,12 @@ We'll visualize the effect of different K-factors in Rician fading and compare w
 # -------------------------------
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import seaborn as sns
+import torch
 
 from kaira.channels import RayleighFadingChannel, RicianFadingChannel
+from kaira.metrics import BitErrorRate, SymbolErrorRate
 from kaira.modulations import QPSKModulator
-from kaira.metrics import SymbolErrorRate, BitErrorRate
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -80,24 +80,24 @@ for name, channel in channels:
     with torch.no_grad():
         # Transform input to complex and reshape if needed
         input_complex = qpsk_symbols.view(1, -1)
-        
+
         # Pass through channel
         output = channel(input_complex)
-        
+
         # Save outputs for visualization
         channel_outputs.append((name, output))
-        
+
         # Decode output to make hard decisions
         output_scaled = output / torch.mean(torch.abs(output))
         decoded_bits = qpsk_modulator.demodulate(output_scaled)
-        
+
         # Calculate error metrics
         ser = ser_metric(decoded_bits.view(-1, 2), random_bits.view(-1, 2))
         ber = ber_metric(decoded_bits, random_bits)
-        
+
         ser_results.append((name, ser.item()))
         ber_results.append((name, ber.item()))
-        
+
         print(f"{name}: SER = {ser.item():.4f}, BER = {ber.item():.4f}")
 
 # %%
@@ -115,20 +115,20 @@ fading_amplitudes = []
 for name, channel in channels:
     # Create a complex input of ones
     x = torch.ones((1, n_samples), dtype=torch.complex64)
-    
+
     # Turn off noise to isolate fading effect (we'll manually set SNR to a high value)
     if "Rayleigh" in name:
         channel_no_noise = RayleighFadingChannel(coherence_time=coherence_time, snr_db=100)
     else:
         k = float(name.split("K=")[1].split(")")[0]) if "K=" in name else 1
         channel_no_noise = RicianFadingChannel(k_factor=k, coherence_time=coherence_time, snr_db=100)
-    
+
     # Pass through channel to get fading coefficients
     y = channel_no_noise(x)
-    
+
     # Calculate amplitude
     amplitudes = torch.abs(y).cpu().numpy().flatten()
-    
+
     # Save for plotting
     fading_amplitudes.append((name, amplitudes))
 
@@ -137,11 +137,11 @@ for name, amplitudes in fading_amplitudes:
     sns.kdeplot(amplitudes, label=name)
 
 # Add vertical line at amplitude=1 for reference
-plt.axvline(x=1.0, color='black', linestyle='--', alpha=0.5, label='Unit Amplitude')
+plt.axvline(x=1.0, color="black", linestyle="--", alpha=0.5, label="Unit Amplitude")
 
-plt.xlabel('Fading Amplitude')
-plt.ylabel('Probability Density')
-plt.title('Distribution of Fading Amplitudes')
+plt.xlabel("Fading Amplitude")
+plt.ylabel("Probability Density")
+plt.title("Distribution of Fading Amplitudes")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.xlim(0, 3)
@@ -161,29 +161,29 @@ constellation_points = qpsk_modulator.constellation
 # Plot each channel's output
 for i, (name, output) in enumerate(channel_outputs):
     ax = axes[i]
-    
+
     # Take a subset for clearer visualization
     subset_size = 1000
     output_subset = output[0, :subset_size].cpu().numpy()
-    
+
     # Scatter plot
     ax.scatter(output_subset.real, output_subset.imag, s=10, alpha=0.5)
-    
+
     # Plot original constellation points
     for point in constellation_points:
-        ax.plot(point.real, point.imag, 'rx', markersize=10)
-    
+        ax.plot(point.real, point.imag, "rx", markersize=10)
+
     # Add circle at unit radius for reference
-    circle = plt.Circle((0, 0), 1, fill=False, linestyle='--', color='gray')
+    circle = plt.Circle((0, 0), 1, fill=False, linestyle="--", color="gray")
     ax.add_patch(circle)
-    
-    ax.set_title(f'{name} Channel Output')
-    ax.set_xlabel('In-phase')
-    ax.set_ylabel('Quadrature')
+
+    ax.set_title(f"{name} Channel Output")
+    ax.set_xlabel("In-phase")
+    ax.set_ylabel("Quadrature")
     ax.grid(True, alpha=0.3)
     ax.set_xlim(-2, 2)
     ax.set_ylim(-2, 2)
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
 plt.tight_layout()
 
@@ -204,20 +204,20 @@ for snr_db in snr_range_db:
         else:
             k = float(name.split("K=")[1].split(")")[0]) if "K=" in name else 1
             channel = RicianFadingChannel(k_factor=k, coherence_time=coherence_time, snr_db=snr_db)
-        
+
         # Pass through channel
         with torch.no_grad():
             input_complex = qpsk_symbols.view(1, -1)
             output = channel(input_complex)
-            
+
             # Decode output
             output_scaled = output / torch.mean(torch.abs(output))
             decoded_bits = qpsk_modulator.demodulate(output_scaled)
-            
+
             # Calculate error metrics
             ser = ser_metric(decoded_bits.view(-1, 2), random_bits.view(-1, 2))
             ber = ber_metric(decoded_bits, random_bits)
-            
+
             ser_vs_snr[name].append(ser.item())
             ber_vs_snr[name].append(ber.item())
 
@@ -225,12 +225,12 @@ for snr_db in snr_range_db:
 # Plot SER vs SNR
 plt.figure(figsize=(10, 6))
 for name in ser_vs_snr:
-    plt.semilogy(snr_range_db, ser_vs_snr[name], 'o-', linewidth=2, label=name)
+    plt.semilogy(snr_range_db, ser_vs_snr[name], "o-", linewidth=2, label=name)
 
-plt.grid(True, which="both", linestyle='--', alpha=0.6)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Symbol Error Rate')
-plt.title('Symbol Error Rate vs SNR for Different Fading Channels')
+plt.grid(True, which="both", linestyle="--", alpha=0.6)
+plt.xlabel("SNR (dB)")
+plt.ylabel("Symbol Error Rate")
+plt.title("Symbol Error Rate vs SNR for Different Fading Channels")
 plt.legend()
 plt.tight_layout()
 
@@ -238,12 +238,12 @@ plt.tight_layout()
 # Plot BER vs SNR
 plt.figure(figsize=(10, 6))
 for name in ber_vs_snr:
-    plt.semilogy(snr_range_db, ber_vs_snr[name], 'o-', linewidth=2, label=name)
+    plt.semilogy(snr_range_db, ber_vs_snr[name], "o-", linewidth=2, label=name)
 
-plt.grid(True, which="both", linestyle='--', alpha=0.6)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Bit Error Rate')
-plt.title('Bit Error Rate vs SNR for Different Fading Channels')
+plt.grid(True, which="both", linestyle="--", alpha=0.6)
+plt.xlabel("SNR (dB)")
+plt.ylabel("Bit Error Rate")
+plt.title("Bit Error Rate vs SNR for Different Fading Channels")
 plt.legend()
 plt.tight_layout()
 

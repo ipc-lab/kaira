@@ -101,7 +101,7 @@ class SignalToNoiseRatio(BaseMetric):
 
             # Calculate SNR in linear form
             snr_linear = signal_power / (noise_power + eps)
-            
+
             # Convert to dB if needed
             if self.mode == "db":
                 snr = 10 * torch.log10(snr_linear)

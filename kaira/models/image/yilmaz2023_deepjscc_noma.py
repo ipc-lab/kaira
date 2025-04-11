@@ -20,11 +20,12 @@ from kaira.models.image.tung2022_deepjscc_q import (
 from kaira.models.multiple_access_channel import MultipleAccessChannelModel
 from kaira.models.registry import ModelRegistry
 
+
 @ModelRegistry.register_model()
 class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
     """DeepJSCC-NOMA Encoder Module :cite:`yilmaz2023distributed`.
 
-    This encoder transforms input images into latent representations. This class extends the 
+    This encoder transforms input images into latent representations. This class extends the
     Tung2022DeepJSCCQ2Encoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
@@ -36,7 +37,7 @@ class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
             M (int, optional): Latent dimension of the bottleneck representation.
             in_ch (int, optional): Number of input channels. Defaults to 4.
             csi_length (int, optional): The number of dimensions in the CSI data. Defaults to 1.
-        """        
+        """
         super().__init__(N=N, M=M, in_ch=in_ch, csi_length=csi_length)
 
 
@@ -45,7 +46,7 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
     """DeepJSCC-NOMA Decoder Module :cite:`yilmaz2023distributed`.
 
     This decoder reconstructs images from received channel signals, supporting both
-    individual device decoding and shared decoding for multiple devices. This class extends 
+    individual device decoding and shared decoding for multiple devices. This class extends
     the Tung2022DeepJSCCQ2Decoder class with parameter adaptation as used in the paper :cite:t:`yilmaz2023distributed`.
     """
 
@@ -59,16 +60,18 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
             csi_length (int, optional): The number of dimensions in the CSI data. Defaults to 1.
             num_devices (int, optional): Number of devices. Used for shared decoder. Defaults to 1.
             shared_decoder (bool, optional): Whether this is a shared decoder. Defaults to False.
-        """        
+        """
         # Store additional parameters
         self.num_devices = num_devices
         self.shared_decoder = shared_decoder
-        
-        super().__init__(N=N, M=M, out_ch=self.num_devices*out_ch_per_device, csi_length=csi_length)
+
+        super().__init__(N=N, M=M, out_ch=self.num_devices * out_ch_per_device, csi_length=csi_length)
+
 
 # Use Tung2022DeepJSCCQ2 models as default
 DEFAULT_ENCODER = Yilmaz2023DeepJSCCNOMAEncoder
 DEFAULT_DECODER = Yilmaz2023DeepJSCCNOMADecoder
+
 
 @ModelRegistry.register_model("deepjscc_noma")
 class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
@@ -143,7 +146,6 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
         encoder_count = 1 if shared_encoder else num_devices
         decoder_count = 1 if shared_decoder else num_devices
-        encoder_channels = 4 if self.use_device_embedding else 3
 
         # Initialize encoders
         for _ in range(encoder_count):

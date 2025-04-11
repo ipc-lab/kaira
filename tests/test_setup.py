@@ -1,12 +1,13 @@
-import os
 import ast
-import re
-import sys
 import importlib.util
-import tempfile
+import os
+import re
 import subprocess
-import pytest
+import sys
+import tempfile
 from unittest import mock
+
+import pytest
 from setuptools import find_packages
 
 
@@ -15,17 +16,17 @@ def test_version_extraction():
     # Get the actual version from version.py
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     ver_file = os.path.join(this_directory, "kaira", "version.py")
-    
+
     with open(ver_file, encoding="utf-8") as f:
         content = f.read()
         match = re.search(r"__version_info__\s*=\s*(\([^)]+\))", content)
         assert match is not None, "Unable to find __version_info__ in version.py"
         version_info = ast.literal_eval(match.group(1))
         actual_version = ".".join(map(str, version_info))
-    
+
     # Import the version from the module
     from kaira import __version__
-    
+
     # Assert that the extracted version matches the module version
     assert actual_version == __version__, "Version extraction doesn't match the module version"
 
@@ -35,58 +36,49 @@ def test_readme_existence():
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     readme_path = os.path.join(this_directory, "README.md")
     readme_rst_path = os.path.join(this_directory, "README.rst")
-    
+
     # Setup.py is configured to load README.md, but project has README.rst
     # This test verifies whether setup.py's assumption about README file exists
     if not os.path.exists(readme_path) and os.path.exists(readme_rst_path):
         print("\nWARNING: setup.py is configured to load README.md, but only README.rst exists.")
         print("This will cause setup.py to fail when executed.")
         print("Consider updating setup.py to use README.rst instead of README.md.\n")
-    
+
     # Check that at least one README file exists
-    assert os.path.exists(readme_path) or os.path.exists(readme_rst_path), \
-        "Neither README.md nor README.rst found"
+    assert os.path.exists(readme_path) or os.path.exists(readme_rst_path), "Neither README.md nor README.rst found"
 
 
 def test_requirements_loading():
     """Test that requirements.txt can be loaded properly."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     requirements_path = os.path.join(this_directory, "requirements.txt")
-    
+
     # Check that requirements.txt exists
     assert os.path.exists(requirements_path), "requirements.txt file not found"
-    
+
     # Check that it can be read and contains valid requirements
     with open(requirements_path, encoding="utf-8") as f:
         requirements = f.read().splitlines()
-    
+
     assert requirements, "requirements.txt appears to be empty"
     for req in requirements:
         # Skip comments and empty lines
-        if req.strip() and not req.strip().startswith('#'):
+        if req.strip() and not req.strip().startswith("#"):
             # Very basic validation - could be enhanced
-            assert ' ' not in req.strip() or '==' in req or '>=' in req or '<=' in req, \
-                f"Requirement '{req}' doesn't appear to be a valid package specifier"
+            assert " " not in req.strip() or "==" in req or ">=" in req or "<=" in req, f"Requirement '{req}' doesn't appear to be a valid package specifier"
 
 
 def test_setup_contents():
     """Test that setup.py contains the expected configuration."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     setup_path = os.path.join(this_directory, "setup.py")
-    
-    with open(setup_path, 'r', encoding='utf-8') as f:
+
+    with open(setup_path, encoding="utf-8") as f:
         setup_content = f.read()
-    
+
     # Check for expected keys in setup
-    expected_keys = [
-        "name=\"kaira\"", 
-        "version=VERSION",
-        "url=\"https://github.com/ipc-lab/kaira\"",
-        "license=\"MIT\"",
-        "install_requires=requirements", 
-        "python_requires=\">=3.8\""
-    ]
-    
+    expected_keys = ['name="kaira"', "version=VERSION", 'url="https://github.com/ipc-lab/kaira"', 'license="MIT"', "install_requires=requirements", 'python_requires=">=3.8"']
+
     for key in expected_keys:
         assert key in setup_content, f"Expected '{key}' not found in setup.py"
 
@@ -94,17 +86,17 @@ def test_setup_contents():
 def test_setup_package_finder():
     """Test that the find_packages() function works correctly in this project."""
     packages = find_packages(exclude=["tests"])
-    
+
     # Project should at least have kaira module
     assert "kaira" in packages, "Main kaira package not found by find_packages()"
-    
+
     # Subpackages
     expected_subpackages = ["channels", "models", "metrics", "utils", "constraints"]
     found_count = 0
     for pkg in expected_subpackages:
         if f"kaira.{pkg}" in packages:
             found_count += 1
-    
+
     # At least a few expected subpackages should be found
     assert found_count > 2, f"Only {found_count} expected subpackages were found, expected more"
 
@@ -114,7 +106,7 @@ def test_version_pattern():
     from kaira import __version__
 
     # Test for PEP 440 compliance
-    version_pattern = r'^(\d+)\.(\d+)(\.(\d+))?(a|b|rc|\.dev)?(\d+)?$'
+    version_pattern = r"^(\d+)\.(\d+)(\.(\d+))?(a|b|rc|\.dev)?(\d+)?$"
     assert re.match(version_pattern, __version__), f"Version {__version__} doesn't match expected pattern"
 
 
@@ -122,7 +114,7 @@ def test_setup_py_version_extraction():
     """Directly test the version extraction logic from setup.py."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     ver_file = os.path.join(this_directory, "kaira", "version.py")
-    
+
     # Re-implement the exact logic from setup.py
     with open(ver_file, encoding="utf-8") as f:
         content = f.read()
@@ -130,13 +122,14 @@ def test_setup_py_version_extraction():
         assert match is not None, "Unable to find __version_info__ in version.py"
         version_info = ast.literal_eval(match.group(1))
         extracted_version = ".".join(map(str, version_info))
-    
+
     # Compare with imported version
     from kaira import __version__
+
     assert extracted_version == __version__, "Version extraction in setup.py doesn't match actual version"
 
 
-@mock.patch('setuptools.setup')
+@mock.patch("setuptools.setup")
 def test_setup_mock_basic_params(mock_setup):
     """Test setup() call with minimal setup and parameter checking."""
     # Create a test version of setup.py with mocked file operations
@@ -173,13 +166,13 @@ setup(
     python_requires=">=3.8",
 )
 """
-    
+
     # Use exec to execute the test code
     exec(setup_code)
-    
+
     # Verify setup was called
     assert mock_setup.called, "setup() was not called"
-    
+
     # Check the arguments
     _, kwargs = mock_setup.call_args
     assert kwargs["name"] == "kaira"
@@ -196,29 +189,29 @@ def test_setup_py_readme_warning():
     setup_path = os.path.join(this_directory, "setup.py")
     readme_path = os.path.join(this_directory, "README.md")
     readme_rst_path = os.path.join(this_directory, "README.rst")
-    
-    with open(setup_path, 'r', encoding='utf-8') as f:
+
+    with open(setup_path, encoding="utf-8") as f:
         setup_content = f.read()
-        
+
     # Check which README file is referenced in setup.py
     references_md = "README.md" in setup_content
     references_rst = "README.rst" in setup_content
-    
+
     # Check which files actually exist
     md_exists = os.path.exists(readme_path)
     rst_exists = os.path.exists(readme_rst_path)
-    
+
     # Test for mismatch
     if references_md and not md_exists and rst_exists:
         print("\nISSUE DETECTED: setup.py references README.md but only README.rst exists")
         print("This will cause setup.py to fail when building packages.")
-        print(f"Recommendation: Update setup.py to use README.rst instead of README.md\n")
-        
+        print("Recommendation: Update setup.py to use README.rst instead of README.md\n")
+
     if references_rst and not rst_exists and md_exists:
         print("\nISSUE DETECTED: setup.py references README.rst but only README.md exists")
         print("This will cause setup.py to fail when building packages.")
-        print(f"Recommendation: Update setup.py to use README.md instead of README.rst\n")
-    
+        print("Recommendation: Update setup.py to use README.md instead of README.rst\n")
+
     # If setup.py doesn't reference any README, that's also an issue
     if not references_md and not references_rst:
         print("\nISSUE DETECTED: setup.py doesn't reference any README file")
@@ -236,7 +229,7 @@ from setuptools import find_packages, setup
 
 VERSION = "0.1.0"  # Mock the version for testing
 readme = "Mocked README for testing"
-requirements = ["torch>=1.7.0", "numpy>=1.19.0"] 
+requirements = ["torch>=1.7.0", "numpy>=1.19.0"]
 
 # Execute a minimal setup to verify basic execution
 if __name__ == "__main__":
@@ -250,17 +243,13 @@ if __name__ == "__main__":
     )
 """
     # Create a temporary file and execute it
-    with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as tmp:
-        tmp.write(setup_code.encode('utf-8'))
+    with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tmp:
+        tmp.write(setup_code.encode("utf-8"))
         tmp_path = tmp.name
-    
+
     try:
         # Execute the file with subprocess to test actual execution
-        result = subprocess.run(
-            [sys.executable, tmp_path, '--name'], 
-            capture_output=True, 
-            text=True
-        )
+        result = subprocess.run([sys.executable, tmp_path, "--name"], capture_output=True, text=True)
         # No assertions needed here since we're just testing if it executes without errors
         assert result.returncode == 0, f"Mock setup failed with error: {result.stderr}"
     finally:
@@ -268,21 +257,17 @@ if __name__ == "__main__":
         os.unlink(tmp_path)
 
 
-@mock.patch('setuptools.setup')
+@mock.patch("setuptools.setup")
 def test_direct_setup_import(mock_setup):
     """Test that directly imports the setup.py module to ensure coverage."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     setup_path = os.path.join(this_directory, "setup.py")
-    
+
     # Create mocks for the files that will be opened
-    mock_file_contents = {
-        "README.md": "# Mock README\nTest project",
-        "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0",
-        os.path.join("kaira", "version.py"): '__version_info__ = (0, 1, 0)\n__version__ = ".".join(map(str, __version_info__))'
-    }
-    
+    mock_file_contents = {"README.md": "# Mock README\nTest project", "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0", os.path.join("kaira", "version.py"): '__version_info__ = (0, 1, 0)\n__version__ = ".".join(map(str, __version_info__))'}
+
     # Load the setup.py as a module with mocked open calls
-    with mock.patch('builtins.open') as mock_open:
+    with mock.patch("builtins.open") as mock_open:
         # Configure the mock to return appropriate content for different files
         def side_effect(filename, *args, **kwargs):
             for mock_path, content in mock_file_contents.items():
@@ -291,22 +276,22 @@ def test_direct_setup_import(mock_setup):
                     file_mock.__enter__.return_value.read.return_value = content
                     return file_mock
             raise FileNotFoundError(f"Mocked open() doesn't know how to handle {filename}")
-        
+
         mock_open.side_effect = side_effect
-        
+
         # Create module spec from the setup.py file path
         spec = importlib.util.spec_from_file_location("setup_module", setup_path)
         setup_module = importlib.util.module_from_spec(spec)
-        
+
         # Execute the module
         try:
             spec.loader.exec_module(setup_module)
         except Exception as e:
             print(f"Failed to execute setup_module: {e}")
-        
+
     # Verify setup was called
     assert mock_setup.called, "setup() was not called when importing setup.py"
-    
+
     # Check some of the setup parameters
     _, kwargs = mock_setup.call_args
     assert kwargs["name"] == "kaira", "Incorrect package name"
@@ -318,43 +303,38 @@ def test_setup_py_direct_execution():
     """Test the actual execution of setup.py with arguments."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     setup_path = os.path.join(this_directory, "setup.py")
-    
+
     # Create a README.md file temporarily if it doesn't exist
     readme_path = os.path.join(this_directory, "README.md")
     readme_created = False
-    
+
     if not os.path.exists(readme_path):
         try:
             # Read from README.rst if it exists
             readme_rst_path = os.path.join(this_directory, "README.rst")
             if os.path.exists(readme_rst_path):
-                with open(readme_rst_path, 'r', encoding='utf-8') as rst_file:
-                    readme_content = rst_file.read()
-                
+                with open(readme_rst_path, encoding="utf-8") as rst_file:
+                    rst_file.read()
+
                 # Create a temporary README.md for testing
-                with open(readme_path, 'w', encoding='utf-8') as md_file:
+                with open(readme_path, "w", encoding="utf-8") as md_file:
                     md_file.write("# Temporary README.md for testing\n\n")
                     md_file.write("This file was created by the test suite.\n")
                     md_file.write("Content based on README.rst\n\n")
                 readme_created = True
             else:
                 # Create an empty README.md
-                with open(readme_path, 'w', encoding='utf-8') as md_file:
+                with open(readme_path, "w", encoding="utf-8") as md_file:
                     md_file.write("# Temporary README.md for testing\n")
                 readme_created = True
         except Exception as e:
             print(f"Failed to create temporary README.md: {e}")
-    
+
     # Try to execute setup.py with a safe command that won't change anything
     try:
         # We use --help which doesn't actually install anything
-        result = subprocess.run(
-            [sys.executable, setup_path, '--help'], 
-            capture_output=True, 
-            text=True,
-            timeout=10  # Prevent hanging
-        )
-        
+        result = subprocess.run([sys.executable, setup_path, "--help"], capture_output=True, text=True, timeout=10)  # Prevent hanging
+
         # Setup.py might return various exit codes with --help, we're just checking it runs
         if result.returncode != 0:
             print(f"Setup.py execution returned non-zero status: {result.returncode}")
@@ -363,7 +343,7 @@ def test_setup_py_direct_execution():
             # Don't fail the test, just print warnings
     except Exception as e:
         print(f"Failed to execute setup.py: {e}")
-    
+
     # Clean up temporary README.md if we created it
     if readme_created:
         try:
@@ -376,16 +356,12 @@ def test_version_info_not_found_error():
     """Test that a RuntimeError is raised when __version_info__ is not found in version.py."""
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     setup_path = os.path.join(this_directory, "setup.py")
-    
+
     # Mock file contents where version.py is missing __version_info__
-    mock_file_contents = {
-        "README.md": "# Mock README\nTest project",
-        "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0",
-        os.path.join("kaira", "version.py"): "# This file intentionally doesn't contain __version_info__\n__version__ = '0.1.0'"
-    }
-    
+    mock_file_contents = {"README.md": "# Mock README\nTest project", "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0", os.path.join("kaira", "version.py"): "# This file intentionally doesn't contain __version_info__\n__version__ = '0.1.0'"}
+
     # Use mock to patch open() to return our mock contents
-    with mock.patch('builtins.open') as mock_open:
+    with mock.patch("builtins.open") as mock_open:
         # Configure mock to return appropriate content for different files
         def side_effect(filename, *args, **kwargs):
             for mock_path, content in mock_file_contents.items():
@@ -394,13 +370,13 @@ def test_version_info_not_found_error():
                     file_mock.__enter__.return_value.read.return_value = content
                     return file_mock
             raise FileNotFoundError(f"Mocked open() doesn't know how to handle {filename}")
-        
+
         mock_open.side_effect = side_effect
-        
+
         # Try to load setup.py as a module which should trigger the RuntimeError
         spec = importlib.util.spec_from_file_location("setup_module", setup_path)
         setup_module = importlib.util.module_from_spec(spec)
-        
+
         # The execution should raise RuntimeError
         with pytest.raises(RuntimeError, match="Unable to find __version_info__ in version.py"):
             spec.loader.exec_module(setup_module)

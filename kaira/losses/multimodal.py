@@ -201,7 +201,7 @@ class InfoNCELoss(BaseLoss):
         if queue is not None:
             # Compute positive logits
             l_pos = torch.einsum("nc,nc->n", [query, key]).unsqueeze(-1)
-            
+
             # Compute negative logits with queue
             queue = F.normalize(queue, p=2, dim=1)
             l_neg = torch.einsum("nc,kc->nk", [query, queue])
@@ -212,53 +212,53 @@ class InfoNCELoss(BaseLoss):
         else:
             # Compute all pairwise similarities
             similarities = torch.einsum("nc,kc->nk", [query, key])
-            
+
             if mask is not None:
                 # Apply custom masking to define positives and negatives
                 # Make sure the mask is properly shaped
                 assert mask.shape == similarities.shape, "Mask shape must match similarity matrix shape"
-                
+
                 # For each query, get the positive key with the highest similarity
                 positive_mask = mask.bool()
                 negative_mask = ~positive_mask
-                
+
                 # Replace non-positive similarities with -inf
                 masked_similarities = similarities.clone()
                 masked_similarities.masked_fill_(negative_mask, float("-inf"))
-                
+
                 # Get positive logits (max similarity for each query among its positive keys)
                 l_pos = masked_similarities.max(dim=1, keepdim=True)[0]
-                
+
                 # Prepare negative logits
                 # Replace diagonal with -inf to avoid self-contrast if not already masked
                 diag_mask = torch.eye(similarities.shape[0], device=similarities.device).bool()
                 negative_mask = negative_mask & ~diag_mask  # Remove diagonal from negatives
-                
+
                 # Extract only negative similarities
                 l_neg = similarities.masked_select(negative_mask).reshape(similarities.shape[0], -1)
-                
+
                 if l_neg.shape[1] == 0:  # No negatives found
                     # Just minimize distance between positive pairs
                     return -l_pos.mean()
-                
+
                 # Concatenate positive and negative logits
                 logits = torch.cat([l_pos, l_neg], dim=1)
-                
+
                 # Labels: positives are at index 0
                 labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
             else:
                 # Default behavior: use diagonal elements as positives
                 # Get positive logits (diagonal elements)
                 l_pos = torch.diag(similarities).unsqueeze(-1)
-                
+
                 # Remove diagonal from similarities to get negative logits
                 mask = torch.eye(similarities.shape[0], device=similarities.device)
                 similarities.masked_fill_(mask.bool(), float("-inf"))
                 l_neg = similarities
-                
+
                 # Concatenate positive and negative logits
                 logits = torch.cat([l_pos, l_neg], dim=1)
-                
+
                 # Labels: positives are at index 0
                 labels = torch.zeros(logits.shape[0], dtype=torch.long, device=query.device)
 
@@ -336,10 +336,10 @@ class AlignmentLoss(BaseLoss):
         super().__init__()
         self.alignment_type = alignment_type
         self.projection_dim = projection_dim
-        
+
         if alignment_type not in ["l1", "l2", "cosine"]:
             raise ValueError(f"Unsupported alignment type: {alignment_type}")
-            
+
         # Create projection layer if needed
         self.projector = None
         if self.projection_dim is not None:
@@ -362,14 +362,10 @@ class AlignmentLoss(BaseLoss):
             if self.projector.in_features != x1.shape[1]:
                 # Replace the projector with a properly sized one
                 device = x1.device
-                self.projector = torch.nn.Linear(
-                    in_features=x1.shape[1], 
-                    out_features=self.projection_dim,
-                    bias=False
-                ).to(device)
+                self.projector = torch.nn.Linear(in_features=x1.shape[1], out_features=self.projection_dim, bias=False).to(device)
                 # Initialize with orthogonal weights for better preservation of distances
                 torch.nn.init.orthogonal_(self.projector.weight)
-            
+
             # Apply projection
             x1 = self.projector(x1)
             x2 = self.projector(x2)

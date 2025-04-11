@@ -313,15 +313,16 @@ class MetricRegistry:
     @classmethod
     def clear(cls) -> None:
         """Clear all registered metrics from the registry.
+
         This is primarily useful for testing and reinitialization scenarios.
         """
         cls._metrics.clear()
 
     @classmethod
     def available_metrics(cls) -> List[str]:
-        """Get a list of all available metrics in the registry.
-        This is an alias for list_metrics() for backward compatibility.
-        
+        """Get a list of all available metrics in the registry. This is an alias for list_metrics()
+        for backward compatibility.
+
         Returns:
             List[str]: List of registered metric names
         """

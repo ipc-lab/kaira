@@ -102,7 +102,7 @@ def test_verify_constraint_papr():
     assert high_papr_props["papr"] > 1.0  # Verify it actually has high PAPR
 
     # Apply constraint and verify
-    constrained = papr_constraint(high_papr_signal)
+    papr_constraint(high_papr_signal)
     result = verify_constraint(
         constraint=papr_constraint,
         input_tensor=high_papr_signal,
@@ -215,27 +215,22 @@ def test_create_ofdm_constraints():
     # Test with default parameters
     ofdm_constraints = create_ofdm_constraints(total_power=1.0)
     assert len(ofdm_constraints.constraints) == 2  # Total power and PAPR constraints
-    
+
     # Test with peak amplitude constraint
-    ofdm_constraints = create_ofdm_constraints(
-        total_power=1.0, 
-        max_papr=4.0, 
-        is_complex=True, 
-        peak_amplitude=1.5
-    )
+    ofdm_constraints = create_ofdm_constraints(total_power=1.0, max_papr=4.0, is_complex=True, peak_amplitude=1.5)
     assert len(ofdm_constraints.constraints) == 3  # Total power, PAPR, and peak amplitude
-    
+
     # Apply and verify constraints
     x = torch.randn(100)
     constrained = ofdm_constraints(x)
-    
+
     # Check total power
     assert torch.isclose(torch.sum(constrained**2), torch.tensor(1.0), rtol=1e-4)
-    
+
     # Check PAPR
     props = measure_signal_properties(constrained)
     assert props["papr"] <= 4.1  # Allow slight tolerance
-    
+
     # Check peak amplitude
     assert props["peak_amplitude"] <= 1.5 + 1e-5
 
@@ -245,56 +240,40 @@ def test_create_mimo_constraints():
     # Test basic MIMO constraints with per-antenna power
     num_antennas = 4
     uniform_power = 0.25
-    
+
     # Create a test signal with shape [batch_size, num_antennas, sequence_length]
     test_signal = torch.randn(2, num_antennas, 32)
-    
+
     # Test with just per-antenna power constraint
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=uniform_power
-    )
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, uniform_power=uniform_power)
     assert len(mimo_constraints.constraints) == 1  # Just per-antenna power constraint
-    
+
     # Apply constraints
     constrained = mimo_constraints(test_signal)
-    
+
     # Check per-antenna power constraint
-    per_antenna_power = torch.mean(torch.abs(constrained)**2, dim=2)
+    per_antenna_power = torch.mean(torch.abs(constrained) ** 2, dim=2)
     for ant_power in per_antenna_power.view(-1):
         assert torch.isclose(ant_power, torch.tensor(uniform_power), rtol=1e-4)
-    
+
     # Test with PAPR constraint
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=uniform_power,
-        max_papr=3.0
-    )
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, uniform_power=uniform_power, max_papr=3.0)
     assert len(mimo_constraints.constraints) == 2  # Per-antenna power and PAPR
-    
+
     # Apply constraints
     constrained = mimo_constraints(test_signal)
-    
+
     # Check PAPR
     props = measure_signal_properties(constrained.reshape(-1))
     assert props["papr"] <= 3.1  # Allow slight tolerance
-    
+
     # Test with spectral mask
     spectral_mask = torch.ones(32)  # Simple flat mask
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=uniform_power,
-        spectral_mask=spectral_mask
-    )
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, uniform_power=uniform_power, spectral_mask=spectral_mask)
     assert len(mimo_constraints.constraints) == 2  # Per-antenna power and spectral mask
-    
+
     # Test with both PAPR and spectral mask
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=uniform_power,
-        max_papr=3.0,
-        spectral_mask=spectral_mask
-    )
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, uniform_power=uniform_power, max_papr=3.0, spectral_mask=spectral_mask)
     assert len(mimo_constraints.constraints) == 3  # All three constraints
 
 
@@ -303,39 +282,30 @@ def test_create_mimo_constraints_with_total_power():
     # Test MIMO constraints with total power constraint (not per-antenna)
     num_antennas = 4
     total_power = 1.0
-    
+
     # Create a test signal with shape [batch_size, num_antennas, sequence_length]
     test_signal = torch.randn(2, num_antennas, 32)
-    
+
     # Test with total power constraint (uniform_power=None)
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        total_power=total_power,
-        uniform_power=None  # This should trigger the total power constraint
-    )
-    
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, total_power=total_power, uniform_power=None)  # This should trigger the total power constraint
+
     # Apply constraints
     constrained = mimo_constraints(test_signal)
-    
+
     # Check total power constraint
-    total_signal_power = torch.sum(torch.abs(constrained)**2)
+    total_signal_power = torch.sum(torch.abs(constrained) ** 2)
     assert torch.isclose(total_signal_power, torch.tensor(total_power), rtol=1e-4)
-    
+
     # Test with both total power and max PAPR
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        total_power=total_power,
-        uniform_power=None,
-        max_papr=3.0
-    )
-    
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, total_power=total_power, uniform_power=None, max_papr=3.0)
+
     # Apply constraints
     constrained = mimo_constraints(test_signal)
-    
+
     # Check total power
-    total_signal_power = torch.sum(torch.abs(constrained)**2)
+    total_signal_power = torch.sum(torch.abs(constrained) ** 2)
     assert torch.isclose(total_signal_power, torch.tensor(total_power), rtol=1e-4)
-    
+
     # Check PAPR
     props = measure_signal_properties(constrained.reshape(-1))
     assert props["papr"] <= 3.1  # Allow slight tolerance
@@ -346,36 +316,31 @@ def test_create_mimo_constraints_with_total_power_and_spectral_mask():
     # Test MIMO constraints with total power constraint and spectral mask
     num_antennas = 4
     total_power = 1.0
-    
+
     # Create a simple spectral mask
     spectral_mask = torch.ones(32) * 0.5  # Maximum power 0.5 at each frequency
-    
+
     # Create a test signal with shape [batch_size, num_antennas, sequence_length]
     test_signal = torch.randn(2, num_antennas, 32)
-    
+
     # Test with total power constraint and spectral mask (uniform_power=None)
     # This tests line 98 specifically: if spectral_mask is not None: constraints.append(SpectralMaskConstraint(spectral_mask))
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=None,
-        total_power=total_power,
-        spectral_mask=spectral_mask
-    )
-    
+    mimo_constraints = create_mimo_constraints(num_antennas=num_antennas, uniform_power=None, total_power=total_power, spectral_mask=spectral_mask)
+
     # Verify the SpectralMaskConstraint was added
     assert len(mimo_constraints.constraints) == 2  # Should be TotalPowerConstraint and SpectralMaskConstraint
     assert any(isinstance(c, SpectralMaskConstraint) for c in mimo_constraints.constraints)
-    
+
     # Apply constraints
     constrained = mimo_constraints(test_signal)
-    
+
     # Check that output shape matches input
     assert constrained.shape == test_signal.shape
-    
+
     # Check that spectral constraint is applied - can verify by taking FFT and checking magnitudes
     fft_constrained = torch.fft.fft(constrained, dim=2)
-    power_spectrum = torch.abs(fft_constrained)**2
-    
+    power_spectrum = torch.abs(fft_constrained) ** 2
+
     # Verify that spectrum is below the mask at all frequencies
     # For real signals, need only check first half of FFT due to symmetry
     for freq_bin in range(spectral_mask.shape[0]):
@@ -385,32 +350,22 @@ def test_create_mimo_constraints_with_total_power_and_spectral_mask():
 def test_create_mimo_constraints_power_validation():
     """Test the power constraint validation in create_mimo_constraints."""
     num_antennas = 4
-    
+
     # Test case 1: Neither uniform_power nor total_power is provided
     with pytest.raises(ValueError, match="Either uniform_power or total_power must be provided"):
         create_mimo_constraints(num_antennas=num_antennas)
-    
+
     # Test case 2: Both uniform_power and total_power are provided
     with pytest.raises(ValueError, match="Cannot specify both uniform_power and total_power"):
-        create_mimo_constraints(
-            num_antennas=num_antennas,
-            uniform_power=0.25,
-            total_power=1.0
-        )
-    
+        create_mimo_constraints(num_antennas=num_antennas, uniform_power=0.25, total_power=1.0)
+
     # Test valid cases for comparison
     # With only uniform_power
-    constraints1 = create_mimo_constraints(
-        num_antennas=num_antennas,
-        uniform_power=0.25
-    )
+    constraints1 = create_mimo_constraints(num_antennas=num_antennas, uniform_power=0.25)
     assert len(constraints1.constraints) == 1
-    
+
     # With only total_power
-    constraints2 = create_mimo_constraints(
-        num_antennas=num_antennas,
-        total_power=1.0
-    )
+    constraints2 = create_mimo_constraints(num_antennas=num_antennas, total_power=1.0)
     assert len(constraints2.constraints) == 1
 
 
@@ -422,47 +377,43 @@ def test_papr_constraint_tensor_dimension_handling():
     #     x_flat = x.reshape(-1)
     #     result = self._apply_strict_papr_constraint(x_flat)
     #     return result.reshape(original_shape
-    
+
     # Create test signals with different dimensions
     # 1D tensor (vector)
     signal_1d = torch.cat([torch.ones(50), 3.0 * torch.ones(5), torch.ones(45)])
     # 2D tensor (matrix)
     signal_2d = torch.cat([torch.ones(50, 2), 3.0 * torch.ones(5, 2), torch.ones(45, 2)], dim=0)
-    
+
     # Create the MIMO constraints with a strict PAPR limit
     max_papr = 2.0
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=4,
-        uniform_power=0.25,
-        max_papr=max_papr
-    )
-    
+    mimo_constraints = create_mimo_constraints(num_antennas=4, uniform_power=0.25, max_papr=max_papr)
+
     # Apply to both tensors
     constrained_1d = mimo_constraints(signal_1d)
     constrained_2d = mimo_constraints(signal_2d)
-    
+
     # Verify shapes are preserved
     assert constrained_1d.shape == signal_1d.shape
     assert constrained_2d.shape == signal_2d.shape
-    
+
     # Verify PAPR constraint was applied in both cases
     props_1d = measure_signal_properties(constrained_1d)
     props_2d = measure_signal_properties(constrained_2d.reshape(-1))
-    
+
     assert props_1d["papr"] <= max_papr + 1.0  # Allow tolerance
     assert props_2d["papr"] <= max_papr + 1.0  # Allow tolerance
-    
+
     # Also verify that the PAPR was actually constrained (was higher before)
     original_props_1d = measure_signal_properties(signal_1d)
     original_props_2d = measure_signal_properties(signal_2d.reshape(-1))
-    
+
     assert original_props_1d["papr"] > props_1d["papr"]
     assert original_props_2d["papr"] > props_2d["papr"]
 
 
 def test_total_power_constraint_zero_signal_handling():
     """Test the total power constraint's handling of zero signals.
-    
+
     This tests the code path in TestTotalPowerConstraint:
     else:
         # For zero signal, generate a flat signal with correct power
@@ -472,34 +423,31 @@ def test_total_power_constraint_zero_signal_handling():
     # Create a zero or near-zero signal
     zero_signal = torch.zeros(64)
     near_zero_signal = torch.ones(64) * 1e-15
-    
+
     # Create the MIMO constraints with total power
     total_power = 1.0
-    mimo_constraints = create_mimo_constraints(
-        num_antennas=4,
-        total_power=total_power
-    )
-    
+    mimo_constraints = create_mimo_constraints(num_antennas=4, total_power=total_power)
+
     # Apply to both signals
     constrained_zero = mimo_constraints(zero_signal)
     constrained_near_zero = mimo_constraints(near_zero_signal)
-    
+
     # Verify shapes are preserved
     assert constrained_zero.shape == zero_signal.shape
     assert constrained_near_zero.shape == near_zero_signal.shape
-    
+
     # Verify the power was set correctly
     total_power_zero = torch.sum(constrained_zero**2)
     total_power_near_zero = torch.sum(constrained_near_zero**2)
-    
+
     assert torch.isclose(total_power_zero, torch.tensor(total_power), rtol=1e-4)
     assert torch.isclose(total_power_near_zero, torch.tensor(total_power), rtol=1e-4)
-    
+
     # Verify that all values are uniform (flat signal)
     # For a flat signal with total power = 1.0, all values should equal 1/sqrt(n)
     expected_value = 1.0 / torch.sqrt(torch.tensor(zero_signal.numel()))
     expected_value = expected_value * torch.sqrt(torch.tensor(total_power))
-    
+
     assert torch.allclose(constrained_zero, expected_value * torch.ones_like(constrained_zero), rtol=1e-4)
     # Near zero signal should also produce a flat signal since it falls below the threshold
     assert torch.allclose(constrained_near_zero, expected_value * torch.ones_like(constrained_near_zero), rtol=1e-4)
@@ -514,8 +462,10 @@ def test_ofdm_constraint_skip_zero_signal():
     # Should return the input unchanged if mean_power < 1e-10
     assert torch.allclose(output, near_zero_signal)
 
+
 def test_mimo_papr_skip_zero_signal():
-    """Test that the MIMO extremely strict PAPR constraint skips processing for near-zero signals."""
+    """Test that the MIMO extremely strict PAPR constraint skips processing for near-zero
+    signals."""
     near_zero_signal = torch.zeros(2, 4, 32)
     mimo_constraints = create_mimo_constraints(num_antennas=4, uniform_power=0.25, max_papr=2.0)
     # Find the PAPR constraint instance (ExtremelyStrictPAPRConstraint)

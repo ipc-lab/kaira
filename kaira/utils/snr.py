@@ -38,11 +38,11 @@ def snr_linear_to_db(snr_linear: Union[float, torch.Tensor]) -> torch.Tensor:
     # Handle zero explicitly to return -inf
     if torch.any(snr_linear == 0):
         if snr_linear.numel() == 1 and snr_linear.item() == 0:
-            return torch.tensor(float('-inf'))
+            return torch.tensor(float("-inf"))
         else:
             # For tensors with multiple elements, replace zeros with -inf after conversion
             result = 10 * torch.log10(torch.clamp(snr_linear, min=torch.finfo(torch.float32).eps))
-            result[snr_linear == 0] = float('-inf')
+            result[snr_linear == 0] = float("-inf")
             return result
 
     return 10 * torch.log10(snr_linear)
@@ -66,7 +66,7 @@ def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[f
         signal_power = torch.tensor(float(signal_power), dtype=torch.float64)
     else:
         signal_power = signal_power.to(torch.float64)
-    
+
     # Handle snr_db
     if isinstance(snr_db, float) or isinstance(snr_db, int):
         snr_db = torch.tensor(snr_db, dtype=torch.float64)
@@ -75,10 +75,10 @@ def snr_to_noise_power(signal_power: Union[float, torch.Tensor], snr_db: Union[f
         snr_db = torch.tensor(float(snr_db), dtype=torch.float64)
     else:
         snr_db = snr_db.to(torch.float64)
-    
+
     snr_linear = snr_db_to_linear(snr_db)
     result = signal_power / snr_linear
-    
+
     return result.to(torch.float32)
 
 
@@ -97,18 +97,18 @@ def noise_power_to_snr(signal_power: Union[float, torch.Tensor], noise_power: Un
     """
     if isinstance(signal_power, float):
         signal_power = torch.tensor(signal_power)
-    
+
     if isinstance(noise_power, float):
         noise_power = torch.tensor(noise_power)
         if signal_power.numel() > 1:
             noise_power = noise_power.expand_as(signal_power)
-    
+
     if noise_power.numel() > 1 and signal_power.numel() == 1:
         signal_power = signal_power.expand_as(noise_power)
-    
+
     if torch.any(noise_power <= 0):
         raise ValueError("Noise power cannot be zero")
-    
+
     snr_linear = signal_power / noise_power
     return 10 * torch.log10(snr_linear)
 

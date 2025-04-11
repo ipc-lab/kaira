@@ -15,9 +15,10 @@ from kaira.models.registry import ModelRegistry
 # Mock classes for testing
 class MockChannel:
     """A simple channel that works with the tuple format (x, csi) passed by the model."""
+
     def __init__(self, snr_db=10.0):
         self.snr_db = snr_db
-    
+
     def __call__(self, x):
         # Support both tensor and tuple inputs
         if isinstance(x, tuple):
@@ -25,23 +26,27 @@ class MockChannel:
             return tensor_x  # Just pass through for testing
         return x  # Pass through for testing
 
+
 class MockConstraint:
     """A simple power constraint that accepts the 'mult' parameter used in perfect_sic."""
+
     def __init__(self, total_power=1.0):
         self.total_power = total_power
-    
+
     def __call__(self, x, mult=None):
         return x  # Just pass through for testing
 
+
 class MockDecoder(nn.Module):
     """A simple decoder that can handle the device dimension in the test cases."""
+
     def __init__(self, out_ch_per_device=3):
         super().__init__()
         self.out_ch_per_device = out_ch_per_device
-        
+
     def forward(self, x_tuple):
         x, csi = x_tuple if isinstance(x_tuple, tuple) else (x_tuple, None)
-        
+
         # Handle different tensor shapes
         if len(x.shape) == 5:  # [batch, devices, channels, H, W]
             batch_size, num_devices = x.shape[:2]
@@ -54,13 +59,15 @@ class MockDecoder(nn.Module):
         else:
             return torch.zeros(1, self.out_ch_per_device, 32, 32)
 
+
 class DummyModel(nn.Module):
     """A simplified dummy model that directly produces the expected output shape."""
+
     def __init__(self, num_devices, out_ch_per_device=3):
         super().__init__()
         self.num_devices = num_devices
         self.out_ch_per_device = out_ch_per_device
-    
+
     def forward(self, x, csi):
         # Just return a tensor with the expected output shape
         batch_size = x.shape[0]
@@ -162,22 +169,12 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
     """Test Yilmaz2023DeepJSCCNOMA with shared encoder/decoder."""
     channel = MockChannel(snr_db=10.0)
     constraint = MockConstraint(total_power=1.0)
-    
+
     # Create custom encoder and a mock decoder that can handle the dimensionality issues
     encoder = Yilmaz2023DeepJSCCNOMAEncoder(N=64, M=16, in_ch=3, csi_length=1)
     mock_decoder = MockDecoder(out_ch_per_device=3)
-    
-    model = Yilmaz2023DeepJSCCNOMAModel(
-        channel=channel,
-        power_constraint=constraint,
-        num_devices=3,
-        M=0.5,
-        shared_encoder=True,
-        shared_decoder=True,
-        use_device_embedding=False,  # Disable device embedding
-        encoder=encoder,
-        decoder=mock_decoder
-    )
+
+    model = Yilmaz2023DeepJSCCNOMAModel(channel=channel, power_constraint=constraint, num_devices=3, M=0.5, shared_encoder=True, shared_decoder=True, use_device_embedding=False, encoder=encoder, decoder=mock_decoder)  # Disable device embedding
 
     # Check that we only have one encoder and one decoder
     assert len(model.encoders) == 1
@@ -198,21 +195,12 @@ def test_yilmaz2023_deepjscc_noma_perfect_sic():
     """Test Yilmaz2023DeepJSCCNOMA with perfect successive interference cancellation."""
     channel = MockChannel(snr_db=10.0)
     constraint = MockConstraint(total_power=1.0)
-    
+
     # Create custom encoder and decoder with matching parameters
     encoder = Yilmaz2023DeepJSCCNOMAEncoder(N=64, M=16, in_ch=3, csi_length=1)
     decoder = Yilmaz2023DeepJSCCNOMADecoder(N=64, M=16, out_ch_per_device=3, csi_length=1)
-    
-    model = Yilmaz2023DeepJSCCNOMAModel(
-        channel=channel,
-        power_constraint=constraint,
-        num_devices=2,
-        M=0.5,
-        use_perfect_sic=True,
-        use_device_embedding=False,  # Disable device embedding
-        encoder=encoder,
-        decoder=decoder
-    )
+
+    model = Yilmaz2023DeepJSCCNOMAModel(channel=channel, power_constraint=constraint, num_devices=2, M=0.5, use_perfect_sic=True, use_device_embedding=False, encoder=encoder, decoder=decoder)  # Disable device embedding
 
     # Create dummy input
     x = torch.randn(2, 2, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]

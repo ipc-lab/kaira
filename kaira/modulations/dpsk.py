@@ -23,8 +23,7 @@ class DPSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     _phase_memory: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, 
-                 bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
         """Initialize the DPSK modulator.
 
         Args:
@@ -34,11 +33,11 @@ class DPSKModulator(BaseModulator):
             gray_coded: Alternative name for gray_coding
         """
         super().__init__()
-        
+
         # Support both initialization styles (order or bits_per_symbol)
         if bits_per_symbol is not None:
             self._bits_per_symbol = bits_per_symbol
-            self.order = 2 ** bits_per_symbol
+            self.order = 2**bits_per_symbol
         elif order is not None:
             # Validate order is a power of 2
             if not (order > 0 and (order & (order - 1) == 0)):
@@ -61,12 +60,12 @@ class DPSKModulator(BaseModulator):
         """Create the DPSK constellation mapping."""
         # Generate differential phase shifts
         angles = torch.arange(0, self.order) * (2 * np.pi / self.order)
-        
+
         # For non-gray-coded, rotate constellation to make it different
         if not self.gray_coding:
             # Add a small rotation to make non-gray constellation visibly different
             angles = angles + np.pi / self.order
-        
+
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
         constellation = torch.complex(re_part, im_part)
@@ -106,7 +105,7 @@ class DPSKModulator(BaseModulator):
 
         # Determine if input contains bit patterns or indices
         is_binary_input = torch.all((x == 0) | (x == 1))
-        
+
         # If it's a binary input, check length divisibility ONLY if not handling a single element tensor
         # Single element tensors should be treated as indices even if their values are 0 or 1
         if is_binary_input and bit_len > 1 and bit_len % self._bits_per_symbol != 0:
@@ -119,10 +118,10 @@ class DPSKModulator(BaseModulator):
         if is_binary_input:
             # Calculate number of symbols
             symbol_len = bit_len // self._bits_per_symbol
-            
+
             # Reshape to groups of bits_per_symbol for processing
             x_reshaped = x.reshape(*batch_shape, symbol_len, self._bits_per_symbol)
-            
+
             # Convert bit groups to indices
             indices = torch.zeros((*batch_shape, symbol_len), dtype=torch.long, device=x.device)
             for i in range(self._bits_per_symbol):
@@ -130,11 +129,11 @@ class DPSKModulator(BaseModulator):
         else:
             # Process as direct indices
             indices = x.long()
-            
+
             # Validate indices are within range
             if torch.any(indices >= self.order):
                 raise ValueError(f"Symbol indices must be less than order ({self.order})")
-                
+
             symbol_len = x.shape[-1]
 
         # Map indices to differential phase shifts
@@ -142,7 +141,7 @@ class DPSKModulator(BaseModulator):
 
         # Apply differential encoding
         ref_phase = self._phase_memory.clone().detach()
-        
+
         # Expand reference phase to match batch dimensions if needed
         if batch_shape:
             # Expand to match batch dimensions
@@ -151,26 +150,26 @@ class DPSKModulator(BaseModulator):
             ref_phase = ref_phase.expand(*batch_shape, 1)
         else:
             ref_phase = ref_phase.unsqueeze(0)
-            
+
         # Create output tensor with the right shape
         output = torch.zeros(*batch_shape, symbol_len, dtype=torch.complex64, device=x.device)
-        
+
         # Apply differential modulation to all symbols
         if symbol_len > 0:
             # First symbol is modulated using the phase memory
             output[..., 0] = ref_phase.squeeze(-1) * phase_shifts[..., 0]
-            
+
             # Apply differential encoding to subsequent symbols
             for i in range(1, symbol_len):
-                output[..., i] = output[..., i-1] * phase_shifts[..., i]
-                
+                output[..., i] = output[..., i - 1] * phase_shifts[..., i]
+
             # Update phase memory with the last output symbol
             if self.training:
                 if batch_shape:
                     self._phase_memory = output[..., -1].detach().mean().view(1)
                 else:
                     self._phase_memory = output[..., -1].detach().view(1)
-        
+
         return output
 
     def reset_state(self) -> None:
@@ -195,12 +194,12 @@ class DPSKModulator(BaseModulator):
         fig, _ = plot_constellation(self.constellation, labels=labels, title=f"{self.order}-DPSK Constellation", **kwargs)
         return fig
 
+
 @ModulationRegistry.register_demodulator()
 class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
 
-    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True,
-                 bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
         """Initialize the DPSK demodulator.
 
         Args:
@@ -210,23 +209,23 @@ class DPSKDemodulator(BaseDemodulator):
             gray_coded: Alternative name for gray_coding
         """
         super().__init__()
-        
+
         # Support both initialization styles (order or bits_per_symbol)
         if bits_per_symbol is not None:
             self._bits_per_symbol = bits_per_symbol
-            self.order = 2 ** bits_per_symbol
+            self.order = 2**bits_per_symbol
         elif order is not None:
             self.order = order
             self._bits_per_symbol: int = int(np.log2(order))
         else:
             raise ValueError("Either order or bits_per_symbol must be provided")
-            
+
         # Support both naming conventions
         self.gray_coding = gray_coded if gray_coded is not None else gray_coding
 
         # Create reference modulator to access constellation
         self.modulator = DPSKModulator(order=self.order, gray_coding=self.gray_coding)
-        
+
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
         """Demodulate DPSK symbols.
 
@@ -241,7 +240,7 @@ class DPSKDemodulator(BaseDemodulator):
         batch_shape = y.shape[:-1]
         symbol_len = y.shape[-1]
         constellation = self.modulator.constellation
-        
+
         # Need at least two symbols for differential demodulation
         if symbol_len < 2:
             raise ValueError("Need at least two symbols for differential demodulation")
@@ -284,13 +283,13 @@ class DPSKDemodulator(BaseDemodulator):
             # Soft decision
             # For differential demodulation with noise, the effective noise variance is doubled
             # because noise affects both current and previous symbols
-            
+
             # Convert noise_var to appropriate tensor form and apply 2x factor for differential detection
             if not isinstance(noise_var, torch.Tensor):
                 effective_noise_var = torch.tensor(2.0 * noise_var, device=y.device)
             else:
                 effective_noise_var = 2.0 * noise_var.to(device=y.device)
-                
+
             # Handle scalar noise variance
             if effective_noise_var.dim() == 0:  # scalar
                 effective_noise_var = effective_noise_var.expand(*batch_shape, symbol_len - 1)
@@ -339,11 +338,11 @@ class DPSKDemodulator(BaseDemodulator):
         if batch_shape:
             # For multi-dimensional tensors, use proper expand
             y_expanded = y_expanded.expand(*batch_shape, symbol_shape, num_points)
-            
+
             # Create points_expanded to match dimensions
             points_reshaped = points.reshape(*([1] * len(batch_shape)), 1, -1)
             points_expanded = points_reshaped.expand(*batch_shape, symbol_shape, num_points)
-            
+
             # Expand noise variance similarly
             noise_var_expanded = noise_var.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
         else:

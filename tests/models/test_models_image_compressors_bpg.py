@@ -1,8 +1,5 @@
 """Tests for BPG image compression model."""
-import os
 import subprocess
-import tempfile
-import uuid
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -81,11 +78,11 @@ def test_bpg_compressor_forward(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass."""
     # Ensure return_bits is False for this test
     bpg_compressor.return_bits = False
-    
+
     # Mock the internal compress method
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
         mock_compress.return_value = torch.ones_like(sample_image[0])
-        
+
         output = bpg_compressor(sample_image)
         assert isinstance(output, torch.Tensor)
         assert output.shape == sample_image.shape
@@ -95,7 +92,7 @@ def test_bpg_compressor_forward_with_bits(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with bits per image."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
         mock_compress.return_value = (torch.ones_like(sample_image[0]), {"bits": 1000})
-        
+
         bpg_compressor.return_bits = True
         output, bits_per_image = bpg_compressor(sample_image)
         assert isinstance(output, torch.Tensor)
@@ -108,7 +105,7 @@ def test_bpg_compressor_forward_with_compressed_data(sample_image, bpg_compresso
     """Test BPGCompressor forward pass with compressed data."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
         mock_compress.return_value = (torch.ones_like(sample_image[0]), {"compressed_data": b"test"})
-        
+
         # Ensure return_bits is False and only return_compressed_data is True
         bpg_compressor.return_bits = False
         bpg_compressor.return_compressed_data = True
@@ -124,7 +121,7 @@ def test_bpg_compressor_forward_with_bits_and_compressed_data(sample_image, bpg_
     """Test BPGCompressor forward pass with both bits and compressed data."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
         mock_compress.return_value = (torch.ones_like(sample_image[0]), {"bits": 1000, "compressed_data": b"test"})
-        
+
         bpg_compressor.return_bits = True
         bpg_compressor.return_compressed_data = True
         output, bits_per_image, compressed_data = bpg_compressor(sample_image)
@@ -198,19 +195,12 @@ def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
         mock_run.return_value.stderr = "Encoding error"
 
         # Create a comprehensive mock for file operations
-        with patch("tempfile.mkdtemp") as mock_mkdtemp, \
-             patch("shutil.rmtree") as mock_rmtree, \
-             patch("torchvision.utils.save_image") as mock_save_image, \
-             patch("builtins.open", mock_open(read_data=b"test")), \
-             patch("os.path.exists", return_value=True), \
-             patch("os.path.getsize", return_value=100), \
-             patch("os.makedirs", return_value=None), \
-             patch("os.rename"), \
-             patch("os.remove"):
-            
+        with patch("tempfile.mkdtemp") as mock_mkdtemp, patch("shutil.rmtree"), patch("torchvision.utils.save_image"), patch("builtins.open", mock_open(read_data=b"test")), patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=100), patch(
+            "os.makedirs", return_value=None
+        ), patch("os.rename"), patch("os.remove"):
             # Mock directory path and create any parent directories
             mock_mkdtemp.return_value = "/tmp/mock_dir"
-            
+
             # Create a mocked tensor to return when compression fails
             mock_tensor = torch.randn_like(sample_image[0])
             with patch("torch.randn_like", return_value=mock_tensor):
@@ -294,9 +284,9 @@ def test_compress_with_target_size_binary_search(bpg_compressor, sample_image):
             24: 62,  # 496 bits - below target
             25: 65,  # 520 bits - on target
         }
-        
+
         call_count = 0
-        
+
         def getsize_side_effect(path):
             nonlocal call_count
             if "compressed" in path:
@@ -311,19 +301,13 @@ def test_compress_with_target_size_binary_search(bpg_compressor, sample_image):
                             return quality_sizes.get(quality, 60)  # Default to 60 bytes if quality not found
                 return 60  # Default size
             return 1000  # Original size
-        
+
         mock_getsize.side_effect = getsize_side_effect
 
         # Mock image handling with more thorough file operation mocking
-        with patch("tempfile.mkdtemp") as mock_mkdtemp, \
-             patch("shutil.rmtree") as mock_rmtree, \
-             patch("torchvision.utils.save_image") as mock_save_image, \
-             patch("os.path.exists", return_value=True), \
-             patch("os.remove") as mock_remove, \
-             patch("os.rename") as mock_rename:  # Add mock for os.rename
-                
+        with patch("tempfile.mkdtemp") as mock_mkdtemp, patch("shutil.rmtree"), patch("torchvision.utils.save_image"), patch("os.path.exists", return_value=True), patch("os.remove"), patch("os.rename"):  # Add mock for os.rename
             mock_mkdtemp.return_value = "/tmp/mock_dir"
-            
+
             with patch("PIL.Image.open") as mock_open_image, patch("builtins.open", mock_open(read_data=b"test")):
                 mock_img = MagicMock()
                 mock_img.convert.return_value = mock_img
@@ -331,11 +315,11 @@ def test_compress_with_target_size_binary_search(bpg_compressor, sample_image):
 
                 with patch("torchvision.transforms.ToTensor") as mock_to_tensor:
                     mock_to_tensor.return_value.return_value = torch.ones(3, 32, 32)
-                    
+
                     # Test with target size of 500 bits (62.5 bytes)
                     target_bits = 500
                     result, info = bpg_compressor.compress_with_target_size(0, sample_image[0], target_bits, True)
-                    
+
                     # Verify we got a reasonable result
                     assert torch.all(result == torch.ones(3, 32, 32))
                     assert "quality" in info
