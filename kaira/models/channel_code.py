@@ -66,7 +66,7 @@ class ChannelCodeModel(SequentialModel):
         self.demodulator = demodulator
         self.decoder = decoder
 
-    def forward(self, x: Any, **kwargs: Any) -> Any:
+    def forward(self, x: Any, *args: Any, **kwargs: Any) -> Any:
         """Process input through the feedback channel system.
 
         Performs an iterative transmission process where:
@@ -76,6 +76,7 @@ class ChannelCodeModel(SequentialModel):
 
         Args:
             x (Any): The input data to transmit
+            *args: Additional positional arguments
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -91,7 +92,7 @@ class ChannelCodeModel(SequentialModel):
         # Transmission process
 
         # Encode the input
-        encoded = self.encoder(x, **kwargs)
+        encoded = self.encoder(x, *args, **kwargs)
 
         encoded = (encoded > 0).float()
 
