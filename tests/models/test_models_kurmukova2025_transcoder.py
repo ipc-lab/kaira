@@ -116,7 +116,7 @@ def test_transcoder_model_initialization():
 
 def test_transcoder_model_registry():
     """Test that the TransCoder model is properly registered."""
-    assert "transcoder" in ModelRegistry._models
+    assert "kurmukova2025transcoder" in ModelRegistry._models
 
     # Check model can be created from registry
     encoder_tc = MockEncoder(output_dim=16)
@@ -128,7 +128,7 @@ def test_transcoder_model_registry():
     decoder_tc = MockDecoder(input_dim=16, output_dim=10)
     decoder_ec = MockDecoder(input_dim=10, output_dim=10)
 
-    model = ModelRegistry.create("transcoder", encoder_tc=encoder_tc, encoder_ec=encoder_ec, constraint=constraint, modulator=modulator, channel=channel, demodulator=demodulator, decoder_tc=decoder_tc, decoder_ec=decoder_ec, n_iterations=1)
+    model = ModelRegistry.create("kurmukova2025transcoder", encoder_tc=encoder_tc, encoder_ec=encoder_ec, constraint=constraint, modulator=modulator, channel=channel, demodulator=demodulator, decoder_tc=decoder_tc, decoder_ec=decoder_ec, n_iterations=1)
 
     assert isinstance(model, Kurmukova2025TransCoder)
 
