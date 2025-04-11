@@ -21,7 +21,7 @@ import torch
 
 from kaira.channels import RayleighFadingChannel, RicianFadingChannel
 from kaira.metrics import BitErrorRate, SymbolErrorRate
-from kaira.modulations import QPSKModulator
+from kaira.modulations import QPSKModulator, QPSKDemodulator
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -32,8 +32,9 @@ np.random.seed(42)
 # ------------------------------------
 # Let's create QPSK modulated symbols to transmit through our channels
 
-# Create a QPSK modulator
+# Create a QPSK modulator and demodulator
 qpsk_modulator = QPSKModulator()
+qpsk_demodulator = QPSKDemodulator()
 
 # Generate random bits for transmission
 n_symbols = 10000
@@ -89,7 +90,7 @@ for name, channel in channels:
 
         # Decode output to make hard decisions
         output_scaled = output / torch.mean(torch.abs(output))
-        decoded_bits = qpsk_modulator.demodulate(output_scaled)
+        decoded_bits = qpsk_demodulator(output_scaled)
 
         # Calculate error metrics
         ser = ser_metric(decoded_bits.view(-1, 2), random_bits.view(-1, 2))
@@ -149,7 +150,7 @@ plt.tight_layout()
 
 # %%
 # Visualize Channel Outputs in Constellation Diagram
-# -------------------------------------------------
+# --------------------------------------------------
 # Let's see how the different fading channels affect our QPSK signal
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
@@ -212,7 +213,7 @@ for snr_db in snr_range_db:
 
             # Decode output
             output_scaled = output / torch.mean(torch.abs(output))
-            decoded_bits = qpsk_modulator.demodulate(output_scaled)
+            decoded_bits = qpsk_demodulator(output_scaled)
 
             # Calculate error metrics
             ser = ser_metric(decoded_bits.view(-1, 2), random_bits.view(-1, 2))
