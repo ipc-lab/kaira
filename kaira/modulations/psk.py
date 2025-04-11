@@ -343,7 +343,7 @@ class PSKModulator(BaseModulator):
                 raise ValueError(f"PSK order must be a power of 2, got {order}")
 
             self.order = order
-            self._bits_per_symbol: int = int(np.log2(order))
+            self._bits_per_symbol = int(np.log2(order))
 
             # Create standard PSK constellation
             self._create_constellation()

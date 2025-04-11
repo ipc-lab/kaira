@@ -1,4 +1,6 @@
 """Tests for analog channel implementations in Kaira."""
+import math
+
 import numpy as np
 import pytest
 import torch
@@ -16,6 +18,7 @@ from kaira.channels import (
     RayleighFadingChannel,
     RicianFadingChannel,
 )
+from kaira.utils import snr_to_noise_power
 
 
 class TestAWGNChannel:
@@ -535,8 +538,8 @@ def test_flat_fading_channel_with_custom_noise(complex_tensor):
     assert torch.allclose(output, expected)
 
 
-def test_flat_fading_channel_input_shape():
-    """Test FlatFadingChannel processing for 1D and >2D inputs."""
+def test_flat_fading_channel_input_shape_extended():
+    """Extended test for FlatFadingChannel processing for 1D and >2D inputs."""
     # Create a dummy channel with Rayleigh fading (use avg_noise_power branch here)
     channel = FlatFadingChannel("rayleigh", coherence_time=4, avg_noise_power=0.1)
 
@@ -745,11 +748,6 @@ class TestChannelComposition:
         # (allowing for statistical variation)
         assert 1.5 < noise2 / noise1 < 2.5
 
-
-import math
-
-from kaira.channels.analog import AWGNChannel, FlatFadingChannel, LaplacianChannel, NonlinearChannel
-from kaira.utils import snr_to_noise_power
 
 # Additional tests to cover requested conditions
 

@@ -71,10 +71,10 @@ def visualize_metrics_comparison(
         raise ValueError("No results provided for visualization")
 
     # Extract metrics common to all result sets
-    common_metrics = set(results_list[0].keys())
+    common_metrics_set = set(results_list[0].keys())
     for results in results_list[1:]:
-        common_metrics = common_metrics.intersection(results.keys())
-    common_metrics = list(common_metrics)
+        common_metrics_set = common_metrics_set.intersection(results.keys())
+    common_metrics = list(common_metrics_set)
 
     plt.figure(figsize=figsize)
 

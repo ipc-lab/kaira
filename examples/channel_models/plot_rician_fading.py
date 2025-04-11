@@ -14,6 +14,8 @@ We'll visualize the effect of different K-factors in Rician fading and compare w
 # %%
 # Imports and Setup
 # -------------------------------
+from typing import List
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -71,7 +73,7 @@ ber_metric = BitErrorRate()
 
 # Process signals and collect results
 channel_outputs = []
-fading_coefficients = []
+fading_coefficients: List[torch.Tensor] = []
 ser_results = []
 ber_results = []
 

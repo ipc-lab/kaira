@@ -84,17 +84,18 @@ class ConfigurableModel(BaseModel):
         self.steps.pop(index)
         return self
 
-    def forward(self, x: Any, **kwargs: Any) -> Any:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Process input through all steps sequentially.
 
         Args:
-            x: The input to process
-            **kwargs: Additional keyword arguments passed to each step
+            x (Any): The input to process
+            *args (Any): Positional arguments passed to each step
+            **kwargs (Any): Additional keyword arguments passed to each step
 
         Returns:
             The result after applying all steps
         """
-        result = x
+        result = input_data
         for step in self.steps:
-            result = step(result, **kwargs)
+            result = step(result, *args, **kwargs)
         return result

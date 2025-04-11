@@ -72,6 +72,7 @@ repos:
             --ignore-nested-functions,
             -vv,
           ]
+        exclude: "^tests/"
 
   # Replace flake8 with ruff (faster and more comprehensive)
   - repo: https://github.com/astral-sh/ruff-pre-commit

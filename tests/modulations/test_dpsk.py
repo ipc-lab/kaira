@@ -192,8 +192,8 @@ def test_dpsk_modulator_initialization():
     assert not np.array_equal(mod_gray.constellation.numpy(), mod_no_gray.constellation.numpy())
 
 
-def test_dpsk_modulator_forward(dpsk_modulator):
-    """Test forward pass of DPSK modulator."""
+def test_dpsk_modulator_detailed_forward(dpsk_modulator):
+    """Test detailed forward pass of DPSK modulator."""
     # Reset state before testing
     dpsk_modulator.reset_state()
 
@@ -243,8 +243,8 @@ def test_dpsk_demodulator_initialization():
     assert demod2.bits_per_symbol == 2
 
 
-def test_dpsk_demodulator_forward():
-    """Test forward pass of DPSK demodulator."""
+def test_dpsk_demodulator_detailed_forward():
+    """Test detailed forward pass of DPSK demodulator."""
     mod = DPSKModulator(bits_per_symbol=2)
     demod = DPSKDemodulator(bits_per_symbol=2)
 

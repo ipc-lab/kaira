@@ -4,7 +4,7 @@ This module contains the TransCoderModel, which is a model for channel transmiss
 TransCoder pipeline.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import torch
 
@@ -16,7 +16,7 @@ from ..base import BaseModel
 from ..registry import ModelRegistry
 
 
-@ModelRegistry.register_model("transcoder")
+@ModelRegistry.register_model()
 class Kurmukova2025TransCoder(BaseModel):
     """A specialized model for TransCoder.
 
@@ -134,6 +134,7 @@ class Kurmukova2025TransCoder(BaseModel):
                 if i == 0:
                     demodulated = self.decoder_tc(received, *args, **kwargs)
                 else:
+                    # Use the soft_estimate from the previous iteration
                     demodulated = self.decoder_tc([received, soft_estimate], *args, **kwargs)
             else:
                 # Demodulation

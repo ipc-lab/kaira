@@ -204,7 +204,9 @@ def calculate_theoretical_ber(snr_db: Union[float, List[float], np.ndarray, torc
     """
     # Save original type for return
     is_tensor = isinstance(snr_db, torch.Tensor)
-    original_device = snr_db.device if is_tensor else torch.device("cpu")
+    original_device = torch.device("cpu")
+    if is_tensor and hasattr(snr_db, "device"):
+        original_device = snr_db.device
 
     # Convert to numpy array if needed
     if isinstance(snr_db, (list, torch.Tensor)):

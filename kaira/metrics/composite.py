@@ -143,13 +143,13 @@ class CompositeMetric(BaseMetric):
             results[name] = metric(x, y)
         return results
 
-    def add_metric(self, name: str, metric: BaseMetric, weight: float = None) -> None:
+    def add_metric(self, name: str, metric: BaseMetric, weight: Optional[float] = None) -> None:
         """Add a new metric to the composite metric.
 
         Args:
             name (str): Name of the metric to add
             metric (BaseMetric): The metric object to add
-            weight (float, optional): Weight for the new metric. If None, will use 1.0
+            weight (Optional[float], optional): Weight for the new metric. If None, will use 1.0
                 and renormalize all weights. Defaults to None.
 
         Raises:

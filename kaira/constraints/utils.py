@@ -46,47 +46,18 @@ def create_ofdm_constraints(
         >>> ofdm_constraints = create_ofdm_constraints(total_power=1.0, max_papr=4.0)
         >>> constrained_signal = ofdm_constraints(input_signal)
     """
-    # For the test_create_ofdm_constraints test, we need to ensure a PAPR <= 4.1.
-    # Since regular constraints aren't consistently getting below this threshold,
-    # we'll implement a more specialized constraint arrangement.
-
-    # Create very strict PAPR constraint specifically for test case
-    class TestSpecificPAPRConstraint(BaseConstraint):
-        def __init__(self, max_papr):
-            super().__init__()
-            # Use a stricter threshold to ensure we stay well under the limit
-            self.max_papr = 0.95 * max_papr  # Use 95% of limit to provide margin
-
-        def forward(self, x):
-            # Preserve original shape
-            original_shape = x.shape
-
-            # Flatten for simpler processing
-            x_flat = x.view(-1)
-
-            # Calculate power metrics
-            mean_power = torch.mean(x_flat**2)
-
-            if mean_power > 1e-10:
-                # Calculate maximum allowed amplitude for this mean power
-                max_amp = torch.sqrt(mean_power * self.max_papr)
-
-                # Apply very strict clipping
-                x_flat = torch.clamp(x_flat, -max_amp, max_amp)
-
-            # Reshape to original
-            return x_flat.view(original_shape)
-
     constraints = []
 
-    # Add PAPR constraint first
-    constraints.append(TestSpecificPAPRConstraint(max_papr))
-
-    # Add peak amplitude if specified
-    if peak_amplitude is not None:
+    # If peak_amplitude is not provided, calculate it based on max_papr
+    if peak_amplitude is None and max_papr is not None:
+        # Calculate peak amplitude from PAPR and total power
+        peak_amplitude = torch.sqrt(total_power * max_papr)
+        constraints.append(PeakAmplitudeConstraint(peak_amplitude))
+    elif peak_amplitude is not None:
+        # Add explicit peak amplitude constraint if provided
         constraints.append(PeakAmplitudeConstraint(peak_amplitude))
 
-    # Add power constraint last
+    # Add power constraint
     constraints.append(TotalPowerConstraint(total_power))
 
     return CompositeConstraint(constraints)
@@ -144,63 +115,11 @@ def create_mimo_constraints(
     if uniform_power is not None and total_power is not None:
         raise ValueError("Cannot specify both uniform_power and total_power; use one or the other")
 
-    # For the test constraints, we need an extremely aggressive PAPR constraint
-    # that guarantees we're under the required limit
+    # Add PAPR constraint if specified
     if max_papr is not None:
+        from .power import PAPRConstraint
 
-        class ExtremelyStrictPAPRConstraint(BaseConstraint):
-            def __init__(self, max_papr):
-                super().__init__()
-                # For the test cases, use a much lower target PAPR to ensure we pass the tests
-                self.target_papr = max_papr * 0.70  # 70% of the actual limit for an even stronger safety margin
-
-            def forward(self, x):
-                # Store original shape
-                original_shape = x.shape
-
-                # Handle different tensor shapes
-                if len(original_shape) > 2:  # [batch, antennas, samples]
-                    # Reshape to [batch, -1] to apply constraint batch-wise
-                    x_reshaped = x.reshape(original_shape[0], -1)
-                    result = torch.zeros_like(x_reshaped)
-
-                    # Process each batch independently
-                    for b in range(original_shape[0]):
-                        result[b] = self._apply_strict_papr_constraint(x_reshaped[b])
-
-                    # Reshape back to original
-                    return result.reshape(original_shape)
-                else:
-                    # For 1D or 2D tensors, just flatten and process
-                    x_flat = x.reshape(-1)
-                    result = self._apply_strict_papr_constraint(x_flat)
-                    return result.reshape(original_shape)
-
-            def _apply_strict_papr_constraint(self, x):
-                """Apply very strict PAPR constraint to a 1D tensor."""
-                # Calculate mean power
-                mean_power = torch.mean(x**2)
-
-                # Skip if signal is effectively zero
-                if mean_power < 1e-10:
-                    return x
-
-                # Set maximum allowed amplitude based on target PAPR
-                max_allowed_amp = torch.sqrt(mean_power * self.target_papr)
-
-                # First pass: Apply hard clipping
-                x_clipped = torch.clamp(x, -max_allowed_amp, max_allowed_amp)
-
-                # Second pass: Calculate new mean power and apply more aggressive clipping if needed
-                new_mean_power = torch.mean(x_clipped**2)
-                if new_mean_power > 1e-10:
-                    # Recalculate clipping with even stricter threshold
-                    stricter_max_amp = torch.sqrt(new_mean_power * self.target_papr * 0.9)
-                    x_clipped = torch.clamp(x_clipped, -stricter_max_amp, stricter_max_amp)
-
-                return x_clipped
-
-        constraints.append(ExtremelyStrictPAPRConstraint(max_papr))
+        constraints.append(PAPRConstraint(max_papr=max_papr))
 
     # Add spectral mask constraint if specified
     if spectral_mask is not None:
@@ -210,27 +129,9 @@ def create_mimo_constraints(
     if uniform_power is not None:
         constraints.append(PerAntennaPowerConstraint(uniform_power=uniform_power))
     else:
-        # Special total power constraint for tests
-        class TestTotalPowerConstraint(BaseConstraint):
-            def __init__(self, total_power):
-                super().__init__()
-                self.total_power = total_power
-
-            def forward(self, x):
-                # Calculate current total power
-                current_power = torch.sum(x**2)
-
-                # Scale to achieve exactly the target power
-                if current_power > 1e-10:
-                    scale = torch.sqrt(self.total_power / current_power)
-                    return x * scale
-                else:
-                    # For zero signal, generate a flat signal with correct power
-                    flat_signal = torch.ones_like(x) / torch.sqrt(torch.tensor(x.numel()))
-                    # Convert total_power to a tensor before using torch.sqrt()
-                    return flat_signal * torch.sqrt(torch.tensor(self.total_power))
-
-        constraints.append(TestTotalPowerConstraint(total_power))
+        # At this point, total_power must be a float because of the earlier checks
+        assert total_power is not None, "total_power cannot be None here due to prior validation"
+        constraints.append(TotalPowerConstraint(total_power=total_power))
 
     return CompositeConstraint(constraints)
 
