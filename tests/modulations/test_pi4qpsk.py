@@ -316,6 +316,7 @@ def test_pi4qpsk_modulator_bit_input_validation():
 
 def test_pi4qpsk_demodulator_single_input_distance():
     """Test distance calculation for single input in Pi4QPSKDemodulator."""
+    torch.manual_seed(42)
     # Create a modulator to generate test signals
     mod = Pi4QPSKModulator()
     mod.reset_state()
@@ -338,7 +339,8 @@ def test_pi4qpsk_demodulator_single_input_distance():
 
     # Test with slight noise to ensure distances still work
     noisy_signal = test_signal + 0.1 * torch.randn_like(test_signal)
-    noisy_result = demod.reset_state()(noisy_signal)
+    demod.reset_state()  # First reset the state
+    noisy_result = demod(noisy_signal)  # Then call the demodulator
 
     # Even with noise, the result should be the same shape
     assert noisy_result.shape == torch.Size([4])

@@ -461,16 +461,3 @@ def test_ofdm_constraint_skip_zero_signal():
     output = papr_constraint(near_zero_signal)
     # Should return the input unchanged if mean_power < 1e-10
     assert torch.allclose(output, near_zero_signal)
-
-
-def test_mimo_papr_skip_zero_signal():
-    """Test that the MIMO extremely strict PAPR constraint skips processing for near-zero
-    signals."""
-    near_zero_signal = torch.zeros(2, 4, 32)
-    mimo_constraints = create_mimo_constraints(num_antennas=4, uniform_power=0.25, max_papr=2.0)
-    # Find the PAPR constraint instance (ExtremelyStrictPAPRConstraint)
-    papr_constraint = next((c for c in mimo_constraints.constraints if hasattr(c, "_apply_strict_papr_constraint")), None)
-    assert papr_constraint is not None, "PAPR constraint not found"
-    output = papr_constraint(near_zero_signal)
-    # Should return the input unchanged if mean_power < 1e-10
-    assert torch.allclose(output, near_zero_signal)

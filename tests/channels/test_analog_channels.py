@@ -98,9 +98,8 @@ class TestAWGNChannel:
         real_variance = torch.var(noise.real).item()
         imag_variance = torch.var(noise.imag).item()
 
-        # For complex AWGN, noise power is split between real and imaginary components
-        assert np.isclose(real_variance, noise_power / 2, rtol=0.2)
-        assert np.isclose(imag_variance, noise_power / 2, rtol=0.2)
+        assert np.isclose(real_variance, noise_power / 2, rtol=0.1)
+        assert np.isclose(imag_variance, noise_power / 2, rtol=0.1)
 
     def test_pregenerated_noise(self, random_tensor):
         """Test with pre-generated noise."""
@@ -907,9 +906,11 @@ class TestLogNormalFadingChannel:
         amp_low_sigma = torch.abs(output_low_sigma / complex_tensor)
         amp_high_sigma = torch.abs(output_high_sigma / complex_tensor)
 
-        # Higher sigma should result in greater amplitude variance
+        # Calculate variance of amplitude ratios
         var_low = torch.var(amp_low_sigma)
         var_high = torch.var(amp_high_sigma)
+        
+        # Higher shadow_sigma_db should lead to higher variance in the output amplitude
         assert var_high > var_low
 
     def test_coherence_time(self, complex_tensor):
