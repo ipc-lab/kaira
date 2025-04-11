@@ -48,12 +48,13 @@ def create_ofdm_constraints(
     """
     constraints = []
 
-    # If peak_amplitude is not provided, calculate it based on max_papr
-    if peak_amplitude is None and max_papr is not None:
-        # Calculate peak amplitude from PAPR and total power
-        peak_amplitude = torch.sqrt(total_power * max_papr)
-        constraints.append(PeakAmplitudeConstraint(peak_amplitude))
-    elif peak_amplitude is not None:
+    # Add PAPR constraint
+    if max_papr is not None:
+        from .power import PAPRConstraint
+        constraints.append(PAPRConstraint(max_papr=max_papr))
+
+    # Only add peak amplitude constraint if explicitly provided
+    if peak_amplitude is not None:
         # Add explicit peak amplitude constraint if provided
         constraints.append(PeakAmplitudeConstraint(peak_amplitude))
 
@@ -115,6 +116,14 @@ def create_mimo_constraints(
     if uniform_power is not None and total_power is not None:
         raise ValueError("Cannot specify both uniform_power and total_power; use one or the other")
 
+    # Add power constraint first
+    if uniform_power is not None:
+        constraints.append(PerAntennaPowerConstraint(uniform_power=uniform_power))
+    else:
+        # At this point, total_power must be a float because of the earlier checks
+        assert total_power is not None, "total_power cannot be None here due to prior validation"
+        constraints.append(TotalPowerConstraint(total_power=total_power))
+
     # Add PAPR constraint if specified
     if max_papr is not None:
         from .power import PAPRConstraint
@@ -124,14 +133,6 @@ def create_mimo_constraints(
     # Add spectral mask constraint if specified
     if spectral_mask is not None:
         constraints.append(SpectralMaskConstraint(spectral_mask))
-
-    # Add power constraint last
-    if uniform_power is not None:
-        constraints.append(PerAntennaPowerConstraint(uniform_power=uniform_power))
-    else:
-        # At this point, total_power must be a float because of the earlier checks
-        assert total_power is not None, "total_power cannot be None here due to prior validation"
-        constraints.append(TotalPowerConstraint(total_power=total_power))
 
     return CompositeConstraint(constraints)
 
