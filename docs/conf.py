@@ -79,20 +79,22 @@ extensions = [
 sphinx_gallery_conf = {
     # Directory paths
     "examples_dirs": [
-        "../examples/channel_models",
+        "../examples/channels",
         "../examples/constraints",
         "../examples/modulation",
         "../examples/metrics",
         "../examples/data",
         "../examples/losses",
+        "../examples/models",
     ],
     "gallery_dirs": [
-        "auto_examples/channel_models",
+        "auto_examples/channels",
         "auto_examples/constraints",
         "auto_examples/modulation",
         "auto_examples/metrics",
         "auto_examples/data",
         "auto_examples/losses",
+        "auto_examples/models",
     ],
     # File patterns and organization
     "filename_pattern": r"\.py$",

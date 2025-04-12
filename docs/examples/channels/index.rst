@@ -15,10 +15,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_awgn_channel_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_awgn_channel_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_awgn_channel.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_awgn_channel.py`
 
 .. raw:: html
 
@@ -31,10 +31,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_laplacian_channel_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_laplacian_channel_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_laplacian_channel.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_laplacian_channel.py`
 
 .. raw:: html
 
@@ -47,10 +47,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_phase_noise_channel_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_phase_noise_channel_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_phase_noise_channel.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_phase_noise_channel.py`
 
 .. raw:: html
 
@@ -63,10 +63,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_binary_channels_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_binary_channels_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_binary_channels.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_binary_channels.py`
 
 .. raw:: html
 
@@ -79,10 +79,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_fading_channels_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_fading_channels_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_fading_channels.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_fading_channels.py`
 
 .. raw:: html
 
@@ -95,10 +95,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_nonlinear_channel_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_nonlinear_channel_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_nonlinear_channel.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_nonlinear_channel.py`
 
 .. raw:: html
 
@@ -111,10 +111,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_composite_channels_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_composite_channels_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_composite_channels.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_composite_channels.py`
 
 .. raw:: html
 
@@ -127,10 +127,10 @@ Examples demonstrating various communication channel models and their characteri
 
 .. only:: html
 
-    .. image:: /auto_examples/channel_models/images/thumb/sphx_glr_plot_poisson_channel_thumb.png
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_poisson_channel_thumb.png
       :alt:
 
-    :ref:`sphx_glr_auto_examples_channel_models_plot_poisson_channel.py`
+    :ref:`sphx_glr_auto_examples_channels_plot_poisson_channel.py`
 
 .. raw:: html
 
@@ -144,11 +144,11 @@ Examples demonstrating various communication channel models and their characteri
 .. toctree::
    :hidden:
 
-   /auto_examples/channel_models/plot_awgn_channel
-   /auto_examples/channel_models/plot_laplacian_channel
-   /auto_examples/channel_models/plot_phase_noise_channel
-   /auto_examples/channel_models/plot_binary_channels
-   /auto_examples/channel_models/plot_fading_channels
-   /auto_examples/channel_models/plot_nonlinear_channel
-   /auto_examples/channel_models/plot_composite_channels
-   /auto_examples/channel_models/plot_poisson_channel
+   /auto_examples/channels/plot_awgn_channel
+   /auto_examples/channels/plot_laplacian_channel
+   /auto_examples/channels/plot_phase_noise_channel
+   /auto_examples/channels/plot_binary_channels
+   /auto_examples/channels/plot_fading_channels
+   /auto_examples/channels/plot_nonlinear_channel
+   /auto_examples/channels/plot_composite_channels
+   /auto_examples/channels/plot_poisson_channel

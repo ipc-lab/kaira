@@ -9,10 +9,10 @@ from typing import Any, Dict
 import torch
 import torch.nn as nn
 
-from kaira.channels import BaseChannel
-
-from .base import BaseModel
-from .registry import ModelRegistry
+from kaira.channels.base import BaseChannel
+from kaira.models.base import BaseModel
+# Import registry directly from registry module to avoid circular imports
+from kaira.models.registry import ModelRegistry
 
 
 @ModelRegistry.register_model("feedback_channel")
@@ -84,8 +84,6 @@ class FeedbackChannelModel(BaseModel):
                 - iterations: List of per-iteration results
                 - feedback_history: History of feedback signals
         """
-        batch_size = input_data.shape[0]
-        device = input_data.device
 
         # Storage for results
         iterations = []
@@ -93,7 +91,7 @@ class FeedbackChannelModel(BaseModel):
         final_output = None
 
         # Initial state - no feedback yet
-        feedback = torch.zeros(batch_size, self.feedback_processor.input_size, device=device)
+        feedback = None
 
         # Iterative transmission process
         for i in range(self.max_iterations):
@@ -114,8 +112,8 @@ class FeedbackChannelModel(BaseModel):
             # Decode the received signal - don't pass additional kwargs to decoder
             decoded = self.decoder(received)
 
-            # Generate feedback
-            feedback = self.feedback_generator(decoded, input_data)
+            # Generate feedback - use only decoded output as input
+            feedback = self.feedback_generator(decoded)
 
             # Transmit feedback through feedback channel
             feedback = self.feedback_channel(feedback)

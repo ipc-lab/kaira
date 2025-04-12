@@ -909,7 +909,7 @@ class TestLogNormalFadingChannel:
         # Calculate variance of amplitude ratios
         var_low = torch.var(amp_low_sigma)
         var_high = torch.var(amp_high_sigma)
-        
+
         # Higher shadow_sigma_db should lead to higher variance in the output amplitude
         assert var_high > var_low
 

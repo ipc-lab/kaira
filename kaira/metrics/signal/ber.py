@@ -48,8 +48,18 @@ class BitErrorRate(BaseMetric):
         if transmitted.numel() == 0 or received.numel() == 0:
             return torch.tensor(0.0)
 
+        # Handle complex values by concatenating real and imaginary parts
+        if transmitted.is_complex():
+            transmitted_real = transmitted.real
+            transmitted_imag = transmitted.imag
+            transmitted = torch.cat([transmitted_real, transmitted_imag], dim=-1)
+        if received.is_complex():
+            received_real = received.real
+            received_imag = received.imag
+            received = torch.cat([received_real, received_imag], dim=-1)
+        
         # Check for batch dimension
-        is_batched = transmitted.dim() > 1 and transmitted.size(0) > 1
+        is_batched = False #transmitted.dim() > 1 and transmitted.size(0) > 1 and transmitted.size(1) > 1
 
         # Threshold received values to get binary decisions
         transmitted_bits = (transmitted > self.threshold).bool()
@@ -84,6 +94,16 @@ class BitErrorRate(BaseMetric):
         if transmitted.numel() == 0 or received.numel() == 0:
             return
 
+        # Handle complex values by concatenating real and imaginary parts
+        if transmitted.is_complex():
+            transmitted_real = transmitted.real
+            transmitted_imag = transmitted.imag
+            transmitted = torch.cat([transmitted_real, transmitted_imag], dim=-1)
+        if received.is_complex():
+            received_real = received.real
+            received_imag = received.imag
+            received = torch.cat([received_real, received_imag], dim=-1)
+        
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
 

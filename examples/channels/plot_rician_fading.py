@@ -21,7 +21,7 @@ import torch
 
 from kaira.channels import RayleighFadingChannel, RicianFadingChannel
 from kaira.metrics import BitErrorRate, SymbolErrorRate
-from kaira.modulations import QPSKModulator, QPSKDemodulator
+from kaira.modulations import QPSKDemodulator, QPSKModulator
 
 # Set random seed for reproducibility
 torch.manual_seed(42)

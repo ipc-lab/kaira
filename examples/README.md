@@ -42,10 +42,10 @@ Examples should be tested to ensure they run without errors:
 
 ```bash
 # Run a specific example
-python examples/channel_models/plot_example.py
+python examples/channels/plot_example.py
 
 # Run all examples in a category
-python -m pytest docs/auto_examples/channel_models/ -v
+python -m pytest docs/auto_examples/channels/ -v
 ```
 
 ## Additional Resources

@@ -51,6 +51,7 @@ def create_ofdm_constraints(
     # Add PAPR constraint
     if max_papr is not None:
         from .power import PAPRConstraint
+
         constraints.append(PAPRConstraint(max_papr=max_papr))
 
     # Only add peak amplitude constraint if explicitly provided

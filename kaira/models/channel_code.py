@@ -4,9 +4,8 @@ This module contains the ChannelCodeModel, which is a model for channel transmis
 conventional encoding/decoding pipeline.
 """
 
-from typing import Any, Dict
+from typing import Any
 
-import torch
 
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
@@ -106,7 +105,7 @@ class ChannelCodeModel(SequentialModel):
         received = self.channel(constrained)
 
         # Demodulate and decode the received signal
-        decoded, soft_estimate = self.decoder(self.demodulator(received), *args, **kwargs)
+        decoded = self.decoder(self.demodulator(received), *args, **kwargs)
 
         # Store results
         history.append(
@@ -114,7 +113,6 @@ class ChannelCodeModel(SequentialModel):
                 "encoded": encoded,
                 "received": received,
                 "decoded": decoded,
-                "soft_estimate": soft_estimate,
             }
         )
 
