@@ -168,12 +168,12 @@ def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=1
 
 print("\n--- User Interference Analysis ---")
 # Simulate transmission at fixed SNR but varying number of users
-snr_for_analysis = 10.0
+snr_for_analysis = 10.0 # Fixed SNR for this analysis
 num_users_range = list(range(1, 5)) # Test with 1 to 4 users
 interference_results = simulate_with_varying_users(
     mac_model,
     max_users=4,
-    snr=snr_for_analysis,
+    snr=snr_for_analysis, # Use the fixed SNR
     message_dim=message_dim,
     code_dim=code_dim,
     batch_size=batch_size
@@ -198,24 +198,24 @@ print("-" * 30)
 # Training a Multiple Access Channel Model (Optional - Uncomment to run)
 # --------------------------------------------------------------------------
 
+# Modify train_mac_model to accept a fixed training_snr
 def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_size=64, message_dim=10, num_users=2,
-                    snr_range=(0, 20)):
-    """Trains the Multiple Access Channel model."""
-    model.train() # Set the model to training mode
+                    training_snr=10.0): # Use fixed training_snr
+    """Trains the Multiple Access Channel model at a fixed SNR."""
     losses = []
-    print("\n--- Training MAC Model ---")
+    print(f"--- Starting Training at SNR = {training_snr} dB ---")
+    model.train() # Set model to training mode
+
     for epoch in range(num_epochs):
-        epoch_loss = 0
+        epoch_loss = 0.0
         for step in range(steps_per_epoch):
-            # Generate a new batch of messages for each user
+            optimizer.zero_grad()
+
+            # Generate a batch of random messages
             batch_messages = [torch.randn(batch_size, message_dim) for _ in range(num_users)]
 
-            # Sample SNR for this batch
-            snr = torch.FloatTensor(1).uniform_(snr_range[0], snr_range[1]).item()
-
-            # Forward pass
-            optimizer.zero_grad()
-            reconstructed = model(batch_messages, snr=snr) # Shape: (batch_size, num_users * message_dim)
+            # Forward pass using the fixed training SNR
+            reconstructed = model(batch_messages, snr=training_snr)
 
             # Compute loss (MSE between original and reconstructed messages)
             loss = 0
@@ -242,7 +242,7 @@ def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_
             print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_epoch_loss:.6f}")
 
     print("Training finished.")
-    print("-" * 26)
+    print("-" * (26 + len(str(training_snr))))
     return losses
 
 
@@ -274,7 +274,10 @@ mac_model_train = MultipleAccessChannelModel(
 # Set up optimizer
 optimizer = torch.optim.Adam(mac_model_train.parameters(), lr=0.001)
 
-# Train the model
+# Define the fixed SNR for training
+fixed_training_snr = 15.0 # Example fixed SNR for training
+
+# Train the model using the fixed SNR
 training_losses = train_mac_model(
     mac_model_train,
     optimizer,
@@ -282,7 +285,8 @@ training_losses = train_mac_model(
     steps_per_epoch=50,
     batch_size=batch_size,
     message_dim=message_dim,
-    num_users=num_users
+    num_users=num_users,
+    training_snr=fixed_training_snr # Pass the fixed SNR
 )
 
 # Plot training progress
@@ -290,7 +294,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(training_losses)
 plt.xlabel('Epoch')
 plt.ylabel('Average Training Loss')
-plt.title('Training Loss for Multiple Access Channel Model')
+plt.title(f'Training Loss for MAC Model (Fixed SNR = {fixed_training_snr} dB)') # Update title
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show() # Ensure plot is displayed when this section is run
@@ -303,10 +307,11 @@ plt.show() # Ensure plot is displayed when this section is run
 # This example demonstrated how to set up and use the MultipleAccessChannelModel.
 # Key functionalities include:
 # 1. Simulating transmission from multiple users over a shared channel using individual encoders
-#    and a joint decoder.
-# 2. Evaluating reconstruction performance using MSE at a fixed SNR.
-# 3. (Optional) Analyzing the impact of an increasing number of users (interference) on performance.
-# 4. (Optional) Training the end-to-end system (encoders and decoder) jointly over a range of SNRs.
+#    and a joint decoder at a fixed SNR.
+# 2. Evaluating reconstruction performance using MSE.
+# 3. (Optional) Analyzing the impact of an increasing number of users (interference) on performance
+#    at a fixed SNR.
+# 4. (Optional) Training the end-to-end system (encoders and decoder) jointly at a fixed SNR.
 #
 # The commented-out sections provide code for exploring user interference and training.
 # You can uncomment them to run those experiments.
