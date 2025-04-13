@@ -5,228 +5,120 @@ transmit data simultaneously over a shared wireless channel. It provides base cl
 for implementing various MAC protocols and studying their performance.
 """
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Union
 
 import torch
 from torch import nn
 
-from kaira.channels.base import BaseChannel
-from kaira.constraints.base import BaseConstraint
-from kaira.models.base import BaseModel
-from kaira.models.registry import ModelRegistry
+from kaira.channels import BaseChannel
+from kaira.constraints import BaseConstraint
+
+from .base import BaseModel
+from .registry import ModelRegistry
 
 
-@ModelRegistry.register_model("mac")
+@ModelRegistry.register_model("multiple_access_channel")
 class MultipleAccessChannelModel(BaseModel):
-    """Base class for Multiple Access Channel (MAC) models.
+    """A model simulating a Multiple Access Channel (MAC).
 
-    This class provides the foundation for implementing MAC protocols where multiple
-    transmitters send data to a single receiver over a shared channel. It supports:
-    - Flexible number of transmitting devices
-    - Optional shared encoders/decoders across devices
-    - Power constraints per device or total system
-    - Various channel models for transmission
-    - Configurable interference patterns between devices
-    - Successive interference cancellation
+    In a MAC scenario, multiple transmitters (users) send signals simultaneously
+    over a shared channel to a single receiver. The receiver then attempts to
+    decode the messages from all users.
 
-    The model structure allows studying different MAC scenarios such as:
-    - TDMA (Time Division Multiple Access)
-    - FDMA (Frequency Division Multiple Access)
-    - NOMA (Non-Orthogonal Multiple Access)
-    - Random Access protocols
+    This model supports joint decoding, where a single decoder processes the
+    combined received signal to estimate all users' messages.
 
     Attributes:
-        channel (BaseChannel): Channel model for signal transmission
-        power_constraint (BaseConstraint): Power constraint applied to signals
-        encoders (nn.ModuleList): List of encoder networks for each device
-        decoders (nn.ModuleList): List of decoder networks for each device
-        num_devices (int): Number of transmitting devices
-        shared_encoder (bool): Whether devices share the same encoder
-        shared_decoder (bool): Whether devices share the same decoder
+        encoders (nn.ModuleList): A list of encoder modules, one for each user.
+        decoder (BaseModel): A single decoder module that processes the combined signal.
+        channel (BaseChannel): The communication channel model.
+        power_constraint (BaseConstraint): Power constraint applied to the sum of encoded signals.
+        num_users (int): The number of users (transmitters).
     """
 
-    def __init__(self, channel: BaseChannel, power_constraint: BaseConstraint, encoder: Optional[Type[BaseModel]] = None, decoder: Optional[Type[BaseModel]] = None, num_devices: int = 2, shared_encoder: bool = False, shared_decoder: bool = False, **kwargs: Any):
-        """Initialize the MAC model.
+    def __init__(
+        self,
+        encoders: Union[nn.ModuleList, List[BaseModel]],
+        decoder: BaseModel, # Expecting a single decoder instance for joint decoding
+        channel: BaseChannel,
+        power_constraint: BaseConstraint,
+        num_devices: Optional[int] = None, # num_devices might be redundant if encoders list is given
+        **kwargs: Any,
+    ):
+        """Initialize the MultipleAccessChannelModel.
 
         Args:
-            channel: Channel model for transmission
-            power_constraint: Power constraint applied to transmitted signals
-            encoder: Optional encoder model class. If None, must be set later
-            decoder: Optional decoder model class. If None, must be set later
-            num_devices: Number of transmitting devices (default: 2)
-            shared_encoder: Whether to use same encoder for all devices (default: False)
-            shared_decoder: Whether to use same decoder for all devices (default: False)
-            **kwargs: Additional arguments passed to encoder/decoder constructors
+            encoders (Union[nn.ModuleList, List[BaseModel]]): A list containing the encoder
+                module for each user.
+            decoder (BaseModel): The single joint decoder module instance.
+            channel (BaseChannel): The channel model instance.
+            power_constraint (BaseConstraint): The power constraint instance.
+            num_devices (Optional[int]): The number of users/devices. If None, it's inferred
+                from the length of the encoders list.
+            **kwargs: Additional keyword arguments (currently unused but kept for flexibility).
         """
         super().__init__()
 
-        # Basic components
+        if not isinstance(encoders, nn.ModuleList):
+            self.encoders = nn.ModuleList(encoders)
+        else:
+            self.encoders = encoders
+
+        if num_devices is None:
+            self.num_users = len(self.encoders)
+        else:
+            self.num_users = num_devices
+            if self.num_users != len(self.encoders):
+                raise ValueError(f"num_devices ({num_devices}) does not match the number of encoders ({len(self.encoders)}).")
+
+        # Directly assign the provided decoder instance
+        if not isinstance(decoder, nn.Module):
+             raise TypeError(f"Decoder must be an instance of nn.Module or BaseModel, but got {type(decoder)}")
+        self.decoder = decoder
+
         self.channel = channel
         self.power_constraint = power_constraint
-        self.num_devices = num_devices
-        self.shared_encoder = shared_encoder
-        self.shared_decoder = shared_decoder
 
-        # Initialize encoders
-        self.encoders = nn.ModuleList()
-        if encoder is not None:
-            if shared_encoder:
-                shared_enc = encoder(**kwargs)
-                self.encoders.extend([shared_enc for _ in range(num_devices)])
-            else:
-                self.encoders.extend([encoder(**kwargs) for _ in range(num_devices)])
 
-        # Initialize decoders
-        self.decoders = nn.ModuleList()
-        if decoder is not None:
-            if shared_decoder:
-                shared_dec = decoder(**kwargs)
-                self.decoders.extend([shared_dec for _ in range(num_devices)])
-            else:
-                self.decoders.extend([decoder(**kwargs) for _ in range(num_devices)])
-
-    def encode(self, inputs: List[torch.Tensor], device_indices: Optional[List[int]] = None) -> List[torch.Tensor]:
-        """Encode input signals for transmission.
-
-        Applies the corresponding encoder to each device's input signal.
+    def forward(self, x: List[torch.Tensor], *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Forward pass through the Multiple Access Channel model.
 
         Args:
-            inputs: List of input tensors, one per device
-            device_indices: Optional list of specific device indices to encode.
-                If None, encodes all devices
+            x (List[torch.Tensor]): A list of input tensors, one for each user.
+                Each tensor should have shape (batch_size, message_dim).
+            *args: Additional positional arguments passed potentially to channel.
+                   These are currently NOT passed to the decoder.
+            **kwargs: Additional keyword arguments, commonly including 'snr' for the channel.
+                      Only channel-specific kwargs are used.
 
         Returns:
-            List of encoded signals ready for transmission
-
-        Raises:
-            ValueError: If number of inputs doesn't match number of devices
-            IndexError: If any device index is invalid
+            torch.Tensor: The output tensor from the joint decoder, typically containing
+                the concatenated reconstructed messages for all users.
+                Shape: (batch_size, num_users * decoded_message_dim_per_user).
         """
-        if device_indices is None:
-            device_indices = list(range(self.num_devices))
+        if len(x) != self.num_users:
+            raise ValueError(f"Number of input tensors ({len(x)}) must match the number of users ({self.num_users}).")
 
-        # At this point device_indices is guaranteed to be a list, not None
-        if len(inputs) != len(device_indices):
-            raise ValueError(f"Number of inputs ({len(inputs)}) must match number of " f"device indices ({len(device_indices)})")
+        # 1. Encode messages for each user
+        encoded_signals = [encoder(user_input) for encoder, user_input in zip(self.encoders, x)]
 
-        encoded = []
-        for i, x in zip(device_indices, inputs):
-            if not 0 <= i < self.num_devices:
-                raise IndexError(f"Invalid device index: {i}")
-            encoded.append(self.encoders[i](x))
-        return encoded
+        # 2. Combine encoded signals (summing them simulates superposition on the channel)
+        combined_signal = torch.sum(torch.stack(encoded_signals), dim=0)
 
-    def decode(self, received: torch.Tensor, device_indices: Optional[List[int]] = None) -> List[torch.Tensor]:
-        """Decode received signals for each device.
+        # 3. Apply power constraint to the combined signal
+        constrained_signal = self.power_constraint(combined_signal)
 
-        Args:
-            received: Combined received signal from channel
-            device_indices: Optional list of specific device indices to decode.
-                If None, decodes all devices
+        # 4. Pass the combined signal through the channel
+        # Pass relevant kwargs (like snr) to the channel
+        # Note: *args are also passed here, assuming they are for the channel
+        channel_kwargs = {k: v for k, v in kwargs.items() if k in self.channel.forward.__code__.co_varnames}
+        received_signal = self.channel(constrained_signal, *args, **channel_kwargs)
 
-        Returns:
-            List of decoded signals, one per device
+        # 5. Decode the received signal using the single joint decoder
+        # Only pass the received signal, as MLPDecoder.forward expects only 'x'.
+        # If a different decoder type were used that accepts *args or **kwargs,
+        # this line would need adjustment.
+        reconstructed_messages = self.decoder(received_signal)
 
-        Raises:
-            IndexError: If any device index is invalid
-        """
-        if device_indices is None:
-            device_indices = list(range(self.num_devices))
-
-        decoded = []
-        for i in device_indices:
-            if not 0 <= i < self.num_devices:
-                raise IndexError(f"Invalid device index: {i}")
-            decoded.append(self.decoders[i](received))
-        return decoded
-
-    def forward(self, *args: Any, **kwargs: Any) -> Any:
-        """Process inputs through the complete MAC system.
-
-        The default implementation expects:
-        - inputs: List of input tensors, one per device
-        - csi: Optional channel state information
-        - noise: Optional explicit noise tensor
-        - device_indices: Optional list of specific devices to process
-
-        Child classes may override this with different parameter structures.
-
-        Returns:
-            Output signals, format depends on implementation.
-            Default implementation returns a list of decoded tensors.
-        """
-        # Handle the case when called with positional arguments per original signature
-        if len(args) == 1 and isinstance(args[0], list):
-            inputs = args[0]
-            csi = kwargs.get("csi", None)
-            noise = kwargs.get("noise", None)
-            device_indices = kwargs.get("device_indices", None)
-
-            # Input validation
-            if len(inputs) == 0:
-                raise ValueError("No inputs provided")
-            if device_indices is not None and len(inputs) != len(device_indices):
-                raise ValueError("Number of inputs must match number of device indices")
-            if not self.encoders or not self.decoders:
-                raise ValueError("Encoders and decoders must be initialized")
-
-            # Encode
-            encoded = self.encode(inputs, device_indices)
-
-            # Apply power constraint
-            constrained = [self.power_constraint(x) for x in encoded]
-
-            # Combine signals and transmit through channel
-            combined = sum(constrained)  # Simple superposition
-            received = self.channel(combined, csi=csi, noise=noise)
-
-            # Decode
-            outputs = self.decode(received, device_indices)
-
-            return outputs
-        else:
-            raise ValueError("Invalid arguments. Expected a list of inputs as the first argument.")
-
-    def set_encoder(self, encoder: Type[BaseModel], device_index: Optional[int] = None, **kwargs: Any) -> None:
-        """Set or replace encoder for specific device(s).
-
-        Args:
-            encoder: Encoder model class to use
-            device_index: Index of device to set encoder for. If None, sets for all
-            **kwargs: Arguments passed to encoder constructor
-
-        Raises:
-            IndexError: If device_index is invalid
-        """
-        if device_index is not None:
-            if not 0 <= device_index < self.num_devices:
-                raise IndexError(f"Invalid device index: {device_index}")
-            self.encoders[device_index] = encoder(**kwargs)
-        else:
-            if self.shared_encoder:
-                shared_enc = encoder(**kwargs)
-                self.encoders = nn.ModuleList([shared_enc for _ in range(self.num_devices)])
-            else:
-                self.encoders = nn.ModuleList([encoder(**kwargs) for _ in range(self.num_devices)])
-
-    def set_decoder(self, decoder: Type[BaseModel], device_index: Optional[int] = None, **kwargs: Any) -> None:
-        """Set or replace decoder for specific device(s).
-
-        Args:
-            decoder: Decoder model class to use
-            device_index: Index of device to set decoder for. If None, sets for all
-            **kwargs: Arguments passed to decoder constructor
-
-        Raises:
-            IndexError: If device_index is invalid
-        """
-        if device_index is not None:
-            if not 0 <= device_index < self.num_devices:
-                raise IndexError(f"Invalid device index: {device_index}")
-            self.decoders[device_index] = decoder(**kwargs)
-        else:
-            if self.shared_decoder:
-                shared_dec = decoder(**kwargs)
-                self.decoders = nn.ModuleList([shared_dec for _ in range(self.num_devices)])
-            else:
-                self.decoders = nn.ModuleList([decoder(**kwargs) for _ in range(self.num_devices)])
+        # The joint decoder should output the concatenated messages
+        return reconstructed_messages
