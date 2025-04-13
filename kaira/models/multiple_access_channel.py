@@ -71,6 +71,9 @@ class MultipleAccessChannelModel(BaseModel):
             if self.num_users != len(self.encoders):
                 raise ValueError(f"num_devices ({num_devices}) does not match the number of encoders ({len(self.encoders)}).")
 
+        # Add num_devices attribute for compatibility with subclasses expecting it
+        self.num_devices = self.num_users
+
         # Directly assign the provided decoder instance
         if not isinstance(decoder, nn.Module):
              raise TypeError(f"Decoder must be an instance of nn.Module or BaseModel, but got {type(decoder)}")
