@@ -25,17 +25,19 @@ class PeakAmplitudeConstraint(BaseConstraint):
         max_amplitude (float): Maximum allowed amplitude value
     """
 
-    def __init__(self, max_amplitude: float) -> None:
+    def __init__(self, max_amplitude: float, *args, **kwargs) -> None:
         """Initialize the peak amplitude constraint.
 
         Args:
             max_amplitude (float): Maximum allowed amplitude. Signal values exceeding
                 this threshold (positive or negative) will be clipped.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.max_amplitude = max_amplitude
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply peak amplitude constraint.
 
         Clips the input signal to ensure all values fall within the range
@@ -43,6 +45,8 @@ class PeakAmplitudeConstraint(BaseConstraint):
 
         Args:
             x (torch.Tensor): Input tensor of any shape
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: Amplitude-constrained signal with the same shape as input
@@ -67,18 +71,20 @@ class SpectralMaskConstraint(BaseConstraint):
         mask (torch.Tensor): Spectral mask defining maximum power per frequency bin
     """
 
-    def __init__(self, mask: torch.Tensor) -> None:
+    def __init__(self, mask: torch.Tensor, *args, **kwargs) -> None:
         """Initialize the spectral mask constraint.
 
         Args:
             mask (torch.Tensor): Spectral mask tensor defining maximum power per frequency bin.
                 The shape of this tensor should match the last dimension of the input signal
                 after FFT transformation.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.register_buffer("mask", mask)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply spectral mask constraint.
 
         Transforms the signal to the frequency domain, applies the spectral mask by
@@ -87,6 +93,8 @@ class SpectralMaskConstraint(BaseConstraint):
 
         Args:
             x (torch.Tensor): Input tensor in time domain
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: Spectral mask constrained signal in time domain with the

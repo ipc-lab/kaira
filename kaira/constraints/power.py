@@ -29,19 +29,21 @@ class TotalPowerConstraint(BaseConstraint):
         total_power_factor (torch.Tensor): Precomputed square root of total power for efficiency
     """
 
-    def __init__(self, total_power: float) -> None:
+    def __init__(self, total_power: float, *args, **kwargs) -> None:
         """Initialize the TotalPowerConstraint module.
 
         Args:
             total_power (float): The target total power for the signal in linear units
                 (not dB). The constraint will scale the signal to achieve exactly this
                 power level for both real and complex signals.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.total_power = total_power
         self.total_power_factor = torch.sqrt(torch.tensor(self.total_power))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply the total power constraint to the input tensor.
 
         Normalizes the input tensor to have exactly the specified total power.
@@ -49,6 +51,8 @@ class TotalPowerConstraint(BaseConstraint):
 
         Args:
             x (torch.Tensor): The input tensor of any shape (real or complex)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: The scaled tensor with the same shape as input, adjusted to
@@ -93,10 +97,19 @@ class TotalPowerConstraint(BaseConstraint):
             return output.reshape(original_shape)
         else:
             # For non-batched data or single batch item, apply constraint directly
-            return self._apply_constraint_to_single_item(x)
+            return self._apply_constraint_to_single_item(x, *args, **kwargs)
 
-    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply constraint to a single batch item or non-batched tensor."""
+    def _apply_constraint_to_single_item(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """Apply constraint to a single batch item or non-batched tensor.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            torch.Tensor: The constrained tensor.
+        """
         # Calculate the current total power of the input tensor
         if torch.is_complex(x):
             current_power = torch.sum(torch.abs(x) ** 2)
@@ -134,19 +147,21 @@ class AveragePowerConstraint(BaseConstraint):
         power_avg_factor (torch.Tensor): Precomputed square root of average power for efficiency
     """
 
-    def __init__(self, average_power: float) -> None:
+    def __init__(self, average_power: float, *args, **kwargs) -> None:
         """Initialize the AveragePowerConstraint module.
 
         Args:
             average_power (float): The target average power per sample in linear units
                 (not dB). The constraint will scale the signal to achieve exactly this
                 average power level for both real and complex signals.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.average_power = average_power
         self.power_avg_factor = torch.sqrt(torch.tensor(self.average_power))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply the average power constraint to the input tensor.
 
         Normalizes the input tensor to have exactly the specified average power.
@@ -154,6 +169,8 @@ class AveragePowerConstraint(BaseConstraint):
 
         Args:
             x (torch.Tensor): The input tensor of any shape (real or complex)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: The scaled tensor with the same shape as input, adjusted to
@@ -199,10 +216,19 @@ class AveragePowerConstraint(BaseConstraint):
             return output.reshape(original_shape)
         else:
             # For non-batched data or single batch item, apply constraint directly
-            return self._apply_constraint_to_single_item(x)
+            return self._apply_constraint_to_single_item(x, *args, **kwargs)
 
-    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply constraint to a single batch item or non-batched tensor."""
+    def _apply_constraint_to_single_item(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """Apply constraint to a single batch item or non-batched tensor.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            torch.Tensor: The constrained tensor.
+        """
         # Calculate the current average power of the input tensor
         num_elements = x.numel()
 
@@ -241,18 +267,20 @@ class PAPRConstraint(BaseConstraint):
         max_papr (float): Maximum allowed peak-to-average power ratio in linear units (not dB)
     """
 
-    def __init__(self, max_papr: float = 3.0) -> None:
+    def __init__(self, max_papr: float = 3.0, *args, **kwargs) -> None:
         """Initialize the PAPR constraint.
 
         Args:
             max_papr (float, optional): Maximum allowed peak-to-average power ratio in
                 linear units (not dB). For reference, a max_papr of 4.0 corresponds to
                 approximately 6 dB. Defaults to 3.0.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.max_papr = max_papr
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply PAPR constraint to the input tensor.
 
         Finds signal peaks that cause excessive PAPR and scales them down to meet
@@ -260,6 +288,8 @@ class PAPRConstraint(BaseConstraint):
 
         Args:
             x (torch.Tensor): The input tensor of any shape
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: Signal with constrained PAPR with the same shape as input
@@ -275,7 +305,7 @@ class PAPRConstraint(BaseConstraint):
             try:
                 # Define a wrapper function that takes a single tensor
                 def apply_constraint(single_x):
-                    return self._apply_constraint_to_single_item(single_x)
+                    return self._apply_constraint_to_single_item(single_x, *args, **kwargs)
 
                 # Use vmap to vectorize the function across the first dimension (batch)
                 vectorized_constraint = torch.vmap(apply_constraint)
@@ -286,14 +316,23 @@ class PAPRConstraint(BaseConstraint):
                 output = torch.zeros_like(x)
 
                 # Process in parallel using multiple workers if possible
-                output = torch.stack([self._apply_constraint_to_single_item(x[i]) for i in range(batch_size)])
+                output = torch.stack([self._apply_constraint_to_single_item(x[i], *args, **kwargs) for i in range(batch_size)])
                 return output
         else:
             # For non-batched data or single batch item, apply constraint directly
-            return self._apply_constraint_to_single_item(x)
+            return self._apply_constraint_to_single_item(x, *args, **kwargs)
 
-    def _apply_constraint_to_single_item(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply strict PAPR constraint to a single tensor using multiple iterations."""
+    def _apply_constraint_to_single_item(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """Apply strict PAPR constraint to a single tensor using multiple iterations.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            torch.Tensor: The constrained tensor.
+        """
         self.get_dimensions(x)
         result = x.clone()
 

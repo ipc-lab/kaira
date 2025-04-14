@@ -35,16 +35,18 @@ class CompositeConstraint(BaseConstraint):
         final result, as constraints may interact with each other.
     """
 
-    def __init__(self, constraints: Sequence[BaseConstraint] | nn.ModuleList) -> None:
+    def __init__(self, constraints: Sequence[BaseConstraint] | nn.ModuleList, *args, **kwargs) -> None:
         """Initialize the composite constraint with a list of constraints.
 
         Args:
             constraints (Sequence[BaseConstraint] | nn.ModuleList): List of constraint modules to apply in sequence
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Raises:
             TypeError: If any element in constraints is not a BaseConstraint
         """
-        super().__init__()  # Call parent constructor with no arguments
+        super().__init__(*args, **kwargs)  # Call parent constructor
 
         # Validate that all constraints are BaseConstraint instances
         for constraint in constraints:
@@ -63,16 +65,18 @@ class CompositeConstraint(BaseConstraint):
             raise TypeError(f"Expected BaseConstraint, got {type(constraint).__name__}")
         self.constraints.append(constraint)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         """Apply the composite constraint to the input signal.
 
         Args:
             x: Input signal to constrain
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Constrained signal after applying all component constraints
         """
         for step in self.constraints:
-            x = step(x)
+            x = step(x, *args, **kwargs)
 
         return x

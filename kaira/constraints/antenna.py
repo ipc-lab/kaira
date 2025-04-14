@@ -33,7 +33,7 @@ class PerAntennaPowerConstraint(BaseConstraint):
         uniform_power (float, optional): Uniform power level for all antennas
     """
 
-    def __init__(self, power_budget: Optional[torch.Tensor] = None, uniform_power: Optional[float] = None) -> None:
+    def __init__(self, power_budget: Optional[torch.Tensor] = None, uniform_power: Optional[float] = None, *args, **kwargs) -> None:
         """Initialize the per-antenna power constraint.
 
         Args:
@@ -41,6 +41,8 @@ class PerAntennaPowerConstraint(BaseConstraint):
                 [num_antennas]. Mutually exclusive with uniform_power.
             uniform_power (float, optional): Uniform power value to apply across all antennas.
                 Mutually exclusive with power_budget.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Raises:
             AssertionError: If neither power_budget nor uniform_power is provided
@@ -50,12 +52,12 @@ class PerAntennaPowerConstraint(BaseConstraint):
             If power_budget is provided, its length must match the number of antennas
             in the input signal.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         assert (power_budget is not None) or (uniform_power is not None), "Either power_budget or uniform_power must be provided"
         self.power_budget = power_budget
         self.uniform_power = uniform_power
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply per-antenna power constraint.
 
         Scales the signal from each antenna independently to meet its power budget.
@@ -64,6 +66,8 @@ class PerAntennaPowerConstraint(BaseConstraint):
         Args:
             x (torch.Tensor): Input tensor with shape [batch_size, num_antennas, ...].
                 The second dimension must correspond to different antennas.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: Power-constrained signal with the same shape as input, where

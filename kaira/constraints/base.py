@@ -22,8 +22,17 @@ class BaseConstraint(nn.Module, ABC):
     PyTorch-compatible and require implementation of key methods.
     """
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the base constraint.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__()
+
     @abstractmethod
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply the constraint to the input tensor.
 
         This abstract method must be implemented by all constraint classes. The implementation
@@ -32,6 +41,8 @@ class BaseConstraint(nn.Module, ABC):
 
         Args:
             x (torch.Tensor): Input tensor to apply the constraint to
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: The constrained tensor with the same essential dimensions as the input
