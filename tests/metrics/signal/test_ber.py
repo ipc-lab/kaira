@@ -1,5 +1,4 @@
 import torch
-import pytest
 
 from kaira.metrics.signal.ber import BitErrorRate
 

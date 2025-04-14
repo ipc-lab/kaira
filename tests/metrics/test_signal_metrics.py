@@ -98,7 +98,6 @@ def test_ber_batched_input_forward_only():
     received_batch = torch.tensor([[1, 1, 0, 0], [1, 0, 0, 1]])
     # Batch 1: 2 errors / 4 bits = 0.5
     # Batch 2: 2 errors / 4 bits = 0.5
-    expected_ber_batch = torch.tensor([0.5, 0.5])
 
     # Temporarily enable batched logic for testing (assuming future implementation)
     # This part might need adjustment based on the actual is_batched implementation
