@@ -23,7 +23,7 @@ class DPSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     _phase_memory: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None, *args, **kwargs) -> None:
         """Initialize the DPSK modulator.
 
         Args:
@@ -31,8 +31,11 @@ class DPSKModulator(BaseModulator):
             gray_coding: Whether to use Gray coding for phase mapping
             bits_per_symbol: Alternative way to specify order (2^bits_per_symbol)
             gray_coded: Alternative name for gray_coding
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        # Pass *args and **kwargs to the base class initializer
+        super().__init__(*args, **kwargs)
 
         # Support both initialization styles (order or bits_per_symbol)
         if bits_per_symbol is not None:
@@ -90,12 +93,14 @@ class DPSKModulator(BaseModulator):
         self.register_buffer("constellation", constellation)
         self.register_buffer("bit_patterns", bit_patterns)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit groups to DPSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol,
                or direct symbol indices with shape (..., N) where each value is < order
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of DPSK symbols with shape (..., N)
@@ -199,7 +204,7 @@ class DPSKModulator(BaseModulator):
 class DPSKDemodulator(BaseDemodulator):
     """Differential Phase-Shift Keying (DPSK) demodulator."""
 
-    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None) -> None:
+    def __init__(self, order: Optional[Literal[2, 4, 8, 16]] = None, gray_coding: bool = True, bits_per_symbol: Optional[int] = None, gray_coded: Optional[bool] = None, *args, **kwargs) -> None:
         """Initialize the DPSK demodulator.
 
         Args:
@@ -207,8 +212,11 @@ class DPSKDemodulator(BaseDemodulator):
             gray_coding: Whether Gray coding was used for phase mapping
             bits_per_symbol: Alternative way to specify order (2^bits_per_symbol)
             gray_coded: Alternative name for gray_coding
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        # Pass *args and **kwargs to the base class initializer
+        super().__init__(*args, **kwargs)
 
         # Support both initialization styles (order or bits_per_symbol)
         if bits_per_symbol is not None:
@@ -226,12 +234,14 @@ class DPSKDemodulator(BaseDemodulator):
         # Create reference modulator to access constellation
         self.modulator = DPSKModulator(order=self.order, gray_coding=self.gray_coding)
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate DPSK symbols.
 
         Args:
             y: Received tensor of DPSK symbols with shape (..., N)
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions
@@ -362,33 +372,53 @@ class DPSKDemodulator(BaseDemodulator):
 class DBPSKModulator(DPSKModulator):
     """Differential Binary Phase-Shift Keying (DBPSK) modulator."""
 
-    def __init__(self) -> None:
-        """Initialize the DBPSK modulator."""
-        super().__init__(order=2, gray_coding=True)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the DBPSK modulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(order=2, gray_coding=True, *args, **kwargs)
 
 
 @ModulationRegistry.register_demodulator("dbpsk")
 class DBPSKDemodulator(DPSKDemodulator):
     """Differential Binary Phase-Shift Keying (DBPSK) demodulator."""
 
-    def __init__(self) -> None:
-        """Initialize the DBPSK demodulator."""
-        super().__init__(order=2, gray_coding=True)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the DBPSK demodulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(order=2, gray_coding=True, *args, **kwargs)
 
 
 @ModulationRegistry.register_modulator("dqpsk")
 class DQPSKModulator(DPSKModulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) modulator."""
 
-    def __init__(self) -> None:
-        """Initialize the DQPSK modulator."""
-        super().__init__(order=4, gray_coding=True)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the DQPSK modulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(order=4, gray_coding=True, *args, **kwargs)
 
 
 @ModulationRegistry.register_demodulator("dqpsk")
 class DQPSKDemodulator(DPSKDemodulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) demodulator."""
 
-    def __init__(self) -> None:
-        """Initialize the DQPSK demodulator."""
-        super().__init__(order=4, gray_coding=True)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the DQPSK demodulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(order=4, gray_coding=True, *args, **kwargs)

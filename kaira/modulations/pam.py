@@ -25,15 +25,17 @@ class PAMModulator(BaseModulator):
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True) -> None:
+    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the PAM modulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether to use Gray coding for mapping
             normalize: If True, normalize constellation to unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         # Validate order is a power of 2
         if not (order > 0 and (order & (order - 1) == 0)):
@@ -91,11 +93,13 @@ class PAMModulator(BaseModulator):
         self.register_buffer("constellation", torch.complex(levels, torch.zeros_like(levels)))
         self.register_buffer("bit_patterns", bit_patterns)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit groups to PAM symbols.
 
         Args:
             x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of PAM symbols with shape (..., N)
@@ -153,15 +157,17 @@ class PAMDemodulator(BaseDemodulator):
     2. Soft decisions - computing log-likelihood ratios (LLRs)
     """
 
-    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True) -> None:
+    def __init__(self, order: Literal[2, 4, 8, 16, 32, 64], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the PAM demodulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether Gray coding was used for mapping
             normalize: If True, assumes normalized constellation
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
@@ -170,12 +176,14 @@ class PAMDemodulator(BaseDemodulator):
         # Create reference modulator to access constellation
         self.modulator = PAMModulator(order, gray_coding, normalize)
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate PAM symbols.
 
         Args:
             y: Received tensor of PAM symbols (complex, but only real part is used)
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions

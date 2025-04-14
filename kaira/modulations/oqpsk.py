@@ -23,13 +23,15 @@ class OQPSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     _delayed_quad: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, normalize: bool = True) -> None:
+    def __init__(self, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the OQPSK modulator.
 
         Args:
             normalize: If True, normalize constellation to unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
 
@@ -47,11 +49,13 @@ class OQPSKModulator(BaseModulator):
 
         self._bits_per_symbol = 2  # OQPSK has 2 bits per symbol
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit pairs to OQPSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., 2*N)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of OQPSK symbols with shape (..., N)
@@ -119,24 +123,28 @@ class OQPSKModulator(BaseModulator):
 class OQPSKDemodulator(BaseDemodulator):
     """Offset Quadrature Phase-Shift Keying (OQPSK) demodulator."""
 
-    def __init__(self, normalize: bool = True) -> None:
+    def __init__(self, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the OQPSK demodulator.
 
         Args:
             normalize: If True, assume normalized constellation with unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
 
         self._bits_per_symbol = 2  # OQPSK has 2 bits per symbol
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate OQPSK symbols.
 
         Args:
             y: Received tensor of OQPSK symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions

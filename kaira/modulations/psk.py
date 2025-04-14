@@ -23,9 +23,14 @@ class BPSKModulator(BaseModulator):
 
     constellation: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self) -> None:
-        """Initialize the BPSK modulator."""
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the BPSK modulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
 
         # Define constellation points
         re_part = torch.tensor([1.0, -1.0])
@@ -33,11 +38,13 @@ class BPSKModulator(BaseModulator):
         self.register_buffer("constellation", torch.complex(re_part, im_part))
         self._bits_per_symbol = 1  # BPSK has 1 bit per symbol
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate binary inputs to BPSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., N)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of BPSK symbols with shape (..., N)
@@ -66,17 +73,24 @@ class BPSKDemodulator(BaseDemodulator):
     - Negative values map to bit 1
     """
 
-    def __init__(self) -> None:
-        """Initialize the BPSK demodulator."""
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the BPSK demodulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
         self._bits_per_symbol = 1  # BPSK has 1 bit per symbol
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate BPSK symbols.
 
         Args:
             y: Received tensor of BPSK symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions
@@ -113,13 +127,15 @@ class QPSKModulator(BaseModulator):
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, normalize: bool = True) -> None:
+    def __init__(self, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the QPSK modulator.
 
         Args:
             normalize: If True, normalize constellation to unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
 
@@ -142,11 +158,13 @@ class QPSKModulator(BaseModulator):
 
         self._bits_per_symbol = 2  # QPSK has 2 bits per symbol
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit pairs to QPSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., 2*N)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of QPSK symbols with shape (..., N)
@@ -194,13 +212,15 @@ class QPSKDemodulator(BaseDemodulator):
     Demodulates QPSK symbols back to bit pairs following Gray coding convention.
     """
 
-    def __init__(self, normalize: bool = True) -> None:
+    def __init__(self, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the QPSK demodulator.
 
         Args:
             normalize: If True, assume normalized constellation with unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.normalize = normalize
         self._normalization = 1 / np.sqrt(2) if normalize else 1.0
 
@@ -209,12 +229,14 @@ class QPSKDemodulator(BaseDemodulator):
 
         self._bits_per_symbol = 2  # QPSK has 2 bits per symbol
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate QPSK symbols.
 
         Args:
             y: Received tensor of QPSK symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions
@@ -317,15 +339,17 @@ class PSKModulator(BaseModulator):
     bit_patterns: torch.Tensor  # Type annotation for the buffer
     bit_to_symbol_map: torch.Tensor  # Type annotation for mapping bit patterns to symbols
 
-    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, constellation: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, constellation: Optional[torch.Tensor] = None, *args, **kwargs) -> None:
         """Initialize the PSK modulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether to use Gray coding for constellation mapping
             constellation: Optional custom constellation points (overrides order)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.gray_coding = gray_coding
 
@@ -396,11 +420,13 @@ class PSKModulator(BaseModulator):
         self.register_buffer("bit_patterns", bit_patterns)
         self.register_buffer("bit_to_symbol_map", bit_to_symbol_map)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit groups to PSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., M) or direct indices into the constellation
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of PSK symbols with shape (..., N)
@@ -482,14 +508,16 @@ class PSKDemodulator(BaseDemodulator):
     Demodulates complex constellation points back to bits.
     """
 
-    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True) -> None:
+    def __init__(self, order: Literal[4, 8, 16, 32, 64] = 4, gray_coding: bool = True, *args, **kwargs) -> None:
         """Initialize the PSK demodulator.
 
         Args:
             order: Modulation order (must be a power of 2)
             gray_coding: Whether Gray coding was used for constellation mapping
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.order = order
         self.gray_coding = gray_coding
         self._bits_per_symbol: int = int(np.log2(order))
@@ -497,12 +525,14 @@ class PSKDemodulator(BaseDemodulator):
         # Create modulator to access constellation
         self.modulator = PSKModulator(order, gray_coding)
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate PSK symbols.
 
         Args:
             y: Received tensor of PSK symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions

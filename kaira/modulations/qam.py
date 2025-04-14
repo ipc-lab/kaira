@@ -21,15 +21,17 @@ class QAMModulator(BaseModulator):
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True) -> None:
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the QAM modulator.
 
         Args:
             order: Modulation order (must be a perfect square and power of 4)
             gray_coding: Whether to use Gray coding for mapping
             normalize: If True, normalize constellation to unit energy
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         # Validate order is positive and in the allowed values
         if not isinstance(order, int) or order <= 0 or order not in (4, 16, 64, 256):
@@ -98,11 +100,13 @@ class QAMModulator(BaseModulator):
         self.register_buffer("constellation", constellation)
         self.register_buffer("bit_patterns", bit_patterns)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit groups to QAM symbols.
 
         Args:
             x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of QAM symbols with shape (..., N)
@@ -153,15 +157,17 @@ class QAMModulator(BaseModulator):
 class QAMDemodulator(BaseDemodulator):
     """Quadrature Amplitude Modulation (QAM) demodulator."""
 
-    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True) -> None:
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
         """Initialize the QAM demodulator.
 
         Args:
             order: Modulation order (must be a perfect square and power of 4)
             gray_coding: Whether Gray coding was used for mapping
             normalize: If True, assumes normalized constellation
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
@@ -170,12 +176,14 @@ class QAMDemodulator(BaseDemodulator):
         # Create reference modulator to access constellation
         self.modulator = QAMModulator(order, gray_coding, normalize)
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate QAM symbols.
 
         Args:
             y: Received tensor of QAM symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions

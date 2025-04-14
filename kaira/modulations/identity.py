@@ -23,18 +23,25 @@ class IdentityModulator(BaseModulator):
         constellation (torch.Tensor): Trivial constellation points [0, 1]
     """
 
-    def __init__(self):
-        """Initialize the identity modulator."""
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        """Initialize the identity modulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
         self.constellation = self._create_constellation()
 
         self._bits_per_symbol = 1  # Always 1 for identity modulation
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bits to symbols as required by BaseModulator.
 
         Args:
             x: Input tensor of bits with shape (..., N)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             The same tensor, unchanged, with shape (..., N)
@@ -84,19 +91,26 @@ class IdentityDemodulator(BaseDemodulator):
         constellation (torch.Tensor): Trivial constellation points [0, 1]
     """
 
-    def __init__(self):
-        """Initialize the identity demodulator."""
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        """Initialize the identity demodulator.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
         self.constellation = torch.tensor([0.0, 1.0], dtype=torch.complex64)
 
         self._bits_per_symbol = 1  # Always 1 for identity demodulation
 
-    def forward(self, y: torch.Tensor, noise_var=None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var=None, *args, **kwargs) -> torch.Tensor:
         """Demodulate symbols to bits as required by BaseDemodulator.
 
         Args:
             y: Received symbols with shape (..., N)
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns soft values;

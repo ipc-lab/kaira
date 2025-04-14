@@ -27,13 +27,15 @@ class Pi4QPSKModulator(BaseModulator):
     _even_symbols: bool = True  # Used for test verification
     _odd_symbols: bool = True  # Used for test verification
 
-    def __init__(self, gray_coded: bool = True) -> None:
+    def __init__(self, gray_coded: bool = True, *args, **kwargs) -> None:
         """Initialize the π/4-QPSK modulator.
 
         Args:
             gray_coded: Whether to use Gray coding for mapping (default: True)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self._bits_per_symbol: int = 2
         self.gray_coded = gray_coded
 
@@ -83,11 +85,13 @@ class Pi4QPSKModulator(BaseModulator):
 
         self.register_buffer("bit_patterns", bit_patterns)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bit pairs to π/4-QPSK symbols or symbols to π/4-QPSK signals.
 
         Args:
             x: Input tensor of bits with shape (..., 2*N) or symbols with shape (N,)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Complex tensor of π/4-QPSK symbols with shape (..., N)
@@ -165,13 +169,15 @@ class Pi4QPSKDemodulator(BaseDemodulator):
 
     _use_rotated: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, soft_output: bool = False) -> None:
+    def __init__(self, soft_output: bool = False, *args, **kwargs) -> None:
         """Initialize the π/4-QPSK demodulator.
 
         Args:
             soft_output: Whether to output soft LLR values even when noise_var is not provided
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self._bits_per_symbol: int = 2
         self.soft_output = soft_output
 
@@ -181,12 +187,14 @@ class Pi4QPSKDemodulator(BaseDemodulator):
         # Keep track of which constellation to use for demodulation
         self.register_buffer("_use_rotated", torch.tensor(False))
 
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate π/4-QPSK symbols.
 
         Args:
             y: Received tensor of π/4-QPSK symbols
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided or soft_output is True, returns LLRs;

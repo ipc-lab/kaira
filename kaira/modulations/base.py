@@ -17,13 +17,15 @@ class BaseModulator(nn.Module, ABC):
         constellation: Complex-valued tensor of constellation points
     """
 
-    def __init__(self, bits_per_symbol: Optional[int] = None) -> None:
+    def __init__(self, bits_per_symbol: Optional[int] = None, *args, **kwargs) -> None:
         """Initialize the modulator.
 
         Args:
             bits_per_symbol: Number of bits to encode in each symbol
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs) # Pass *args and **kwargs to parent
         self._bits_per_symbol = bits_per_symbol
 
     @property
@@ -34,11 +36,13 @@ class BaseModulator(nn.Module, ABC):
         return self._bits_per_symbol
 
     @abstractmethod
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Modulate bits to symbols.
 
         Args:
             x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Modulated symbols with shape (..., N)
@@ -71,13 +75,15 @@ class BaseDemodulator(nn.Module, ABC):
     demodulation scheme, which may include soft or hard decisions.
     """
 
-    def __init__(self, bits_per_symbol: Optional[int] = None) -> None:
+    def __init__(self, bits_per_symbol: Optional[int] = None, *args, **kwargs) -> None:
         """Initialize the demodulator.
 
         Args:
             bits_per_symbol: Number of bits encoded in each symbol
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs) # Pass *args and **kwargs to parent
         self._bits_per_symbol = bits_per_symbol
 
     @property
@@ -88,12 +94,14 @@ class BaseDemodulator(nn.Module, ABC):
         return self._bits_per_symbol
 
     @abstractmethod
-    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None) -> torch.Tensor:
+    def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate symbols to bits or LLRs.
 
         Args:
             y: Received symbols with shape (..., N)
             noise_var: Noise variance for soft demodulation (optional)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             If noise_var is provided, returns LLRs; otherwise, returns hard bit decisions
