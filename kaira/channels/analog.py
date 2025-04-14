@@ -9,6 +9,7 @@ For a comprehensive overview of analog channel models, see :cite:`goldsmith2005w
 
 import numpy as np
 import torch
+from typing import Any
 
 from kaira.utils import snr_to_noise_power, to_tensor
 
@@ -71,8 +72,8 @@ class AWGNChannel(BaseChannel):
         or n ~ CN(0, σ²) for complex inputs
 
     Args:
-        avg_noise_power (float, optional): The average noise power σ²
-        snr_db (float, optional): SNR in dB (alternative to avg_noise_power)
+        avg_noise_power (float, optional): The average noise power σ².
+        snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
 
     Example:
         >>> # For real-valued signals
@@ -85,8 +86,16 @@ class AWGNChannel(BaseChannel):
         >>> y_complex = channel(x_complex)  # Complex noisy output
     """
 
-    def __init__(self, avg_noise_power=None, snr_db=None):
-        super().__init__()
+    def __init__(self, avg_noise_power=None, snr_db=None, *args: Any, **kwargs: Any):
+        """Initialize the AWGN channel.
+
+        Args:
+            avg_noise_power (float, optional): The average noise power σ².
+            snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
 
         if snr_db is not None:
             self.snr_db = snr_db
@@ -97,28 +106,25 @@ class AWGNChannel(BaseChannel):
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
 
-    def forward(self, x: torch.Tensor, csi=None, noise=None) -> torch.Tensor:
-        """Add Gaussian noise to the input signal. Automatically handles both real and complex-
-        valued inputs.
+    def forward(self, x: torch.Tensor, *args: Any, csi=None, noise=None, **kwargs: Any) -> torch.Tensor:
+        """Apply AWGN to the input signal.
 
         Args:
-            x (torch.Tensor): The input tensor (real or complex).
-            csi (torch.Tensor, optional): Channel state information, not used in AWGN channel.
-            noise (torch.Tensor, optional): Pre-generated noise to use instead of generating new noise.
+            x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (unused).
+            csi (Optional[torch.Tensor]): Channel state information (unused in AWGN).
+            noise (Optional[torch.Tensor]): Pre-generated noise tensor. If provided,
+                this noise will be added instead of generating new noise.
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor after adding noise.
+            torch.Tensor: The output tensor with AWGN added.
         """
         # If pre-generated noise is provided, use it
         if noise is not None:
             return x + noise
-
-        # Otherwise use centralized noise application function
-        if self.snr_db is not None:
-            return _apply_noise(x, snr_db=self.snr_db)
-        else:
-            return _apply_noise(x, noise_power=self.avg_noise_power)
-
+    
+        return _apply_noise(x, snr_db=self.snr_db, noise_power=self.avg_noise_power)
 
 GaussianChannel = AWGNChannel
 
@@ -137,13 +143,28 @@ class LaplacianChannel(BaseChannel):
         where n follows a Laplacian distribution
 
     Args:
-        scale (float, optional): Scale parameter of the Laplacian distribution
-        avg_noise_power (float, optional): The average noise power
-        snr_db (float, optional): SNR in dB (alternative to scale or avg_noise_power)
+        scale (float, optional): Scale parameter of the Laplacian distribution.
+        avg_noise_power (float, optional): The average noise power.
+        snr_db (float, optional): SNR in dB (alternative to scale or avg_noise_power).
+
+    Example:
+        >>> # Create a Laplacian channel with scale=0.5
+        >>> channel = LaplacianChannel(scale=0.5)
+        >>> x = torch.ones(10, 1)
+        >>> y = channel(x)  # Output with Laplacian noise
     """
 
-    def __init__(self, scale=None, avg_noise_power=None, snr_db=None):
-        super().__init__()
+    def __init__(self, scale=None, avg_noise_power=None, snr_db=None, *args: Any, **kwargs: Any):
+        """Initialize the Laplacian channel.
+
+        Args:
+            scale (float, optional): Scale parameter of the Laplacian distribution.
+            avg_noise_power (float, optional): The average noise power.
+            snr_db (float, optional): SNR in dB (alternative to scale or avg_noise_power).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
 
         # Handle different parameter specifications
         if scale is not None:
@@ -175,14 +196,16 @@ class LaplacianChannel(BaseChannel):
 
         return raw_laplacian
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Add Laplacian noise to the input signal.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply Laplacian noise to the input signal.
 
         Args:
-            x (torch.Tensor): The input tensor (real or complex)
+            x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor with additive Laplacian noise
+            torch.Tensor: The output tensor with Laplacian noise added.
         """
         # Determine noise parameters
         scale = self.scale
@@ -222,23 +245,39 @@ class PoissonChannel(BaseChannel):
         y ~ Poisson(λ·\|x\|)
 
     Args:
-        rate_factor (float): Scaling factor λ for the Poisson rate
-        normalize (bool): Whether to normalize output back to input scale
+        rate_factor (float): Scaling factor λ for the Poisson rate.
+        normalize (bool): Whether to normalize output back to input scale.
+
+    Example:
+        >>> # Create a Poisson channel with rate_factor=0.1
+        >>> channel = PoissonChannel(rate_factor=0.1)
+        >>> x = torch.ones(10, 1)
+        >>> y = channel(x)  # Output with Poisson noise
     """
 
-    def __init__(self, rate_factor=1.0, normalize=False):
-        super().__init__()
+    def __init__(self, rate_factor=1.0, normalize=False, *args: Any, **kwargs: Any):
+        """Initialize the Poisson channel.
+
+        Args:
+            rate_factor (float): Scaling factor λ for the Poisson rate.
+            normalize (bool): Whether to normalize output back to input scale.
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         if rate_factor <= 0:
             raise ValueError("Rate factor must be positive")
         self.rate_factor = to_tensor(rate_factor)
         self.normalize = normalize
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply Poisson channel to the input signal.
 
         Args:
             x (torch.Tensor): The input tensor (must be non-negative if real,
                               or will use magnitude if complex)
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: The output tensor following Poisson distribution
@@ -288,23 +327,32 @@ class PhaseNoiseChannel(BaseChannel):
         where θ ~ N(0, σ²) is the phase noise
 
     Args:
-        phase_noise_std (float): Standard deviation of phase noise in radians
+        phase_noise_std (float): Standard deviation of phase noise in radians.
     """
 
-    def __init__(self, phase_noise_std):
-        super().__init__()
+    def __init__(self, phase_noise_std, *args: Any, **kwargs: Any):
+        """Initialize the Phase Noise channel.
+
+        Args:
+            phase_noise_std (float): Standard deviation of phase noise in radians.
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         if phase_noise_std < 0:
             raise ValueError("Phase noise standard deviation must be non-negative")
         self.phase_noise_std = to_tensor(phase_noise_std)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply random phase noise to the input signal.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply phase noise to the input signal.
 
         Args:
-            x (torch.Tensor): The input tensor (real or complex)
+            x (torch.Tensor): The input tensor (must be complex).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor with phase noise
+            torch.Tensor: The output tensor with phase noise applied.
         """
         # Convert real signal to complex if needed
         if not torch.is_complex(x):
@@ -357,8 +405,22 @@ class FlatFadingChannel(BaseChannel):
         avg_noise_power=None,
         snr_db=None,
         shadow_sigma_db=None,
+        *args: Any,
+        **kwargs: Any,
     ):
-        super().__init__()
+        """Initialize the Flat Fading channel.
+
+        Args:
+            fading_type (str): Distribution type ('rayleigh', 'rician', 'lognormal').
+            coherence_time (int): Samples over which fading is constant.
+            k_factor (float, optional): Rician K-factor (for 'rician').
+            avg_noise_power (float, optional): Average noise power σ².
+            snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
+            shadow_sigma_db (float, optional): Shadowing std dev in dB (for 'lognormal').
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
 
         # Validate and store fading type
         valid_types = ["rayleigh", "rician", "lognormal"]
@@ -466,20 +528,19 @@ class FlatFadingChannel(BaseChannel):
 
         return h_expanded
 
-    def forward(self, x: torch.Tensor, csi=None, noise=None) -> torch.Tensor:
-        """Apply flat fading channel effects to the input signal.
-
-        Applies block fading coefficients that remain constant over the coherence time
-        and then adds complex Gaussian noise.
+    def forward(self, x: torch.Tensor, *args: Any, csi=None, noise=None, **kwargs: Any) -> torch.Tensor:
+        """Apply flat fading and noise to the input signal.
 
         Args:
-            x (torch.Tensor): The input signal tensor of shape (batch_size, seq_length)
-                or (batch_size, channels, seq_length) or (seq_length,)
-            csi (torch.Tensor, optional): Channel state information to use instead of generating it
-            noise (torch.Tensor, optional): Pre-generated noise to use instead of generating new noise
+            x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (unused).
+            csi (Optional[torch.Tensor]): Pre-computed channel state information (fading coefficients).
+                                         If provided, these coefficients are used instead of generating new ones.
+            noise (Optional[torch.Tensor]): Pre-generated noise tensor. If provided, this noise is added.
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output signal after applying fading and noise
+            torch.Tensor: The output tensor after applying fading and noise.
         """
         # Handle different input shapes
         original_shape = x.shape
@@ -582,8 +643,21 @@ class NonlinearChannel(BaseChannel):
         avg_noise_power=None,
         snr_db=None,
         complex_mode="direct",
+        *args: Any,
+        **kwargs: Any,
     ):
-        super().__init__()
+        """Initialize the Nonlinear channel.
+
+        Args:
+            nonlinear_fn (callable): The nonlinear transformation function.
+            add_noise (bool): Whether to add noise after nonlinearity.
+            avg_noise_power (float, optional): Average noise power if add_noise=True.
+            snr_db (float, optional): SNR in dB (alternative if add_noise=True).
+            complex_mode (str): How to handle complex inputs ('direct', 'cartesian', 'polar').
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         self.nonlinear_fn = nonlinear_fn
         self.add_noise = add_noise
         self.complex_mode = complex_mode
@@ -606,16 +680,16 @@ class NonlinearChannel(BaseChannel):
             self.avg_noise_power = None
             self.snr_db = None
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply nonlinear transformation and optional noise to the input.
-
-        Handles both real and complex inputs based on the complex_mode setting.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply the nonlinear function and optional noise to the input signal.
 
         Args:
-            x (torch.Tensor): The input tensor (real or complex)
+            x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor after nonlinear transformation and optional noise
+            torch.Tensor: The output tensor after nonlinear transformation and optional noise.
         """
         # Handle complex inputs according to specified mode
         if torch.is_complex(x):
@@ -645,10 +719,7 @@ class NonlinearChannel(BaseChannel):
 
         # Add noise if requested
         if self.add_noise:
-            if self.snr_db is not None:
-                y = _apply_noise(y, snr_db=self.snr_db)
-            else:
-                y = _apply_noise(y, noise_power=self.avg_noise_power)
+            y = _apply_noise(y, snr_db=self.snr_db, noise_power=self.avg_noise_power)
 
         return y
 
@@ -684,12 +755,20 @@ class RayleighFadingChannel(FlatFadingChannel):
         coherence_time=1,
         avg_noise_power=None,
         snr_db=None,
+        *args: Any,
+        **kwargs: Any,
     ):
-        # If neither noise parameter is provided, use a default SNR of 15 dB
-        if avg_noise_power is None and snr_db is None:
-            snr_db = 15.0
+        """Initialize the Rayleigh Fading channel.
 
-        super().__init__(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db)
+        Args:
+            coherence_time (int, optional): Samples over which fading is constant. Defaults to 1.
+            avg_noise_power (float, optional): Average noise power σ².
+            snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+
+        super().__init__(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -727,8 +806,20 @@ class RicianFadingChannel(FlatFadingChannel):
         coherence_time=1,
         avg_noise_power=None,
         snr_db=None,
+        *args: Any,
+        **kwargs: Any,
     ):
-        super().__init__(fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db)
+        """Initialize the Rician Fading channel.
+
+        Args:
+            k_factor (float): Rician K-factor. Defaults to 1.0.
+            coherence_time (int): Samples over which fading is constant. Defaults to 1.
+            avg_noise_power (float, optional): Average noise power.
+            snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -766,5 +857,17 @@ class LogNormalFadingChannel(FlatFadingChannel):
         coherence_time=100,
         avg_noise_power=None,
         snr_db=None,
+        *args: Any,
+        **kwargs: Any,
     ):
-        super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db)
+        """Initialize the Log-Normal Fading channel.
+
+        Args:
+            shadow_sigma_db (float): Shadowing std dev in dB. Defaults to 4.0.
+            coherence_time (int): Samples over which fading is constant. Defaults to 100.
+            avg_noise_power (float, optional): Average noise power.
+            snr_db (float, optional): SNR in dB (alternative to avg_noise_power).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)

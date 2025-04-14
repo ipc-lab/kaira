@@ -9,6 +9,7 @@ and :cite:`shannon1948mathematical`.
 """
 
 import torch
+from typing import Any
 
 from kaira.utils import to_tensor
 
@@ -37,20 +38,29 @@ class BinarySymmetricChannel(BaseChannel):
         >>> y = channel(x)  # Some bits will be flipped with 10% probability
     """
 
-    def __init__(self, crossover_prob):
-        super().__init__()
+    def __init__(self, crossover_prob, *args: Any, **kwargs: Any):
+        """Initialize the Binary Symmetric Channel.
+
+        Args:
+            crossover_prob (float): Probability of bit flip (0 ≤ p ≤ 0.5).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         if not 0 <= crossover_prob <= 1:
             raise ValueError("Crossover probability must be between 0 and 1")
         self.crossover_prob = to_tensor(crossover_prob)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply random bit flips to the input signal.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply Binary Symmetric Channel errors to the input tensor.
 
         Args:
-            x (torch.Tensor): Binary input tensor with values in {0,1} or {-1,1}
+            x (torch.Tensor): The input tensor (binary 0/1 or bipolar -1/1).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: Binary output tensor with some bits flipped
+            torch.Tensor: The output tensor with potential bit flips.
         """
         # Check if input uses {-1,1} format
         neg_one_format = (x == -1).any()
@@ -96,21 +106,31 @@ class BinaryErasureChannel(BaseChannel):
         >>> y = channel(x)  # Some bits will be replaced with -1 (erasure)
     """
 
-    def __init__(self, erasure_prob, erasure_symbol=-1):
-        super().__init__()
+    def __init__(self, erasure_prob, erasure_symbol=-1, *args: Any, **kwargs: Any):
+        """Initialize the Binary Erasure Channel.
+
+        Args:
+            erasure_prob (float): Probability of bit erasure (0 ≤ p ≤ 1).
+            erasure_symbol (float): Symbol to use for erasures (default: -1).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         if not 0 <= erasure_prob <= 1:
             raise ValueError("Erasure probability must be between 0 and 1")
         self.erasure_prob = to_tensor(erasure_prob)
         self.erasure_symbol = erasure_symbol
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply random erasures to the input signal.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply Binary Erasure Channel errors to the input tensor.
 
         Args:
-            x (torch.Tensor): Binary input tensor with values in {0,1}
+            x (torch.Tensor): The input tensor (binary 0/1 or bipolar -1/1).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: Output tensor with some positions replaced by erasure_symbol
+            torch.Tensor: The output tensor with potential erasures.
         """
         # Generate random values for deciding erasures
         erasure_mask = torch.rand_like(x.float()) < self.erasure_prob
@@ -148,20 +168,29 @@ class BinaryZChannel(BaseChannel):
         >>> y = channel(x)  # Some 1s may flip to 0s, but 0s never flip to 1s
     """
 
-    def __init__(self, error_prob):
-        super().__init__()
+    def __init__(self, error_prob, *args: Any, **kwargs: Any):
+        """Initialize the Binary Z Channel.
+
+        Args:
+            error_prob (float): Probability of 1→0 bit flip (0 ≤ p ≤ 1).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         if not 0 <= error_prob <= 1:
             raise ValueError("Error probability must be between 0 and 1")
         self.error_prob = to_tensor(error_prob)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply one-sided (1→0) random bit flips to the input signal.
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply Binary Z Channel errors to the input tensor.
 
         Args:
-            x (torch.Tensor): Binary input tensor with values in {0,1}
+            x (torch.Tensor): The input tensor (binary 0/1 or bipolar -1/1).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: Binary output tensor with some 1s flipped to 0s
+            torch.Tensor: The output tensor with potential 1 -> 0 flips.
         """
         # Check if input uses {-1,1} format
         neg_one_format = (x == -1).any()

@@ -5,6 +5,7 @@ where information is transmitted without any error or loss :cite:`shannon1948mat
 """
 
 import torch
+from typing import Any
 
 from .base import BaseChannel
 from .registry import ChannelRegistry
@@ -29,10 +30,16 @@ class PerfectChannel(BaseChannel):
         >>> y = channel(x)  # y is identical to x
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize the Perfect Channel.
 
-    def forward(self, x: torch.Tensor, *args) -> torch.Tensor:
+        Args:
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
+
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Transmit signal without modification (identity operation).
 
         Implements an ideal noiseless, distortionless channel that perfectly
@@ -40,6 +47,8 @@ class PerfectChannel(BaseChannel):
 
         Args:
             x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: The input tensor without any modification.

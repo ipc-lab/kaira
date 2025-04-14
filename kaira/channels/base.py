@@ -31,8 +31,17 @@ class BaseChannel(nn.Module, ABC):
     - Included in larger end-to-end communications system models
     """
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize the base channel.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__()
+
     @abstractmethod
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Transform input signal according to channel characteristics.
 
         This method defines how the channel transforms an input signal,
@@ -41,6 +50,8 @@ class BaseChannel(nn.Module, ABC):
 
         Args:
             x (torch.Tensor): The input signal.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             torch.Tensor: The output signal after passing through the channel.

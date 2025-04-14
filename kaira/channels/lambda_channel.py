@@ -4,7 +4,7 @@ This module contains the LambdaChannel class which allows users to create custom
 applying arbitrary functions to input signals.
 """
 
-from typing import Callable
+from typing import Callable, Any
 
 import torch
 
@@ -40,19 +40,26 @@ class LambdaChannel(BaseChannel):
         >>> channel = LambdaChannel(distort)
     """
 
-    def __init__(self, fn: Callable):
-        super().__init__()
-        self.fn = fn
-
-    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Transform input signal using the user-defined function.
+    def __init__(self, fn: Callable, *args: Any, **kwargs: Any):
+        """Initialize the Lambda channel.
 
         Args:
-            x (torch.Tensor): Input signal tensor
-            *args: Additional positional arguments to pass to the function
-            **kwargs: Additional keyword arguments to pass to the function
+            fn (callable): The function to apply to the input signal.
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
+        self.fn = fn
+
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Apply the custom function to the input signal.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+            *args: Additional positional arguments passed to the custom function.
+            **kwargs: Additional keyword arguments passed to the custom function.
 
         Returns:
-            torch.Tensor: Transformed output signal
+            torch.Tensor: The output tensor after applying the custom function.
         """
         return self.fn(x, *args, **kwargs)
