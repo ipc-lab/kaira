@@ -4,7 +4,7 @@ SNR is a fundamental measure for quantifying the quality of a signal in the pres
 widely used in communications and signal processing :cite:`goldsmith2005wireless` :cite:`sklar2001digital`.
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 import torch
 from torch import Tensor
@@ -23,28 +23,35 @@ class SignalToNoiseRatio(BaseMetric):
     :cite:`shannon1948mathematical`.
     """
 
-    def __init__(self, name: Optional[str] = None, mode: str = "db"):
+    def __init__(self, name: Optional[str] = None, mode: str = "db", *args: Any, **kwargs: Any):
         """Initialize the SNR metric.
 
         Args:
             name (Optional[str]): Optional name for the metric
             mode (str): Output mode - "db" for decibels or "linear" for linear ratio
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "SNR")
+        super().__init__(name=name or "SNR", *args, **kwargs) # Pass args and kwargs
         self.mode = mode.lower()
         if self.mode not in ["db", "linear"]:
             raise ValueError("Mode must be either 'db' or 'linear'")
 
-    def forward(self, signal: Tensor, noisy_signal: Tensor) -> Tensor:
+    def forward(self, signal: Tensor, noisy_signal: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate SNR between original signal and noisy signal.
 
         Args:
             signal (Tensor): Original clean signal
             noisy_signal (Tensor): Noisy version of the signal
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             Tensor: SNR values in decibels (dB) or linear ratio based on mode
         """
+        # Note: *args and **kwargs are not directly used here
+        # but are included for interface consistency.
+
         # Check for batch dimension
         is_batched = signal.dim() > 1 and signal.size(0) > 1
 
@@ -111,17 +118,19 @@ class SignalToNoiseRatio(BaseMetric):
             # Return scalar tensor
             return snr.squeeze()
 
-    def compute_with_stats(self, signal: Tensor, noisy_signal: Tensor) -> Tuple[Tensor, Tensor]:
+    def compute_with_stats(self, signal: Tensor, noisy_signal: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
         """Compute SNR with mean and standard deviation.
 
         Args:
             signal (Tensor): Original clean signal
             noisy_signal (Tensor): Noisy version of the signal
+            *args: Variable length argument list passed to forward.
+            **kwargs: Arbitrary keyword arguments passed to forward.
 
         Returns:
             Tuple[Tensor, Tensor]: Mean and standard deviation of SNR values
         """
-        snr_values = self.forward(signal, noisy_signal)
+        snr_values = self.forward(signal, noisy_signal, *args, **kwargs) # Pass args/kwargs
         return snr_values.mean(), snr_values.std()
 
     def reset(self) -> None:

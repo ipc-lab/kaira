@@ -11,7 +11,7 @@ The composite approach addresses several common challenges in evaluation:
 - Custom evaluation schemes may need to emphasize certain properties over others
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 import torch
 from torch import nn
@@ -57,7 +57,7 @@ class CompositeMetric(BaseMetric):
         >>> individual_scores = composite.compute_individual(prediction, target)
     """
 
-    def __init__(self, metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None):
+    def __init__(self, metrics: Dict[str, BaseMetric], weights: Optional[Dict[str, float]] = None, *args: Any, **kwargs: Any):
         """Initialize composite metric with component metrics and their weights.
 
         Args:
@@ -70,11 +70,13 @@ class CompositeMetric(BaseMetric):
                 Use negative weights for metrics where lower values indicate better quality
                 (e.g., LPIPS, MSE) when combining with metrics where higher values indicate
                 better quality (e.g., PSNR, SSIM).
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
 
         Raises:
             ValueError: If weights dictionary contains keys that don't exist in metrics
         """
-        super().__init__(name="CompositeMetric")
+        super().__init__(name="CompositeMetric", *args, **kwargs)
         self.metrics = nn.ModuleDict(metrics)
 
         # Validate weights if provided
@@ -90,7 +92,7 @@ class CompositeMetric(BaseMetric):
         total = sum(self.weights.values())
         self.weights = {k: v / total for k, v in self.weights.items()}
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Compute the weighted combination of all component metrics.
 
         Evaluates each metric on the input tensors and combines them according
@@ -104,6 +106,8 @@ class CompositeMetric(BaseMetric):
         Args:
             x (torch.Tensor): First input tensor, typically the prediction or generated output
             y (torch.Tensor): Second input tensor, typically the target or ground truth
+            *args: Variable length argument list passed to individual metrics.
+            **kwargs: Arbitrary keyword arguments passed to individual metrics.
 
         Returns:
             torch.Tensor: Weighted sum of all metric values as a single scalar tensor.
@@ -113,13 +117,13 @@ class CompositeMetric(BaseMetric):
         result = torch.tensor(0.0, device=x.device)
         for name, metric in self.metrics.items():
             if name in self.weights:
-                metric_value = metric(x, y)
+                metric_value = metric(x, y, *args, **kwargs) # Pass args and kwargs
                 if isinstance(metric_value, tuple):
                     metric_value = metric_value[0]  # Take mean if tuple of (mean, std)
                 result = result + self.weights[name] * metric_value
         return result
 
-    def compute_individual(self, x: torch.Tensor, y: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def compute_individual(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
         """Compute all individual metrics separately without combining them.
 
         Unlike the forward method which returns a weighted combination, this method
@@ -132,6 +136,8 @@ class CompositeMetric(BaseMetric):
         Args:
             x (torch.Tensor): First input tensor, typically the prediction or generated output
             y (torch.Tensor): Second input tensor, typically the target or ground truth
+            *args: Variable length argument list passed to individual metrics.
+            **kwargs: Arbitrary keyword arguments passed to individual metrics.
 
         Returns:
             Dict[str, torch.Tensor]: Dictionary mapping metric names to their computed values.
@@ -140,7 +146,7 @@ class CompositeMetric(BaseMetric):
         """
         results = {}
         for name, metric in self.metrics.items():
-            results[name] = metric(x, y)
+            results[name] = metric(x, y, *args, **kwargs) # Pass args and kwargs
         return results
 
     def add_metric(self, name: str, metric: BaseMetric, weight: Optional[float] = None) -> None:

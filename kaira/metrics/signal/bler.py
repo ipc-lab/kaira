@@ -4,7 +4,7 @@ BLER is a key performance indicator for block-based transmission schemes like th
 in modern wireless systems :cite:`lin2004error` :cite:`moon2005error`.
 """
 
-from typing import Optional
+from typing import Optional, Any
 
 import torch
 from torch import Tensor
@@ -31,6 +31,8 @@ class BlockErrorRate(BaseMetric):
         threshold: float = 0.0,
         reduction: str = "mean",
         name: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Initialize the BlockErrorRate module.
 
@@ -41,8 +43,10 @@ class BlockErrorRate(BaseMetric):
                 Useful for floating-point comparisons.
             reduction (str): Reduction method: 'mean', 'sum', or 'none'.
             name (Optional[str]): Name for the metric.
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "BLER")
+        super().__init__(name=name or "BLER", *args, **kwargs) # Pass args and kwargs
         self.block_size = block_size
         self.threshold = threshold
         self.reduction = reduction
@@ -87,16 +91,21 @@ class BlockErrorRate(BaseMetric):
             # Simple case: input is [batch_size, sequence_length]
             return x.reshape(batch_size, num_blocks, self.block_size)
 
-    def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
+    def forward(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate Block Error Rate between predictions and targets.
 
         Args:
             preds (Tensor): Predicted values
             targets (Tensor): Target values
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             Tensor: Block Error Rate value
         """
+        # Note: *args and **kwargs are not directly used here
+        # but are included for interface consistency.
+
         if preds.shape != targets.shape:
             raise ValueError(f"Shape mismatch: {preds.shape} vs {targets.shape}")
 
@@ -131,13 +140,18 @@ class BlockErrorRate(BaseMetric):
             # Ensure exact fraction for the test cases
             return torch.tensor(float(num_errors) / float(total_blocks) if total_blocks > 0 else 0.0)
 
-    def update(self, preds: Tensor, targets: Tensor) -> None:
+    def update(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> None:
         """Update the internal state with a batch of samples.
 
         Args:
             preds (Tensor): Predicted values
             targets (Tensor): Target values
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
         """
+        # Note: *args and **kwargs are not directly used here
+        # but are included for interface consistency.
+
         if preds.numel() == 0 or targets.numel() == 0:
             return
 

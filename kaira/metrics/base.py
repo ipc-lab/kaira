@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 import torch
 from torch import nn
@@ -13,39 +13,45 @@ class BaseMetric(nn.Module, ABC):
     communication system. Subclasses should implement the forward method to calculate the metric.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: Optional[str] = None, *args: Any, **kwargs: Any):
         """Initialize the metric.
 
         Args:
             name (Optional[str]): Name of the metric
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
         super().__init__()
         self.name = name or self.__class__.__name__
 
     @abstractmethod
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the metric.
 
         Args:
             x (torch.Tensor): The first input tensor (typically predictions)
             y (torch.Tensor): The second input tensor (typically targets)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             torch.Tensor: The calculated metric value
         """
         pass
 
-    def compute_with_stats(self, x: torch.Tensor, y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def compute_with_stats(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute metric with mean and standard deviation.
 
         Args:
             x (torch.Tensor): The first input tensor (typically predictions)
             y (torch.Tensor): The second input tensor (typically targets)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Mean and standard deviation of the metric
         """
-        values = self.forward(x, y)
+        values = self.forward(x, y, *args, **kwargs)
         return values.mean(), values.std()
 
     def __str__(self) -> str:

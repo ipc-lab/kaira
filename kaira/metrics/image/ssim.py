@@ -15,6 +15,9 @@ from torch import Tensor
 from ..base import BaseMetric
 from ..registry import MetricRegistry
 
+# Need to import inspect
+import inspect
+
 
 @MetricRegistry.register_metric("ssim")
 class StructuralSimilarityIndexMeasure(BaseMetric):
@@ -25,7 +28,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
     to better match human visual perception :cite:`wang2004image` :cite:`brunet2011mathematical`.
     """
 
-    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, reduction: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(self, data_range: float = 1.0, kernel_size: int = 11, sigma: float = 1.5, reduction: Optional[str] = None, *args: Any, **kwargs: Any) -> None:
         """Initialize the SSIM module.
 
         Args:
@@ -34,23 +37,30 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             sigma (float): Standard deviation of the Gaussian kernel
             reduction (Optional[str]): Reduction method. The underlying torchmetrics implementation
                 requires reduction=None, so this parameter controls post-processing reduction.
-            **kwargs: Additional keyword arguments
+            *args: Variable length argument list passed to the base class and torchmetrics.
+            **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="SSIM")
+        super().__init__(name="SSIM", *args, **kwargs) # Pass args and kwargs
         self.reduction = reduction
         # Always use reduction=None in the underlying implementation
-        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **kwargs)
+        # Pass only relevant kwargs to torchmetrics
+        torchmetrics_kwargs = {k: v for k, v in kwargs.items() if k in inspect.signature(torchmetrics.image.StructuralSimilarityIndexMeasure.__init__).parameters}
+        self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **torchmetrics_kwargs)
 
-    def forward(self, preds: Tensor, targets: Tensor) -> Tensor:
+    def forward(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate SSIM between predicted and target images.
 
         Args:
             preds (Tensor): Predicted images
             targets (Tensor): Target images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             Tensor: SSIM values for each sample or reduced according to reduction parameter
         """
+        # Note: *args and **kwargs are not directly used by self.ssim call here
+        # but are included for interface consistency.
         values = self.ssim(preds, targets)
 
         # Apply reduction if specified
@@ -64,17 +74,21 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
                 return values.unsqueeze(0)
             return values
 
-    def compute_with_stats(self, preds: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
+    def compute_with_stats(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
         """Compute SSIM with mean and standard deviation.
 
         Args:
             preds (Tensor): Predicted images
             targets (Tensor): Target images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             Tuple[Tensor, Tensor]: Mean and standard deviation of SSIM values
         """
-        values = self.forward(preds, targets)
+        # Note: *args and **kwargs are not directly used here
+        # but are included for interface consistency.
+        values = self.forward(preds, targets) # Use self.forward to handle reduction
         # Handle single value case to avoid NaN in std calculation
         if values.numel() <= 1:
             return values.mean(), torch.tensor(0.0)
@@ -91,7 +105,7 @@ class MultiScaleSSIM(BaseMetric):
     than single-scale methods :cite:`wang2004image`.
     """
 
-    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: Optional[str] = None, weights: Optional[torch.Tensor] = None, **kwargs: Any) -> None:
+    def __init__(self, kernel_size: int = 11, data_range: float = 1.0, reduction: Optional[str] = None, weights: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> None:
         """Initialize the MultiScaleSSIM module.
 
         Args:
@@ -99,9 +113,10 @@ class MultiScaleSSIM(BaseMetric):
             data_range (float): The range of the input data (typically 1.0 or 255)
             reduction (Optional[str]): Reduction method ('mean', 'sum', or None)
             weights (Optional[torch.Tensor]): Weights for different scales. Default is equal weighting.
-            **kwargs: Additional keyword arguments
+            *args: Variable length argument list passed to the base class.
+            **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name="MS-SSIM")
+        super().__init__(name="MS-SSIM", *args, **kwargs) # Pass args and kwargs
         self.kernel_size = kernel_size
         self.data_range = data_range
         self.reduction = reduction
@@ -110,16 +125,20 @@ class MultiScaleSSIM(BaseMetric):
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("count", torch.tensor(0))
 
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def forward(self, preds: torch.Tensor, targets: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Calculate MS-SSIM between predicted and target images.
 
         Args:
             preds (torch.Tensor): Predicted images
             targets (torch.Tensor): Target images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             torch.Tensor: MS-SSIM values for each sample, or reduced according to reduction parameter
         """
+        # Note: *args and **kwargs are not directly used by ms_ssim call here
+        # but are included for interface consistency.
         values = ms_ssim(
             preds,
             targets,
@@ -137,14 +156,16 @@ class MultiScaleSSIM(BaseMetric):
         else:
             return values.unsqueeze(0) if values.dim() == 0 else values
 
-    def update(self, preds: torch.Tensor, targets: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, targets: torch.Tensor, *args: Any, **kwargs: Any) -> None:
         """Update internal state with batch of samples.
 
         Args:
             preds (torch.Tensor): Predicted images
             targets (torch.Tensor): Target images
+            *args: Variable length argument list passed to forward.
+            **kwargs: Arbitrary keyword arguments passed to forward.
         """
-        values = self.forward(preds, targets)
+        values = self.forward(preds, targets, *args, **kwargs) # Pass args/kwargs
         if values.numel() == 0:
             return  # Avoid updating with empty values
         self.sum_values += values.sum()

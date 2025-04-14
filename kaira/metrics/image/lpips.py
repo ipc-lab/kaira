@@ -14,6 +14,9 @@ from torchmetrics.functional.image.lpips import _lpips_compute, _lpips_update
 from ..base import BaseMetric
 from ..registry import MetricRegistry
 
+# Need to import inspect
+import inspect
+
 
 @MetricRegistry.register_metric("lpips")
 class LearnedPerceptualImagePatchSimilarity(BaseMetric):
@@ -25,46 +28,55 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
     :cite:`zhang2018unreasonable`.
     """
 
-    def __init__(self, net_type: Literal["vgg", "alex", "squeeze"] = "alex", normalize: bool = False, **kwargs: Any) -> None:
+    def __init__(self, net_type: Literal["vgg", "alex", "squeeze"] = "alex", normalize: bool = False, *args: Any, **kwargs: Any) -> None:
         """Initialize the LPIPS module.
 
         Args:
             net_type (str): The backbone network to use ('vgg', 'alex', or 'squeeze')
             normalize (bool): Whether to normalize the input images to [-1,1] range. If True, the input images
                 should be in the range [0,1]. If False, the input images should be in the range [-1,1].
-            **kwargs: Additional keyword arguments
+            *args: Variable length argument list passed to the base class and torchmetrics.
+            **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="LPIPS")
+        super().__init__(name="LPIPS", *args, **kwargs) # Pass args and kwargs
         self.net_type = net_type
         self.normalize = normalize
-        self.lpips = torchmetrics.image.lpip.LearnedPerceptualImagePatchSimilarity(net_type, normalize=normalize, **kwargs)
+        # Pass only relevant kwargs to torchmetrics
+        torchmetrics_kwargs = {k: v for k, v in kwargs.items() if k in inspect.signature(torchmetrics.image.lpip.LearnedPerceptualImagePatchSimilarity.__init__).parameters}
+        self.lpips = torchmetrics.image.lpip.LearnedPerceptualImagePatchSimilarity(net_type, normalize=normalize, **torchmetrics_kwargs)
 
         self.register_buffer("sum_scores", torch.tensor(0.0))
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("total", torch.tensor(0))
 
-    def forward(self, img1: Tensor, img2: Tensor) -> Tensor:
+    def forward(self, img1: Tensor, img2: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate LPIPS between two images.
 
         Args:
             img1 (Tensor): First batch of images
             img2 (Tensor): Second batch of images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
 
         Returns:
             Tensor: LPIPS values for each sample
         """
-
+        # Note: *args and **kwargs are not directly used by self.lpips call here
+        # but are included for interface consistency.
         result = self.lpips(img1, img2)
         return result.unsqueeze(0) if result.dim() == 0 else result
 
-    def update(self, img1: Tensor, img2: Tensor) -> None:
+    def update(self, img1: Tensor, img2: Tensor, *args: Any, **kwargs: Any) -> None:
         """Update the internal state with a batch of samples.
 
         Args:
             img1 (Tensor): First batch of images
             img2 (Tensor): Second batch of images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
         """
-
+        # Note: *args and **kwargs are not directly used by _lpips_update call here
+        # but are included for interface consistency.
         loss, total = _lpips_update(img1, img2, net=self.lpips.net, normalize=self.normalize)
         self.sum_scores += loss.sum()
         self.total += total
