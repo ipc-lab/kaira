@@ -65,7 +65,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
     - Channel-aware design through CSI conditioning
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, *args: Any, **kwargs: Any) -> None:
         """Initialize the DeepJSCC-WZ-sm encoder.
 
         Args:
@@ -73,8 +73,10 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of output channels in the final latent representation.
                      Determines the compression rate and bandwidth usage.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_a = nn.ModuleList(
             [
@@ -101,8 +103,8 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -112,9 +114,11 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
         for layer in self.g_a:
             if isinstance(layer, AFModule):
-                x = layer((x, csi_transmitter))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi_transmitter), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
         return x
 
 
@@ -142,7 +146,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     - Residual connections for improved gradient flow
     """
 
-    def __init__(self, N: int, M: int, encoder: BaseModel) -> None:
+    def __init__(self, N: int, M: int, encoder: BaseModel, *args: Any, **kwargs: Any) -> None:
         """Initialize the DeepJSCC-WZ-sm decoder.
 
         Args:
@@ -153,8 +157,10 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
             encoder (BaseModel): Reference to the encoder model for feature sharing.
                                 This enables the decoder to process side information
                                 using the same parameters as the main encoder.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_s = nn.ModuleList(
             [
@@ -189,8 +195,8 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
@@ -203,9 +209,11 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
                 xs_list.append(x_side)
 
             if isinstance(layer, AFModule):
-                x_side = layer((x_side, csi_sideinfo))
+                # Pass *args, **kwargs to AFModule
+                x_side = layer((x_side, csi_sideinfo), *args, **kwargs)
             else:
-                x_side = layer(x_side)
+                # Pass *args, **kwargs to other layers
+                x_side = layer(x_side, *args, **kwargs)
 
         xs_list.append(x_side)
 
@@ -215,9 +223,11 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                x = layer((x, csi))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
 
         return x
 
@@ -242,7 +252,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
     - Progressive compression: 3×H×W → M×(H/16)×(W/16)
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, *args: Any, **kwargs: Any) -> None:
         """Initialize the full-size DeepJSCC-WZ encoder.
 
         Args:
@@ -250,8 +260,10 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of output channels in the final latent representation.
                      Determines the compression rate and bandwidth usage.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_a = nn.ModuleList(
             [
@@ -296,8 +308,8 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
                                 Contains SNR or other channel quality indicators.
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -308,9 +320,11 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
         for layer in self.g_a:
             if isinstance(layer, AFModule):
-                x = layer((x, csi_transmitter))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi_transmitter), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
 
         return x
 
@@ -335,7 +349,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
     - Sophisticated feature reconstruction with residual connections
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, *args: Any, **kwargs: Any) -> None:
         """Initialize the full-size DeepJSCC-WZ decoder.
 
         Args:
@@ -343,8 +357,10 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of input channels from the encoded representation.
                      Matches the encoder's output channel count.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_s = nn.ModuleList(
             [
@@ -396,8 +412,8 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
@@ -414,9 +430,11 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                 xs_list.append(xs)  # Save feature before downsampling
 
             if isinstance(layer, AFModule):
-                xs = layer((xs, csi_sideinfo))
+                # Pass *args, **kwargs to AFModule
+                xs = layer((xs, csi_sideinfo), *args, **kwargs)
             else:
-                xs = layer(xs)  # Apply the layer
+                # Pass *args, **kwargs to other layers
+                xs = layer(xs, *args, **kwargs)  # Apply the layer
 
         # Add the final feature map
         xs_list.append(xs)
@@ -429,9 +447,11 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                x = layer((x, csi))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
 
         return x
 
@@ -460,7 +480,7 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
     - Channel-adaptive processing with AFModule
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, *args: Any, **kwargs: Any) -> None:
         """Initialize the conditional DeepJSCC-WZ encoder.
 
         Args:
@@ -468,8 +488,10 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of output channels in the final latent representation.
                      Determines the compression rate and bandwidth usage.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_a = nn.ModuleList(
             [
@@ -537,8 +559,8 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
             x (torch.Tensor): Input image tensor of shape [B, 3, H, W].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] used during encoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -553,13 +575,15 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
                 x = torch.cat([x, xs_encoder], dim=1)
 
             if isinstance(layer, AFModule):
-                x = layer((x, csi_transmitter))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi_transmitter), *args, **kwargs)
                 if layer_s is not None:
-                    xs_encoder = layer_s((xs_encoder, csi_transmitter))
+                    xs_encoder = layer_s((xs_encoder, csi_transmitter), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
                 if layer_s is not None:
-                    xs_encoder = layer_s(xs_encoder)
+                    xs_encoder = layer_s(xs_encoder, *args, **kwargs)
 
         return x
 
@@ -586,7 +610,7 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
     - Optimized for conditionally encoded representations
     """
 
-    def __init__(self, N: int, M: int) -> None:
+    def __init__(self, N: int, M: int, *args: Any, **kwargs: Any) -> None:
         """Initialize the conditional DeepJSCC-WZ decoder.
 
         Args:
@@ -594,8 +618,10 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of input channels from the encoded representation.
                      Matches the encoder's output channel count.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.g_s = nn.ModuleList(
             [
@@ -649,8 +675,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Reconstructed image tensor of shape [B, 3, H, W].
@@ -667,9 +693,11 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 xs_list.append(xs)  # Save feature before downsampling
 
             if isinstance(layer, AFModule):
-                xs = layer((xs, csi_sideinfo))
+                # Pass *args, **kwargs to AFModule
+                xs = layer((xs, csi_sideinfo), *args, **kwargs)
             else:
-                xs = layer(xs)  # Apply the layer
+                # Pass *args, **kwargs to other layers
+                xs = layer(xs, *args, **kwargs)  # Apply the layer
 
         # Add the final feature map
         xs_list.append(xs)
@@ -682,9 +710,11 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                x = layer((x, csi))
+                # Pass *args, **kwargs to AFModule
+                x = layer((x, csi), *args, **kwargs)
             else:
-                x = layer(x)
+                # Pass *args, **kwargs to other layers
+                x = layer(x, *args, **kwargs)
 
         return x
 
@@ -732,6 +762,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         channel: BaseChannel,
         decoder: BaseModel,
         constraint: BaseConstraint,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the Yilmaz2024DeepJSCCWZ model.
 
@@ -745,6 +777,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             constraint: Power normalization constraint that ensures transmitted signals maintain
                        appropriate power levels. This is crucial for fair comparisons across
                        different models and transmission scenarios.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
         # Ensure constraint is not None as it's required
         if constraint is None:
@@ -757,10 +791,11 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             channel=channel,
             decoder=decoder,
             constraint=constraint,
-            # No correlation model since side info must always be provided
             correlation_model=None,
             quantizer=None,
             syndrome_generator=None,
+            *args, # Pass args
+            **kwargs # Pass kwargs
         )
 
         # Explicitly set constraint to ensure it's properly initialized
@@ -790,8 +825,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             side_info: Correlated side information available at the decoder, shape [B, C, H, W].
                       This could be a previous frame in a video, a low-resolution version,
                       or other correlated information that helps in reconstruction.
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments including:
+            *args: Additional positional arguments passed to internal components.
+            **kwargs: Additional keyword arguments passed to internal components, including:
                 csi: Channel state information tensor of shape [B, 1, 1, 1].
                      Contains the signal-to-noise ratio (SNR) or other channel quality indicators
                      that allow the model to adapt to current channel conditions.
@@ -823,12 +858,12 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Create result dictionary
         result = {}
 
-        # Source encoding - conditional models use side info during encoding
+        # Source encoding - pass *args, **kwargs
         if self.is_conditional:
-            encoded = self.encoder(source, side_info, csi)
+            encoded = self.encoder(source, side_info, csi, *args, **kwargs)
         else:
             # For non-conditional models, don't pass the side_info parameter
-            encoded = self.encoder(source, csi)
+            encoded = self.encoder(source, csi, *args, **kwargs)
 
         result["encoded"] = encoded
         result["quantized"] = encoded  # No explicit quantization in DeepJSCC-WZ
@@ -836,20 +871,20 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Apply mandatory power/rate constraint - add safety check
         if self.constraint is None:
             raise RuntimeError("Constraint is unexpectedly None. This should not happen if __init__ validation is working.")
-        constrained = self.constraint(encoded)
+        constrained = self.constraint(encoded, *args, **kwargs)
 
         result["constrained"] = constrained
         result["syndromes"] = constrained  # No explicit syndrome generation in DeepJSCC-WZ
 
-        # Transmit through channel
-        received = self.channel(constrained)
+        # Transmit through channel - pass *args, **kwargs
+        received = self.channel(constrained, *args, **kwargs)
         result["received"] = received
 
         # Record side information
         result["side_info"] = side_info
 
-        # Decode using received representation and side information
-        decoded = self.decoder(received, side_info, csi)
+        # Decode using received representation and side information - pass *args, **kwargs
+        decoded = self.decoder(received, side_info, csi, *args, **kwargs)
         result["decoded"] = decoded
 
         return result

@@ -28,7 +28,7 @@ class BPGCompressor(BaseModel):
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
     """
 
-    def __init__(self, max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, bpg_encoder_path: str = "bpgenc", bpg_decoder_path: str = "bpgdec", n_jobs: Optional[int] = None, collect_stats: bool = False, return_bits: bool = True, return_compressed_data: bool = False):
+    def __init__(self, max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, bpg_encoder_path: str = "bpgenc", bpg_decoder_path: str = "bpgdec", n_jobs: Optional[int] = None, collect_stats: bool = False, return_bits: bool = True, return_compressed_data: bool = False, *args: Any, **kwargs: Any):
         """Initialize the BPG Compressor.
 
         Args:
@@ -43,8 +43,10 @@ class BPGCompressor(BaseModel):
             collect_stats: Whether to collect and return compression statistics
             return_bits: Whether to return bits per image in forward pass
             return_compressed_data: Whether to return the compressed binary data
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs) # Pass args and kwargs to base
 
         # At least one of the two parameters must be provided
         if max_bits_per_image is None and quality is None:
@@ -111,7 +113,7 @@ class BPGCompressor(BaseModel):
 
         return subprocess.run(cmd_args, **kwargs)  # nosec
 
-    def forward(self, x, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
         """Process a batch of images through BPG compression.
 
         The compression method depends on initialization parameters:
@@ -120,8 +122,8 @@ class BPGCompressor(BaseModel):
 
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal methods).
+            **kwargs: Additional keyword arguments (passed to internal methods).
 
         Returns:
             If no additional returns: Just the reconstructed image tensor
@@ -138,7 +140,7 @@ class BPGCompressor(BaseModel):
         collect_info = self.return_bits or self.collect_stats or self.return_compressed_data
 
         # Process images in parallel
-        results = Parallel(n_jobs=self.n_jobs)(delayed(self.parallel_forward_bpg)(i, x[i], collect_info) for i in range(x.shape[0]))
+        results = Parallel(n_jobs=self.n_jobs)(delayed(self.parallel_forward_bpg)(i, x[i], collect_info, *args, **kwargs) for i in range(x.shape[0]))
 
         # Unpack results
         images = []
@@ -183,22 +185,26 @@ class BPGCompressor(BaseModel):
         else:
             return x_hat
 
-    def parallel_forward_bpg(self, idx, img, return_info=False):
+    def parallel_forward_bpg(self, idx: int, img: torch.Tensor, return_info: bool = False, *args: Any, **kwargs: Any):
         """Process a single image with BPG compression.
 
         Args:
             idx: Image index
             img: Image tensor of shape [channels, height, width]
             return_info: Whether to return compression information
+            *args: Additional positional arguments (passed to compression methods).
+            **kwargs: Additional keyword arguments (passed to compression methods).
 
         Returns:
             If return_info=False: Processed image tensor
             If return_info=True: Tuple of (tensor, info_dict)
         """
         if self.quality is not None:
-            result = self.compress_with_quality(idx, img, self.quality, return_info)
+            # Pass *args, **kwargs
+            result = self.compress_with_quality(idx, img, self.quality, return_info, *args, **kwargs)
         else:
-            result = self.compress_with_target_size(idx, img, self.max_bits_per_image, return_info)
+            # Pass *args, **kwargs
+            result = self.compress_with_target_size(idx, img, self.max_bits_per_image, return_info, *args, **kwargs)
 
         return result
 
@@ -211,7 +217,7 @@ class BPGCompressor(BaseModel):
 
         return paths
 
-    def compress_with_quality(self, idx, x, quality, return_info=False):
+    def compress_with_quality(self, idx: int, x: torch.Tensor, quality: int, return_info: bool = False, *args: Any, **kwargs: Any):
         """Compress image with a specific quality level.
 
         Args:
@@ -219,6 +225,8 @@ class BPGCompressor(BaseModel):
             x: Image tensor
             quality: BPG quality level (0-51)
             return_info: Whether to return compression information
+            *args: Additional positional arguments (unused in this method).
+            **kwargs: Additional keyword arguments (unused in this method).
 
         Returns:
             If return_info=False: Compressed-decompressed image tensor
@@ -277,7 +285,7 @@ class BPGCompressor(BaseModel):
 
         return result
 
-    def compress_with_target_size(self, idx, x, target_bits, return_info=False):
+    def compress_with_target_size(self, idx: int, x: torch.Tensor, target_bits: Optional[int], return_info: bool = False, *args: Any, **kwargs: Any):
         """Find highest quality that produces file size below target_bits using binary search.
 
         Args:
@@ -285,6 +293,8 @@ class BPGCompressor(BaseModel):
             x: Image tensor
             target_bits: Maximum bits for the compressed image
             return_info: Whether to return compression information
+            *args: Additional positional arguments (unused in this method).
+            **kwargs: Additional keyword arguments (unused in this method).
 
         Returns:
             If return_info=False: Compressed-decompressed image tensor
@@ -405,7 +415,7 @@ class BPGCompressor(BaseModel):
         return self.stats
 
     # Update method signature to align with class variable
-    def get_bits_per_image(self, x):
+    def get_bits_per_image(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> List[int]:
         """Compress images and return only the bit counts per image.
 
         The compression method depends on whether quality or max_bits_per_image was provided
@@ -413,6 +423,8 @@ class BPGCompressor(BaseModel):
 
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
+            *args: Additional positional arguments passed to forward.
+            **kwargs: Additional keyword arguments passed to forward.
 
         Returns:
             List[int]: Number of bits used for each compressed image
@@ -422,7 +434,15 @@ class BPGCompressor(BaseModel):
         self.return_bits = True
 
         try:
-            _, bits_per_image = self.forward(x)
+            # Pass *args, **kwargs to forward
+            forward_output = self.forward(x, *args, **kwargs)
+            # Ensure forward returned the expected tuple when return_bits is True
+            if isinstance(forward_output, tuple) and len(forward_output) >= 2:
+                bits_per_image = forward_output[1]
+                if not isinstance(bits_per_image, list):
+                     raise TypeError(f"Expected list of bits, but got {type(bits_per_image)}")
+            else:
+                raise TypeError(f"Forward method did not return expected tuple (tensor, bits), got {type(forward_output)}")
         finally:
             # Restore original setting
             self.return_bits = original_return_bits

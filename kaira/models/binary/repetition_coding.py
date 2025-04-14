@@ -10,7 +10,7 @@ but modest rate requirements.
 """
 
 import torch
-from torch import nn
+from typing import Any
 
 from kaira.models.registry import ModelRegistry
 from ..base import BaseModel
@@ -31,23 +31,27 @@ class RepetitionEncoder(BaseModel):
         repetition_factor: Number of times to repeat each bit
     """
     
-    def __init__(self, repetition_factor: int = 3):
+    def __init__(self, repetition_factor: int = 3, *args: Any, **kwargs: Any):
         """Initialize the repetition encoder.
-        
+
         Args:
             repetition_factor: Number of times to repeat each bit. Must be a positive integer.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         if repetition_factor < 1:
             raise ValueError("Repetition factor must be a positive integer")
         self.repetition_factor = repetition_factor
     
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input tensor using repetition coding.
-        
+
         Args:
             x: Input binary tensor of shape (batch_size, message_length)
-            
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
+
         Returns:
             Encoded tensor of shape (batch_size, message_length * repetition_factor)
         """
@@ -75,27 +79,31 @@ class MajorityVoteDecoder(BaseModel):
         repetition_factor: Number of times each bit was repeated in the encoding process
     """
     
-    def __init__(self, repetition_factor: int = 3):
+    def __init__(self, repetition_factor: int = 3, *args: Any, **kwargs: Any):
         """Initialize the majority vote decoder.
-        
+
         Args:
             repetition_factor: Number of times each bit was repeated. Must be a positive integer.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         if repetition_factor < 1:
             raise ValueError("Repetition factor must be a positive integer")
         if repetition_factor % 2 == 0:
             raise ValueError("Repetition factor should be odd for unambiguous majority voting")
         self.repetition_factor = repetition_factor
     
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decode the input tensor using majority voting.
-        
+
         Args:
             x: Input tensor of shape (batch_size, encoded_length), where encoded_length = 
                original_message_length * repetition_factor. Values can be binary (0, 1) for 
                hard decoding or probabilities/LLRs for soft decoding.
-            
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
+
         Returns:
             Decoded binary tensor of shape (batch_size, encoded_length // repetition_factor)
         """

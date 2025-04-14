@@ -46,6 +46,8 @@ class ChannelCodeModel(SequentialModel):
         channel: BaseChannel,
         demodulator: BaseDemodulator,
         decoder: BaseModel,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the Channel Code model.
 
@@ -56,8 +58,10 @@ class ChannelCodeModel(SequentialModel):
             channel (BaseChannel): Module simulating the communication channel
             demodulator (BaseDemodulator): Module for demodulating the received signal
             decoder (BaseModel): Channel code decoder for decoding the demodulated channel output
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(steps=[encoder, modulator, constraint, channel, demodulator, decoder])
+        super().__init__(steps=[encoder, modulator, constraint, channel, demodulator, decoder], *args, **kwargs)
         self.encoder = encoder
         self.modulator = modulator
         self.constraint = constraint
@@ -96,27 +100,30 @@ class ChannelCodeModel(SequentialModel):
         encoded = (encoded > 0).float()
 
         # Modulation of the encoded data
-        modulated = self.modulator(encoded)
+        modulated = self.modulator(encoded, *args, **kwargs)
 
         # Apply power constraint
-        constrained = self.constraint(modulated)
+        constrained = self.constraint(modulated, *args, **kwargs)
 
         # Transmit through the channel
-        received = self.channel(constrained)
+        received = self.channel(constrained, *args, **kwargs)
 
-        # Demodulate and decode the received signal
-        decoded = self.decoder(self.demodulator(received), *args, **kwargs)
+        # Demodulate the received signal
+        demodulated = self.demodulator(received, *args, **kwargs)
+
+        # Decode the demodulated signal
+        decoded = self.decoder(demodulated, *args, **kwargs)
 
         # Store results
         history.append(
             {
                 "encoded": encoded,
                 "received": received,
-                "decoded": decoded,
+                "decoded": decoded
             }
         )
 
         return {
-            "final_output": decoded,
+            "final_output": decoded, # Return only the decoded tensor
             "history": history,
         }

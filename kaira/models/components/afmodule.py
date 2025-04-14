@@ -20,14 +20,16 @@ class AFModule(BaseModel):
     performance degradation.
     """
 
-    def __init__(self, N, csi_length):
+    def __init__(self, N, csi_length, *args: Any, **kwargs: Any):
         """Initialize the AFModule.
 
         Args:
             N (int): The number of input and output features.
             csi_length (int): The length of the channel state information.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.c_in = N
 
@@ -43,8 +45,9 @@ class AFModule(BaseModel):
 
         Args:
             x (torch.Tensor or Tuple[torch.Tensor, torch.Tensor]): The input tensor or tuple of (tensor, side_info).
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            *args: Additional positional arguments. The first positional argument is expected
+                   to be the side_info if x is not a tuple.
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: The output tensor after passing through the linear layer,

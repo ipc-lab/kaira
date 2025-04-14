@@ -1,6 +1,6 @@
 """CNN-based encoder and decoder components for deep communications."""
 
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -28,6 +28,8 @@ class ConvEncoder(BaseModel):
         stride: int = 2,
         padding: int = 1,
         activation: nn.Module = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the ConvEncoder.
 
@@ -41,8 +43,10 @@ class ConvEncoder(BaseModel):
             padding (int, optional): Padding for convolutions. Default is 1.
             activation (nn.Module, optional): Activation function to use.
                 If None, ReLU is used.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         if hidden_dims is None:
             hidden_dims = [16, 32, 64]
@@ -101,11 +105,13 @@ class ConvEncoder(BaseModel):
         self._feature_size = dummy_output.numel()
         return self._feature_size
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the ConvEncoder.
 
         Args:
             x (torch.Tensor): Input image tensor of shape (batch_size, in_channels, height, width).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, out_features).
@@ -145,6 +151,8 @@ class ConvDecoder(BaseModel):
         output_padding: int = 1,
         activation: nn.Module = None,
         output_activation: Optional[nn.Module] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the ConvDecoder.
 
@@ -162,8 +170,10 @@ class ConvDecoder(BaseModel):
                 If None, ReLU is used.
             output_activation (nn.Module, optional): Activation function to use at the output.
                 If None, Sigmoid is used to output values in [0, 1] range.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         if hidden_dims is None:
             hidden_dims = [64, 32, 16]  # Decoder usually goes from smaller to larger
@@ -227,11 +237,13 @@ class ConvDecoder(BaseModel):
             
         self.conv_layers = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the ConvDecoder.
 
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, in_features).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: Output image tensor of shape (batch_size, out_channels, height, width).

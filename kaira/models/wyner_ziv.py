@@ -71,6 +71,8 @@ class WynerZivModel(BaseModel):
         quantizer: Optional[nn.Module] = None,
         syndrome_generator: Optional[nn.Module] = None,
         constraint: Optional[BaseConstraint] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the Wyner-Ziv model.
 
@@ -92,8 +94,10 @@ class WynerZivModel(BaseModel):
                 Optional for subclasses that don't use explicit syndromes.
             constraint: Optional constraint (e.g., power, rate) applied to the
                 transmitted syndromes
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.encoder = encoder
         self.channel = channel
         self.decoder = decoder
@@ -141,8 +145,8 @@ class WynerZivModel(BaseModel):
                 If None, side information is generated using the correlation_model,
                 simulating a real-world scenario where side info is independently
                 available at the decoder
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments passed to encoder, quantizer, syndrome_generator, channel, and decoder.
+            **kwargs: Additional keyword arguments passed to encoder, quantizer, syndrome_generator, channel, and decoder.
 
         Returns:
             Dictionary containing intermediate and final outputs of the model:
@@ -160,13 +164,13 @@ class WynerZivModel(BaseModel):
 
         # Quantization (if available)
         if self.quantizer is not None:
-            result["quantized"] = self.quantizer(encoded)
+            result["quantized"] = self.quantizer(encoded, *args, **kwargs)
         else:
             result["quantized"] = encoded
 
         # Generate syndromes for error correction (if available)
         if self.syndrome_generator is not None:
-            result["syndromes"] = self.syndrome_generator(result["quantized"])
+            result["syndromes"] = self.syndrome_generator(result["quantized"], *args, **kwargs)
         else:
             result["syndromes"] = result["quantized"]
 
@@ -177,7 +181,7 @@ class WynerZivModel(BaseModel):
             result["constrained"] = result["syndromes"]
 
         # Transmit syndromes through channel
-        result["received"] = self.channel(result["constrained"])
+        result["received"] = self.channel(result["constrained"], *args, **kwargs)
 
         # Validate/generate side information if needed
         result["side_info"] = self.validate_side_info(source, side_info)

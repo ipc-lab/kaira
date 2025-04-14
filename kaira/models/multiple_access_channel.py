@@ -43,6 +43,7 @@ class MultipleAccessChannelModel(BaseModel):
         channel: BaseChannel,
         power_constraint: BaseConstraint,
         num_devices: Optional[int] = None, # num_devices might be redundant if encoders list is given
+        *args: Any,
         **kwargs: Any,
     ):
         """Initialize the MultipleAccessChannelModel.
@@ -55,9 +56,10 @@ class MultipleAccessChannelModel(BaseModel):
             power_constraint (BaseConstraint): The power constraint instance.
             num_devices (Optional[int]): The number of users/devices. If None, it's inferred
                 from the length of the encoders list.
-            **kwargs: Additional keyword arguments (currently unused but kept for flexibility).
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         if not isinstance(encoders, nn.ModuleList):
             self.encoders = nn.ModuleList(encoders)
@@ -89,10 +91,8 @@ class MultipleAccessChannelModel(BaseModel):
         Args:
             x (List[torch.Tensor]): A list of input tensors, one for each user.
                 Each tensor should have shape (batch_size, message_dim).
-            *args: Additional positional arguments passed potentially to channel.
-                   These are currently NOT passed to the decoder.
-            **kwargs: Additional keyword arguments, commonly including 'snr' for the channel.
-                      Only channel-specific kwargs are used.
+            *args: Additional positional arguments passed to encoders, channel, and decoder.
+            **kwargs: Additional keyword arguments passed to encoders, channel, and decoder.
 
         Returns:
             torch.Tensor: The output tensor from the joint decoder, typically containing
@@ -102,8 +102,8 @@ class MultipleAccessChannelModel(BaseModel):
         if len(x) != self.num_users:
             raise ValueError(f"Number of input tensors ({len(x)}) must match the number of users ({self.num_users}).")
 
-        # 1. Encode messages for each user
-        encoded_signals = [encoder(user_input) for encoder, user_input in zip(self.encoders, x)]
+        # 1. Encode messages for each user, passing *args and **kwargs
+        encoded_signals = [encoder(user_input, *args, **kwargs) for encoder, user_input in zip(self.encoders, x)]
 
         # 2. Combine encoded signals (summing them simulates superposition on the channel)
         combined_signal = torch.sum(torch.stack(encoded_signals), dim=0)
@@ -112,16 +112,11 @@ class MultipleAccessChannelModel(BaseModel):
         constrained_signal = self.power_constraint(combined_signal)
 
         # 4. Pass the combined signal through the channel
-        # Pass relevant kwargs (like snr) to the channel
-        # Note: *args are also passed here, assuming they are for the channel
-        channel_kwargs = {k: v for k, v in kwargs.items() if k in self.channel.forward.__code__.co_varnames}
-        received_signal = self.channel(constrained_signal, *args, **channel_kwargs)
+        # Pass *args and **kwargs to the channel
+        received_signal = self.channel(constrained_signal, *args, **kwargs)
 
-        # 5. Decode the received signal using the single joint decoder
-        # Only pass the received signal, as MLPDecoder.forward expects only 'x'.
-        # If a different decoder type were used that accepts *args or **kwargs,
-        # this line would need adjustment.
-        reconstructed_messages = self.decoder(received_signal)
+        # 5. Decode the received signal using the single joint decoder, passing *args and **kwargs
+        reconstructed_messages = self.decoder(received_signal, *args, **kwargs)
 
         # The joint decoder should output the concatenated messages
         return reconstructed_messages

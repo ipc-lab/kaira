@@ -3,6 +3,15 @@
 This module provides models specifically designed for image data transmission.
 """
 
+from .bourtsoulatze2019_deepjscc import (
+    Bourtsoulatze2019DeepJSCCDecoder,
+    Bourtsoulatze2019DeepJSCCEncoder,
+)
+from .kurka2020_deepjscc_feedback import (
+    DeepJSCCFeedbackDecoder,
+    DeepJSCCFeedbackEncoder,
+    DeepJSCCFeedbackModel,
+)
 from .tung2022_deepjscc_q import (
     Tung2022DeepJSCCQ2Decoder,
     Tung2022DeepJSCCQ2Encoder,
@@ -25,6 +34,11 @@ from .yilmaz2024_deepjscc_wz import (
 )
 
 __all__ = [
+    "Bourtsoulatze2019DeepJSCCEncoder",
+    "Bourtsoulatze2019DeepJSCCDecoder",
+    "DeepJSCCFeedbackEncoder",
+    "DeepJSCCFeedbackDecoder",
+    "DeepJSCCFeedbackModel",
     "Tung2022DeepJSCCQEncoder",
     "Tung2022DeepJSCCQDecoder",
     "Tung2022DeepJSCCQ2Encoder",

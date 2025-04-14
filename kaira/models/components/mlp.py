@@ -1,6 +1,6 @@
 """MLP-based encoder and decoder components for communication systems."""
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import torch
 import torch.nn as nn
@@ -25,6 +25,8 @@ class MLPEncoder(BaseModel):
         hidden_dims: List[int] = None,
         activation: nn.Module = None,
         output_activation: Optional[nn.Module] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the MLPEncoder.
 
@@ -37,8 +39,10 @@ class MLPEncoder(BaseModel):
                 If None, ReLU is used.
             output_activation (nn.Module, optional): Activation function to use at the output.
                 If None, no activation is applied to the output.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         if hidden_dims is None:
             hidden_dims = [(in_features + out_features) // 2]
@@ -63,11 +67,13 @@ class MLPEncoder(BaseModel):
 
         self.model = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the MLPEncoder.
 
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, in_features).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, out_features).
@@ -91,6 +97,8 @@ class MLPDecoder(BaseModel):
         hidden_dims: List[int] = None,
         activation: nn.Module = None,
         output_activation: Optional[nn.Module] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the MLPDecoder.
 
@@ -103,8 +111,10 @@ class MLPDecoder(BaseModel):
                 If None, ReLU is used.
             output_activation (nn.Module, optional): Activation function to use at the output.
                 If None, no activation is applied to the output.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         if hidden_dims is None:
             hidden_dims = [(in_features + out_features) // 2]
@@ -129,11 +139,13 @@ class MLPDecoder(BaseModel):
 
         self.model = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass of the MLPDecoder.
 
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, in_features).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, out_features).

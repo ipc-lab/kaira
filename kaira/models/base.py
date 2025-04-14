@@ -22,8 +22,13 @@ class BaseModel(nn.Module, ABC):
     in architecture design. It enforces proper initialization and forward pass implementation.
     """
 
-    def __init__(self):
-        """Initialize the model with an empty steps list."""
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize the model.
+
+        Args:
+            *args: Variable positional arguments.
+            **kwargs: Variable keyword arguments.
+        """
         super().__init__()
         self.steps = []
 
@@ -88,7 +93,7 @@ class ConfigurableModel(BaseModel):
         """Process input through all steps sequentially.
 
         Args:
-            x (Any): The input to process
+            input_data (Any): The input to process
             *args (Any): Positional arguments passed to each step
             **kwargs (Any): Additional keyword arguments passed to each step
 

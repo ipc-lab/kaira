@@ -34,6 +34,8 @@ class NeuralCompressor(BaseModel):
         return_compressed_data: bool = False,
         device: Optional[Union[str, torch.device]] = None,
         early_stopping_threshold: Optional[float] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the neural compressor.
 
@@ -49,8 +51,10 @@ class NeuralCompressor(BaseModel):
             device: Device to load models on (e.g., "cuda", "cpu")
             early_stopping_threshold: Bit threshold below which to stop quality search
                                      (e.g., 0.95 means stop if within 5% of bit budget)
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         # At least one of the two parameters must be provided
         if max_bits_per_image is None and quality is None:
@@ -134,19 +138,19 @@ class NeuralCompressor(BaseModel):
 
         return all_num_bits
 
-    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, List[Dict]]]:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, List[Any]], Tuple[torch.Tensor, torch.Tensor, List[Any]]]:
         """Forward pass of the neural compressor.
 
         Args:
             x: Input image tensor
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (unused in this method).
+            **kwargs: Additional keyword arguments (unused in this method).
 
         Returns:
             If no additional returns: Just the reconstructed image
-            If return_bits=True: Tuple of (reconstructed image, bits per image)
-            If return_compressed_data=True: Tuple of (reconstructed image, compressed data)
-            If both are True: Tuple of (reconstructed image, bits per image, compressed data)
+            If return_bits=True: Tuple of (reconstructed image, bits per image tensor)
+            If return_compressed_data=True: Tuple of (reconstructed image, compressed data list)
+            If both are True: Tuple of (reconstructed image, bits per image tensor, compressed data list)
         """
         start_time = time.time()
 
@@ -191,11 +195,11 @@ class NeuralCompressor(BaseModel):
 
             # Determine what to return based on flags
             if self.return_bits and self.return_compressed_data:
-                return reconstructed, bits, compressed_data
+                return reconstructed, bits, compressed_data if compressed_data is not None else []
             elif self.return_bits:
                 return reconstructed, bits
             elif self.return_compressed_data:
-                return reconstructed, compressed_data
+                return reconstructed, compressed_data if compressed_data is not None else []
             else:
                 return reconstructed
 
@@ -312,11 +316,13 @@ class NeuralCompressor(BaseModel):
 
         # Determine what to return based on flags
         if self.return_bits and self.return_compressed_data:
-            return x_hat, output_bits, optimal_compressed_data
+            # Ensure optimal_compressed_data is a list when returning it
+            return x_hat, output_bits, optimal_compressed_data if optimal_compressed_data is not None else []
         elif self.return_bits:
             return x_hat, output_bits
         elif self.return_compressed_data:
-            return x_hat, optimal_compressed_data
+             # Ensure optimal_compressed_data is a list when returning it
+            return x_hat, optimal_compressed_data if optimal_compressed_data is not None else []
         else:
             return x_hat
 
@@ -327,24 +333,51 @@ class NeuralCompressor(BaseModel):
             return {}
         return self.stats
 
-    def get_bits_per_image(self, x):
+    def get_bits_per_image(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Compress images and return only the bit counts per image.
 
         Args:
             x: Tensor of shape [batch_size, channels, height, width]
+            *args: Additional positional arguments passed to forward.
+            **kwargs: Additional keyword arguments passed to forward.
 
         Returns:
             Tensor: Number of bits used for each compressed image
         """
-        # Temporarily override return_bits setting
+        # Temporarily override return settings
         original_return_bits = self.return_bits
+        original_return_compressed = self.return_compressed_data
         self.return_bits = True
+        self.return_compressed_data = False # Ensure only bits are requested from forward
 
         try:
-            _, bits_per_image = self.forward(x)
+            # Pass *args, **kwargs to forward
+            forward_output = self.forward(x, *args, **kwargs)
+            # Ensure forward returned the expected tuple when return_bits is True
+            if isinstance(forward_output, tuple) and len(forward_output) >= 2:
+                bits_per_image = forward_output[1]
+                if not isinstance(bits_per_image, torch.Tensor):
+                     raise TypeError(f"Expected tensor of bits, but got {type(bits_per_image)}")
+            else:
+                # Handle case where forward might just return the tensor if return_bits was originally False
+                # This shouldn't happen with the temporary override, but good to be safe.
+                if isinstance(forward_output, torch.Tensor) and not original_return_bits:
+                     # Re-run forward correctly requesting bits if the first attempt failed due to original settings
+                     self.return_bits = True
+                     forward_output = self.forward(x, *args, **kwargs)
+                     if isinstance(forward_output, tuple) and len(forward_output) >= 2:
+                         bits_per_image = forward_output[1]
+                         if not isinstance(bits_per_image, torch.Tensor):
+                             raise TypeError(f"Expected tensor of bits on second attempt, but got {type(bits_per_image)}")
+                     else:
+                         raise TypeError(f"Forward method did not return expected tuple (tensor, bits) on second attempt, got {type(forward_output)}")
+                else:
+                    raise TypeError(f"Forward method did not return expected tuple (tensor, bits), got {type(forward_output)}")
+
         finally:
-            # Restore original setting
+            # Restore original settings
             self.return_bits = original_return_bits
+            self.return_compressed_data = original_return_compressed
 
         return bits_per_image
 

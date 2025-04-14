@@ -7,13 +7,13 @@ layers for iterative image quality improvement.
 """
 
 
-from typing import Any
+from typing import Any, Optional
 
 import torch
 import torch.nn as nn
 from compressai.layers import GDN
 
-from kaira.channels import AWGNChannel, IdentityChannel
+from kaira.channels import AWGNChannel, IdentityChannel, BaseChannel
 from kaira.models.base import BaseModel
 from kaira.models.feedback_channel import FeedbackChannelModel
 from kaira.models.registry import ModelRegistry
@@ -33,8 +33,15 @@ class DeepJSCCFeedbackEncoder(BaseModel):
             determines the channel bandwidth usage.
     """
 
-    def __init__(self, conv_depth):
-        super().__init__()
+    def __init__(self, conv_depth: int, *args: Any, **kwargs: Any):
+        """Initialize the DeepJSCCFeedbackEncoder.
+
+        Args:
+            conv_depth (int): Depth of the output convolutional features.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         num_filters = 256
 
         # Sequential layer implementation
@@ -66,14 +73,20 @@ class DeepJSCCFeedbackEncoder(BaseModel):
 
         Args:
             x (torch.Tensor): Input image tensor of shape [B, C, H, W].
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Encoded representation ready for channel transmission.
         """
         for layer in self.layers:
-            x = layer(x)
+            # Pass *args, **kwargs to each layer if they accept them
+            # Assuming standard nn.Module layers might not use them directly
+            # but custom layers might.
+            try:
+                x = layer(x, *args, **kwargs)
+            except TypeError:
+                x = layer(x)
         return x
 
 
@@ -89,8 +102,15 @@ class DeepJSCCFeedbackDecoder(BaseModel):
         n_channels (int): Number of channels in the output image (typically 3 for RGB).
     """
 
-    def __init__(self, n_channels):
-        super().__init__()
+    def __init__(self, n_channels: int, *args: Any, **kwargs: Any):
+        """Initialize the DeepJSCCFeedbackDecoder.
+
+        Args:
+            n_channels (int): Number of channels in the output image.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         num_filters = 256
 
         # Sequential layer implementation
@@ -123,14 +143,18 @@ class DeepJSCCFeedbackDecoder(BaseModel):
 
         Args:
             x (torch.Tensor): Channel output tensor to be decoded.
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Reconstructed image in range [0, 1].
         """
         for layer in self.layers:
-            x = layer(x)
+            # Pass *args, **kwargs to each layer
+            try:
+                x = layer(x, *args, **kwargs)
+            except TypeError:
+                x = layer(x)
         return x
 
 
@@ -142,22 +166,28 @@ class OutputsCombiner(nn.Module):
     an enhanced reconstruction through a small neural network.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize the OutputsCombiner.
+
+        Args:
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
         self.conv1 = nn.Conv2d(6, 48, kernel_size=3, stride=1, padding=1)
         self.prelu1 = nn.PReLU(num_parameters=1)
         self.conv2 = nn.Conv2d(48, 3, kernel_size=3, stride=1, padding=1)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, inputs, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, inputs: tuple[torch.Tensor, torch.Tensor], *args: Any, **kwargs: Any) -> torch.Tensor:
         """Combines previous reconstruction with residual information.
 
         Args:
             inputs (tuple): Contains:
                 - img_prev (torch.Tensor): Previous reconstruction image
                 - residual (torch.Tensor): Residual information for refinement
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Enhanced reconstruction after combining inputs.
@@ -167,11 +197,23 @@ class OutputsCombiner(nn.Module):
         # Concatenate previous image and residual
         reconst = torch.cat([img_prev, residual], dim=1)
 
-        # Apply convolutions
-        reconst = self.conv1(reconst)
-        reconst = self.prelu1(reconst)
-        reconst = self.conv2(reconst)
-        reconst = self.sigmoid(reconst)
+        # Apply convolutions - pass *args, **kwargs
+        try:
+            reconst = self.conv1(reconst, *args, **kwargs)
+        except TypeError:
+            reconst = self.conv1(reconst)
+        try:
+            reconst = self.prelu1(reconst, *args, **kwargs)
+        except TypeError:
+             reconst = self.prelu1(reconst)
+        try:
+            reconst = self.conv2(reconst, *args, **kwargs)
+        except TypeError:
+            reconst = self.conv2(reconst)
+        try:
+            reconst = self.sigmoid(reconst, *args, **kwargs)
+        except TypeError:
+            reconst = self.sigmoid(reconst)
 
         return reconst
 
@@ -202,17 +244,37 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
 
     def __init__(
         self,
-        channel_snr,
-        conv_depth,
-        channel_type,
-        feedback_snr,
-        refinement_layer,
-        layer_id,
-        forward_channel=None,
-        feedback_channel=None,
-        target_analysis=False,
-        max_iterations=3,
+        channel_snr: float,
+        conv_depth: int,
+        channel_type: str,
+        feedback_snr: Optional[float],
+        refinement_layer: bool,
+        layer_id: int,
+        forward_channel: Optional[BaseChannel] = None,
+        feedback_channel: Optional[BaseChannel] = None,
+        target_analysis: bool = False,
+        max_iterations: int = 3,
+        *args: Any,
+        **kwargs: Any,
     ):
+        """Initialize the DeepJSCCFeedbackModel.
+
+        Args:
+            channel_snr (float): Signal-to-noise ratio of the forward channel in dB.
+            conv_depth (int): Depth of the convolutional features, controls bandwidth usage.
+            channel_type (str): Type of channel ('awgn', 'fading', etc.).
+            feedback_snr (Optional[float]): Signal-to-noise ratio of the feedback channel in dB.
+                If None, assumes perfect feedback.
+            refinement_layer (bool): Whether this is a refinement layer (True) or
+                base layer (False).
+            layer_id (int): ID of the current layer for multi-layer configurations.
+            forward_channel (Optional[BaseChannel]): The forward channel model. Defaults to None.
+            feedback_channel (Optional[BaseChannel]): The feedback channel model. Defaults to None.
+            target_analysis (bool): Whether to perform target analysis. Defaults to False.
+            max_iterations (int): Maximum number of feedback iterations. Defaults to 3.
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
+        """
         # Define components for parent FeedbackChannelModel
         n_channels = 3  # change this if working with BW images
 
@@ -245,6 +307,8 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             feedback_channel=feedback_channel,
             feedback_processor=feedback_processor,
             max_iterations=max_iterations,
+            *args, # Pass args
+            **kwargs # Pass kwargs
         )
 
         # Store additional parameters specific to this model
@@ -254,7 +318,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         self.conv_depth = conv_depth
         self.target_analysis = target_analysis
 
-    def forward(self, input_data, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Forward pass of the DeepJSCC Feedback model.
 
         Processes the input through the encoder, channel, and decoder,
@@ -267,8 +331,8 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 - For refinement layer: a tuple containing (input_image, previous_feedback_image,
                   previous_feedback_channel_output, previous_decoded_image,
                   previous_decoded_channel_output, previous_channel_gain)
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments passed to internal components.
+            **kwargs: Additional keyword arguments passed to internal components.
 
         Returns:
             dict[str, Any]: Dictionary containing:
@@ -293,34 +357,38 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             # input_data is just the original image
             img_in = img = input_data
 
-        # Encode the input
-        chn_in = self.encoder(img_in)
+        # Encode the input, passing *args, **kwargs
+        chn_in = self.encoder(img_in, *args, **kwargs)
 
-        # Process through the forward channel
-        chn_out = self.forward_channel(chn_in)
+        # Process through the forward channel, passing *args, **kwargs
+        chn_out = self.forward_channel(chn_in, *args, **kwargs)
 
         # Calculate average power and channel gain
         torch.mean(chn_in**2)
         chn_gain = torch.ones_like(chn_in[:, :1, :, :])
 
-        # Add feedback noise to channel output
+        # Add feedback noise to channel output, passing *args, **kwargs
         if self.feedback_snr is None:  # No feedback noise
             chn_out_fb = chn_out
         else:
             # Use feedback channel for noisy feedback
-            chn_out_fb = self.feedback_channel(chn_out)
+            chn_out_fb = self.feedback_channel(chn_out, *args, **kwargs)
 
         if self.refinement_layer:
             # Combine channel output with previous stored channel outputs
             chn_out_exp = torch.cat([chn_out, prev_chn_out_dec], dim=1)
-            residual_img = self.decoder(chn_out_exp)
+            # Pass *args, **kwargs to decoder
+            residual_img = self.decoder(chn_out_exp, *args, **kwargs)
             # Combine residual with previous stored image reconstruction
-            decoded_img = self.feedback_processor((prev_img_out_dec, residual_img))
+            # Pass *args, **kwargs to feedback_processor
+            decoded_img = self.feedback_processor((prev_img_out_dec, residual_img), *args, **kwargs)
 
             # Feedback estimation
             chn_out_exp_fb = torch.cat([chn_out_fb, prev_chn_out_fb], dim=1)
-            residual_img_fb = self.decoder(chn_out_exp_fb)
-            decoded_img_fb = self.feedback_processor((prev_img_out_fb, residual_img_fb))
+            # Pass *args, **kwargs to decoder
+            residual_img_fb = self.decoder(chn_out_exp_fb, *args, **kwargs)
+            # Pass *args, **kwargs to feedback_processor
+            decoded_img_fb = self.feedback_processor((prev_img_out_fb, residual_img_fb), *args, **kwargs)
         else:
             # For base layer, adapt the channel dimensions to match decoder input
             # The original encoder outputs conv_depth channels, but decoder expects 256 channels
@@ -331,13 +399,14 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
             # Copy the encoder output into the first conv_depth channels
             temp_input[:, : chn_out.shape[1], :, :] = chn_out
 
-            # Use the adapted tensor for the decoder
-            decoded_img = self.decoder(temp_input)
+            # Use the adapted tensor for the decoder, passing *args, **kwargs
+            decoded_img = self.decoder(temp_input, *args, **kwargs)
 
             # Do the same for feedback path
             temp_input_fb = torch.zeros(batch_size, 256, height, width, device=chn_out_fb.device)
             temp_input_fb[:, : chn_out_fb.shape[1], :, :] = chn_out_fb
-            decoded_img_fb = self.decoder(temp_input_fb)
+            # Pass *args, **kwargs to decoder
+            decoded_img_fb = self.decoder(temp_input_fb, *args, **kwargs)
 
             # Keep the original channel outputs for the return dictionary
             chn_out_exp = chn_out

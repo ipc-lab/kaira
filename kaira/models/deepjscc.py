@@ -6,6 +6,8 @@ channels. The implementation is based on the seminal work by Bourtsoulatze et al
 extensions.
 """
 
+from typing import Any
+
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
 
@@ -55,6 +57,8 @@ class DeepJSCCModel(SequentialModel):
         constraint: BaseConstraint,
         channel: BaseChannel,
         decoder: BaseModel,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the DeepJSCC model.
 
@@ -63,8 +67,10 @@ class DeepJSCCModel(SequentialModel):
             constraint (BaseConstraint): Module for applying power constraints to the encoded signal
             channel (BaseChannel): Module simulating the communication channel
             decoder (BaseModel): Neural network model for decoding/reconstructing the input
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(steps=[encoder, constraint, channel, decoder])
+        super().__init__(steps=[encoder, constraint, channel, decoder], *args, **kwargs)
         self.encoder = encoder
         self.constraint = constraint
         self.channel = channel

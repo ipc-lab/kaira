@@ -42,6 +42,8 @@ class FeedbackChannelModel(BaseModel):
         feedback_channel: BaseChannel,
         feedback_processor: nn.Module,
         max_iterations: int = 1,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the feedback channel model.
 
@@ -53,8 +55,10 @@ class FeedbackChannelModel(BaseModel):
             feedback_channel (BaseChannel): The channel for feedback
             feedback_processor (nn.Module): Module that processes feedback at the transmitter
             max_iterations (int): Maximum number of transmission iterations (default: 1)
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.encoder = encoder
         self.forward_channel = forward_channel
         self.decoder = decoder
@@ -75,8 +79,8 @@ class FeedbackChannelModel(BaseModel):
 
         Args:
             input_data (torch.Tensor): The input data to transmit
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments passed to internal components.
+            **kwargs: Additional keyword arguments passed to internal components.
 
         Returns:
             Dict[str, Any]: A dictionary containing:
@@ -96,27 +100,27 @@ class FeedbackChannelModel(BaseModel):
         # Iterative transmission process
         for i in range(self.max_iterations):
             # Process any feedback from previous iteration (skipped in first iteration)
-            encoder_state = self.feedback_processor(feedback) if i > 0 else None
+            encoder_state = self.feedback_processor(feedback, *args, **kwargs) if i > 0 else None
 
             # Encode the input (with adaptation if not first iteration)
             if encoder_state is not None:
-                # Only pass the state parameter to encoder, not all kwargs
-                encoded = self.encoder(input_data, state=encoder_state)
+                # Pass state and other args/kwargs to encoder
+                encoded = self.encoder(input_data, state=encoder_state, *args, **kwargs)
             else:
-                # Don't pass any additional kwargs to encoder
-                encoded = self.encoder(input_data)
+                # Pass args/kwargs to encoder
+                encoded = self.encoder(input_data, *args, **kwargs)
 
-            # Transmit through forward channel
-            received = self.forward_channel(encoded)
+            # Transmit through forward channel (Channels typically don't take arbitrary *args, **kwargs)
+            received = self.forward_channel(encoded, *args, **kwargs)  # Pass args/kwargs
 
-            # Decode the received signal - don't pass additional kwargs to decoder
-            decoded = self.decoder(received)
+            # Decode the received signal - pass args/kwargs to decoder
+            decoded = self.decoder(received, *args, **kwargs)
 
-            # Generate feedback - use only decoded output as input
-            feedback = self.feedback_generator(decoded)
+            # Generate feedback - pass args/kwargs to feedback generator
+            feedback = self.feedback_generator(decoded, *args, **kwargs)
 
-            # Transmit feedback through feedback channel
-            feedback = self.feedback_channel(feedback)
+            # Transmit feedback through feedback channel (Channels typically don't take arbitrary *args, **kwargs)
+            feedback = self.feedback_channel(feedback, *args, **kwargs)  # Pass args/kwargs
 
             # Store results for this iteration
             iterations.append(

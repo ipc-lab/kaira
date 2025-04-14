@@ -11,13 +11,15 @@ class SequentialModel(ConfigurableModel):
     Each step receives the output of the previous step as its input.
     """
 
-    def __init__(self, steps: Optional[Sequence[Callable]] = None):
+    def __init__(self, steps: Optional[Sequence[Callable]] = None, *args: Any, **kwargs: Any):
         """Initialize the sequential model.
 
         Args:
             steps: Optional initial list of processing steps
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         if steps:
             self.steps = list(steps)
 
@@ -34,17 +36,18 @@ class SequentialModel(ConfigurableModel):
             raise TypeError("Step must be callable")
         return super().add_step(step)
 
-    def forward(self, x: Any, **kwargs: Any) -> Any:
+    def forward(self, x: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model sequentially on the input data.
 
         Args:
             x: The initial data to process
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments passed to each step.
+            **kwargs: Additional keyword arguments passed to each step.
 
         Returns:
             The final result after passing through all steps
         """
         result = x
         for step in self.steps:
-            result = step(result)
+            result = step(result, *args, **kwargs)  # Pass *args and **kwargs to each step
         return result

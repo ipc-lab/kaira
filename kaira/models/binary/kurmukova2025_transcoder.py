@@ -50,6 +50,8 @@ class Kurmukova2025TransCoder(BaseModel):
         decoder_tc: BaseModel,
         decoder_ec: BaseModel,
         n_iterations: int = 1,
+        *args: Any,
+        **kwargs: Any,
     ):
         """Initialize the TransCoder model.
 
@@ -63,8 +65,10 @@ class Kurmukova2025TransCoder(BaseModel):
             decoder_tc (BaseModel): TransCoder neural decoding model for decoding the channel output
             decoder_ec (BaseModel): Channel code decoder for recovering the original input
             n_iterations (int): Number of consecutive decoding iterations: TransCoder and channel decoder (default: 1)
+            *args: Variable positional arguments passed to the base class.
+            **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.encoder_tc = encoder_tc
         self.encoder_ec = encoder_ec
         self.modulator = modulator
@@ -89,8 +93,8 @@ class Kurmukova2025TransCoder(BaseModel):
 
         Args:
             input_data (torch.Tensor): The input data to transmit
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            *args: Additional positional arguments passed to internal components.
+            **kwargs: Additional keyword arguments passed to internal components.
 
         Returns:
             Dict[str, Any]: A dictionary containing:
@@ -112,12 +116,12 @@ class Kurmukova2025TransCoder(BaseModel):
             constrained = self.encoder_tc(encoded_ec, *args, **kwargs)
         else:
             # Modulation
-            modulated = self.modulator(encoded_ec)
+            modulated = self.modulator(encoded_ec, *args, **kwargs)
             # Power constraint
-            constrained = self.constraint(modulated)
+            constrained = self.constraint(modulated, *args, **kwargs)
 
         # Transmit through channel
-        received = self.channel(constrained)
+        received = self.channel(constrained, *args, **kwargs)
 
         history.append(
             {
@@ -128,6 +132,7 @@ class Kurmukova2025TransCoder(BaseModel):
         )
 
         # Iterative decoding process
+        soft_estimate = None # Initialize soft_estimate
         for i in range(self.n_iterations):
             if self.decoder_tc is not None:
                 # TransCoder decoding
@@ -135,12 +140,14 @@ class Kurmukova2025TransCoder(BaseModel):
                     demodulated = self.decoder_tc(received, *args, **kwargs)
                 else:
                     # Use the soft_estimate from the previous iteration
+                    # Ensure soft_estimate is passed correctly if decoder_tc expects it
                     demodulated = self.decoder_tc([received, soft_estimate], *args, **kwargs)
             else:
                 # Demodulation
-                demodulated = self.demodulator(received)
+                demodulated = self.demodulator(received, *args, **kwargs) # Pass args/kwargs
 
             # Channel decoding
+            # Pass *args, **kwargs to decoder_ec
             decoded, soft_estimate = self.decoder_ec(demodulated, *args, **kwargs)
 
             # Store results for this iteration
