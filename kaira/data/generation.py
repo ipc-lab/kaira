@@ -84,7 +84,7 @@ class BinaryTensorDataset(Dataset):
         data: The generated binary tensor data with shape (n_samples, \*feature_dims)
     """
 
-    def __init__(self, size: Union[List[int], torch.Size], prob: float = 0.5, device: Optional[torch.device] = None):
+    def __init__(self, size: Union[List[int], torch.Size], prob: float = 0.5, device: Optional[torch.device] = None, *args, **kwargs):
         """Initialize the binary tensor dataset.
 
         Args:
@@ -92,7 +92,10 @@ class BinaryTensorDataset(Dataset):
                  the number of samples in the dataset
             prob: Probability of generating 1s (default: 0.5 for uniform distribution)
             device: Device to create the tensor on (default: None, uses default device)
+            *args: Additional positional arguments (ignored).
+            **kwargs: Additional keyword arguments (ignored).
         """
+        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
         self.data = create_binary_tensor(size, prob, device)
 
     def __len__(self):
@@ -126,7 +129,7 @@ class UniformTensorDataset(Dataset):
         data: The generated uniform tensor data with shape (n_samples, \*feature_dims)
     """
 
-    def __init__(self, size: Union[List[int], torch.Size], low: float = 0.0, high: float = 1.0, device: Optional[torch.device] = None):
+    def __init__(self, size: Union[List[int], torch.Size], low: float = 0.0, high: float = 1.0, device: Optional[torch.device] = None, *args, **kwargs):
         """Initialize the uniform tensor dataset.
 
         Args:
@@ -135,7 +138,10 @@ class UniformTensorDataset(Dataset):
             low: Lower bound of the uniform distribution (inclusive)
             high: Upper bound of the uniform distribution (exclusive)
             device: Device to create the tensor on (default: None, uses default device)
+            *args: Additional positional arguments (ignored).
+            **kwargs: Additional keyword arguments (ignored).
         """
+        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
         self.data = create_uniform_tensor(size, low, high, device)
 
     def __len__(self):

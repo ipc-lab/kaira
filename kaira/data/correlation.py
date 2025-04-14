@@ -7,9 +7,9 @@ particularly useful for distributed source coding scenarios.
 from typing import Any, Dict, Optional
 
 import torch
-import torch.nn as nn
 from torch.utils.data import Dataset
 
+from torch import nn
 
 class WynerZivCorrelationModel(nn.Module):
     """Model for simulating correlation between source and side information.
@@ -34,6 +34,8 @@ class WynerZivCorrelationModel(nn.Module):
         self,
         correlation_type: str = "gaussian",
         correlation_params: Optional[Dict[str, Any]] = None,
+        *args,
+        **kwargs
     ):
         """Initialize the correlation model.
 
@@ -46,12 +48,14 @@ class WynerZivCorrelationModel(nn.Module):
                 - For 'gaussian': {'sigma': float} - Standard deviation of the noise
                 - For 'binary': {'crossover_prob': float} - Probability of bit flipping
                 - For 'custom': {'transform_fn': callable} - Custom transformation function
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.correlation_type = correlation_type
         self.correlation_params = correlation_params or {}
 
-    def forward(self, source: torch.Tensor) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Generate correlated side information from the source.
 
         Creates side information Y that is correlated with the source X according to
@@ -60,6 +64,8 @@ class WynerZivCorrelationModel(nn.Module):
 
         Args:
             source: Source signal X (can be continuous or discrete valued)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
             Correlated side information Y with statistical dependence on X according
@@ -106,7 +112,7 @@ class WynerZivCorrelationDataset(Dataset):
         correlated_data: The correlated side information with same shape as source data
     """
 
-    def __init__(self, source: torch.Tensor, correlation_type: str = "gaussian", correlation_params: Optional[Dict[str, Any]] = None):
+    def __init__(self, source: torch.Tensor, correlation_type: str = "gaussian", correlation_params: Optional[Dict[str, Any]] = None, *args, **kwargs):
         """Initialize the Wyner-Ziv correlated dataset.
 
         Args:
@@ -119,10 +125,13 @@ class WynerZivCorrelationDataset(Dataset):
                 - For 'gaussian': {'sigma': float} - Standard deviation of the noise
                 - For 'binary': {'crossover_prob': float} - Probability of bit flipping
                 - For 'custom': {'transform_fn': callable} - Custom transformation function
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
-        self.model = WynerZivCorrelationModel(correlation_type, correlation_params)
+        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
+        self.model = WynerZivCorrelationModel(correlation_type, correlation_params, *args, **kwargs)
         self.data = source
-        self.correlated_data = self.model(source)
+        self.correlated_data = self.model(source, *args, **kwargs)
 
     def __len__(self):
         """Return the number of samples in the dataset.
