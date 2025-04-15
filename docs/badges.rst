@@ -1,5 +1,5 @@
 Kaira — Wireless Communication Simulation Toolbox for PyTorch
-=================================================================
+===============================================================
 
 .. image:: https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/ipc-lab/kaira/actions/workflows/ci.yml
