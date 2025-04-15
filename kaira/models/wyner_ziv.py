@@ -28,6 +28,7 @@ from kaira.constraints import BaseConstraint
 from .base import BaseModel
 from .registry import ModelRegistry
 
+
 class WynerZivCorrelationModel(nn.Module):
     """Model for simulating correlation between source and side information.
 
@@ -47,13 +48,7 @@ class WynerZivCorrelationModel(nn.Module):
         correlation_params (Dict): Parameters specific to the correlation model
     """
 
-    def __init__(
-        self,
-        correlation_type: str = "gaussian",
-        correlation_params: Optional[Dict[str, Any]] = None,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, correlation_type: str = "gaussian", correlation_params: Optional[Dict[str, Any]] = None, *args, **kwargs):
         """Initialize the correlation model.
 
         Args:

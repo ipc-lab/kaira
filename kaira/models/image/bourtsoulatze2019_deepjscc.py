@@ -1,3 +1,5 @@
+"""Implementation of the DeepJSCC model from Bourtsoulatze et al. (2019)."""
+
 from typing import Any, Optional
 
 import torch

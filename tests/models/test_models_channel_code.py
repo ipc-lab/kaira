@@ -42,6 +42,7 @@ class SimpleDecoder(BaseModel):
         # Return both decoded data and a soft estimate
         return decoded
 
+
 class SimpleModulator(BaseModulator):
     """A simple modulator for testing."""
 

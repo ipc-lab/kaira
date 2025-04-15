@@ -4,7 +4,7 @@ This module contains the LambdaChannel class which allows users to create custom
 applying arbitrary functions to input signals.
 """
 
-from typing import Callable, Any
+from typing import Any, Callable
 
 import torch
 

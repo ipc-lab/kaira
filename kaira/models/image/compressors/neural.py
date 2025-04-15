@@ -1,3 +1,5 @@
+"""Wrapper for neural network-based image compressors from CompressAI."""
+
 import time
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -321,7 +323,7 @@ class NeuralCompressor(BaseModel):
         elif self.return_bits:
             return x_hat, output_bits
         elif self.return_compressed_data:
-             # Ensure optimal_compressed_data is a list when returning it
+            # Ensure optimal_compressed_data is a list when returning it
             return x_hat, optimal_compressed_data if optimal_compressed_data is not None else []
         else:
             return x_hat
@@ -348,7 +350,7 @@ class NeuralCompressor(BaseModel):
         original_return_bits = self.return_bits
         original_return_compressed = self.return_compressed_data
         self.return_bits = True
-        self.return_compressed_data = False # Ensure only bits are requested from forward
+        self.return_compressed_data = False  # Ensure only bits are requested from forward
 
         try:
             # Pass *args, **kwargs to forward
@@ -357,20 +359,20 @@ class NeuralCompressor(BaseModel):
             if isinstance(forward_output, tuple) and len(forward_output) >= 2:
                 bits_per_image = forward_output[1]
                 if not isinstance(bits_per_image, torch.Tensor):
-                     raise TypeError(f"Expected tensor of bits, but got {type(bits_per_image)}")
+                    raise TypeError(f"Expected tensor of bits, but got {type(bits_per_image)}")
             else:
                 # Handle case where forward might just return the tensor if return_bits was originally False
                 # This shouldn't happen with the temporary override, but good to be safe.
                 if isinstance(forward_output, torch.Tensor) and not original_return_bits:
-                     # Re-run forward correctly requesting bits if the first attempt failed due to original settings
-                     self.return_bits = True
-                     forward_output = self.forward(x, *args, **kwargs)
-                     if isinstance(forward_output, tuple) and len(forward_output) >= 2:
-                         bits_per_image = forward_output[1]
-                         if not isinstance(bits_per_image, torch.Tensor):
-                             raise TypeError(f"Expected tensor of bits on second attempt, but got {type(bits_per_image)}")
-                     else:
-                         raise TypeError(f"Forward method did not return expected tuple (tensor, bits) on second attempt, got {type(forward_output)}")
+                    # Re-run forward correctly requesting bits if the first attempt failed due to original settings
+                    self.return_bits = True
+                    forward_output = self.forward(x, *args, **kwargs)
+                    if isinstance(forward_output, tuple) and len(forward_output) >= 2:
+                        bits_per_image = forward_output[1]
+                        if not isinstance(bits_per_image, torch.Tensor):
+                            raise TypeError(f"Expected tensor of bits on second attempt, but got {type(bits_per_image)}")
+                    else:
+                        raise TypeError(f"Forward method did not return expected tuple (tensor, bits) on second attempt, got {type(forward_output)}")
                 else:
                     raise TypeError(f"Forward method did not return expected tuple (tensor, bits), got {type(forward_output)}")
 

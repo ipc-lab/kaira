@@ -4,7 +4,7 @@ BER is one of the most fundamental performance metrics in digital communications
 a measure of the reliability of the entire system :cite:`proakis2007digital` :cite:`ziemer2006principles`.
 """
 
-from typing import Optional, Any
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -32,7 +32,7 @@ class BitErrorRate(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "BER", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name=name or "BER", *args, **kwargs)  # Pass args and kwargs
         self.threshold = threshold
         self.register_buffer("total_bits", torch.tensor(0))
         self.register_buffer("error_bits", torch.tensor(0))
@@ -64,10 +64,10 @@ class BitErrorRate(BaseMetric):
             received_real = received.real
             received_imag = received.imag
             received = torch.cat([received_real, received_imag], dim=-1)
-        
+
         # Check for batch dimension
         # TODO: implement is_batched
-        is_batched = False #transmitted.dim() > 1 and transmitted.size(0) > 1 and transmitted.size(1) > 1
+        is_batched = False  # transmitted.dim() > 1 and transmitted.size(0) > 1 and transmitted.size(1) > 1
 
         # Threshold received values to get binary decisions
         transmitted_bits = (transmitted > self.threshold).bool()
@@ -116,7 +116,7 @@ class BitErrorRate(BaseMetric):
             received_real = received.real
             received_imag = received.imag
             received = torch.cat([received_real, received_imag], dim=-1)
-        
+
         transmitted_bits = (transmitted > self.threshold).bool()
         received_bits = (received > self.threshold).bool()
 

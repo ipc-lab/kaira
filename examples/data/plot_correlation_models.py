@@ -17,12 +17,7 @@ import numpy as np
 # ---------------------------------------------------------
 import torch
 
-from kaira.data import (
-    WynerZivCorrelationDataset,
-    create_binary_tensor,
-    create_uniform_tensor,
-)
-
+from kaira.data import WynerZivCorrelationDataset, create_binary_tensor, create_uniform_tensor
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
 
 # Set random seed for reproducibility

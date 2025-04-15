@@ -25,7 +25,7 @@ Reference:
 """
 
 
-from typing import Any, Dict
+from typing import Any
 
 import torch
 from compressai.layers import (
@@ -787,17 +787,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
 
         # Initialize the parent class without quantizer and syndrome_generator
         # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
-        super().__init__(
-            encoder=encoder,
-            channel=channel,
-            decoder=decoder,
-            constraint=constraint,
-            correlation_model=None,
-            quantizer=None,
-            syndrome_generator=None,
-            *args, # Pass args
-            **kwargs # Pass kwargs
-        )
+        super().__init__(encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, *args, **kwargs)  # Pass args  # Pass kwargs
 
         # Explicitly set constraint to ensure it's properly initialized
         self.constraint = constraint
@@ -861,7 +851,6 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if self.constraint is None:
             raise RuntimeError("Constraint is unexpectedly None. This should not happen if __init__ validation is working.")
         constrained = self.constraint(encoded, *args, **kwargs)
-
 
         # Transmit through channel - pass *args, **kwargs
         received = self.channel(constrained, *args, **kwargs)

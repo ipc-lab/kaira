@@ -1,3 +1,5 @@
+"""BPG (Better Portable Graphics) image compressor wrapper."""
+
 import logging
 import multiprocessing
 import os
@@ -28,7 +30,19 @@ class BPGCompressor(BaseModel):
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
     """
 
-    def __init__(self, max_bits_per_image: Optional[int] = None, quality: Optional[int] = None, bpg_encoder_path: str = "bpgenc", bpg_decoder_path: str = "bpgdec", n_jobs: Optional[int] = None, collect_stats: bool = False, return_bits: bool = True, return_compressed_data: bool = False, *args: Any, **kwargs: Any):
+    def __init__(
+        self,
+        max_bits_per_image: Optional[int] = None,
+        quality: Optional[int] = None,
+        bpg_encoder_path: str = "bpgenc",
+        bpg_decoder_path: str = "bpgdec",
+        n_jobs: Optional[int] = None,
+        collect_stats: bool = False,
+        return_bits: bool = True,
+        return_compressed_data: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ):
         """Initialize the BPG Compressor.
 
         Args:
@@ -46,7 +60,7 @@ class BPGCompressor(BaseModel):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(*args, **kwargs) # Pass args and kwargs to base
+        super().__init__(*args, **kwargs)  # Pass args and kwargs to base
 
         # At least one of the two parameters must be provided
         if max_bits_per_image is None and quality is None:
@@ -145,7 +159,7 @@ class BPGCompressor(BaseModel):
         # Unpack results
         images = []
         bits_per_image: List[int] = [] if self.return_bits or self.collect_stats else []
-        compressed_data: List[bytes] = [] if self.return_compressed_data else []
+        compressed_data: List[bytes] = [] if self.return_com reacts else []
 
         for result in results:
             if collect_info:
@@ -240,8 +254,8 @@ class BPGCompressor(BaseModel):
         # Measure original file size
         original_size = os.path.getsize(paths["input"])
 
-        # Compress with specified quality using safe subprocess execution
-        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(quality), "-o", paths["compressed"], paths["input"]], text=True)
+        # Compress with specified quality using secure subprocess execution
+        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(quality), "-o", paths["compressed"], cmo
 
         if result.returncode != 0:
             logger.error(f"BPG encoding failed: {result.stderr}")
@@ -258,7 +272,7 @@ class BPGCompressor(BaseModel):
             with open(paths["compressed"], "rb") as f:
                 compressed_data = f.read()
 
-        # Decompress using safe subprocess execution
+        # Decompress using secure subprocess execution
         result = self._safe_subprocess_run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], text=True)
 
         if result.returncode != 0:
@@ -307,9 +321,9 @@ class BPGCompressor(BaseModel):
         original_size = os.path.getsize(paths["input"])
         transform = transforms.ToTensor()
 
-        # Perform initial quality estimates using safe subprocess execution
+        # Perform initial quality estimates using secure subprocess execution
         initial_quality = 30
-        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(initial_quality), "-o", paths["compressed"], paths["input"]], text=True)
+        result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(initial_quality), "-o", paths["compressed"], cmo
 
         if result.returncode == 0:
             bits_at_q30 = os.path.getsize(paths["compressed"]) * 8
@@ -335,8 +349,8 @@ class BPGCompressor(BaseModel):
         while low <= high:
             mid = (low + high) // 2
 
-            # Try compression with the current quality using safe subprocess execution
-            result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(mid), "-o", paths["compressed"], paths["input"]], text=True)
+            # Try compression with the current quality using secure subprocess execution
+            result = self._safe_subprocess_run([self.bpg_encoder_path, "-q", str(mid), "-o", paths["compressed"], cmo
             if result.returncode != 0:
                 logger.error(f"BPG encoding failed at quality {mid}: {result.stderr}")
                 high = mid - 1
@@ -351,7 +365,7 @@ class BPGCompressor(BaseModel):
                 best_quality = mid
                 best_bits = bitrate_out
 
-                # Decode the image using safe subprocess execution
+                # Decode the image using secure subprocess execution
                 result = self._safe_subprocess_run([self.bpg_decoder_path, "-o", paths["output"], paths["compressed"]], text=True)
                 if result.returncode == 0:
                     # Save this as our best result so far
@@ -440,7 +454,7 @@ class BPGCompressor(BaseModel):
             if isinstance(forward_output, tuple) and len(forward_output) >= 2:
                 bits_per_image = forward_output[1]
                 if not isinstance(bits_per_image, list):
-                     raise TypeError(f"Expected list of bits, but got {type(bits_per_image)}")
+                    raise TypeError(f"Expected list of bits, but got {type(bits_per_image)}")
             else:
                 raise TypeError(f"Forward method did not return expected tuple (tensor, bits), got {type(forward_output)}")
         finally:

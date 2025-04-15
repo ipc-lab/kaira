@@ -9,8 +9,8 @@ from typing import Any, Dict, Optional
 import torch
 from torch.utils.data import Dataset
 
-
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
+
 
 class WynerZivCorrelationDataset(Dataset):
     r"""Dataset for Wyner-Ziv coding scenarios with correlated sources.
@@ -42,7 +42,7 @@ class WynerZivCorrelationDataset(Dataset):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
+        super().__init__(*args, **kwargs)  # Pass args and kwargs to parent if necessary
         self.model = WynerZivCorrelationModel(correlation_type, correlation_params, *args, **kwargs)
         self.data = source
         self.correlated_data = self.model(source, *args, **kwargs)

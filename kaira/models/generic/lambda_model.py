@@ -1,3 +1,5 @@
+"""Defines a model based on a user-provided lambda function."""
+
 from typing import Any, Callable, Optional
 
 import torch

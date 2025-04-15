@@ -4,9 +4,9 @@ PSNR is a widely used objective quality metric for image and video processing
 :cite:`hore2010image` :cite:`huynh2008scope`. Despite its limitations in perceptual
 correlation, it remains one of the most common benchmarks for image quality assessment.
 """
+import inspect
 from typing import Any, Optional, Tuple
 
-import inspect
 import torch
 import torchmetrics.image
 from torch import Tensor
@@ -35,7 +35,7 @@ class PeakSignalNoiseRatio(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="PSNR", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name="PSNR", *args, **kwargs)  # Pass args and kwargs
         self.reduction = reduction
         if "dim" not in kwargs:
             kwargs["dim"] = [1, 2, 3]

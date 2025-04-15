@@ -5,6 +5,8 @@ processing such as data compression or by losses in data transmission :cite:`wan
 MS-SSIM extends this concept to multiple scales :cite:`wang2003multiscale`.
 """
 
+# Need to import inspect
+import inspect
 from typing import Any, Optional, Tuple
 
 import torch
@@ -14,9 +16,6 @@ from torch import Tensor
 
 from ..base import BaseMetric
 from ..registry import MetricRegistry
-
-# Need to import inspect
-import inspect
 
 
 @MetricRegistry.register_metric("ssim")
@@ -40,7 +39,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="SSIM", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name="SSIM", *args, **kwargs)  # Pass args and kwargs
         self.reduction = reduction
         # Always use reduction=None in the underlying implementation
         # Pass only relevant kwargs to torchmetrics
@@ -88,7 +87,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used here
         # but are included for interface consistency.
-        values = self.forward(preds, targets) # Use self.forward to handle reduction
+        values = self.forward(preds, targets)  # Use self.forward to handle reduction
         # Handle single value case to avoid NaN in std calculation
         if values.numel() <= 1:
             return values.mean(), torch.tensor(0.0)
@@ -116,7 +115,7 @@ class MultiScaleSSIM(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name="MS-SSIM", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name="MS-SSIM", *args, **kwargs)  # Pass args and kwargs
         self.kernel_size = kernel_size
         self.data_range = data_range
         self.reduction = reduction
@@ -165,7 +164,7 @@ class MultiScaleSSIM(BaseMetric):
             *args: Variable length argument list passed to forward.
             **kwargs: Arbitrary keyword arguments passed to forward.
         """
-        values = self.forward(preds, targets, *args, **kwargs) # Pass args/kwargs
+        values = self.forward(preds, targets, *args, **kwargs)  # Pass args/kwargs
         if values.numel() == 0:
             return  # Avoid updating with empty values
         self.sum_values += values.sum()

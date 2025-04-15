@@ -8,42 +8,34 @@ information from multiple users over a shared channel. This model simulates
 scenarios where multiple transmitters send signals simultaneously and a single
 receiver tries to recover all messages.
 """
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
-import numpy as np
 
-from kaira.models.components.mlp import MLPEncoder, MLPDecoder
-from kaira.models import MultipleAccessChannelModel
 # Import necessary channel and constraint components
 from kaira.channels import AWGNChannel
 from kaira.constraints import AveragePowerConstraint
+from kaira.models import MultipleAccessChannelModel
+from kaira.models.components.mlp import MLPDecoder, MLPEncoder
 
 # %%
 # Model Setup
 # --------------------------------------------------------------------------
 # Define parameters for the simulation
-num_users = 2      # Number of users transmitting simultaneously
-message_dim = 10   # Dimensionality of each user's message vector
-code_dim = 20      # Dimensionality of the signal transmitted over the channel (shared resource)
-batch_size = 128   # Number of samples to process in parallel
+num_users = 2  # Number of users transmitting simultaneously
+message_dim = 10  # Dimensionality of each user's message vector
+code_dim = 20  # Dimensionality of the signal transmitted over the channel (shared resource)
+batch_size = 128  # Number of samples to process in parallel
 
 # Create individual encoders for each user.
 # Each encoder maps a user's message to a channel code.
-encoders = nn.ModuleList([
-    MLPEncoder(in_features=message_dim, out_features=code_dim, hidden_dims=[50, 30])
-    for _ in range(num_users)
-])
+encoders = nn.ModuleList([MLPEncoder(in_features=message_dim, out_features=code_dim, hidden_dims=[50, 30]) for _ in range(num_users)])
 
 # Create a single joint decoder.
 # It receives the combined signal from the channel and attempts to decode messages for ALL users.
 # Input dimension: code_dim (received signal dimension)
 # Output dimension: message_dim * num_users (concatenated decoded messages)
-joint_decoder = MLPDecoder(
-    in_features=code_dim,
-    out_features=message_dim * num_users,
-    hidden_dims=[50, 30]
-)
+joint_decoder = MLPDecoder(in_features=code_dim, out_features=message_dim * num_users, hidden_dims=[50, 30])
 
 # Instantiate channel and power constraint
 # The channel simulates the effects of the transmission medium (e.g., adding noise)
@@ -54,12 +46,7 @@ power_constraint = AveragePowerConstraint(average_power=1.0)
 
 # Instantiate the Multiple Access Channel Model, combining the encoders and the joint decoder.
 # Add the channel and power_constraint arguments
-mac_model = MultipleAccessChannelModel(
-    encoders=encoders,
-    decoder=joint_decoder,
-    channel=channel,
-    power_constraint=power_constraint
-)
+mac_model = MultipleAccessChannelModel(encoders=encoders, decoder=joint_decoder, channel=channel, power_constraint=power_constraint)
 
 # Generate some random messages for each user to simulate input data.
 # This creates a list where each element is a batch of messages for one user.
@@ -73,7 +60,7 @@ fixed_snr = 10.0  # Example SNR in dB
 
 # Perform the forward pass through the model.
 # The model handles encoding, channel transmission (adding noise based on SNR), and decoding.
-with torch.no_grad(): # Disable gradient calculation for inference
+with torch.no_grad():  # Disable gradient calculation for inference
     reconstructed_messages_tensor = mac_model(user_messages, snr=fixed_snr)
 
 # The decoder outputs a single tensor containing concatenated messages.
@@ -84,7 +71,7 @@ reconstructed_messages_reshaped = reconstructed_messages_tensor.view(batch_size,
 reconstructed_messages = [reconstructed_messages_reshaped[:, i, :] for i in range(num_users)]
 
 # We'll use Mean Squared Error (MSE) to evaluate reconstruction quality.
-mse_loss = nn.MSELoss(reduction='mean') # Use mean reduction for average MSE per user
+mse_loss = nn.MSELoss(reduction="mean")  # Use mean reduction for average MSE per user
 
 # Calculate MSE for each user at the fixed SNR
 total_mse = 0
@@ -92,10 +79,7 @@ print(f"--- Results for SNR = {fixed_snr} dB ---")
 for i in range(num_users):
     reconstructed_user_message = reconstructed_messages[i]
     # Calculate MSE between the original and reconstructed message for user i
-    user_mse = mse_loss(
-        reconstructed_user_message,
-        user_messages[i]
-    ).item() # Use .item() to get the scalar value
+    user_mse = mse_loss(reconstructed_user_message, user_messages[i]).item()  # Use .item() to get the scalar value
     total_mse += user_mse
     print(f"User {i+1} MSE: {user_mse:.6f}")
 
@@ -108,6 +92,7 @@ print("-" * (26 + len(str(fixed_snr))))
 # %%
 # Visualizing User Interference Effects (Optional - Uncomment to run)
 
+
 def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=10, code_dim=20, batch_size=128):
     """Simulates transmission with varying number of active users."""
     mse_results = []
@@ -116,7 +101,7 @@ def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=1
     # Get original channel and constraint from the base model
     original_channel = base_model.channel
     original_constraint = base_model.power_constraint
-    original_num_users = len(original_encoders)
+    len(original_encoders)
 
     for active_users in range(1, max_users + 1):
         print(f"Simulating with {active_users} active users...")
@@ -129,12 +114,7 @@ def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=1
         # Here, we'll use the original decoder but only calculate loss for the active users' messages.
 
         # Create a temporary model with the subset of encoders and original components
-        temp_model = MultipleAccessChannelModel(
-            encoders=current_encoders,
-            decoder=original_decoder,
-            channel=original_channel,
-            power_constraint=original_constraint
-        )
+        temp_model = MultipleAccessChannelModel(encoders=current_encoders, decoder=original_decoder, channel=original_channel, power_constraint=original_constraint)
 
         # Generate messages for the current number of active users
         user_subset = [torch.randn(batch_size, message_dim) for _ in range(active_users)]
@@ -163,48 +143,37 @@ def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=1
 
     return mse_results
 
-"""
+
 # Uncomment the following block to run the user interference analysis:
+#
+# print("\n--- User Interference Analysis ---")
+# # Simulate transmission at fixed SNR but varying number of users
+# interference_results = simulate_with_varying_users(mac_model, max_users=4, snr=fixed_snr)
+#
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+# plt.plot(range(1, 5), interference_results, "o-", linewidth=2)
+# plt.grid(True, linestyle="--", alpha=0.7)
+# plt.xlabel("Number of Active Users")
+# plt.ylabel("Average Mean Squared Error (MSE)")
+# plt.title(f"Impact of Number of Users on Reconstruction (SNR={fixed_snr}dB)")
+# plt.xticks(range(1, 5))
+# plt.yscale("log")
+# plt.tight_layout()
+# plt.show()
 
-print("\n--- User Interference Analysis ---")
-# Simulate transmission at fixed SNR but varying number of users
-snr_for_analysis = 10.0 # Fixed SNR for this analysis
-num_users_range = list(range(1, 5)) # Test with 1 to 4 users
-interference_results = simulate_with_varying_users(
-    mac_model,
-    max_users=4,
-    snr=snr_for_analysis, # Use the fixed SNR
-    message_dim=message_dim,
-    code_dim=code_dim,
-    batch_size=batch_size
-)
-
-# Plot results
-plt.figure(figsize=(10, 6))
-plt.plot(num_users_range, interference_results, 'o-', linewidth=2)
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlabel('Number of Active Users')
-plt.ylabel('Mean Squared Error')
-plt.title(f'Effect of Multiple Users on Reconstruction Error (SNR={snr_for_analysis}dB)')
-plt.yscale('log')
-plt.xticks(num_users_range)
-plt.tight_layout()
-plt.show() # Ensure plot is displayed when this section is run
-print("-" * 30)
-
-"""
 
 # %%
 # Training a Multiple Access Channel Model (Optional - Uncomment to run)
 # --------------------------------------------------------------------------
 
+
 # Modify train_mac_model to accept a fixed training_snr
-def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_size=64, message_dim=10, num_users=2,
-                    training_snr=10.0): # Use fixed training_snr
+def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_size=64, message_dim=10, num_users=2, training_snr=10.0):  # Use fixed training_snr
     """Trains the Multiple Access Channel model at a fixed SNR."""
     losses = []
     print(f"--- Starting Training at SNR = {training_snr} dB ---")
-    model.train() # Set model to training mode
+    model.train()  # Set model to training mode
 
     for epoch in range(num_epochs):
         epoch_loss = 0.0
@@ -223,9 +192,9 @@ def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_
             for i in range(num_users):
                 original_user_msg = batch_messages[i]
                 # Extract the reconstructed message part for user i
-                reconstructed_user_msg = reconstructed[:, i*message_dim:(i+1)*message_dim]
+                reconstructed_user_msg = reconstructed[:, i * message_dim : (i + 1) * message_dim]
                 user_loss = loss_fn(reconstructed_user_msg, original_user_msg)
-                loss += user_loss # Sum losses from all users
+                loss += user_loss  # Sum losses from all users
 
             # Average loss across users for the backward pass
             loss = loss / num_users
@@ -246,60 +215,58 @@ def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_
     return losses
 
 
-"""
 # Uncomment the following block to run the training:
+#
+# # Re-initialize model and optimizer for training
+# encoders_train = nn.ModuleList([
+#     MLPEncoder(in_features=message_dim, out_features=code_dim, hidden_dims=[50, 30])
+#     for _ in range(num_users)
+# ])
+# joint_decoder_train = MLPDecoder(
+#     in_features=code_dim,
+#     out_features=message_dim * num_users,
+#     hidden_dims=[50, 30]
+# )
+# # Instantiate channel and constraint for the training model
+# # Provide a default SNR value for initialization
+# channel_train = AWGNChannel(snr_db=10.0)
+# power_constraint_train = AveragePowerConstraint(average_power=1.0)
+#
+# mac_model_train = MultipleAccessChannelModel(
+#     encoders=encoders_train,
+#     decoder=joint_decoder_train,
+#     channel=channel_train,
+#     power_constraint=power_constraint_train
+# )
+#
+# # Set up optimizer
+# optimizer = torch.optim.Adam(mac_model_train.parameters(), lr=0.001)
+#
+# # Define the fixed SNR for training
+# fixed_training_snr = 15.0 # Example fixed SNR for training
+#
+# # Train the model using the fixed SNR
+# training_losses = train_mac_model(
+#     mac_model_train,
+#     optimizer,
+#     num_epochs=25, # Reduced epochs for quick example
+#     steps_per_epoch=50,
+#     batch_size=batch_size,
+#     message_dim=message_dim,
+#     num_users=num_users,
+#     training_snr=fixed_training_snr # Pass the fixed SNR
+# )
+#
+# # Plot training progress
+# plt.figure(figsize=(10, 6))
+# plt.plot(training_losses)
+# plt.xlabel('Epoch')
+# plt.ylabel('Average Training Loss')
+# plt.title(f'Training Loss for MAC Model (Fixed SNR = {fixed_training_snr} dB)') # Update title
+# plt.grid(True, linestyle='--', alpha=0.7)
+# plt.tight_layout()
+# plt.show() # Ensure plot is displayed when this section is run
 
-# Re-initialize model and optimizer for training
-encoders_train = nn.ModuleList([
-    MLPEncoder(in_features=message_dim, out_features=code_dim, hidden_dims=[50, 30])
-    for _ in range(num_users)
-])
-joint_decoder_train = MLPDecoder(
-    in_features=code_dim,
-    out_features=message_dim * num_users,
-    hidden_dims=[50, 30]
-)
-# Instantiate channel and constraint for the training model
-# Provide a default SNR value for initialization
-channel_train = AWGNChannel(snr_db=10.0)
-power_constraint_train = AveragePowerConstraint(average_power=1.0)
-
-mac_model_train = MultipleAccessChannelModel(
-    encoders=encoders_train,
-    decoder=joint_decoder_train,
-    channel=channel_train,
-    power_constraint=power_constraint_train
-)
-
-# Set up optimizer
-optimizer = torch.optim.Adam(mac_model_train.parameters(), lr=0.001)
-
-# Define the fixed SNR for training
-fixed_training_snr = 15.0 # Example fixed SNR for training
-
-# Train the model using the fixed SNR
-training_losses = train_mac_model(
-    mac_model_train,
-    optimizer,
-    num_epochs=25, # Reduced epochs for quick example
-    steps_per_epoch=50,
-    batch_size=batch_size,
-    message_dim=message_dim,
-    num_users=num_users,
-    training_snr=fixed_training_snr # Pass the fixed SNR
-)
-
-# Plot training progress
-plt.figure(figsize=(10, 6))
-plt.plot(training_losses)
-plt.xlabel('Epoch')
-plt.ylabel('Average Training Loss')
-plt.title(f'Training Loss for MAC Model (Fixed SNR = {fixed_training_snr} dB)') # Update title
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.show() # Ensure plot is displayed when this section is run
-
-"""
 
 # %%
 # Conclusion

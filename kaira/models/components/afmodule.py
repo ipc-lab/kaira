@@ -1,3 +1,5 @@
+"""Attention Feature (AF) Module implementation."""
+
 from typing import Any
 
 import torch

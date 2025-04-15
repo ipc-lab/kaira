@@ -48,7 +48,7 @@ def test_deepjsccq2_decoder_initialization(decoder2):
 
 def test_deepjsccq2_encoder_forward(encoder2, sample_image, sample_snr):
     """Test DeepJSCCQ2Encoder forward pass with SNR."""
-    encoded_image = encoder2(sample_image, sample_snr) # Pass arguments separately
+    encoded_image = encoder2(sample_image, sample_snr)  # Pass arguments separately
     assert isinstance(encoded_image, torch.Tensor)
     # Check output shape (adjust based on expected downsampling)
     # The output shape depends on the architecture, so adjust accordingly
@@ -57,16 +57,16 @@ def test_deepjsccq2_encoder_forward(encoder2, sample_image, sample_snr):
 
 def test_deepjsccq2_decoder_forward(decoder2, encoder2, sample_image, sample_snr):
     """Test DeepJSCCQ2Decoder forward pass with SNR."""
-    encoded_image = encoder2(sample_image, sample_snr) # Pass arguments separately
-    decoded_image = decoder2(encoded_image, sample_snr) # Pass arguments separately
+    encoded_image = encoder2(sample_image, sample_snr)  # Pass arguments separately
+    decoded_image = decoder2(encoded_image, sample_snr)  # Pass arguments separately
     assert isinstance(decoded_image, torch.Tensor)
     assert decoded_image.shape == sample_image.shape  # Check output shape
 
 
 def test_deepjsccq2_encoder_decoder_roundtrip(encoder2, decoder2, sample_image, sample_snr):
     """Test a full encoder-decoder roundtrip with SNR."""
-    encoded_image = encoder2(sample_image, sample_snr) # Pass arguments separately
-    decoded_image = decoder2(encoded_image, sample_snr) # Pass arguments separately
+    encoded_image = encoder2(sample_image, sample_snr)  # Pass arguments separately
+    decoded_image = decoder2(encoded_image, sample_snr)  # Pass arguments separately
 
     # Check that the decoded image is not identical to the original
     assert not torch.equal(decoded_image, sample_image)
@@ -85,6 +85,6 @@ def test_deepjsccq2_encoder_decoder_different_sizes(N, M, csi_length):
     decoder = Tung2022DeepJSCCQ2Decoder(N=N, M=M, csi_length=csi_length)
     sample_image = torch.randn(1, 3, 32, 32)
     sample_snr = torch.randn(1, csi_length)
-    encoded_image = encoder(sample_image, sample_snr) # Pass arguments separately
-    decoded_image = decoder(encoded_image, sample_snr) # Pass arguments separately
+    encoded_image = encoder(sample_image, sample_snr)  # Pass arguments separately
+    decoded_image = decoder(encoded_image, sample_snr)  # Pass arguments separately
     assert decoded_image.shape == sample_image.shape

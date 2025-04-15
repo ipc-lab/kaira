@@ -1,9 +1,9 @@
 """Tests for analog channel implementations in Kaira."""
 import math
 
+import numpy as np
 import pytest
 import torch
-import numpy as np
 
 from kaira.channels import (
     AWGNChannel,
@@ -21,7 +21,6 @@ from kaira.utils import snr_to_noise_power
 
 
 class TestAWGNChannel:
-    
     def test_initialization(self):
         # Test with noise power
         channel1 = AWGNChannel(avg_noise_power=0.1)
@@ -56,14 +55,14 @@ class TestAWGNChannel:
         # Check noise variance (should be close to noise_power)
         noise = output - random_tensor
         measured_variance = torch.var(noise).item()
-        assert np.isclose(measured_variance, noise_power, rtol=0.3) # Increased tolerance for randomness
+        assert np.isclose(measured_variance, noise_power, rtol=0.3)  # Increased tolerance for randomness
 
     def test_forward_with_snr(self, random_tensor):
         snr_db = 10.0
         channel = AWGNChannel(snr_db=snr_db)
 
         # Use input with known power for easier verification
-        x = torch.ones(1000) * 0.5 # Signal power = 0.25
+        x = torch.ones(1000) * 0.5  # Signal power = 0.25
         signal_power = torch.mean(torch.abs(x) ** 2).item()
         expected_noise_power = signal_power / (10 ** (snr_db / 10))
 
@@ -88,12 +87,12 @@ class TestAWGNChannel:
 
         # Check noise variance for complex (should be noise_power)
         noise = output - complex_tensor
-        measured_variance = torch.mean(torch.abs(noise)**2).item()
+        measured_variance = torch.mean(torch.abs(noise) ** 2).item()
         assert np.isclose(measured_variance, 0.1, rtol=0.3)
 
     def test_pregenerated_noise(self, random_tensor):
-        channel = AWGNChannel(avg_noise_power=0.1) # Noise power doesn't matter here
-        custom_noise = torch.randn_like(random_tensor) * 0.5 # Custom noise
+        channel = AWGNChannel(avg_noise_power=0.1)  # Noise power doesn't matter here
+        custom_noise = torch.randn_like(random_tensor) * 0.5  # Custom noise
         expected_output = random_tensor + custom_noise
         output = channel(random_tensor, noise=custom_noise)
         assert torch.allclose(output, expected_output)

@@ -4,8 +4,9 @@ The perfect (identity) channel represents the theoretical ideal case in informat
 where information is transmitted without any error or loss :cite:`shannon1948mathematical`.
 """
 
-import torch
 from typing import Any
+
+import torch
 
 from .base import BaseChannel
 from .registry import ChannelRegistry

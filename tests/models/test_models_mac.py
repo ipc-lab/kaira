@@ -16,7 +16,7 @@ class SimpleEncoder(nn.Module):
         super().__init__()
         self.layer = nn.Linear(input_dim, output_dim)
 
-    def forward(self, x, *args, **kwargs): # Accept *args and **kwargs
+    def forward(self, x, *args, **kwargs):  # Accept *args and **kwargs
         return self.layer(x)
 
 
@@ -27,7 +27,7 @@ class SimpleDecoder(nn.Module):
         super().__init__()
         self.layer = nn.Linear(input_dim, output_dim)
 
-    def forward(self, x, *args, **kwargs): # Accept *args and **kwargs
+    def forward(self, x, *args, **kwargs):  # Accept *args and **kwargs
         return self.layer(x)
 
 
@@ -39,13 +39,7 @@ def mac_components():
     num_devices = 3
 
     # Pass classes for encoder and decoder
-    return {
-        "channel": channel,
-        "power_constraint": power_constraint,
-        "encoders": SimpleEncoder, # Pass class
-        "decoder": SimpleDecoder, # Pass class
-        "num_devices": num_devices
-    }
+    return {"channel": channel, "power_constraint": power_constraint, "encoders": SimpleEncoder, "decoder": SimpleDecoder, "num_devices": num_devices}  # Pass class  # Pass class
 
 
 def test_mac_model_initialization(mac_components):
@@ -159,14 +153,7 @@ def test_mac_model_registry(mac_components):
 
     # Create model through registry
     # Need to provide necessary args like encoders, decoder, num_devices
-    model = ModelRegistry.create(
-        "multiple_access_channel",
-        encoders=mac_components["encoders"],
-        decoder=mac_components["decoder"],
-        channel=mac_components["channel"],
-        power_constraint=mac_components["power_constraint"],
-        num_devices=mac_components["num_devices"]
-    )
+    model = ModelRegistry.create("multiple_access_channel", encoders=mac_components["encoders"], decoder=mac_components["decoder"], channel=mac_components["channel"], power_constraint=mac_components["power_constraint"], num_devices=mac_components["num_devices"])
 
     assert isinstance(model, MultipleAccessChannelModel)
     assert model.num_devices == mac_components["num_devices"]
@@ -184,7 +171,7 @@ def test_mac_model_with_csi_and_noise():
 
     # Create CSI and noise (assuming channel and decoder can handle them via **kwargs)
     csi = torch.randn(2, 5)  # Example shape
-    noise = torch.randn(2, 5) # Example shape
+    noise = torch.randn(2, 5)  # Example shape
 
     # Run forward pass with CSI and noise
     output = model(inputs, csi=csi, noise=noise)
@@ -206,7 +193,7 @@ def test_mac_model_invalid_forward_call():
 
     # Test with wrong number of inputs in list
     with pytest.raises(ValueError, match="Number of input tensors .* must match"):
-        model([torch.randn(2, 10)]) # Only 1 input for num_devices=2
+        model([torch.randn(2, 10)])  # Only 1 input for num_devices=2
 
     # Test with non-tensor in list
     with pytest.raises(ValueError, match="Input 'x' must be a list of torch.Tensors"):

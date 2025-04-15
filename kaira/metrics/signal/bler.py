@@ -4,7 +4,7 @@ BLER is a key performance indicator for block-based transmission schemes like th
 in modern wireless systems :cite:`lin2004error` :cite:`moon2005error`.
 """
 
-from typing import Optional, Any
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -46,7 +46,7 @@ class BlockErrorRate(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "BLER", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name=name or "BLER", *args, **kwargs)  # Pass args and kwargs
         self.block_size = block_size
         self.threshold = threshold
         self.reduction = reduction

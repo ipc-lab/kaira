@@ -59,7 +59,7 @@ def test_afmodule_missing_side_info():
     x = torch.randn(4, N, 32, 32)
 
     # Test that TypeError is raised when csi is missing
-    with pytest.raises(TypeError): # Changed from ValueError
+    with pytest.raises(TypeError):  # Changed from ValueError
         module(x)
 
 
@@ -267,7 +267,7 @@ def test_afmodule_context_padding():
 
 
 def test_afmodule_tuple_input():
-    """Test AFModule with separate inputs (previously tuple).""" # Docstring updated for clarity
+    """Test AFModule with separate inputs (previously tuple)."""  # Docstring updated for clarity
     N = 64
     csi_length = 1
     module = AFModule(N=N, csi_length=csi_length)
@@ -278,7 +278,7 @@ def test_afmodule_tuple_input():
     side_info = torch.randn(batch_size, csi_length)
 
     # Test forward pass with separate inputs
-    output = module(x, side_info) # Changed from module((x, side_info))
+    output = module(x, side_info)  # Changed from module((x, side_info))
 
     # Check output shape
     assert output.shape == x.shape

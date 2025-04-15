@@ -95,7 +95,7 @@ class BinaryTensorDataset(Dataset):
             *args: Additional positional arguments (ignored).
             **kwargs: Additional keyword arguments (ignored).
         """
-        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
+        super().__init__(*args, **kwargs)  # Pass args and kwargs to parent if necessary
         self.data = create_binary_tensor(size, prob, device)
 
     def __len__(self):
@@ -141,7 +141,7 @@ class UniformTensorDataset(Dataset):
             *args: Additional positional arguments (ignored).
             **kwargs: Additional keyword arguments (ignored).
         """
-        super().__init__(*args, **kwargs) # Pass args and kwargs to parent if necessary
+        super().__init__(*args, **kwargs)  # Pass args and kwargs to parent if necessary
         self.data = create_uniform_tensor(size, low, high, device)
 
     def __len__(self):

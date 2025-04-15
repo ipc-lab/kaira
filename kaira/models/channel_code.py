@@ -6,7 +6,6 @@ conventional encoding/decoding pipeline.
 
 from typing import Any
 
-
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
 from kaira.modulations import BaseDemodulator, BaseModulator

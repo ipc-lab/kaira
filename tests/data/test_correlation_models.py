@@ -1,9 +1,8 @@
 """Tests for correlation models."""
-import numpy as np
 import pytest
 import torch
 
-from kaira.data.correlation import WynerZivCorrelationDataset, WynerZivCorrelationModel
+from kaira.data.correlation import WynerZivCorrelationDataset
 
 # ======== Fixtures ========
 

@@ -1,3 +1,5 @@
+"""Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions."""
+
 from typing import Optional, Tuple, Union
 
 import torch

@@ -4,7 +4,7 @@ SNR is a fundamental measure for quantifying the quality of a signal in the pres
 widely used in communications and signal processing :cite:`goldsmith2005wireless` :cite:`sklar2001digital`.
 """
 
-from typing import Optional, Tuple, Any
+from typing import Any, Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -32,7 +32,7 @@ class SignalToNoiseRatio(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "SNR", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name=name or "SNR", *args, **kwargs)  # Pass args and kwargs
         self.mode = mode.lower()
         if self.mode not in ["db", "linear"]:
             raise ValueError("Mode must be either 'db' or 'linear'")
@@ -130,7 +130,7 @@ class SignalToNoiseRatio(BaseMetric):
         Returns:
             Tuple[Tensor, Tensor]: Mean and standard deviation of SNR values
         """
-        snr_values = self.forward(signal, noisy_signal, *args, **kwargs) # Pass args/kwargs
+        snr_values = self.forward(signal, noisy_signal, *args, **kwargs)  # Pass args/kwargs
         return snr_values.mean(), snr_values.std()
 
     def reset(self) -> None:

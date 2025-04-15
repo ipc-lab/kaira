@@ -11,6 +11,7 @@ import torch.nn as nn
 
 from kaira.channels.base import BaseChannel
 from kaira.models.base import BaseModel
+
 # Import registry directly from registry module to avoid circular imports
 from kaira.models.registry import ModelRegistry
 

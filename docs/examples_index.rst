@@ -33,7 +33,7 @@ Examples and Tutorials
                 <p>Implementation examples of various communication models</p>
             </a>
         </div>
-        
+
         <div class="category-card">
             <a href="examples/channels/index.html">
                 <h3>Channels</h3>

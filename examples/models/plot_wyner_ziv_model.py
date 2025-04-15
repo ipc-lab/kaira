@@ -8,19 +8,20 @@ a scenario where the decoder has access to additional correlated information (si
 that is not available to the encoder, allowing for more efficient compression.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # -------------------------------
 # First, we import necessary modules and set random seeds for reproducibility.
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from torch import nn
 
-from kaira.models import WynerZivModel
 from kaira.channels import AWGNChannel
 from kaira.constraints.power import AveragePowerConstraint, TotalPowerConstraint
-from kaira.models.components import MLPEncoder, MLPDecoder
+from kaira.models import WynerZivModel
+from kaira.models.components import MLPDecoder, MLPEncoder
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -59,11 +60,7 @@ plt.grid(True)
 # Now we'll create the Wyner-Ziv model components.
 
 # Source encoder (compresses the source without knowledge of side information)
-encoder = MLPEncoder(
-    in_features=source_dim,
-    out_features=code_dim,
-    hidden_dims=[20, 15]
-)
+encoder = MLPEncoder(in_features=source_dim, out_features=code_dim, hidden_dims=[20, 15])
 
 # Power constraint for the encoded signal
 constraint = TotalPowerConstraint(total_power=1.0)
@@ -73,19 +70,10 @@ channel = AWGNChannel(snr_db=10.0)
 
 # Decoder with access to both the received code and side information
 # Input features = code_dim (from received code) + source_dim (from side info)
-decoder = MLPDecoder(
-    in_features=code_dim + source_dim,
-    out_features=source_dim,
-    hidden_dims=[24, 20]
-)
+decoder = MLPDecoder(in_features=code_dim + source_dim, out_features=source_dim, hidden_dims=[24, 20])
 
 # Build the Wyner-Ziv model
-wz_model = WynerZivModel(
-    encoder=encoder,
-    constraint=constraint,
-    channel=channel,
-    decoder=decoder
-)
+wz_model = WynerZivModel(encoder=encoder, constraint=constraint, channel=channel, decoder=decoder)
 
 # %%
 # Simulating Transmission with Side Information
@@ -102,7 +90,7 @@ for snr in snr_values:
     # Pass the source data through our model with the current SNR and side information
     with torch.no_grad():
         reconstructed = wz_model(source_data, side_info)
-    
+
     # Calculate MSE
     error = mse_loss(reconstructed, source_data).item()
     mse_per_snr.append(error)
@@ -114,12 +102,12 @@ for snr in snr_values:
 # Let's plot the reconstruction quality as a function of SNR.
 
 plt.figure(figsize=(10, 6))
-plt.plot(snr_values, mse_per_snr, 'o-', linewidth=2)
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Mean Squared Error (MSE)')
-plt.title('Reconstruction Error vs. SNR for Wyner-Ziv Coding')
-plt.yscale('log')
+plt.plot(snr_values, mse_per_snr, "o-", linewidth=2)
+plt.grid(True, linestyle="--", alpha=0.7)
+plt.xlabel("SNR (dB)")
+plt.ylabel("Mean Squared Error (MSE)")
+plt.title("Reconstruction Error vs. SNR for Wyner-Ziv Coding")
+plt.yscale("log")
 plt.tight_layout()
 
 # %%
@@ -127,40 +115,41 @@ plt.tight_layout()
 # ---------------------------------------------------------------------------------
 # Let's examine how the quality of side information affects reconstruction.
 
+
 def simulate_with_varying_correlation(model, source_data, noise_levels, snr=10.0):
     """Simulate transmission with varying correlation between source and side info."""
     results = []
-    
+
     for noise in noise_levels:
         # Generate side information with different correlation levels
         side_info = source_data + noise * torch.randn_like(source_data)
-        
+
         # Transmit through the model
         with torch.no_grad():
             reconstructed = model(source_data, side_info)
-        
+
         # Calculate error
         error = mse_loss(reconstructed, source_data).item()
         results.append(error)
-    
+
     return results
+
 
 # Define correlation levels by varying noise
 noise_levels = [0.1, 0.5, 1.0, 2.0, 4.0]
 fixed_snr = 10.0
 
 # Simulate with different correlation levels
-correlation_results = simulate_with_varying_correlation(
-    wz_model, source_data, noise_levels, fixed_snr)
+correlation_results = simulate_with_varying_correlation(wz_model, source_data, noise_levels, fixed_snr)
 
 # Plot results
 plt.figure(figsize=(10, 6))
-plt.plot(noise_levels, correlation_results, 'o-', linewidth=2)
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlabel('Side Information Noise Level')
-plt.ylabel('Mean Squared Error (MSE)')
-plt.title(f'Effect of Side Information Quality (SNR={fixed_snr}dB)')
-plt.yscale('log')
+plt.plot(noise_levels, correlation_results, "o-", linewidth=2)
+plt.grid(True, linestyle="--", alpha=0.7)
+plt.xlabel("Side Information Noise Level")
+plt.ylabel("Mean Squared Error (MSE)")
+plt.title(f"Effect of Side Information Quality (SNR={fixed_snr}dB)")
+plt.yscale("log")
 
 # %%
 # Comparison with Direct Transmission
@@ -171,21 +160,14 @@ plt.yscale('log')
 # It will have the same structure but won't use side information
 
 # Simple encoder-decoder without side info
-standard_encoder = MLPEncoder(
-    in_features=source_dim,
-    out_features=code_dim,
-    hidden_dims=[20, 15]
-)
+standard_encoder = MLPEncoder(in_features=source_dim, out_features=code_dim, hidden_dims=[20, 15])
 
 standard_constraint = AveragePowerConstraint(average_power=1.0)
 standard_channel = AWGNChannel(snr_db=10.0)
 
 # Decoder without side information
-standard_decoder = MLPDecoder(
-    in_features=code_dim,
-    out_features=source_dim,
-    hidden_dims=[15, 20]
-)
+standard_decoder = MLPDecoder(in_features=code_dim, out_features=source_dim, hidden_dims=[15, 20])
+
 
 # Function for direct transmission without side info
 def direct_transmission(source, encoder, constraint, channel, decoder, snr):
@@ -194,6 +176,7 @@ def direct_transmission(source, encoder, constraint, channel, decoder, snr):
     received = channel(constrained_code)
     reconstructed = decoder(received)
     return reconstructed
+
 
 # Compare performance at different SNRs
 wz_errors = []
@@ -205,24 +188,22 @@ for snr in snr_values:
         wz_reconstructed = wz_model(source_data, side_info)
         wz_error = mse_loss(wz_reconstructed, source_data).item()
         wz_errors.append(wz_error)
-    
+
     # Direct transmission without side info
     with torch.no_grad():
-        direct_reconstructed = direct_transmission(
-            source_data, standard_encoder, standard_constraint, 
-            standard_channel, standard_decoder, snr)
+        direct_reconstructed = direct_transmission(source_data, standard_encoder, standard_constraint, standard_channel, standard_decoder, snr)
         direct_error = mse_loss(direct_reconstructed, source_data).item()
         direct_errors.append(direct_error)
 
 # Plot comparison
 plt.figure(figsize=(10, 6))
-plt.plot(snr_values, wz_errors, 'o-', linewidth=2, label='Wyner-Ziv with Side Info')
-plt.plot(snr_values, direct_errors, 's--', linewidth=2, label='Direct Transmission')
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlabel('SNR (dB)')
-plt.ylabel('Mean Squared Error (MSE)')
-plt.title('Performance Comparison: Wyner-Ziv vs Direct Transmission')
-plt.yscale('log')
+plt.plot(snr_values, wz_errors, "o-", linewidth=2, label="Wyner-Ziv with Side Info")
+plt.plot(snr_values, direct_errors, "s--", linewidth=2, label="Direct Transmission")
+plt.grid(True, linestyle="--", alpha=0.7)
+plt.xlabel("SNR (dB)")
+plt.ylabel("Mean Squared Error (MSE)")
+plt.title("Performance Comparison: Wyner-Ziv vs Direct Transmission")
+plt.yscale("log")
 plt.legend()
 plt.tight_layout()
 
@@ -232,61 +213,60 @@ plt.tight_layout()
 # In practice, you would train your Wyner-Ziv model to minimize reconstruction error.
 # Here's how you could set up the training loop:
 
-def train_wyner_ziv_model(model, optimizer, num_epochs=50, batch_size=64, 
-                       source_dim=10, noise_range=(0.1, 1.0),
-                       snr_range=(0, 20)):
+
+def train_wyner_ziv_model(model, optimizer, num_epochs=50, batch_size=64, source_dim=10, noise_range=(0.1, 1.0), snr_range=(0, 20)):
     """Example training loop for a Wyner-Ziv model."""
     model.train()
     losses = []
-    
+
     for epoch in range(num_epochs):
         # Generate random source data
         source_data = torch.randn(batch_size, source_dim)
-        
+
         # Generate random noise level for side information
         noise_level = torch.FloatTensor(1).uniform_(noise_range[0], noise_range[1]).item()
         side_info = source_data + noise_level * torch.randn_like(source_data)
-        
+
         # Generate random SNR within the given range
         snr = torch.FloatTensor(1).uniform_(snr_range[0], snr_range[1]).item()
-        
+
         # Set the channel's SNR for this iteration
         model.channel.snr_db = snr
-        
+
         # Forward pass
         optimizer.zero_grad()
         reconstructed = model(source_data, side_info)
-        
+
         # Compute loss
         loss = mse_loss(reconstructed, source_data)
-        
+
         # Backward pass and optimize
         loss.backward()
         optimizer.step()
-        
+
         if (epoch + 1) % 5 == 0:
             print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item():.6f}")
         losses.append(loss.item())
-    
+
     return losses
+
 
 # Example of how you would train the model
 # (not executed in this example for simplicity)
-"""
-# Set up optimizer
-optimizer = torch.optim.Adam(wz_model.parameters(), lr=0.001)
-
-# Train the model
-training_losses = train_wyner_ziv_model(wz_model, optimizer)
-
-# Plot training progress
-plt.figure(figsize=(10, 6))
-plt.plot(training_losses)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss for Wyner-Ziv Model')
-plt.grid(True)
-"""
+# # Set up optimizer
+# optimizer = torch.optim.Adam(wz_model.parameters(), lr=0.001)
+#
+# # Train the model
+# training_losses = train_wyner_ziv_model(wz_model, optimizer)
+#
+# # Plot training loss
+# plt.figure(figsize=(10, 6))
+# plt.plot(training_losses)
+# plt.xlabel("Training Epoch")
+# plt.ylabel("MSE Loss")
+# plt.title("Wyner-Ziv Model Training Loss")
+# plt.grid(True)
+# plt.show()
 
 # %%
 # Conclusion

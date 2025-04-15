@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from compressai.layers import GDN
 
-from kaira.channels import AWGNChannel, IdentityChannel, BaseChannel
+from kaira.channels import AWGNChannel, BaseChannel, IdentityChannel
 from kaira.models.base import BaseModel
 from kaira.models.feedback_channel import FeedbackChannelModel
 from kaira.models.registry import ModelRegistry
@@ -189,7 +189,7 @@ class OutputsCombiner(nn.Module):
         reconst = torch.cat([img_prev, residual], dim=1)
 
         reconst = self.conv1(reconst)
-        
+
         reconst = self.prelu1(reconst)
         reconst = self.conv2(reconst)
         reconst = self.sigmoid(reconst)
@@ -278,17 +278,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 feedback_channel = AWGNChannel(snr_db=feedback_snr)
 
         # Initialize the parent class with our components
-        super().__init__(
-            encoder=encoder,
-            forward_channel=forward_channel,
-            decoder=decoder,
-            feedback_generator=feedback_generator,
-            feedback_channel=feedback_channel,
-            feedback_processor=feedback_processor,
-            max_iterations=max_iterations,
-            *args, # Pass args
-            **kwargs # Pass kwargs
-        )
+        super().__init__(encoder=encoder, forward_channel=forward_channel, decoder=decoder, feedback_generator=feedback_generator, feedback_channel=feedback_channel, feedback_processor=feedback_processor, max_iterations=max_iterations, *args, **kwargs)  # Pass args  # Pass kwargs
 
         # Store additional parameters specific to this model
         self.refinement_layer = refinement_layer

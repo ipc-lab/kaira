@@ -132,7 +132,7 @@ class Kurmukova2025TransCoder(BaseModel):
         )
 
         # Iterative decoding process
-        soft_estimate = None # Initialize soft_estimate
+        soft_estimate = None  # Initialize soft_estimate
         for i in range(self.n_iterations):
             if self.decoder_tc is not None:
                 # TransCoder decoding
@@ -144,7 +144,7 @@ class Kurmukova2025TransCoder(BaseModel):
                     demodulated = self.decoder_tc([received, soft_estimate], *args, **kwargs)
             else:
                 # Demodulation
-                demodulated = self.demodulator(received, *args, **kwargs) # Pass args/kwargs
+                demodulated = self.demodulator(received, *args, **kwargs)  # Pass args/kwargs
 
             # Channel decoding
             # Pass *args, **kwargs to decoder_ec

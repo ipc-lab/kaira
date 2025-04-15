@@ -11,7 +11,7 @@ The composite approach addresses several common challenges in evaluation:
 - Custom evaluation schemes may need to emphasize certain properties over others
 """
 
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 import torch
 from torch import nn
@@ -117,7 +117,7 @@ class CompositeMetric(BaseMetric):
         result = torch.tensor(0.0, device=x.device)
         for name, metric in self.metrics.items():
             if name in self.weights:
-                metric_value = metric(x, y, *args, **kwargs) # Pass args and kwargs
+                metric_value = metric(x, y, *args, **kwargs)  # Pass args and kwargs
                 if isinstance(metric_value, tuple):
                     metric_value = metric_value[0]  # Take mean if tuple of (mean, std)
                 result = result + self.weights[name] * metric_value
@@ -146,7 +146,7 @@ class CompositeMetric(BaseMetric):
         """
         results = {}
         for name, metric in self.metrics.items():
-            results[name] = metric(x, y, *args, **kwargs) # Pass args and kwargs
+            results[name] = metric(x, y, *args, **kwargs)  # Pass args and kwargs
         return results
 
     def add_metric(self, name: str, metric: BaseMetric, weight: Optional[float] = None) -> None:

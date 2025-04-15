@@ -1,3 +1,5 @@
+"""Implementation of the DeepJSCC-Q model from Tung et al. (2022)."""
+
 from typing import Any
 
 import torch

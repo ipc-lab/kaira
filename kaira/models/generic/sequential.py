@@ -1,3 +1,5 @@
+"""Defines a sequential model container."""
+
 from typing import Any, Callable, Optional, Sequence
 
 from ..base import ConfigurableModel

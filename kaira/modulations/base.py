@@ -25,7 +25,7 @@ class BaseModulator(nn.Module, ABC):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs) # Pass *args and **kwargs to parent
+        super().__init__(*args, **kwargs)  # Pass *args and **kwargs to parent
         self._bits_per_symbol = bits_per_symbol
 
     @property
@@ -83,7 +83,7 @@ class BaseDemodulator(nn.Module, ABC):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        super().__init__(*args, **kwargs) # Pass *args and **kwargs to parent
+        super().__init__(*args, **kwargs)  # Pass *args and **kwargs to parent
         self._bits_per_symbol = bits_per_symbol
 
     @property

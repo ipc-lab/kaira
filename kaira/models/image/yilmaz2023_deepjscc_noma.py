@@ -103,8 +103,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self,
         channel: BaseChannel,
         power_constraint: BaseConstraint,
-        encoder: Optional[Union[Type[BaseModel], BaseModel]] = None, # Allow class or instance
-        decoder: Optional[Union[Type[BaseModel], BaseModel]] = None, # Allow class or instance
+        encoder: Optional[Union[Type[BaseModel], BaseModel]] = None,  # Allow class or instance
+        decoder: Optional[Union[Type[BaseModel], BaseModel]] = None,  # Allow class or instance
         num_devices: int = 2,
         M: float = 1.0,
         latent_dim: int = 16,
@@ -153,15 +153,15 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
         # Initialize the base class, passing *args and **kwargs for potential instantiation
         super().__init__(
-            encoders=encoder_config, # Pass class or instance directly
+            encoders=encoder_config,  # Pass class or instance directly
             decoder=decoder_config,  # Pass class or instance directly
             channel=channel,
             power_constraint=power_constraint,
             num_devices=num_devices,
-            shared_encoder=shared_encoder, # Pass flag
-            shared_decoder=shared_decoder, # Pass flag
-            *args, # Pass remaining args
-            **kwargs # Pass remaining kwargs (base class might use them for instantiation)
+            shared_encoder=shared_encoder,  # Pass flag
+            shared_decoder=shared_decoder,  # Pass flag
+            *args,  # Pass remaining args
+            **kwargs,  # Pass remaining kwargs (base class might use them for instantiation)
         )
 
         # Device embedding setup (needs num_devices from base class)
@@ -169,7 +169,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             self.device_images = nn.Embedding(self.num_devices, embedding_dim=self.embedding_dim)
             # Loading checkpoint needs to happen *after* models are created by super().__init__
             if ckpt_path is not None:
-                 self._load_checkpoint(ckpt_path)
+                self._load_checkpoint(ckpt_path)
 
     def _load_checkpoint(self, ckpt_path: str) -> None:
         """Load pre-trained weights from checkpoint.
@@ -185,43 +185,43 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
         # Base class __init__ created self.encoders and self.decoders (ModuleLists)
         if self.shared_encoder:
-             if enc_dict: # Only load if dict is not empty
-                 self.encoders[0].load_state_dict(enc_dict)
+            if enc_dict:  # Only load if dict is not empty
+                self.encoders[0].load_state_dict(enc_dict)
         else:
-             if enc_dict: # Check if dict is not empty
-                 # Ensure keys match ModuleList structure (e.g., "0", "1", ...)
-                 # If checkpoint saved a single shared encoder, this might need adjustment
-                 try:
-                     self.encoders.load_state_dict(enc_dict)
-                 except RuntimeError as e:
-                     print(f"Warning: Could not load encoder state dict directly: {e}. Attempting to load first encoder only.")
-                     if "0" in enc_dict:
-                         self.encoders[0].load_state_dict(enc_dict["0"])
-                     elif len(self.encoders) > 0:
-                         # Fallback: Assume the dict is for the first encoder if keys don't match
-                         try:
-                             self.encoders[0].load_state_dict(enc_dict)
-                             print("Successfully loaded state into the first encoder.")
-                         except Exception as inner_e:
-                             print(f"Failed to load state into the first encoder: {inner_e}")
+            if enc_dict:  # Check if dict is not empty
+                # Ensure keys match ModuleList structure (e.g., "0", "1", ...)
+                # If checkpoint saved a single shared encoder, this might need adjustment
+                try:
+                    self.encoders.load_state_dict(enc_dict)
+                except RuntimeError as e:
+                    print(f"Warning: Could not load encoder state dict directly: {e}. Attempting to load first encoder only.")
+                    if "0" in enc_dict:
+                        self.encoders[0].load_state_dict(enc_dict["0"])
+                    elif len(self.encoders) > 0:
+                        # Fallback: Assume the dict is for the first encoder if keys don't match
+                        try:
+                            self.encoders[0].load_state_dict(enc_dict)
+                            print("Successfully loaded state into the first encoder.")
+                        except Exception as inner_e:
+                            print(f"Failed to load state into the first encoder: {inner_e}")
 
         if self.shared_decoder:
-             if dec_dict:
-                 self.decoders[0].load_state_dict(dec_dict)
+            if dec_dict:
+                self.decoders[0].load_state_dict(dec_dict)
         else:
-             if dec_dict:
-                 try:
-                     self.decoders.load_state_dict(dec_dict)
-                 except RuntimeError as e:
-                     print(f"Warning: Could not load decoder state dict directly: {e}. Attempting to load first decoder only.")
-                     if "0" in dec_dict:
-                         self.decoders[0].load_state_dict(dec_dict["0"])
-                     elif len(self.decoders) > 0:
-                         try:
-                             self.decoders[0].load_state_dict(dec_dict)
-                             print("Successfully loaded state into the first decoder.")
-                         except Exception as inner_e:
-                             print(f"Failed to load state into the first decoder: {inner_e}")
+            if dec_dict:
+                try:
+                    self.decoders.load_state_dict(dec_dict)
+                except RuntimeError as e:
+                    print(f"Warning: Could not load decoder state dict directly: {e}. Attempting to load first decoder only.")
+                    if "0" in dec_dict:
+                        self.decoders[0].load_state_dict(dec_dict["0"])
+                    elif len(self.decoders) > 0:
+                        try:
+                            self.decoders[0].load_state_dict(dec_dict)
+                            print("Successfully loaded state into the first decoder.")
+                        except Exception as inner_e:
+                            print(f"Failed to load state into the first decoder: {inner_e}")
 
         if self.use_device_embedding and img_dict:
             self.device_images.load_state_dict(img_dict)
@@ -254,7 +254,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Use shared_encoder flag to get the correct encoder
             encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
             device_input = x[:, i, ...]
-            
+
             tx = encoder(device_input, csi=csi, *args, **kwargs)
 
             # Pass *args, **kwargs to power_constraint
@@ -262,21 +262,21 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             transmissions.append(tx)
 
         # Stack and SUM transmissions across devices to simulate NOMA superposition
-        x_stacked = torch.stack(transmissions, dim=1) # Shape: [B, N_dev, C_latent, H, W]
-        x_summed = torch.sum(x_stacked, dim=1)       # Shape: [B, C_latent, H, W]
+        x_stacked = torch.stack(transmissions, dim=1)  # Shape: [B, N_dev, C_latent, H, W]
+        x_summed = torch.sum(x_stacked, dim=1)  # Shape: [B, C_latent, H, W]
 
         # Apply channel - Pass *args, **kwargs
-        x_channel_out = self.channel(x_summed, csi=csi, *args, **kwargs) # Shape: [B, C_latent, H, W]
+        x_channel_out = self.channel(x_summed, csi=csi, *args, **kwargs)  # Shape: [B, C_latent, H, W]
 
         decoded_outputs: List[torch.Tensor] = []
         for i in range(self.num_devices):
             decoder = self.decoders[i]
-                # Pass *args, **kwargs to decoder
-            x_decoded = decoder(x_channel_out, csi=csi, *args, **kwargs) # Input is 4D
+            # Pass *args, **kwargs to decoder
+            x_decoded = decoder(x_channel_out, csi=csi, *args, **kwargs)  # Input is 4D
             # Assuming each non-shared decoder outputs [B, C_out_per_device, H, W]
             decoded_outputs.append(x_decoded)
 
-        x = torch.stack(decoded_outputs, dim=1) # Stack results -> [B, N_dev, C_out, H, W]
+        x = torch.stack(decoded_outputs, dim=1)  # Stack results -> [B, N_dev, C_out, H, W]
 
         return x
 
@@ -311,12 +311,12 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Apply power constraint - Assuming output t is 4D [B, C, H, W]
             # The original power constraint logic seemed specific and might need review
             # For simplicity, let's assume a standard power constraint applied per device signal
-            t = self.power_constraint(t, *args, **kwargs) # Ensure output is 4D
+            t = self.power_constraint(t, *args, **kwargs)  # Ensure output is 4D
 
             # Use the provided channel model for each transmission - Pass only the 4D signal tensor
-            t_channel = self.channel(t, *args, **kwargs) # Input is 4D, output is 4D
+            t_channel = self.channel(t, *args, **kwargs)  # Input is 4D, output is 4D
 
-            transmissions.append(t_channel) # List of 4D tensors
+            transmissions.append(t_channel)  # List of 4D tensors
 
         # Decode each transmission - support different decoder interfaces
         results: List[torch.Tensor] = []
@@ -325,7 +325,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             decoder = self.decoders[0] if self.shared_decoder else self.decoders[i]
 
             # Pass only the relevant 4D tensor transmission to the decoder, including csi=csi
-            xi = decoder(transmissions[i], csi=csi, *args, **kwargs) # Input is 4D
+            xi = decoder(transmissions[i], csi=csi, *args, **kwargs)  # Input is 4D
 
             if self.shared_decoder and xi.ndim == 5:  # [B, num_devices, C, H, W]
                 # If shared decoder outputs all devices, select the relevant one
@@ -334,4 +334,4 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
             results.append(xi)
 
-        return torch.stack(results, dim=1) # Stack results -> [B, N_dev, C_out, H, W]
+        return torch.stack(results, dim=1)  # Stack results -> [B, N_dev, C_out, H, W]

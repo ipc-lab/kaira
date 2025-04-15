@@ -1,3 +1,5 @@
+"""General utility functions for the Kaira library."""
+
 import os
 import random
 from typing import Any, Union

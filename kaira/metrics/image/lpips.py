@@ -4,6 +4,8 @@ LPIPS is a learned perceptual metric that leverages deep features and better cor
 with human perception than traditional metrics :cite:`zhang2018unreasonable`.
 """
 
+# Need to import inspect
+import inspect
 from typing import Any, Literal, Tuple
 
 import torch
@@ -13,9 +15,6 @@ from torchmetrics.functional.image.lpips import _lpips_compute, _lpips_update
 
 from ..base import BaseMetric
 from ..registry import MetricRegistry
-
-# Need to import inspect
-import inspect
 
 
 @MetricRegistry.register_metric("lpips")
@@ -38,7 +37,7 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="LPIPS", *args, **kwargs) # Pass args and kwargs
+        super().__init__(name="LPIPS", *args, **kwargs)  # Pass args and kwargs
         self.net_type = net_type
         self.normalize = normalize
         # Pass only relevant kwargs to torchmetrics

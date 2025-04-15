@@ -8,8 +8,9 @@ For comprehensive coverage of these channel models, see :cite:`cover2006elements
 and :cite:`shannon1948mathematical`.
 """
 
-import torch
 from typing import Any
+
+import torch
 
 from kaira.utils import to_tensor
 

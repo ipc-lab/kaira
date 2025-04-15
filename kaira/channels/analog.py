@@ -7,9 +7,10 @@ analog communication systems.
 For a comprehensive overview of analog channel models, see :cite:`goldsmith2005wireless` and :cite:`proakis2007digital`.
 """
 
+from typing import Any
+
 import numpy as np
 import torch
-from typing import Any
 
 from kaira.utils import snr_to_noise_power, to_tensor
 
@@ -123,8 +124,9 @@ class AWGNChannel(BaseChannel):
         # If pre-generated noise is provided, use it
         if noise is not None:
             return x + noise
-    
+
         return _apply_noise(x, snr_db=self.snr_db, noise_power=self.avg_noise_power)
+
 
 GaussianChannel = AWGNChannel
 

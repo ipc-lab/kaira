@@ -40,7 +40,7 @@ class SimpleFeedbackGenerator(nn.Module):
         super().__init__(*args, **kwargs)
         self.layer = nn.Linear(20, feedback_size)
 
-    def forward(self, decoded, original, *args, **kwargs): # Add *args, **kwargs
+    def forward(self, decoded, original, *args, **kwargs):  # Add *args, **kwargs
         # Concatenate decoded output and original input
         combined = torch.cat([decoded, original], dim=1)
         return self.layer(combined)

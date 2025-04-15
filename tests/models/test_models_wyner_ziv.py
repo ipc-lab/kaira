@@ -188,6 +188,7 @@ class TestWynerZivCorrelationModel:
         with pytest.raises(ValueError, match="Unknown correlation type"):
             model(torch.randn(10))
 
+
 class SimpleEncoder(nn.Module):
     """Simple encoder for testing the WynerZiv model."""
 

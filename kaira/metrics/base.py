@@ -1,5 +1,7 @@
+"""Base class for defining evaluation metrics in Kaira."""
+
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Any
+from typing import Any, Optional, Tuple
 
 import torch
 from torch import nn

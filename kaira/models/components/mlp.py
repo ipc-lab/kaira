@@ -6,16 +6,16 @@ import torch
 import torch.nn as nn
 
 from kaira.models.base import BaseModel
+
 from ..registry import ModelRegistry
 
 
 @ModelRegistry.register_model()
 class MLPEncoder(BaseModel):
-    """
-    Multi-Layer Perceptron (MLP) Encoder for communication systems.
+    """Multi-Layer Perceptron (MLP) Encoder for communication systems.
 
-    This module implements a simple MLP-based encoder that maps input messages
-    to encoded signals suitable for transmission over a communication channel.
+    This module implements a simple MLP-based encoder that maps input messages to encoded signals
+    suitable for transmission over a communication channel.
     """
 
     def __init__(
@@ -83,11 +83,10 @@ class MLPEncoder(BaseModel):
 
 @ModelRegistry.register_model()
 class MLPDecoder(BaseModel):
-    """
-    Multi-Layer Perceptron (MLP) Decoder for communication systems.
+    """Multi-Layer Perceptron (MLP) Decoder for communication systems.
 
-    This module implements a simple MLP-based decoder that maps received signals
-    back to their corresponding messages.
+    This module implements a simple MLP-based decoder that maps received signals back to their
+    corresponding messages.
     """
 
     def __init__(

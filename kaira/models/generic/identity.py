@@ -1,3 +1,5 @@
+"""Defines an identity model that passes the input through unchanged."""
+
 from typing import Any
 
 import torch

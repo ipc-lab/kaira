@@ -16,13 +16,14 @@ from kaira.metrics.signal import (
     SymbolErrorRate,
 )
 
+
 def test_ber_complex_input():
     """Test BER calculation with complex input tensors."""
     metric = BitErrorRate()
 
     # Create complex tensors
-    transmitted_complex = torch.tensor([1+1j, 0+0j, 1+0j, 0+1j], dtype=torch.complex64)
-    received_complex = torch.tensor([1+1j, 1+0j, 0+0j, 0+1j], dtype=torch.complex64) # 2 errors (real part of 2nd, real part of 3rd)
+    transmitted_complex = torch.tensor([1 + 1j, 0 + 0j, 1 + 0j, 0 + 1j], dtype=torch.complex64)
+    received_complex = torch.tensor([1 + 1j, 1 + 0j, 0 + 0j, 0 + 1j], dtype=torch.complex64)  # 2 errors (real part of 2nd, real part of 3rd)
 
     # Expected real/imaginary concatenated tensors after internal processing
     # transmitted: [1, 0, 1, 0], [1, 0, 0, 1] -> [1, 1, 0, 0, 1, 0, 0, 1]
@@ -34,7 +35,7 @@ def test_ber_complex_input():
 
     # Test forward pass
     ber_forward = metric.forward(transmitted_complex, received_complex)
-    expected_ber_forward = 2.0 / 8.0 # 2 errors out of 8 total "bits" (real+imag)
+    expected_ber_forward = 2.0 / 8.0  # 2 errors out of 8 total "bits" (real+imag)
     assert torch.isclose(ber_forward, torch.tensor(expected_ber_forward)), f"Forward BER mismatch: expected {expected_ber_forward}, got {ber_forward}"
 
     # Test update and compute
@@ -43,6 +44,7 @@ def test_ber_complex_input():
     ber_compute = metric.compute()
     expected_ber_compute = 2.0 / 8.0
     assert torch.isclose(ber_compute, torch.tensor(expected_ber_compute)), f"Computed BER mismatch: expected {expected_ber_compute}, got {ber_compute}"
+
 
 def test_ber_empty_input():
     """Test BER with empty input tensors."""
@@ -53,11 +55,12 @@ def test_ber_empty_input():
     metric.update(transmitted, received)
     assert metric.compute() == 0.0
 
+
 def test_ber_basic_real():
     """Test basic BER calculation with real tensors."""
     metric = BitErrorRate()
     transmitted = torch.tensor([1, 0, 1, 0])
-    received = torch.tensor([1, 1, 0, 0]) # 2 errors
+    received = torch.tensor([1, 1, 0, 0])  # 2 errors
     expected_ber = 2.0 / 4.0
 
     # Test forward
@@ -70,11 +73,12 @@ def test_ber_basic_real():
     ber_compute = metric.compute()
     assert torch.isclose(ber_compute, torch.tensor(expected_ber)), f"Computed BER mismatch: expected {expected_ber}, got {ber_compute}"
 
+
 def test_ber_threshold():
     """Test BER with a different threshold."""
     metric = BitErrorRate(threshold=0.1)
-    transmitted = torch.tensor([0.9, 0.05, 0.8, 0.08]) # bits: [1, 0, 1, 0]
-    received = torch.tensor([0.7, 0.5, 0.05, 0.09])   # bits: [1, 1, 0, 0] -> 2 errors
+    transmitted = torch.tensor([0.9, 0.05, 0.8, 0.08])  # bits: [1, 0, 1, 0]
+    received = torch.tensor([0.7, 0.5, 0.05, 0.09])  # bits: [1, 1, 0, 0] -> 2 errors
     expected_ber = 2.0 / 4.0
 
     # Test forward
@@ -86,6 +90,7 @@ def test_ber_threshold():
     metric.update(transmitted, received)
     ber_compute = metric.compute()
     assert torch.isclose(ber_compute, torch.tensor(expected_ber)), f"Computed BER mismatch (threshold): expected {expected_ber}, got {ber_compute}"
+
 
 def test_ber_batched_input_forward_only():
     """Test BER calculation with batched input tensors (forward only)."""
@@ -121,14 +126,14 @@ def test_ber_update_compute_multiple_batches():
 
     # Batch 1
     transmitted1 = torch.tensor([1, 0, 1, 0])
-    received1 = torch.tensor([1, 1, 0, 0]) # 2 errors / 4 bits
+    received1 = torch.tensor([1, 1, 0, 0])  # 2 errors / 4 bits
     metric.update(transmitted1, received1)
     ber1 = metric.compute()
-    assert torch.isclose(ber1, torch.tensor(2.0/4.0))
+    assert torch.isclose(ber1, torch.tensor(2.0 / 4.0))
 
     # Batch 2 (complex)
-    transmitted2_complex = torch.tensor([1+1j, 0+0j], dtype=torch.complex64) # real/imag: [1, 0], [1, 0] -> [1, 1, 0, 0]
-    received2_complex = torch.tensor([1+0j, 0+1j], dtype=torch.complex64)   # real/imag: [1, 0], [0, 1] -> [1, 0, 0, 1]
+    transmitted2_complex = torch.tensor([1 + 1j, 0 + 0j], dtype=torch.complex64)  # real/imag: [1, 0], [1, 0] -> [1, 1, 0, 0]
+    received2_complex = torch.tensor([1 + 0j, 0 + 1j], dtype=torch.complex64)  # real/imag: [1, 0], [0, 1] -> [1, 0, 0, 1]
     # bits_t: [T, T, F, F]
     # bits_r: [T, F, F, T]
     # errors: [F, T, F, T] -> 2 errors / 4 "bits"

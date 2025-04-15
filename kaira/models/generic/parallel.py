@@ -1,3 +1,5 @@
+"""Defines a model that applies multiple modules in parallel to the input."""
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, List, Optional, Tuple
 
