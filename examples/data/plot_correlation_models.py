@@ -19,10 +19,11 @@ import torch
 
 from kaira.data import (
     WynerZivCorrelationDataset,
-    WynerZivCorrelationModel,
     create_binary_tensor,
     create_uniform_tensor,
 )
+
+from kaira.models.wyner_ziv import WynerZivCorrelationModel
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
