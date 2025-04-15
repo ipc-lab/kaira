@@ -304,11 +304,9 @@ def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_
 # --------------------------------------------------------------------------
 # This example demonstrated how to set up and use the MultipleAccessChannelModel.
 # Key functionalities include:
-# 1. Simulating transmission from multiple users over a shared channel using individual encoders
-#    and a joint decoder at a fixed SNR.
+# 1. Simulating transmission from multiple users over a shared channel using individual encoders and a joint decoder at a fixed SNR.
 # 2. Evaluating reconstruction performance using MSE.
-# 3. (Optional) Analyzing the impact of an increasing number of users (interference) on performance
-#    at a fixed SNR.
+# 3. (Optional) Analyzing the impact of an increasing number of users (interference) on performance at a fixed SNR.
 # 4. (Optional) Training the end-to-end system (encoders and decoder) jointly at a fixed SNR.
 #
 # The commented-out sections provide code for exploring user interference and training.
