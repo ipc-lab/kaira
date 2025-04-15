@@ -23,11 +23,11 @@ class ConvEncoder(BaseModel):
         self,
         in_channels: int,
         out_features: int,
-        hidden_dims: List[int] = None,
+        hidden_dims: Optional[List[int]] = None,
         kernel_size: int = 3,
         stride: int = 2,
         padding: int = 1,
-        activation: nn.Module = None,
+        activation: Optional[nn.Module] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -70,12 +70,16 @@ class ConvEncoder(BaseModel):
 
         # Calculate the size of flattened features after convolutions
         # This is an approximate calculation assuming square input images and valid padding
-        self._feature_size = None
+        self._feature_size: Optional[int] = None
 
         # Add a final linear layer to map to the desired output dimension
-        self.fc = nn.Linear(self._get_flattened_size(in_channels, hidden_dims), out_features)
+        calculated_feature_size = self._get_flattened_size(in_channels, hidden_dims)
+        if calculated_feature_size is None:
+            # This case should ideally not happen if _get_flattened_size works correctly
+            raise RuntimeError("Could not determine flattened feature size.")
+        self.fc = nn.Linear(calculated_feature_size, out_features)
 
-    def _get_flattened_size(self, in_channels: int, hidden_dims: List[int]) -> int:
+    def _get_flattened_size(self, in_channels: int, hidden_dims: List[int]) -> Optional[int]:
         """Calculate the flattened size after convolutions.
 
         Since the actual spatial dimensions depend on the input size, we'll use a
@@ -137,12 +141,12 @@ class ConvDecoder(BaseModel):
         in_features: int,
         out_channels: int,
         output_size: Tuple[int, int],
-        hidden_dims: List[int] = None,
+        hidden_dims: Optional[List[int]] = None,
         kernel_size: int = 3,
         stride: int = 2,
         padding: int = 1,
         output_padding: int = 1,
-        activation: nn.Module = None,
+        activation: Optional[nn.Module] = None,
         output_activation: Optional[nn.Module] = None,
         *args: Any,
         **kwargs: Any,

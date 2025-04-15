@@ -37,7 +37,8 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="LPIPS", *args, **kwargs)  # Pass args and kwargs
+        # Remove name="LPIPS" as BaseMetric handles it
+        super().__init__(*args, **kwargs)  # Pass args and kwargs
         self.net_type = net_type
         self.normalize = normalize
         # Pass only relevant kwargs to torchmetrics
@@ -48,12 +49,13 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("total", torch.tensor(0))
 
-    def forward(self, img1: Tensor, img2: Tensor, *args: Any, **kwargs: Any) -> Tensor:
+    # Rename img1 to x and img2 to y to match BaseMetric
+    def forward(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate LPIPS between two images.
 
         Args:
-            img1 (Tensor): First batch of images
-            img2 (Tensor): Second batch of images
+            x (Tensor): First batch of images
+            y (Tensor): Second batch of images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
 
@@ -62,21 +64,22 @@ class LearnedPerceptualImagePatchSimilarity(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used by self.lpips call here
         # but are included for interface consistency.
-        result = self.lpips(img1, img2)
+        result = self.lpips(x, y)
         return result.unsqueeze(0) if result.dim() == 0 else result
 
-    def update(self, img1: Tensor, img2: Tensor, *args: Any, **kwargs: Any) -> None:
+    # Rename img1 to x and img2 to y to match BaseMetric
+    def update(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> None:
         """Update the internal state with a batch of samples.
 
         Args:
-            img1 (Tensor): First batch of images
-            img2 (Tensor): Second batch of images
+            x (Tensor): First batch of images
+            y (Tensor): Second batch of images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
         """
         # Note: *args and **kwargs are not directly used by _lpips_update call here
         # but are included for interface consistency.
-        loss, total = _lpips_update(img1, img2, net=self.lpips.net, normalize=self.normalize)
+        loss, total = _lpips_update(x, y, net=self.lpips.net, normalize=self.normalize)
         self.sum_scores += loss.sum()
         self.total += total
         self.sum_sq += (loss**2).sum()

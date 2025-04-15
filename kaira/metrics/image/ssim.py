@@ -39,19 +39,21 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="SSIM", *args, **kwargs)  # Pass args and kwargs
+        # Remove name="SSIM" as BaseMetric handles it
+        super().__init__(*args, **kwargs)  # Pass args and kwargs
         self.reduction = reduction
         # Always use reduction=None in the underlying implementation
         # Pass only relevant kwargs to torchmetrics
         torchmetrics_kwargs = {k: v for k, v in kwargs.items() if k in inspect.signature(torchmetrics.image.StructuralSimilarityIndexMeasure.__init__).parameters}
         self.ssim = torchmetrics.image.StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, sigma=sigma, reduction=None, **torchmetrics_kwargs)
 
-    def forward(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tensor:
+    # Rename preds to x and targets to y to match BaseMetric
+    def forward(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate SSIM between predicted and target images.
 
         Args:
-            preds (Tensor): Predicted images
-            targets (Tensor): Target images
+            x (Tensor): Predicted images
+            y (Tensor): Target images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
 
@@ -60,7 +62,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used by self.ssim call here
         # but are included for interface consistency.
-        values = self.ssim(preds, targets)
+        values = self.ssim(x, y)
 
         # Apply reduction if specified
         if self.reduction == "mean":
@@ -73,12 +75,13 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
                 return values.unsqueeze(0)
             return values
 
-    def compute_with_stats(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
+    # Rename preds to x and targets to y to match BaseMetric
+    def compute_with_stats(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
         """Compute SSIM with mean and standard deviation.
 
         Args:
-            preds (Tensor): Predicted images
-            targets (Tensor): Target images
+            x (Tensor): Predicted images
+            y (Tensor): Target images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
 
@@ -87,7 +90,7 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used here
         # but are included for interface consistency.
-        values = self.forward(preds, targets)  # Use self.forward to handle reduction
+        values = self.forward(x, y)  # Use self.forward to handle reduction
         # Handle single value case to avoid NaN in std calculation
         if values.numel() <= 1:
             return values.mean(), torch.tensor(0.0)
@@ -115,7 +118,8 @@ class MultiScaleSSIM(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name="MS-SSIM", *args, **kwargs)  # Pass args and kwargs
+        # Remove name="MS-SSIM" as BaseMetric handles it
+        super().__init__(*args, **kwargs)  # Pass args and kwargs
         self.kernel_size = kernel_size
         self.data_range = data_range
         self.reduction = reduction
@@ -124,12 +128,13 @@ class MultiScaleSSIM(BaseMetric):
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("count", torch.tensor(0))
 
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    # Rename preds to x and targets to y to match BaseMetric
+    def forward(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Calculate MS-SSIM between predicted and target images.
 
         Args:
-            preds (torch.Tensor): Predicted images
-            targets (torch.Tensor): Target images
+            x (torch.Tensor): Predicted images
+            y (torch.Tensor): Target images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
 
@@ -139,8 +144,8 @@ class MultiScaleSSIM(BaseMetric):
         # Note: *args and **kwargs are not directly used by ms_ssim call here
         # but are included for interface consistency.
         values = ms_ssim(
-            preds,
-            targets,
+            x,
+            y,
             data_range=self.data_range,
             size_average=False,
             win_size=self.kernel_size,

@@ -35,7 +35,8 @@ class PeakSignalNoiseRatio(BaseMetric):
             *args: Variable length argument list passed to the base class and torchmetrics.
             **kwargs: Arbitrary keyword arguments passed to the base class and torchmetrics.
         """
-        super().__init__(name="PSNR", *args, **kwargs)  # Pass args and kwargs
+        # Remove name="PSNR" as BaseMetric handles it
+        super().__init__(*args, **kwargs)  # Pass args and kwargs
         self.reduction = reduction
         if "dim" not in kwargs:
             kwargs["dim"] = [1, 2, 3]
@@ -44,12 +45,13 @@ class PeakSignalNoiseRatio(BaseMetric):
         torchmetrics_kwargs = {k: v for k, v in kwargs.items() if k in inspect.signature(torchmetrics.image.PeakSignalNoiseRatio.__init__).parameters}
         self.psnr = torchmetrics.image.PeakSignalNoiseRatio(data_range=data_range, reduction=None, **torchmetrics_kwargs)
 
-    def forward(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tensor:
+    # Rename preds to x and targets to y to match BaseMetric
+    def forward(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tensor:
         """Calculate PSNR between predicted and target images.
 
         Args:
-            preds (Tensor): Predicted images
-            targets (Tensor): Target images
+            x (Tensor): Predicted images
+            y (Tensor): Target images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
         Returns:
@@ -57,7 +59,7 @@ class PeakSignalNoiseRatio(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used by self.psnr call here
         # but are included for interface consistency.
-        values = self.psnr(preds, targets)
+        values = self.psnr(x, y)
 
         # Apply reduction if specified
         if self.reduction == "mean":
@@ -67,12 +69,13 @@ class PeakSignalNoiseRatio(BaseMetric):
         else:
             return values
 
-    def compute_with_stats(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
+    # Rename preds to x and targets to y to match BaseMetric
+    def compute_with_stats(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
         """Compute PSNR with mean and standard deviation.
 
         Args:
-            preds (Tensor): Predicted images
-            targets (Tensor): Target images
+            x (Tensor): Predicted images
+            y (Tensor): Target images
             *args: Variable length argument list (currently unused).
             **kwargs: Arbitrary keyword arguments (currently unused).
         Returns:
@@ -80,7 +83,7 @@ class PeakSignalNoiseRatio(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used by self.psnr call here
         # but are included for interface consistency.
-        values = self.psnr(preds, targets)
+        values = self.psnr(x, y)
         # Handle single value case to avoid NaN in std calculation
         if values.numel() <= 1:
             return values.mean(), torch.tensor(0.0)
