@@ -3,3 +3,4 @@ torchmetrics
 joblib
 torchvision
 compressai
+torchaudio
