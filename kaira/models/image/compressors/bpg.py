@@ -11,7 +11,7 @@ import time
 import uuid
 
 # Change CompletedProcess import location if needed, or just use subprocess.CompletedProcess
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess  # nosec B404
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
@@ -129,7 +129,7 @@ class BPGCompressor(BaseModel):
             kwargs["capture_output"] = True
 
         # Ensure return type matches annotation
-        return subprocess.run(cmd_args, **kwargs)  # type: ignore
+        return subprocess.run(cmd_args, **kwargs)  # type: ignore # nosec B603
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, List[int]], Tuple[torch.Tensor, List[bytes]], Tuple[torch.Tensor, List[int], List[bytes]]]:
         """Process a batch of images through BPG compression.

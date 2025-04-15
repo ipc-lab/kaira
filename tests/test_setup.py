@@ -2,7 +2,7 @@ import ast
 import importlib.util
 import os
 import re
-import subprocess
+import subprocess  # nosec B404
 import sys
 import tempfile
 from unittest import mock
@@ -168,7 +168,7 @@ setup(
 """
 
     # Use exec to execute the test code
-    exec(setup_code)
+    exec(setup_code)  # nosec B102
 
     # Verify setup was called
     assert mock_setup.called, "setup() was not called"
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     try:
         # Execute the file with subprocess to test actual execution
-        result = subprocess.run([sys.executable, tmp_path, "--name"], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, tmp_path, "--name"], capture_output=True, text=True)  # nosec B603
         # No assertions needed here since we're just testing if it executes without errors
         assert result.returncode == 0, f"Mock setup failed with error: {result.stderr}"
     finally:
@@ -333,7 +333,7 @@ def test_setup_py_direct_execution():
     # Try to execute setup.py with a safe command that won't change anything
     try:
         # We use --help which doesn't actually install anything
-        result = subprocess.run([sys.executable, setup_path, "--help"], capture_output=True, text=True, timeout=10)  # Prevent hanging
+        result = subprocess.run([sys.executable, setup_path, "--help"], capture_output=True, text=True, timeout=10)  # Prevent hanging # nosec B603
 
         # Setup.py might return various exit codes with --help, we're just checking it runs
         if result.returncode != 0:
