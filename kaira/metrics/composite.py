@@ -76,7 +76,10 @@ class CompositeMetric(BaseMetric):
         Raises:
             ValueError: If weights dictionary contains keys that don't exist in metrics
         """
-        super().__init__(name="CompositeMetric", *args, **kwargs)
+        # Separate 'name' from kwargs if present, otherwise use default
+        explicit_name = kwargs.pop("name", "CompositeMetric")
+        # Pass only name and remaining kwargs to BaseMetric.__init__
+        super().__init__(name=explicit_name, **kwargs)
         self.metrics = nn.ModuleDict(metrics)
 
         # Validate weights if provided

@@ -1,6 +1,6 @@
 """Differential Phase-Shift Keying (DPSK) modulation schemes."""
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, Any
 
 import matplotlib.pyplot as plt  # type: ignore  # type: ignore
 import numpy as np
@@ -372,47 +372,35 @@ class DPSKDemodulator(BaseDemodulator):
 class DBPSKModulator(DPSKModulator):
     """Differential Binary Phase-Shift Keying (DBPSK) modulator."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the DBPSK modulator.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        kwargs.pop("order", None)  # Remove order if present in kwargs
-        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
-        super().__init__(order=2, gray_coding=True, *args, **kwargs)
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize DBPSK Modulator."""
+        # Remove potentially conflicting keys before passing kwargs
+        kwargs.pop("order", None)
+        kwargs.pop("gray_coding", None)
+        super().__init__(order=2, gray_coding=False, *args, **kwargs)
 
 
 @ModulationRegistry.register_demodulator("dbpsk")
 class DBPSKDemodulator(DPSKDemodulator):
     """Differential Binary Phase-Shift Keying (DBPSK) demodulator."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the DBPSK demodulator.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        kwargs.pop("order", None)  # Remove order if present in kwargs
-        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
-        super().__init__(order=2, gray_coding=True, *args, **kwargs)
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize DBPSK Demodulator."""
+        # Remove potentially conflicting keys before passing kwargs
+        kwargs.pop("order", None)
+        kwargs.pop("gray_coding", None)
+        super().__init__(order=2, gray_coding=False, *args, **kwargs)
 
 
 @ModulationRegistry.register_modulator("dqpsk")
 class DQPSKModulator(DPSKModulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) modulator."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the DQPSK modulator.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        kwargs.pop("order", None)  # Remove order if present in kwargs
-        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize DQPSK Modulator."""
+        # Remove potentially conflicting keys before passing kwargs
+        kwargs.pop("order", None)
+        kwargs.pop("gray_coding", None)
         super().__init__(order=4, gray_coding=True, *args, **kwargs)
 
 
@@ -420,13 +408,9 @@ class DQPSKModulator(DPSKModulator):
 class DQPSKDemodulator(DPSKDemodulator):
     """Differential Quadrature Phase-Shift Keying (DQPSK) demodulator."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the DQPSK demodulator.
-
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
-        kwargs.pop("order", None)  # Remove order if present in kwargs
-        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize DQPSK Demodulator."""
+        # Remove potentially conflicting keys before passing kwargs
+        kwargs.pop("order", None)
+        kwargs.pop("gray_coding", None)
         super().__init__(order=4, gray_coding=True, *args, **kwargs)
