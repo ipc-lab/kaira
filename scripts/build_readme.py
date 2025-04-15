@@ -1,10 +1,14 @@
 import os
+import subprocess  # Add import for subprocess
 
 # Change working directory to the root project directory
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 output_text = ""
-template_file_path = "README_template.rst"
+# Update template file path
+template_file_path = os.path.join("scripts", "README_template.rst")
+readme_rst_path = "README.rst"
+readme_md_path = "README.md"
 
 try:
     with open(template_file_path) as template_file:
@@ -30,8 +34,36 @@ try:
 
     print(output_text)
 
-    with open("README.rst", "w+") as readme_file:
+    # Write the generated RST content to README.rst
+    with open(readme_rst_path, "w+") as readme_file:
         readme_file.write(output_text)
+
+    # Convert README.rst to README.md using pandoc
+    try:
+        print(f"Converting {readme_rst_path} to {readme_md_path} using pandoc...")
+        subprocess.run(
+            ["pandoc", readme_rst_path, "-f", "rst", "-t", "markdown", "-o", readme_md_path],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        print("Conversion successful.")
+
+        # Remove the intermediate README.rst file
+        try:
+            os.remove(readme_rst_path)
+            print(f"Removed intermediate file: {readme_rst_path}")
+        except OSError as e:
+            print(f"Error removing file {readme_rst_path}: {e}")
+
+    except FileNotFoundError:
+        print("Error: pandoc command not found. Please ensure pandoc is installed and in your PATH.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during pandoc conversion: {e}")
+        print(f"Pandoc stderr: {e.stderr}")
+    except Exception as e:
+        print(f"An unexpected error occurred during conversion: {e}")
+
 
 except FileNotFoundError:
     print(f"Error: Template file '{template_file_path}' not found.")

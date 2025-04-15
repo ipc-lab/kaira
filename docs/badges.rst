@@ -1,14 +1,13 @@
-\
 Kaira — Wireless Communication Simulation Toolbox for PyTorch
-==============================================================
+=================================================================
 
 .. image:: https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/ipc-lab/kaira/actions/workflows/ci.yml
    :alt: Python CI
 
-.. image:: https://github.com/ipc-lab/kaira/actions/workflows/lint.yml/badge.svg
-   :target: https://github.com/ipc-lab/kaira/actions/workflows/lint.yml
-   :alt: Lint
+.. image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
+   :target: https://github.com/pre-commit/pre-commit
+   :alt: pre-commit
 
 .. image:: https://github.com/ipc-lab/kaira/actions/workflows/docs.yml/badge.svg
    :target: https://github.com/ipc-lab/kaira/actions/workflows/docs.yml
@@ -54,6 +53,6 @@ Kaira — Wireless Communication Simulation Toolbox for PyTorch
    :target: https://gitter.im/kaira/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link
    :alt: Gitter Chat
 
-Kaira is an open-source simulation toolkit for wireless communications built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced wireless transmission algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
+Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced wireless transmission algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
 
 `Documentation <https://kaira.readthedocs.io/en/latest/>`__
