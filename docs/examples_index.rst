@@ -89,13 +89,13 @@ Examples and Tutorials
    :maxdepth: 2
    :hidden:
 
+   examples/models/index
    examples/channels/index
    examples/constraints/index
    examples/data/index
    examples/modulation/index
    examples/metrics/index
    examples/losses/index
-   examples/models/index
 
 .. raw:: html
 

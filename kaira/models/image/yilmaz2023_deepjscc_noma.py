@@ -139,6 +139,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             **kwargs: Variable keyword arguments passed to the base class.
         """
         # Initialize DeepJSCC-NOMA specific attributes
+        self.shared_encoder = shared_encoder
+        self.shared_decoder = shared_decoder
         self.M = M
         self.latent_dim = latent_dim
         self.use_perfect_sic = use_perfect_sic
@@ -157,9 +159,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             decoders=decoder_config,  # Pass class or instance directly
             channel=channel,
             power_constraint=power_constraint,
-            num_devices=num_devices,
-            shared_encoder=shared_encoder,  # Pass flag
-            shared_decoder=shared_decoder,  # Pass flag
+            num_devices=num_devices
         )
 
         # Device embedding setup (needs num_devices from base class)
@@ -168,62 +168,6 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Loading checkpoint needs to happen *after* models are created by super().__init__
             if ckpt_path is not None:
                 self._load_checkpoint(ckpt_path)
-
-    def _load_checkpoint(self, ckpt_path: str) -> None:
-        """Load pre-trained weights from checkpoint.
-
-        Args:
-            ckpt_path (str): Path to checkpoint file
-        """
-        checkpoint = torch.load(ckpt_path)
-        # Load into the ModuleLists managed by this class
-        enc_dict = checkpoint.get("encoder_state_dict", {})
-        dec_dict = checkpoint.get("decoder_state_dict", {})
-        img_dict = checkpoint.get("device_image_state_dict", {})
-
-        # Base class __init__ created self.encoders and self.decoders (ModuleLists)
-        if self.shared_encoder:
-            if enc_dict:  # Only load if dict is not empty
-                self.encoders[0].load_state_dict(enc_dict)
-        else:
-            if enc_dict:  # Check if dict is not empty
-                # Ensure keys match ModuleList structure (e.g., "0", "1", ...)
-                # If checkpoint saved a single shared encoder, this might need adjustment
-                try:
-                    self.encoders.load_state_dict(enc_dict)
-                except RuntimeError as e:
-                    print(f"Warning: Could not load encoder state dict directly: {e}. Attempting to load first encoder only.")
-                    if "0" in enc_dict:
-                        self.encoders[0].load_state_dict(enc_dict["0"])
-                    elif len(self.encoders) > 0:
-                        # Fallback: Assume the dict is for the first encoder if keys don't match
-                        try:
-                            self.encoders[0].load_state_dict(enc_dict)
-                            print("Successfully loaded state into the first encoder.")
-                        except Exception as inner_e:
-                            print(f"Failed to load state into the first encoder: {inner_e}")
-
-        if self.shared_decoder:
-            if dec_dict:
-                self.decoders[0].load_state_dict(dec_dict)
-        else:
-            if dec_dict:
-                try:
-                    self.decoders.load_state_dict(dec_dict)
-                except RuntimeError as e:
-                    print(f"Warning: Could not load decoder state dict directly: {e}. Attempting to load first decoder only.")
-                    if "0" in dec_dict:
-                        self.decoders[0].load_state_dict(dec_dict["0"])
-                    elif len(self.decoders) > 0:
-                        try:
-                            self.decoders[0].load_state_dict(dec_dict)
-                            print("Successfully loaded state into the first decoder.")
-                        except Exception as inner_e:
-                            print(f"Failed to load state into the first decoder: {inner_e}")
-
-        if self.use_device_embedding and img_dict:
-            self.device_images.load_state_dict(img_dict)
-        print("checkpoint loaded")
 
     def forward(self, x: List[torch.Tensor], *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the DeepJSCC-NOMA model.
@@ -288,7 +232,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
 
         decoded_outputs: List[torch.Tensor] = []
         for i in range(self.num_devices):
-            decoder = self.decoders[i]
+            decoder = self.decoders[0] if self.shared_decoder else self.decoders[i]
             # Pass *args, **kwargs to decoder
             x_decoded = decoder(x_channel_out, *args, **kwargs)  # Input is 4D
             # Assuming each non-shared decoder outputs [B, C_out_per_device, H, W]
