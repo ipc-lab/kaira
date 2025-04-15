@@ -76,11 +76,6 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">DeepJSCC with Non-Orthogonal Multiple Access (NOMA)</div>
-    </div>
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates the original DeepJSCC implementation from Bourtsoulatze et al. (2019). Shows the pioneering end-to-end approach for joint source-channel coding.">
 
 .. only:: html
