@@ -207,7 +207,7 @@ class WynerZivModel(BaseModel):
             return generated_side_info
         return side_info
 
-    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Process source through the Wyner-Ziv coding system.
 
         Implements the full Wyner-Ziv coding model:
@@ -229,44 +229,30 @@ class WynerZivModel(BaseModel):
             **kwargs: Additional keyword arguments passed to encoder, quantizer, syndrome_generator, channel, and decoder.
 
         Returns:
-            Dictionary containing intermediate and final outputs of the model:
-                - encoded: Latent representation from source encoder
-                - quantized: Discretized representation after quantization (if applicable)
-                - syndromes: Compressed representation for transmission (if applicable)
-                - constrained: Syndromes/encoded data after applying optional constraints
-                - received: Data after channel transmission (possibly corrupted)
-                - side_info: Side information available at decoder
-                - decoded: Final reconstruction of the source using received data and side info
+            torch.Tensor: The final reconstructed source tensor after decoding.
         """
         # Source encoding
-        encoded = self.encoder(source, *args, **kwargs)
-        result = {"encoded": encoded}
+        res = self.encoder(source, *args, **kwargs)
 
         # Quantization (if available)
         if self.quantizer is not None:
-            result["quantized"] = self.quantizer(encoded, *args, **kwargs)
-        else:
-            result["quantized"] = encoded
+            res = self.quantizer(res, *args, **kwargs)
 
         # Generate syndromes for error correction (if available)
         if self.syndrome_generator is not None:
-            result["syndromes"] = self.syndrome_generator(result["quantized"], *args, **kwargs)
-        else:
-            result["syndromes"] = result["quantized"]
+            res = self.syndrome_generator(res, *args, **kwargs)
 
         # Apply optional power constraint on syndromes
         if self.constraint is not None:
-            result["constrained"] = self.constraint(result["syndromes"])
-        else:
-            result["constrained"] = result["syndromes"]
+            res = self.constraint(res)
 
         # Transmit syndromes through channel
-        result["received"] = self.channel(result["constrained"], *args, **kwargs)
+        res = self.channel(res, *args, **kwargs)
 
         # Validate/generate side information if needed
-        result["side_info"] = self.validate_side_info(source, side_info)
+        side_info = self.validate_side_info(source, side_info)
 
         # Decode using received syndromes and side information
-        result["decoded"] = self.decoder(result["received"], result["side_info"], *args, **kwargs)
+        res = self.decoder(res, side_info, *args, **kwargs)
 
-        return result
+        return res

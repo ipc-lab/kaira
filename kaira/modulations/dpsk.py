@@ -232,7 +232,7 @@ class DPSKDemodulator(BaseDemodulator):
         self.gray_coding = gray_coded if gray_coded is not None else gray_coding
 
         # Create reference modulator to access constellation
-        self.modulator = DPSKModulator(order=self.order, gray_coding=self.gray_coding)
+        self.modulator = DPSKModulator(self.order, self.gray_coding, *args, **kwargs)
 
     def forward(self, y: torch.Tensor, noise_var: Optional[Union[float, torch.Tensor]] = None, *args, **kwargs) -> torch.Tensor:
         """Demodulate DPSK symbols.
@@ -377,7 +377,7 @@ class DBPSKModulator(DPSKModulator):
         # Filter out conflicting keys to avoid duplicate argument errors
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
         # Pass remaining args and filtered kwargs
-        super().__init__(*args, order=2, gray_coding=False, **filtered_kwargs)
+        super().__init__(2, False, *args, **filtered_kwargs)
 
 
 @ModulationRegistry.register_demodulator("dbpsk")
@@ -389,7 +389,7 @@ class DBPSKDemodulator(DPSKDemodulator):
         # Filter out conflicting keys to avoid duplicate argument errors
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
         # Pass remaining args and filtered kwargs
-        super().__init__(*args, order=2, gray_coding=False, **filtered_kwargs)
+        super().__init__(2, False, *args, **filtered_kwargs)
 
 
 @ModulationRegistry.register_modulator("dqpsk")
@@ -401,7 +401,7 @@ class DQPSKModulator(DPSKModulator):
         # Filter out conflicting keys to avoid duplicate argument errors
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
         # Pass remaining args and filtered kwargs
-        super().__init__(*args, order=4, gray_coding=True, **filtered_kwargs)
+        super().__init__(4, True, *args, **filtered_kwargs)
 
 
 @ModulationRegistry.register_demodulator("dqpsk")
@@ -413,4 +413,4 @@ class DQPSKDemodulator(DPSKDemodulator):
         # Filter out conflicting keys to avoid duplicate argument errors
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
         # Pass remaining args and filtered kwargs
-        super().__init__(*args, order=4, gray_coding=True, **filtered_kwargs)
+        super().__init__(4, True, *args, **filtered_kwargs)

@@ -619,30 +619,27 @@ class FlatFadingChannel(BaseChannel):
         if noise is not None:
             y = y + noise
         else:
-            noise_power = self.avg_noise_power
+            # Determine noise power
+            noise_power_val: Union[float, torch.Tensor]  # Type hint for clarity
             if self.snr_db is not None:
                 signal_power = torch.mean(torch.abs(y) ** 2)
-                # Ensure snr_db is float
-                snr_db_float = self.snr_db  # Already Optional[float]
-                if isinstance(snr_db_float, torch.Tensor):
-                    snr_db_float = snr_db_float.item()
-                # Check if snr_db_float is None before using it
-                if snr_db_float is not None:
-                    noise_power = snr_to_noise_power(signal_power, snr_db_float)
-                else:
-                    # Handle case where snr_db is None but avg_noise_power is also None (should not happen)
-                    if noise_power is None:
-                        raise ValueError("Noise power could not be determined: both snr_db and avg_noise_power are None")
+                # self.snr_db is guaranteed to be float by __init__
+                noise_power_val = snr_to_noise_power(signal_power, self.snr_db)
+            elif self.avg_noise_power is not None:
+                # self.avg_noise_power is guaranteed to be float by __init__
+                noise_power_val = self.avg_noise_power
+            else:
+                # This case should be prevented by __init__ validation
+                raise ValueError("Noise parameters not properly initialized.")  # Should not happen
 
             # Ensure noise_power is tensor for calculations
-            if noise_power is None:
-                # This case should not happen if __init__ validation is correct
-                raise ValueError("Noise power could not be determined")
-            if not isinstance(noise_power, torch.Tensor):
-                noise_power = torch.tensor(noise_power, device=device, dtype=y.dtype if not torch.is_complex(y) else y.real.dtype)
+            if not isinstance(noise_power_val, torch.Tensor):
+                noise_power_tensor = torch.tensor(noise_power_val, device=device, dtype=y.dtype if not torch.is_complex(y) else y.real.dtype)
+            else:
+                noise_power_tensor = noise_power_val  # Already a tensor
 
             # Split noise power between real and imaginary components
-            component_noise_power = noise_power * 0.5
+            component_noise_power = noise_power_tensor * 0.5
             noise_real = torch.randn_like(y.real) * torch.sqrt(component_noise_power)
             noise_imag = torch.randn_like(y.imag) * torch.sqrt(component_noise_power)
             noise = torch.complex(noise_real, noise_imag)
@@ -833,7 +830,7 @@ class RayleighFadingChannel(FlatFadingChannel):
 
         # Filter kwargs before passing to super
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "avg_noise_power", "snr_db")}
-        super().__init__(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
+        super().__init__(*args, fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -886,7 +883,7 @@ class RicianFadingChannel(FlatFadingChannel):
         """
         # Filter kwargs before passing to super
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "k_factor", "avg_noise_power", "snr_db")}
-        super().__init__(fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
+        super().__init__(*args, fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -939,4 +936,4 @@ class LogNormalFadingChannel(FlatFadingChannel):
         """
         # Filter kwargs before passing to super
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "shadow_sigma_db", "avg_noise_power", "snr_db")}
-        super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
+        super().__init__(*args, fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)

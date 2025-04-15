@@ -792,10 +792,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
 
         # Initialize the parent class without quantizer and syndrome_generator
         # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
-        super().__init__(encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, *args, **base_kwargs)
-
-        # Explicitly set constraint to ensure it's properly initialized
-        self.constraint = constraint
+        super().__init__(*args, encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, **base_kwargs)
 
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
