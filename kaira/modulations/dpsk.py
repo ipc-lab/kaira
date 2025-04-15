@@ -1,6 +1,6 @@
 """Differential Phase-Shift Keying (DPSK) modulation schemes."""
 
-from typing import Literal, Optional, Union, Any
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt  # type: ignore  # type: ignore
 import numpy as np
