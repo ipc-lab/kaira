@@ -45,7 +45,6 @@ class MultipleAccessChannelModel(BaseModel):
         channel: BaseChannel,
         power_constraint: BaseConstraint,
         num_devices: Optional[int] = None,
-        # Removed shared_encoder and shared_decoder parameters
         *args: Any,
         **kwargs: Any,
     ):
