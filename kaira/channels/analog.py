@@ -623,7 +623,7 @@ class FlatFadingChannel(BaseChannel):
             if self.snr_db is not None:
                 signal_power = torch.mean(torch.abs(y) ** 2)
                 # Ensure snr_db is float
-                snr_db_float = self.snr_db # Already Optional[float]
+                snr_db_float = self.snr_db  # Already Optional[float]
                 if isinstance(snr_db_float, torch.Tensor):
                     snr_db_float = snr_db_float.item()
                 # Check if snr_db_float is None before using it
@@ -632,7 +632,7 @@ class FlatFadingChannel(BaseChannel):
                 else:
                     # Handle case where snr_db is None but avg_noise_power is also None (should not happen)
                     if noise_power is None:
-                         raise ValueError("Noise power could not be determined: both snr_db and avg_noise_power are None")
+                        raise ValueError("Noise power could not be determined: both snr_db and avg_noise_power are None")
 
             # Ensure noise_power is tensor for calculations
             if noise_power is None:

@@ -619,7 +619,7 @@ class TestSeedUtils:
         seed_everything(seed_value)
 
         # Get random numbers from different generators
-        random_py = random.random()
+        random_py = random.random()  # nosec B311
         random_np = np.random.rand()
         random_torch = torch.rand(1).item()
 
@@ -627,7 +627,7 @@ class TestSeedUtils:
         seed_everything(seed_value)
 
         # Check that we get the same values after re-seeding
-        assert random_py == random.random()
+        assert random_py == random.random()  # nosec B311
         assert random_np == np.random.rand()
         assert random_torch == torch.rand(1).item()
 
@@ -672,7 +672,7 @@ class TestSeedUtils:
         # Generate some random values
         rand1 = torch.rand(5)
         rand2 = np.random.rand(5)
-        rand3 = [random.random() for _ in range(5)]
+        rand3 = [random.random() for _ in range(5)]  # nosec B311
 
         # Reset with the same seed
         seed_everything(seed_value)
@@ -680,7 +680,7 @@ class TestSeedUtils:
         # Generate new random values - they should match the previous ones
         rand1_new = torch.rand(5)
         rand2_new = np.random.rand(5)
-        rand3_new = [random.random() for _ in range(5)]
+        rand3_new = [random.random() for _ in range(5)]  # nosec B311
 
         # Check if the random values are identical
         assert torch.all(torch.eq(rand1, rand1_new))
