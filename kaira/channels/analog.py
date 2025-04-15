@@ -12,7 +12,7 @@ from typing import Any, Optional, Union  # Add Union
 import numpy as np
 import torch
 
-from kaira.utils import snr_to_noise_power, to_tensor
+from kaira.utils import snr_to_noise_power
 
 from .base import BaseChannel
 from .registry import ChannelRegistry
@@ -106,7 +106,7 @@ class AWGNChannel(BaseChannel):
             self.snr_db = snr_db
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power # Remove to_tensor
+            self.avg_noise_power = avg_noise_power  # Remove to_tensor
             self.snr_db = None
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
@@ -174,7 +174,7 @@ class LaplacianChannel(BaseChannel):
 
         # Handle different parameter specifications
         if scale is not None:
-            self.scale = scale # Remove to_tensor
+            self.scale = scale  # Remove to_tensor
             self.avg_noise_power = None
             self.snr_db = None
         elif snr_db is not None:
@@ -182,7 +182,7 @@ class LaplacianChannel(BaseChannel):
             self.scale = None
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power # Remove to_tensor
+            self.avg_noise_power = avg_noise_power  # Remove to_tensor
             self.scale = None
             self.snr_db = None
         else:
@@ -215,7 +215,7 @@ class LaplacianChannel(BaseChannel):
         """
         # Determine noise parameters
         scale = self.scale
-        target_noise_power: Optional[Union[float, torch.Tensor]] = None # Define target_noise_power
+        target_noise_power: Optional[Union[float, torch.Tensor]] = None  # Define target_noise_power
 
         if self.snr_db is not None:
             signal_power = torch.mean(torch.abs(x) ** 2)
@@ -232,7 +232,7 @@ class LaplacianChannel(BaseChannel):
 
         # Make sure scale is a tensor for calculations
         if not isinstance(scale, torch.Tensor):
-             scale = torch.tensor(scale, device=x.device, dtype=x.dtype if not torch.is_complex(x) else x.real.dtype)
+            scale = torch.tensor(scale, device=x.device, dtype=x.dtype if not torch.is_complex(x) else x.real.dtype)
 
         # Handle complex input
         if torch.is_complex(x):
@@ -279,7 +279,7 @@ class PoissonChannel(BaseChannel):
         super().__init__(*args, **kwargs)
         if rate_factor <= 0:
             raise ValueError("Rate factor must be positive")
-        self.rate_factor = rate_factor # Remove to_tensor
+        self.rate_factor = rate_factor  # Remove to_tensor
         self.normalize = normalize
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
@@ -356,7 +356,7 @@ class PhaseNoiseChannel(BaseChannel):
         super().__init__(*args, **kwargs)
         if phase_noise_std < 0:
             raise ValueError("Phase noise standard deviation must be non-negative")
-        self.phase_noise_std = phase_noise_std # Remove to_tensor
+        self.phase_noise_std = phase_noise_std  # Remove to_tensor
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply phase noise to the input signal.
@@ -448,8 +448,8 @@ class FlatFadingChannel(BaseChannel):
 
         # Store fading parameters
         self.coherence_time = coherence_time
-        self.k_factor = k_factor # Remove to_tensor
-        self.shadow_sigma_db = shadow_sigma_db # Remove to_tensor
+        self.k_factor = k_factor  # Remove to_tensor
+        self.shadow_sigma_db = shadow_sigma_db  # Remove to_tensor
 
         # Verify required parameters based on fading type
         if fading_type == "rician" and k_factor is None:
@@ -462,7 +462,7 @@ class FlatFadingChannel(BaseChannel):
             self.snr_db = snr_db
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power # Remove to_tensor
+            self.avg_noise_power = avg_noise_power  # Remove to_tensor
             self.snr_db = None
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
@@ -492,7 +492,7 @@ class FlatFadingChannel(BaseChannel):
             # Rician fading with K factor
             # Ensure k_factor is tensor for calculations
             if self.k_factor is None:
-                 raise ValueError("K-factor must be provided for Rician fading") # Should not happen due to __init__ check
+                raise ValueError("K-factor must be provided for Rician fading")  # Should not happen due to __init__ check
             k = torch.tensor(self.k_factor, device=device)
 
             # Direct component (line of sight)
@@ -518,7 +518,7 @@ class FlatFadingChannel(BaseChannel):
             # Generate log-normal shadowing in linear scale
             # Ensure shadow_sigma_db is tensor for calculations
             if self.shadow_sigma_db is None:
-                 raise ValueError("shadow_sigma_db must be provided for lognormal fading") # Should not happen due to __init__ check
+                raise ValueError("shadow_sigma_db must be provided for lognormal fading")  # Should not happen due to __init__ check
             shadow_sigma_db_tensor = torch.tensor(self.shadow_sigma_db, device=device)
             sigma_ln = shadow_sigma_db_tensor * (np.log(10) / 10)  # Convert from dB to natural log
             ln_mean = -(sigma_ln**2) / 2  # Ensure unit mean
@@ -612,10 +612,10 @@ class FlatFadingChannel(BaseChannel):
 
             # Ensure noise_power is tensor for calculations
             if noise_power is None:
-                 # This case should not happen if __init__ validation is correct
-                 raise ValueError("Noise power could not be determined")
+                # This case should not happen if __init__ validation is correct
+                raise ValueError("Noise power could not be determined")
             if not isinstance(noise_power, torch.Tensor):
-                 noise_power = torch.tensor(noise_power, device=device, dtype=y.dtype if not torch.is_complex(y) else y.real.dtype)
+                noise_power = torch.tensor(noise_power, device=device, dtype=y.dtype if not torch.is_complex(y) else y.real.dtype)
 
             # Split noise power between real and imaginary components
             component_noise_power = noise_power * 0.5
@@ -706,7 +706,7 @@ class NonlinearChannel(BaseChannel):
                 self.snr_db = snr_db
                 self.avg_noise_power = None
             elif avg_noise_power is not None:
-                self.avg_noise_power = avg_noise_power # No to_tensor needed
+                self.avg_noise_power = avg_noise_power  # No to_tensor needed
                 self.snr_db = None
             else:
                 raise ValueError("If add_noise=True, either avg_noise_power or snr_db must be provided")
@@ -905,4 +905,3 @@ class LogNormalFadingChannel(FlatFadingChannel):
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
         super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
-
