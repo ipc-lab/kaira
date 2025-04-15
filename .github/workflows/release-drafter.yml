@@ -9,7 +9,9 @@ on:
 jobs:
   update_release_draft:
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - name: Draft release notes
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

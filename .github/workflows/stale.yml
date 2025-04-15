@@ -7,8 +7,10 @@ on:
 jobs:
   stale:
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
-      - uses: actions/stale@v9
+      - name: Mark stale issues and PRs
+        uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: "This issue has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs. Thank you for your contributions."
