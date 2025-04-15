@@ -377,7 +377,8 @@ class DBPSKModulator(DPSKModulator):
         # Remove potentially conflicting keys before passing kwargs
         kwargs.pop("order", None)
         kwargs.pop("gray_coding", None)
-        super().__init__(order=2, gray_coding=False, *args, **kwargs)
+        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
+        super().__init__(*args, order=2, gray_coding=False, **kwargs)
 
 
 @ModulationRegistry.register_demodulator("dbpsk")
@@ -389,7 +390,8 @@ class DBPSKDemodulator(DPSKDemodulator):
         # Remove potentially conflicting keys before passing kwargs
         kwargs.pop("order", None)
         kwargs.pop("gray_coding", None)
-        super().__init__(order=2, gray_coding=False, *args, **kwargs)
+        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
+        super().__init__(*args, order=2, gray_coding=False, **kwargs)
 
 
 @ModulationRegistry.register_modulator("dqpsk")
@@ -401,7 +403,8 @@ class DQPSKModulator(DPSKModulator):
         # Remove potentially conflicting keys before passing kwargs
         kwargs.pop("order", None)
         kwargs.pop("gray_coding", None)
-        super().__init__(order=4, gray_coding=True, *args, **kwargs)
+        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
+        super().__init__(*args, order=4, gray_coding=True, **kwargs)
 
 
 @ModulationRegistry.register_demodulator("dqpsk")
@@ -413,4 +416,5 @@ class DQPSKDemodulator(DPSKDemodulator):
         # Remove potentially conflicting keys before passing kwargs
         kwargs.pop("order", None)
         kwargs.pop("gray_coding", None)
-        super().__init__(order=4, gray_coding=True, *args, **kwargs)
+        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
+        super().__init__(*args, order=4, gray_coding=True, **kwargs)
