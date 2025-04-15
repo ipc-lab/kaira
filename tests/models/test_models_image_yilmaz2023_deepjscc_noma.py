@@ -22,10 +22,10 @@ class MockChannel(BaseChannel): # Inherit from BaseChannel
         super().__init__() # Call base class init
         self.snr_db = snr_db
 
-    def forward(self, x): # Rename __call__ to forward
+    def forward(self, x, csi=None): # Rename __call__ to forward, add csi argument
         # Support both tensor and tuple inputs
         if isinstance(x, tuple):
-            tensor_x, csi = x
+            tensor_x, _ = x # Unpack, ignore original csi if present
             return tensor_x  # Just pass through for testing
         return x  # Pass through for testing
 
@@ -37,7 +37,7 @@ class MockConstraint(BaseConstraint): # Inherit from BaseConstraint
         super().__init__() # Call base class init
         self.total_power = total_power
 
-    def forward(self, x, mult=None): # Rename __call__ to forward
+    def forward(self, x, csi=None, mult=None): # Rename __call__ to forward, add csi argument
         return x  # Just pass through for testing
 
 
@@ -48,27 +48,24 @@ class MockDecoder(nn.Module):
         super().__init__()
         self.out_ch_per_device = out_ch_per_device
 
-    def forward(self, x_tuple, *args, **kwargs): # Add *args and **kwargs
-        x, csi = x_tuple if isinstance(x_tuple, tuple) else (x_tuple, None)
-
-        # Handle different tensor shapes
-        if len(x.shape) == 5:  # [batch, devices, channels, H, W]
-            batch_size, num_devices = x.shape[:2]
-            # Create mock output of expected shape
-            return torch.zeros(batch_size, num_devices, self.out_ch_per_device, 32, 32)
-        elif len(x.shape) == 4:  # [batch, channels, H, W]
-            batch_size = x.shape[0]
-            # For shared decoder case, the model expects [batch, num_devices * out_ch_per_device, H, W]
-            # Need to determine num_devices if possible, or adjust the test assertion
-            # Assuming num_devices might be implicitly passed or known contextually in the real model
-            # For the mock, let's try to infer or make it flexible.
-            # If kwargs contains 'num_devices' or similar, use it. Otherwise, assume based on context.
-            # In test_yilmaz2023_deepjscc_noma_shared_components, num_devices is 3.
-            num_devices = kwargs.get('num_devices', 3) # Defaulting to 3 based on the test case
-            return torch.zeros(batch_size, num_devices * self.out_ch_per_device, 32, 32)
+    def forward(self, x, csi=None, *args, **kwargs): # Correct signature: x, csi=None, **kwargs
+        # Handle different tensor shapes based on model logic
+        # When shared_decoder=True, model passes channel output [B*D, M, H', W']
+        # and expects [B*D, C_out, H, W] back before its final reshape to [B, D, C, H, W].
+        if len(x.shape) == 4:  # [B*D, M, H', W'] input from channel (shared decoder case)
+            batch_size_eff = x.shape[0] # This is B*D
+            # Return the shape the model expects *before* its final reshape
+            # Shape: [B*D, C_out, H, W]
+            # Assuming H, W are 32, 32 based on original input in the tests
+            return torch.zeros(batch_size_eff, self.out_ch_per_device, 32, 32) # Changed this line
+        elif len(x.shape) == 5: # [B, devices, M, H', W'] - Added case if needed elsewhere
+             batch_size, num_devices = x.shape[:2]
+             # Create mock output of expected shape for non-shared case (if used)
+             # This case might need adjustment depending on how non-shared decoders are called
+             return torch.zeros(batch_size, num_devices, self.out_ch_per_device, 32, 32)
         else:
-            # Adjust this case if needed based on how shared decoder handles other dims
-            return torch.zeros(1, self.out_ch_per_device, 32, 32)
+            # Handle unexpected shapes
+            raise ValueError(f"MockDecoder received unexpected input shape: {x.shape}")
 
 
 class DummyModel(nn.Module):
@@ -91,7 +88,7 @@ def test_yilmaz2023_deepjscc_noma_encoder():
     x = torch.randn(4, 4, 32, 32)  # [batch_size, channels, height, width]
     csi = torch.ones(4)
 
-    output = encoder((x, csi))
+    output = encoder(x, csi) # Pass x and csi as separate arguments
 
     # Output should be [batch_size, M, height/4, width/4]
     assert output.shape == (4, 16, 8, 8)
@@ -104,7 +101,7 @@ def test_yilmaz2023_deepjscc_noma_decoder():
     x = torch.randn(4, 16, 8, 8)  # [batch_size, M, height/4, width/4]
     csi = torch.ones(4)
 
-    output = decoder((x, csi))
+    output = decoder(x, csi) # Pass x and csi as separate arguments
 
     # Output should be [batch_size, 3, height, width]
     assert output.shape == (4, 3, 32, 32)
@@ -114,7 +111,7 @@ def test_yilmaz2023_deepjscc_noma_decoder():
     # The input for shared decoder would combine signals from all devices
     x = torch.randn(4, 16, 8, 8)  # [batch_size, M, height/4, width/4]
 
-    output = shared_decoder((x, csi))
+    output = shared_decoder(x, csi) # Pass x and csi as separate arguments
 
     # Output should include channels for all devices (2 devices × 3 channels each)
     assert output.shape == (4, 6, 32, 32)  # [batch_size, num_devices*channels, height, width]
