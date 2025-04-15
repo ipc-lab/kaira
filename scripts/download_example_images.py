@@ -24,7 +24,7 @@ def download_test_images(max_retries=3, delay=1):
 
             for attempt in range(max_retries):
                 try:
-                    urllib.request.urlretrieve(url, output_path)
+                    urllib.request.urlretrieve(url, output_path)  # nosec B310
                     print(f"Saved to {output_path}")
                     success = True
                     break

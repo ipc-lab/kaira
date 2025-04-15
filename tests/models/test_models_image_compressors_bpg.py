@@ -1,5 +1,5 @@
 """Tests for BPG image compression model."""
-import subprocess
+import subprocess  # nosec B404
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -70,7 +70,7 @@ def test_safe_subprocess_run(bpg_compressor):
         mock_run.assert_called_with(["echo", "test"], shell=False, text=True, stdout=subprocess.PIPE)
 
         # Ensure shell=True is overridden
-        bpg_compressor._safe_subprocess_run(["echo", "test"], shell=True)
+        bpg_compressor._safe_subprocess_run(["echo", "test"], shell=True)  # nosec B604
         mock_run.assert_called_with(["echo", "test"], shell=False, capture_output=True)
 
 
@@ -175,17 +175,17 @@ def test_parallel_forward_bpg_target_size(sample_image):
 def test_setup_temp_paths(bpg_compressor):
     """Test _setup_temp_paths method."""
     with patch("tempfile.mkdtemp") as mock_mkdtemp:
-        mock_mkdtemp.return_value = "/tmp/test_dir"
+        mock_mkdtemp.return_value = "/tmp/test_dir"  # nosec B108
         with patch("uuid.uuid4") as mock_uuid:
             mock_uuid.return_value = "test-uuid"
 
             paths = bpg_compressor._setup_temp_paths(123)
 
-            assert paths["dir"] == "/tmp/test_dir"
-            assert paths["input"] == "/tmp/test_dir/input_123_test-uuid.png"
-            assert paths["compressed"] == "/tmp/test_dir/compressed_123_test-uuid.bpg"
-            assert paths["output"] == "/tmp/test_dir/output_123_test-uuid.png"
-            assert paths["best_output"] == "/tmp/test_dir/best_123_test-uuid.png"
+            assert paths["dir"] == "/tmp/test_dir"  # nosec B108
+            assert paths["input"] == "/tmp/test_dir/input_123_test-uuid.png"  # nosec B108
+            assert paths["compressed"] == "/tmp/test_dir/compressed_123_test-uuid.bpg"  # nosec B108
+            assert paths["output"] == "/tmp/test_dir/output_123_test-uuid.png"  # nosec B108
+            assert paths["best_output"] == "/tmp/test_dir/best_123_test-uuid.png"  # nosec B108
 
 
 def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
@@ -199,7 +199,7 @@ def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
             "os.makedirs", return_value=None
         ), patch("os.rename"), patch("os.remove"):
             # Mock directory path and create any parent directories
-            mock_mkdtemp.return_value = "/tmp/mock_dir"
+            mock_mkdtemp.return_value = "/tmp/mock_dir"  # nosec B108
 
             # Create a mocked tensor to return when compression fails
             mock_tensor = torch.randn_like(sample_image[0])
@@ -306,7 +306,7 @@ def test_compress_with_target_size_binary_search(bpg_compressor, sample_image):
 
         # Mock image handling with more thorough file operation mocking
         with patch("tempfile.mkdtemp") as mock_mkdtemp, patch("shutil.rmtree"), patch("torchvision.utils.save_image"), patch("os.path.exists", return_value=True), patch("os.remove"), patch("os.rename"):  # Add mock for os.rename
-            mock_mkdtemp.return_value = "/tmp/mock_dir"
+            mock_mkdtemp.return_value = "/tmp/mock_dir"  # nosec B108
 
             with patch("PIL.Image.open") as mock_open_image, patch("builtins.open", mock_open(read_data=b"test")):
                 mock_img = MagicMock()
