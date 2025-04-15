@@ -18,6 +18,7 @@ import torch
 from torch import nn
 
 from kaira.channels import AWGNChannel
+from kaira.constraints.power import AveragePowerConstraint
 from kaira.metrics import PSNR, SSIM
 
 # Import necessary model components
@@ -68,7 +69,7 @@ csi_length = 1  # Length of the CSI vector (just SNR in this case)
 
 # Create channel and power constraint
 channel = AWGNChannel(snr_db=fixed_snr)
-power_constraint = nn.Identity()  # Using identity as a placeholder for power constraint
+power_constraint = AveragePowerConstraint(average_power=1.0)
 
 # NOTE: We pass the CLASSES here, not instances, to avoid the NotImplementedError
 # in the original Yilmaz2023DeepJSCCNOMAModel.__init__
@@ -109,18 +110,16 @@ with torch.no_grad():
     csi = torch.tensor([[fixed_snr]], dtype=torch.float32).repeat(batch_size, csi_length)
 
     # Transmit images through the NOMA model
-    # NOTE: This call will likely fail with a TypeError inside the model
-    # because the original model code passes a tuple (signal, csi)
-    # to the AWGNChannel, which expects only the signal tensor.
-    # Fixing this requires modifying the Yilmaz2023DeepJSCCNOMAModel code.
-    received_images = model(user_images, csi=csi)
+    # NOTE: Pass the list of user images, not the stacked tensor
+    received_images = model(user_images_list, csi=csi)
 
     # Calculate metrics for each user
     # This part will only be reached if the model call succeeds
     for user_idx in range(num_users):
         # Assuming received_images has shape [batch_size, num_users, C, H, W]
-        psnr = psnr_metric(received_images[:, user_idx], user_images[:, user_idx]).item()
-        ssim = ssim_metric(received_images[:, user_idx], user_images[:, user_idx]).item()
+        # Calculate mean PSNR and SSIM across the batch
+        psnr = psnr_metric(received_images[:, user_idx], user_images[:, user_idx]).mean().item()
+        ssim = ssim_metric(received_images[:, user_idx], user_images[:, user_idx]).mean().item()
 
         # Accessing power allocation might fail if it's not an attribute or handled differently
         power_val = "N/A"
@@ -188,9 +187,9 @@ for power1 in power_allocations:
 
     with torch.no_grad():
         # Transmit images using the CSI tensor
-        # NOTE: This call will likely fail due to the internal channel call issue.
+        # NOTE: Pass the list of user images, not the stacked tensor
         try:
-            received_images = model(user_images, csi=csi)
+            received_images = model(user_images_list, csi=csi)
 
             # Calculate PSNR for each user
             # Assuming received_images has shape [batch_size, num_users, C, H, W]

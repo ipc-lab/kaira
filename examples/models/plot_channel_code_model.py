@@ -80,9 +80,7 @@ for snr in snr_values:
 
     # Pass the binary data through our model without passing snr as a parameter
     with torch.no_grad():
-        output = model(x)
-        # Extract the decoded output from the model's return dictionary
-        decoded = output["final_output"]
+        decoded = model(x)
 
     # Calculate bit error rate using the BER metric
     ber = ber_metric(decoded.flatten(), x.flatten()).item()

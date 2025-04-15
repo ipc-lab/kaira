@@ -1,6 +1,6 @@
 :orphan:
 
-Communication Models
+Models
 ===============================
 
 Examples demonstrating Kaira's flexible model architecture for various communication

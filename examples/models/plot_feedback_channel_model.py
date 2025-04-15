@@ -63,7 +63,8 @@ forward_channel = AWGNChannel(snr_db=10.0)  # Using 10 dB SNR
 decoder = MLPDecoder(in_features=code_dim, out_features=message_dim, hidden_dims=[15, 20])
 
 # Feedback encoder (at the receiver)
-feedback_encoder = MLPEncoder(in_features=code_dim, out_features=feedback_dim, hidden_dims=[12, 8])  # Takes received signal as input
+# Takes the decoded message estimate as input
+feedback_encoder = MLPEncoder(in_features=message_dim, out_features=feedback_dim, hidden_dims=[12, 8])
 
 # Feedback constraint
 feedback_constraint = TotalPowerConstraint(total_power=0.5)  # Lower power for feedback channel

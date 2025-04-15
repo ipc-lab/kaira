@@ -45,8 +45,14 @@ channel = AWGNChannel(snr_db=10.0)
 power_constraint = AveragePowerConstraint(average_power=1.0)
 
 # Instantiate the Multiple Access Channel Model, combining the encoders and the joint decoder.
-# Add the channel and power_constraint arguments
-mac_model = MultipleAccessChannelModel(encoders=encoders, decoder=joint_decoder, channel=channel, power_constraint=power_constraint)
+# Add the channel and power_constraint arguments, and specify the decoder is shared.
+mac_model = MultipleAccessChannelModel(
+    encoders=encoders,
+    decoder=joint_decoder,
+    channel=channel,
+    power_constraint=power_constraint,
+    shared_decoder=True,  # Indicate that the single decoder instance is shared
+)
 
 # Generate some random messages for each user to simulate input data.
 # This creates a list where each element is a batch of messages for one user.
