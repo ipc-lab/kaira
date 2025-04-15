@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 # -------------------------------
 import numpy as np
 import torch
-from torch import nn
 
 from kaira.channels import AWGNChannel
 from kaira.constraints.power import AveragePowerConstraint

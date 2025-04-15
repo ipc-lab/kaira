@@ -154,7 +154,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         # Initialize the base class, passing *args and **kwargs for potential instantiation
         super().__init__(
             encoders=encoder_config,  # Pass class or instance directly
-            decoder=decoder_config,  # Pass class or instance directly
+            decoders=decoder_config,  # Pass class or instance directly
             channel=channel,
             power_constraint=power_constraint,
             num_devices=num_devices,

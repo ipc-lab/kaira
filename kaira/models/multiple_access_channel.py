@@ -86,33 +86,33 @@ class MultipleAccessChannelModel(BaseModel):
             if num_devices is None:
                 num_devices = inferred_num_devices_dec
             elif num_devices != inferred_num_devices_dec:
-                 # Allow single decoder in list for joint decoding
-                 # Check if it's the decoder case and only one decoder is provided
-                 is_single_joint_decoder_in_list = (inferred_num_devices_dec == 1)
-                 if not is_single_joint_decoder_in_list:
-                     raise ValueError(f"Provided num_devices ({num_devices}) does not match the number of decoders ({inferred_num_devices_dec}).")
+                # Allow single decoder in list for joint decoding
+                # Check if it's the decoder case and only one decoder is provided
+                is_single_joint_decoder_in_list = inferred_num_devices_dec == 1
+                if not is_single_joint_decoder_in_list:
+                    raise ValueError(f"Provided num_devices ({num_devices}) does not match the number of decoders ({inferred_num_devices_dec}).")
 
         # Check consistency if both were lists and neither was a single joint decoder
         if inferred_num_devices_enc is not None and inferred_num_devices_dec is not None and inferred_num_devices_dec != 1 and inferred_num_devices_enc != inferred_num_devices_dec:
-             raise ValueError(f"Number of encoders ({inferred_num_devices_enc}) must match number of decoders ({inferred_num_devices_dec}) when both are provided as lists with more than one decoder.")
+            raise ValueError(f"Number of encoders ({inferred_num_devices_enc}) must match number of decoders ({inferred_num_devices_dec}) when both are provided as lists with more than one decoder.")
 
         if num_devices is None:
             # Try inferring from decoder if encoder wasn't a list but decoder was
             if inferred_num_devices_dec is not None:
-                 # If only one decoder was provided in the list, we still don't know num_devices
-                 if inferred_num_devices_dec != 1:
-                     num_devices = inferred_num_devices_dec
-                 else:
-                     # Need num_devices from encoder or explicit arg if decoder is single/joint
-                     raise ValueError("num_devices must be specified if encoders are not provided as a list and only a single (joint) decoder is provided.")
+                # If only one decoder was provided in the list, we still don't know num_devices
+                if inferred_num_devices_dec != 1:
+                    num_devices = inferred_num_devices_dec
+                else:
+                    # Need num_devices from encoder or explicit arg if decoder is single/joint
+                    raise ValueError("num_devices must be specified if encoders are not provided as a list and only a single (joint) decoder is provided.")
             else:
-                 raise ValueError("num_devices must be specified if encoders and decoders are not provided as lists.")
+                raise ValueError("num_devices must be specified if encoders and decoders are not provided as lists.")
 
         if not isinstance(num_devices, int) or num_devices <= 0:
-             raise ValueError(f"num_devices must be a positive integer, got {num_devices}")
+            raise ValueError(f"num_devices must be a positive integer, got {num_devices}")
 
         self.num_users = num_devices
-        self.num_devices = num_devices # Keep for compatibility
+        self.num_devices = num_devices  # Keep for compatibility
 
         # --- Initialize Encoders ---
         # Pass *args, **kwargs to _initialize_modules
@@ -134,7 +134,7 @@ class MultipleAccessChannelModel(BaseModel):
     def _initialize_modules(self, module_config: Union[Type[BaseModel], BaseModel, List[BaseModel], nn.ModuleList], num_devices: int, module_name: str, *args: Any, **kwargs: Any) -> nn.ModuleList:
         """Helper function to initialize encoder or decoder modules."""
         modules_list = []
-        is_shared = False # Track if the module is intended to be shared
+        is_shared = False  # Track if the module is intended to be shared
 
         if isinstance(module_config, (list, nn.ModuleList)):
             # Separate instances provided in a list
@@ -143,21 +143,20 @@ class MultipleAccessChannelModel(BaseModel):
                 is_shared = True
                 modules_list = list(module_config)
             elif len(module_config) != num_devices:
-                 raise ValueError(f"Number of {module_name.lower()}s in the list ({len(module_config)}) must match num_devices ({num_devices}).")
+                raise ValueError(f"Number of {module_name.lower()}s in the list ({len(module_config)}) must match num_devices ({num_devices}).")
             else:
-                 # Correct number of separate instances provided
-                 modules_list = list(module_config)
+                # Correct number of separate instances provided
+                modules_list = list(module_config)
 
         elif isinstance(module_config, nn.Module):
             # Single instance provided -> treat as shared
             is_shared = True
             instance = module_config
             if module_name == "Decoder":
-                 # For joint decoder, store only the single instance in the list
-                 modules_list = [instance]
-            else: # Encoders: replicate reference num_devices times for forward pass indexing
-                 modules_list = [instance] * num_devices
-
+                # For joint decoder, store only the single instance in the list
+                modules_list = [instance]
+            else:  # Encoders: replicate reference num_devices times for forward pass indexing
+                modules_list = [instance] * num_devices
 
         elif isinstance(module_config, type):
             # Class provided
@@ -167,8 +166,8 @@ class MultipleAccessChannelModel(BaseModel):
                 is_shared = True
                 instance = module_cls(*args, **kwargs)
                 modules_list = [instance]
-            else: # Encoders: Create separate instances
-                is_shared = False # Explicitly separate
+            else:  # Encoders: Create separate instances
+                is_shared = False  # Explicitly separate
                 modules_list = [module_cls(*args, **kwargs) for _ in range(num_devices)]
 
         else:
@@ -181,14 +180,13 @@ class MultipleAccessChannelModel(BaseModel):
 
         # Final check for encoder list length if shared instance was replicated
         if module_name == "Encoder" and is_shared and len(modules_list) != num_devices:
-             # This should not happen with the current logic, but as a safeguard
-             raise RuntimeError(f"Internal error: Shared encoder list length ({len(modules_list)}) doesn't match num_devices ({num_devices}).")
+            # This should not happen with the current logic, but as a safeguard
+            raise RuntimeError(f"Internal error: Shared encoder list length ({len(modules_list)}) doesn't match num_devices ({num_devices}).")
         # Final check for decoder list length
         if module_name == "Decoder" and not is_shared and len(modules_list) != num_devices:
-             raise RuntimeError(f"Internal error: Separate decoder list length ({len(modules_list)}) doesn't match num_devices ({num_devices}).")
+            raise RuntimeError(f"Internal error: Separate decoder list length ({len(modules_list)}) doesn't match num_devices ({num_devices}).")
         if module_name == "Decoder" and is_shared and len(modules_list) != 1:
-             raise RuntimeError(f"Internal error: Shared decoder list should have length 1, but got {len(modules_list)}.")
-
+            raise RuntimeError(f"Internal error: Shared decoder list should have length 1, but got {len(modules_list)}.")
 
         # Return as ModuleList
         return nn.ModuleList(modules_list)
@@ -229,12 +227,12 @@ class MultipleAccessChannelModel(BaseModel):
             # We need to ensure the index is valid for the actual list length
             actual_encoder_list_len = len(self.encoders)
             if is_shared_encoder and actual_encoder_list_len > 0:
-                 encoder_to_use_idx = 0 # Always use the first (and only unique) encoder if shared
+                encoder_to_use_idx = 0  # Always use the first (and only unique) encoder if shared
             elif not is_shared_encoder and i < actual_encoder_list_len:
-                 encoder_to_use_idx = i
+                encoder_to_use_idx = i
             else:
-                 # This case should ideally not happen due to init logic, but check defensively
-                 raise IndexError(f"Encoder index calculation error. is_shared={is_shared_encoder}, index={i}, list_len={actual_encoder_list_len}")
+                # This case should ideally not happen due to init logic, but check defensively
+                raise IndexError(f"Encoder index calculation error. is_shared={is_shared_encoder}, index={i}, list_len={actual_encoder_list_len}")
 
             encoder = self.encoders[encoder_to_use_idx]
             encoded_signals.append(encoder(x[i], *args, **kwargs))
@@ -259,9 +257,9 @@ class MultipleAccessChannelModel(BaseModel):
             # Use separate decoders
             # Ensure the number of decoders matches the number of users for separate decoding
             if len(self.decoders) != self.num_users:
-                 raise ValueError(f"Number of separate decoders ({len(self.decoders)}) must match num_users ({self.num_users}) for separate decoding mode.")
+                raise ValueError(f"Number of separate decoders ({len(self.decoders)}) must match num_users ({self.num_users}) for separate decoding mode.")
 
-            reconstructed_signals_list = [] # Renamed to avoid confusion
+            reconstructed_signals_list = []  # Renamed to avoid confusion
             for i in range(self.num_users):
                 decoder = self.decoders[i]
                 # Assumption: Each separate decoder `i` processes the combined signal

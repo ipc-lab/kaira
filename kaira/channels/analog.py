@@ -235,7 +235,7 @@ class LaplacianChannel(BaseChannel):
             # For Laplacian distribution with zero mean, variance = 2*scale²
             # Ensure avg_noise_power is float or tensor
             avg_noise_power_val = self.avg_noise_power.item() if isinstance(self.avg_noise_power, torch.Tensor) else self.avg_noise_power
-            scale = torch.sqrt(torch.tensor(avg_noise_power_val / 2, device=x.device)) # Convert to tensor
+            scale = torch.sqrt(torch.tensor(avg_noise_power_val / 2, device=x.device))  # Convert to tensor
 
         # Make sure scale is a tensor for calculations
         if not isinstance(scale, torch.Tensor):
