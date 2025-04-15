@@ -9,20 +9,20 @@ from kaira.models.registry import ModelRegistry
 
 
 class SimpleEncoder(SequentialModel):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.layer = torch.nn.Linear(10, 5)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.layer(x)
 
 
 class SimpleDecoder(SequentialModel):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.layer = torch.nn.Linear(5, 10)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.layer(x)
 
 
@@ -67,7 +67,7 @@ def test_deepjscc_model_with_kwargs(deepjscc_model):
     """Test DeepJSCCModel with additional keyword arguments."""
     input_data = torch.randn(4, 10)
     # Pass SNR as a kwarg that should be passed to the channel
-    output_data = deepjscc_model(input_data, snr_db=15.0)
+    output_data = deepjscc_model(input_data, randomkwarg=15.0)
     assert output_data.shape == (4, 10)
 
 

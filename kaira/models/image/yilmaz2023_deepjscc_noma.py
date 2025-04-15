@@ -5,7 +5,7 @@ Source-Channel Coding over a Multiple Access Channel as described in the paper b
 (2023).
 """
 
-from typing import Any, List, Optional, Tuple, Type
+from typing import Any, List, Optional, Tuple, Type, Union
 
 import torch
 from torch import nn
@@ -103,8 +103,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self,
         channel: BaseChannel,
         power_constraint: BaseConstraint,
-        encoder: Optional[Type[BaseModel]] = None,
-        decoder: Optional[Type[BaseModel]] = None,
+        encoder: Optional[Union[Type[BaseModel], BaseModel]] = None, # Allow class or instance
+        decoder: Optional[Union[Type[BaseModel], BaseModel]] = None, # Allow class or instance
         num_devices: int = 2,
         M: float = 1.0,
         latent_dim: int = 16,
@@ -138,75 +138,66 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        # Determine encoder/decoder classes
-        encoder_cls = encoder if encoder is not None else DEFAULT_ENCODER
-        decoder_cls = decoder if decoder is not None else DEFAULT_DECODER
-
-        # Create encoder instances
-        encoders_list = []
-        encoder_count = 1 if shared_encoder else num_devices
-        for _ in range(encoder_count):
-            if isinstance(encoder_cls, type):  # It's a class
-                # Pass *args, **kwargs here
-                enc = encoder_cls(N=64, M=latent_dim, in_ch=4 if use_device_embedding else 3, csi_length=csi_length, *args, **kwargs)
-            else: # It's already an instance
-                 raise NotImplementedError("Passing pre-instantiated encoders is not fully supported yet.")
-            encoders_list.append(enc)
-        # If shared, replicate the single instance for the list passed to super
-        if shared_encoder and num_devices > 1:
-             encoders_list_for_super = [encoders_list[0]] * num_devices
-        else:
-             encoders_list_for_super = encoders_list
-
-
-        # Create decoder instances
-        decoders_list = []
-        decoder_count = 1 if shared_decoder else num_devices
-        for _ in range(decoder_count):
-            if isinstance(decoder_cls, type): # It's a class
-                # Pass *args, **kwargs here
-                dec = decoder_cls(N=64, M=latent_dim, out_ch_per_device=3, csi_length=csi_length, num_devices=num_devices, shared_decoder=shared_decoder, *args, **kwargs)
-            else: # It's already an instance
-                 raise NotImplementedError("Passing pre-instantiated decoders is not fully supported yet.")
-            decoders_list.append(dec)
-
-        # Initialize the base class with the created lists/instances
-        # MultipleAccessChannelModel expects: encoders (list), decoder (single instance), channel, power_constraint
-        super().__init__(
-            encoders=encoders_list_for_super, # Pass the list of encoders
-            decoder=decoders_list[0],      # Pass the first decoder instance to satisfy base class
-            channel=channel,
-            power_constraint=power_constraint,
-            num_devices=num_devices,        # Pass num_devices explicitly
-            *args, # Pass args
-            **kwargs # Pass kwargs
-        )
-
-        # Store the potentially multiple encoders/decoders specific to this model
-        # Base class stores the list passed as 'encoders', but Yilmaz might use shared logic differently
-        self.encoders = nn.ModuleList(encoders_list) # Store the actual list (shared or not)
-        self.decoders = nn.ModuleList(decoders_list) # Store the actual list (shared or not)
-        self.shared_encoder = shared_encoder # Store flags for internal logic
-        self.shared_decoder = shared_decoder
-
         # Initialize DeepJSCC-NOMA specific attributes
         self.M = M
         self.latent_dim = latent_dim
         self.use_perfect_sic = use_perfect_sic
-        self.use_device_embedding = use_device_embedding if use_device_embedding is not None else shared_encoder # Keep original logic here
+        self.use_device_embedding = use_device_embedding if use_device_embedding is not None else shared_encoder
         self.image_shape = image_shape
         self.csi_length = csi_length
-
-        # Calculate embedding dimension based on image shape
         self.embedding_dim = image_shape[0] * image_shape[1]
 
+        # Determine encoder/decoder classes or instances
+        encoder_config = encoder if encoder is not None else DEFAULT_ENCODER
+        decoder_config = decoder if decoder is not None else DEFAULT_DECODER
+
+        # Prepare args/kwargs for encoder/decoder instantiation if they are classes
+        encoder_kwargs = {
+            "N": 64, "M": latent_dim,
+            "in_ch": 4 if self.use_device_embedding else 3,
+            "csi_length": csi_length
+        }
+        decoder_kwargs = {
+            "N": 64, "M": latent_dim,
+            "out_ch_per_device": 3,
+            "csi_length": csi_length,
+            "num_devices": num_devices, # Pass num_devices here
+            "shared_decoder": shared_decoder # Pass shared_decoder here
+        }
+        # Combine with potentially passed kwargs, giving precedence to specific ones
+        encoder_kwargs.update(kwargs)
+        decoder_kwargs.update(kwargs)
+
+        # Instantiate if classes are provided
+        if isinstance(encoder_config, type):
+            final_encoder_config = encoder_config(**encoder_kwargs)
+        else:
+            final_encoder_config = encoder_config # Use the provided instance
+
+        if isinstance(decoder_config, type):
+            final_decoder_config = decoder_config(**decoder_kwargs)
+        else:
+            final_decoder_config = decoder_config # Use the provided instance
+
+        # Initialize the base class
+        super().__init__(
+            encoders=final_encoder_config, # Pass class/instance
+            decoder=final_decoder_config,  # Pass class/instance
+            channel=channel,
+            power_constraint=power_constraint,
+            num_devices=num_devices,
+            shared_encoder=shared_encoder, # Pass flag
+            shared_decoder=shared_decoder, # Pass flag
+            *args, # Pass remaining args
+            **kwargs # Pass remaining kwargs (base class might use them)
+        )
+
+        # Device embedding setup (needs num_devices from base class)
         if self.use_device_embedding:
-            self.device_images = nn.Embedding(num_devices, embedding_dim=self.embedding_dim)
-            # Loading checkpoint needs to happen *after* models are created
-            # The base class __init__ already created self.encoders/self.decoder
-            # We overwrite self.encoders/self.decoders here, so loading should target these.
+            self.device_images = nn.Embedding(self.num_devices, embedding_dim=self.embedding_dim)
+            # Loading checkpoint needs to happen *after* models are created by super().__init__
             if ckpt_path is not None:
-                 self._load_checkpoint(ckpt_path) # Call load checkpoint *after* all setup
+                 self._load_checkpoint(ckpt_path)
 
     def _load_checkpoint(self, ckpt_path: str) -> None:
         """Load pre-trained weights from checkpoint.
@@ -220,19 +211,45 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         dec_dict = checkpoint.get("decoder_state_dict", {})
         img_dict = checkpoint.get("device_image_state_dict", {})
 
-        # Handle loading for shared vs non-shared cases carefully
+        # Base class __init__ created self.encoders and self.decoders (ModuleLists)
         if self.shared_encoder:
-             # If shared, enc_dict likely contains state for one encoder
-             self.encoders[0].load_state_dict(enc_dict)
+             if enc_dict: # Only load if dict is not empty
+                 self.encoders[0].load_state_dict(enc_dict)
         else:
-             # If not shared, enc_dict should be compatible with ModuleList loading
-             self.encoders.load_state_dict(enc_dict) # Assumes dict keys match module indices
+             if enc_dict: # Check if dict is not empty
+                 # Ensure keys match ModuleList structure (e.g., "0", "1", ...)
+                 # If checkpoint saved a single shared encoder, this might need adjustment
+                 try:
+                     self.encoders.load_state_dict(enc_dict)
+                 except RuntimeError as e:
+                     print(f"Warning: Could not load encoder state dict directly: {e}. Attempting to load first encoder only.")
+                     if "0" in enc_dict:
+                         self.encoders[0].load_state_dict(enc_dict["0"])
+                     elif len(self.encoders) > 0:
+                         # Fallback: Assume the dict is for the first encoder if keys don't match
+                         try:
+                             self.encoders[0].load_state_dict(enc_dict)
+                             print("Successfully loaded state into the first encoder.")
+                         except Exception as inner_e:
+                             print(f"Failed to load state into the first encoder: {inner_e}")
 
         if self.shared_decoder:
-             self.decoders[0].load_state_dict(dec_dict)
+             if dec_dict:
+                 self.decoders[0].load_state_dict(dec_dict)
         else:
-             self.decoders.load_state_dict(dec_dict) # Assumes dict keys match module indices
-
+             if dec_dict:
+                 try:
+                     self.decoders.load_state_dict(dec_dict)
+                 except RuntimeError as e:
+                     print(f"Warning: Could not load decoder state dict directly: {e}. Attempting to load first decoder only.")
+                     if "0" in dec_dict:
+                         self.decoders[0].load_state_dict(dec_dict["0"])
+                     elif len(self.decoders) > 0:
+                         try:
+                             self.decoders[0].load_state_dict(dec_dict)
+                             print("Successfully loaded state into the first decoder.")
+                         except Exception as inner_e:
+                             print(f"Failed to load state into the first decoder: {inner_e}")
 
         if self.use_device_embedding and img_dict:
             self.device_images.load_state_dict(img_dict)
@@ -262,7 +279,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         # Encode inputs - support different encoder interfaces
         transmissions: List[torch.Tensor] = []
         for i in range(self.num_devices):
-            encoder = self.encoders[0 if self.shared_encoder else i]
+            # Use shared_encoder flag to get the correct encoder
+            encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
             device_input = x[:, i, ...]
 
             # Handle encoders with different input formats
@@ -298,10 +316,11 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
                  # This assumes the goal is to reconstruct each user's image from the shared output
                  output_channels_per_device = x_decoded.size(1) // self.num_devices # Infer channels per device
                  x = x_decoded.view(x.size(0), self.num_devices, output_channels_per_device, x_decoded.size(2), x_decoded.size(3))
-
-            # If decoder already outputs [B, num_devices, C, H, W], use it directly
-            # else:
-            #    x = x_decoded # This case seems less likely if conv2d expects 4D input
+            elif x_decoded.ndim == 5 and x_decoded.size(1) == self.num_devices:
+                 x = x_decoded # Assume correct shape already
+            else:
+                 # Handle unexpected output shape
+                 raise ValueError(f"Shared decoder produced unexpected output shape: {x_decoded.shape}")
 
         else:
             # Process each device separately using the combined signal
@@ -330,11 +349,18 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
+        # Add device embeddings if enabled
+        if self.use_device_embedding:
+            h, w = self.image_shape
+            emb = torch.stack([self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w) for i in range(self.num_devices)], dim=1)
+            x = torch.cat([x, emb], dim=2)
+
         transmissions: List[torch.Tensor] = []
 
         # Apply encoders and channel with SIC - support different encoder interfaces
         for i in range(self.num_devices):
-            encoder = self.encoders[0 if self.shared_encoder else i]
+            # Use shared_encoder flag
+            encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
             device_input = x[:, i, ...]
 
             # Handle encoders with different input formats
@@ -358,7 +384,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         # Decode each transmission - support different decoder interfaces
         results: List[torch.Tensor] = []
         for i in range(self.num_devices):
-            decoder = self.decoders[0 if self.shared_decoder else i]
+            # Use shared_decoder flag
+            decoder = self.decoders[0] if self.shared_decoder else self.decoders[i]
 
             # Pass only the relevant 4D tensor transmission to the decoder, including snr=csi
             xi = decoder(transmissions[i], snr=csi, *args, **kwargs) # Input is 4D

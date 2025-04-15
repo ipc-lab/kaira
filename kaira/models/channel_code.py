@@ -83,14 +83,8 @@ class ChannelCodeModel(SequentialModel):
             **kwargs: Additional keyword arguments
 
         Returns:
-            Any: A dictionary containing:
-                - final_output: The final decoded output
-                - history: The history of encoded, received and decoded results
+            Any: The final decoded output
         """
-        x.shape[0]
-
-        # Storage for results
-        history = []
 
         # Transmission process
 
@@ -114,16 +108,4 @@ class ChannelCodeModel(SequentialModel):
         # Decode the demodulated signal
         decoded = self.decoder(demodulated, *args, **kwargs)
 
-        # Store results
-        history.append(
-            {
-                "encoded": encoded,
-                "received": received,
-                "decoded": decoded
-            }
-        )
-
-        return {
-            "final_output": decoded, # Return only the decoded tensor
-            "history": history,
-        }
+        return decoded

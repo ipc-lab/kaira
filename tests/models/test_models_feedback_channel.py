@@ -11,11 +11,11 @@ from kaira.models.registry import ModelRegistry
 class SimpleEncoder(nn.Module):
     """Simple encoder for testing FeedbackChannelModel."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.layer = nn.Linear(10, 5)
 
-    def forward(self, x, state=None):
+    def forward(self, x, state=None, *args, **kwargs):
         if state is not None:
             # Apply state as a multiplicative factor
             return self.layer(x) * state
@@ -25,22 +25,22 @@ class SimpleEncoder(nn.Module):
 class SimpleDecoder(nn.Module):
     """Simple decoder for testing FeedbackChannelModel."""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         self.layer = nn.Linear(5, 10)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.layer(x)
 
 
 class SimpleFeedbackGenerator(nn.Module):
     """Simple feedback generator for testing FeedbackChannelModel."""
 
-    def __init__(self, feedback_size=3):
-        super().__init__()
+    def __init__(self, feedback_size=3, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.layer = nn.Linear(20, feedback_size)
 
-    def forward(self, decoded, original):
+    def forward(self, decoded, original, *args, **kwargs): # Add *args, **kwargs
         # Concatenate decoded output and original input
         combined = torch.cat([decoded, original], dim=1)
         return self.layer(combined)
@@ -49,12 +49,12 @@ class SimpleFeedbackGenerator(nn.Module):
 class SimpleFeedbackProcessor(nn.Module):
     """Simple feedback processor for testing FeedbackChannelModel."""
 
-    def __init__(self, input_size=3):
+    def __init__(self, input_size=3, *args, **kwargs):
         super().__init__()
         self.input_size = input_size
         self.layer = nn.Linear(input_size, 1)
 
-    def forward(self, feedback):
+    def forward(self, feedback, *args, **kwargs):
         # Process feedback to produce a scalar gain factor
         return torch.sigmoid(self.layer(feedback))
 

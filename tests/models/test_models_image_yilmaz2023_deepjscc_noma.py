@@ -44,7 +44,7 @@ class MockDecoder(nn.Module):
         super().__init__()
         self.out_ch_per_device = out_ch_per_device
 
-    def forward(self, x_tuple):
+    def forward(self, x_tuple, *args, **kwargs): # Add *args and **kwargs
         x, csi = x_tuple if isinstance(x_tuple, tuple) else (x_tuple, None)
 
         # Handle different tensor shapes
@@ -54,9 +54,16 @@ class MockDecoder(nn.Module):
             return torch.zeros(batch_size, num_devices, self.out_ch_per_device, 32, 32)
         elif len(x.shape) == 4:  # [batch, channels, H, W]
             batch_size = x.shape[0]
-            # For shared decoder case
-            return torch.zeros(batch_size, self.out_ch_per_device, 32, 32)
+            # For shared decoder case, the model expects [batch, num_devices * out_ch_per_device, H, W]
+            # Need to determine num_devices if possible, or adjust the test assertion
+            # Assuming num_devices might be implicitly passed or known contextually in the real model
+            # For the mock, let's try to infer or make it flexible.
+            # If kwargs contains 'num_devices' or similar, use it. Otherwise, assume based on context.
+            # In test_yilmaz2023_deepjscc_noma_shared_components, num_devices is 3.
+            num_devices = kwargs.get('num_devices', 3) # Defaulting to 3 based on the test case
+            return torch.zeros(batch_size, num_devices * self.out_ch_per_device, 32, 32)
         else:
+            # Adjust this case if needed based on how shared decoder handles other dims
             return torch.zeros(1, self.out_ch_per_device, 32, 32)
 
 

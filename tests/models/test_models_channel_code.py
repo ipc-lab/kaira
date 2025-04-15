@@ -40,8 +40,7 @@ class SimpleDecoder(BaseModel):
     def forward(self, x, *args, **kwargs):
         decoded = self.fc(x)
         # Return both decoded data and a soft estimate
-        return decoded, torch.sigmoid(decoded)
-
+        return decoded
 
 class SimpleModulator(BaseModulator):
     """A simple modulator for testing."""
@@ -99,9 +98,7 @@ class ParityDecoder(torch.nn.Module):
     def forward(self, x, *args, **kwargs):
         # Remove the parity bit and return the original data
         original = x[:, :-1]
-        # In a real decoder, we would check the parity bit here
-        soft_estimate = original  # For simplicity
-        return original, soft_estimate
+        return original
 
 
 @pytest.fixture
@@ -207,25 +204,10 @@ class TestChannelCodeModel:
         # Process the input through the model
         output = model(input_data)
 
-        # Check the output type and structure
-        assert isinstance(output, dict)
-        assert "final_output" in output
-        assert "history" in output
-
-        # Check the output values (should be identical with identity components after binary conversion)
+        # Check the output type and value (should be identical with identity components after binary conversion)
+        assert isinstance(output, torch.Tensor)
         binary_input_data = (input_data > 0).float()
-        assert torch.allclose(output["final_output"], binary_input_data)
-        assert len(output["history"]) == 1
-
-        # Check the history entries
-        history_entry = output["history"][0]
-        assert "encoded" in history_entry
-        assert "received" in history_entry
-        assert "decoded" in history_entry
-        assert "soft_estimate" in history_entry
-
-        # With identity components, input should pass through unchanged after binary conversion
-        assert torch.allclose(history_entry["encoded"], binary_input_data)
+        assert torch.allclose(output, binary_input_data)
 
     def test_forward_perfect_channel(self, simple_channel_code_model):
         """Test forward pass with custom components and a perfect channel."""
@@ -235,25 +217,13 @@ class TestChannelCodeModel:
 
         output = model(input_data)
 
-        # Check output structure
-        assert isinstance(output, dict)
-        assert "final_output" in output
-        assert "history" in output
-
-        # Check output shapes
-        assert output["final_output"].shape == (batch_size, 10)
-        assert len(output["history"]) == 1
-
-        # Check history content
-        history_item = output["history"][0]
-        assert "encoded" in history_item
-        assert "received" in history_item
-        assert "decoded" in history_item
-        assert "soft_estimate" in history_item
+        # Check output shape and type
+        assert isinstance(output, torch.Tensor)
+        assert output.shape == (batch_size, 10)
 
         # With a perfect channel, decoded should be deterministically related to input
         # but not identical because of the encoding/decoding transformations
-        assert not torch.allclose(output["final_output"], input_data, atol=1e-5)
+        assert not torch.allclose(output, input_data, atol=1e-5)
 
     def test_forward_noisy_channel(self, realistic_channel_code_model):
         """Test forward pass with a realistic noisy channel."""
@@ -277,19 +247,14 @@ class TestChannelCodeModel:
         # First run using this input
         torch.manual_seed(42)  # Set seed for first run
         model1.train()
-        output = model1(input_data)
+        output1 = model1(input_data)
 
-        # Check output structure
-        assert isinstance(output, dict)
-        assert "final_output" in output
-        assert "history" in output
-
-        # Check output shapes
-        assert output["final_output"].shape == (batch_size, 10)
-        assert len(output["history"]) == 1
+        # Check output shape and type
+        assert isinstance(output1, torch.Tensor)
+        assert output1.shape == (batch_size, 10)
 
         # Store result from first run
-        first_run = output["final_output"].clone()
+        first_run = output1.clone()
 
         # Create a completely separate model for the second run to avoid any state sharing
         channel2 = AWGNChannel(snr_db=10.0)  # Create a separate channel for second run
@@ -300,8 +265,8 @@ class TestChannelCodeModel:
         # Second run with a different random seed
         torch.manual_seed(43)  # Set a different seed for the second run
         model2.train()
-        second_output = model2(input_data)
-        second_run = second_output["final_output"]
+        output2 = model2(input_data)
+        second_run = output2
 
         # The outputs should be different due to the random noise in the channel
         assert not torch.allclose(first_run, second_run, atol=1e-5)
@@ -320,36 +285,8 @@ class TestChannelCodeModel:
         output = model(input_data)
 
         # Check the output matches the input after encoding/decoding
-        assert torch.allclose(output["final_output"], input_data)
-        assert len(output["history"]) == 1
-
-        # Check the encoded data has the extra parity bit
-        encoded = output["history"][0]["encoded"]
-        assert encoded.shape == (batch_size, input_dim + 1)
-
-    def test_history_tracking(self, simple_channel_code_model):
-        """Test that the history is correctly tracked."""
-        model = simple_channel_code_model
-        input_data = torch.randn(3, 10)
-
-        output = model(input_data)
-        history = output["history"]
-
-        # Check that history contains one entry (for a single iteration)
-        assert len(history) == 1
-
-        # Check that all expected elements are in the history
-        history_item = history[0]
-        assert "encoded" in history_item
-        assert "received" in history_item
-        assert "decoded" in history_item
-        assert "soft_estimate" in history_item
-
-        # Check shapes of history elements
-        assert history_item["encoded"].shape == (3, 20)  # encoder output size
-        assert history_item["received"].shape == (3, 20)  # channel output size
-        assert history_item["decoded"].shape == (3, 10)  # decoder output size
-        assert history_item["soft_estimate"].shape == (3, 10)  # soft estimate size
+        assert isinstance(output, torch.Tensor)
+        assert torch.allclose(output, input_data)
 
     def test_with_keyword_arguments(self, simple_channel_code_model):
         """Test model forward pass with additional keyword arguments."""
@@ -359,9 +296,9 @@ class TestChannelCodeModel:
         # Pass some additional kwargs
         output = model(input_data, extra_param=42, another_param="test")
 
-        # Ensure the forward pass completes successfully
-        assert "final_output" in output
-        assert output["final_output"].shape == (3, 10)
+        # Ensure the forward pass completes successfully and returns a tensor
+        assert isinstance(output, torch.Tensor)
+        assert output.shape == (3, 10)
 
     def test_device_compatibility(self, simple_channel_code_model):
         """Test model compatibility with different devices."""
@@ -374,7 +311,7 @@ class TestChannelCodeModel:
 
         # Forward pass should work on CPU
         output_cpu = model(input_data)
-        assert output_cpu["final_output"].device.type == "cpu"
+        assert output_cpu.device.type == "cpu"
 
         # Skip GPU test if not available
         if torch.cuda.is_available():
@@ -384,7 +321,7 @@ class TestChannelCodeModel:
 
             # Forward pass should work on GPU
             output_gpu = model(input_data)
-            assert output_gpu["final_output"].device.type == "cuda"
+            assert output_gpu.device.type == "cuda"
 
     def test_model_registry(self):
         """Test that channel code model is correctly registered in ModelRegistry."""

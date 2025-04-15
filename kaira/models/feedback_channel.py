@@ -117,7 +117,8 @@ class FeedbackChannelModel(BaseModel):
             decoded = self.decoder(received, *args, **kwargs)
 
             # Generate feedback - pass args/kwargs to feedback generator
-            feedback = self.feedback_generator(decoded, *args, **kwargs)
+            # Pass input_data as the 'original' argument
+            feedback = self.feedback_generator(decoded, input_data, *args, **kwargs)
 
             # Transmit feedback through feedback channel (Channels typically don't take arbitrary *args, **kwargs)
             feedback = self.feedback_channel(feedback, *args, **kwargs)  # Pass args/kwargs
