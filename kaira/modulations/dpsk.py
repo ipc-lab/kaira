@@ -379,6 +379,8 @@ class DBPSKModulator(DPSKModulator):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
+        kwargs.pop("order", None)  # Remove order if present in kwargs
+        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
         super().__init__(order=2, gray_coding=True, *args, **kwargs)
 
 
@@ -393,6 +395,8 @@ class DBPSKDemodulator(DPSKDemodulator):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
+        kwargs.pop("order", None)  # Remove order if present in kwargs
+        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
         super().__init__(order=2, gray_coding=True, *args, **kwargs)
 
 
@@ -407,6 +411,8 @@ class DQPSKModulator(DPSKModulator):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
+        kwargs.pop("order", None)  # Remove order if present in kwargs
+        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
         super().__init__(order=4, gray_coding=True, *args, **kwargs)
 
 
@@ -421,4 +427,6 @@ class DQPSKDemodulator(DPSKDemodulator):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
+        kwargs.pop("order", None)  # Remove order if present in kwargs
+        kwargs.pop("gray_coding", None)  # Remove gray_coding if present in kwargs
         super().__init__(order=4, gray_coding=True, *args, **kwargs)

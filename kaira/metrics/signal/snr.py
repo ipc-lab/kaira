@@ -17,10 +17,12 @@ from ..registry import MetricRegistry
 class SignalToNoiseRatio(BaseMetric):
     """Signal-to-Noise Ratio (SNR) metric.
 
-    SNR measures the ratio of signal power to noise power, expressed in decibels (dB). Higher
-    values indicate better signal quality :cite:`sklar2001digital`. This metric is fundamental
-    in determining the performance limits of communication systems as discussed in
-    :cite:`shannon1948mathematical`.
+    SNR measures the ratio of signal power to noise power, often expressed in decibels (dB).
+    Higher values indicate better signal quality. It's a fundamental metric in signal processing
+    and communications :cite:`goldsmith2005wireless` :cite:`sklar2001digital`.
+
+    Attributes:
+        mode (str): Output mode - "db" for decibels or "linear" for linear ratio.
     """
 
     def __init__(self, name: Optional[str] = None, mode: str = "db", *args: Any, **kwargs: Any):
@@ -32,43 +34,47 @@ class SignalToNoiseRatio(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "SNR", *args, **kwargs)  # Pass args and kwargs
+        super().__init__(name=name or "SNR")  # Pass only name
         self.mode = mode.lower()
         if self.mode not in ["db", "linear"]:
             raise ValueError("Mode must be either 'db' or 'linear'")
 
-    def forward(self, signal: Tensor, noisy_signal: Tensor, *args: Any, **kwargs: Any) -> Tensor:
-        """Calculate SNR between original signal and noisy signal.
+    def forward(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tensor:
+        """Compute the Signal-to-Noise Ratio (SNR).
 
         Args:
-            signal (Tensor): Original clean signal
-            noisy_signal (Tensor): Noisy version of the signal
-            *args: Variable length argument list (currently unused).
-            **kwargs: Arbitrary keyword arguments (currently unused).
+            x (Tensor): The original (clean) signal tensor.
+            y (Tensor): The noisy signal tensor.
+            *args: Variable length argument list (unused).
+            **kwargs: Arbitrary keyword arguments (unused).
 
         Returns:
-            Tensor: SNR values in decibels (dB) or linear ratio based on mode
+            Tensor: The computed SNR value(s). If input is batched, returns SNR per batch element.
         """
-        # Note: *args and **kwargs are not directly used here
-        # but are included for interface consistency.
+        # Ensure inputs are tensors
+        if not isinstance(x, Tensor) or not isinstance(y, Tensor):
+            raise TypeError(f"Inputs must be torch.Tensor, got {type(x)} and {type(y)}")
 
-        # Check for batch dimension
-        is_batched = signal.dim() > 1 and signal.size(0) > 1
+        # Ensure inputs have the same shape
+        if x.shape != y.shape:
+            raise ValueError(f"Input shapes must match: {x.shape} vs {y.shape}")
 
         # Calculate noise
-        noise = noisy_signal - signal
+        noise = y - x
+
+        # Check for batch dimension (assuming dim > 1 implies batching)
+        is_batched = x.dim() > 1 and x.shape[0] > 1
 
         if is_batched:
-            # Process each sample in the batch independently
             result = []
-            for i in range(signal.size(0)):
+            for i in range(x.size(0)):
                 # Handle complex signals
-                if torch.is_complex(signal):
-                    signal_power = torch.mean(torch.abs(signal[i]) ** 2)
+                if torch.is_complex(x):
+                    signal_power = torch.mean(torch.abs(x[i]) ** 2)
                     noise_power = torch.mean(torch.abs(noise[i]) ** 2)
                 else:
                     # Calculate power of signal and noise
-                    signal_power = torch.mean(signal[i] ** 2)
+                    signal_power = torch.mean(x[i] ** 2)
                     noise_power = torch.mean(noise[i] ** 2)
 
                 # Avoid division by zero
@@ -91,12 +97,12 @@ class SignalToNoiseRatio(BaseMetric):
             return torch.stack(result)
         else:
             # Handle complex signals
-            if torch.is_complex(signal):
-                signal_power = torch.mean(torch.abs(signal) ** 2)
+            if torch.is_complex(x):
+                signal_power = torch.mean(torch.abs(x) ** 2)
                 noise_power = torch.mean(torch.abs(noise) ** 2)
             else:
                 # Calculate power of signal and noise
-                signal_power = torch.mean(signal**2)
+                signal_power = torch.mean(x**2)
                 noise_power = torch.mean(noise**2)
 
             # Avoid division by zero
@@ -118,20 +124,25 @@ class SignalToNoiseRatio(BaseMetric):
             # Return scalar tensor
             return snr.squeeze()
 
-    def compute_with_stats(self, signal: Tensor, noisy_signal: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
-        """Compute SNR with mean and standard deviation.
+    def compute_with_stats(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tuple[Tensor, Tensor]:
+        """Compute SNR with mean and standard deviation across batches.
 
         Args:
-            signal (Tensor): Original clean signal
-            noisy_signal (Tensor): Noisy version of the signal
-            *args: Variable length argument list passed to forward.
-            **kwargs: Arbitrary keyword arguments passed to forward.
+            x (Tensor): The original (clean) signal tensor (batched).
+            y (Tensor): The noisy signal tensor (batched).
+            *args: Variable length argument list (unused).
+            **kwargs: Arbitrary keyword arguments (unused).
 
         Returns:
-            Tuple[Tensor, Tensor]: Mean and standard deviation of SNR values
+            Tuple[Tensor, Tensor]: Mean and standard deviation of the SNR values across the batch.
         """
-        snr_values = self.forward(signal, noisy_signal, *args, **kwargs)  # Pass args/kwargs
-        return snr_values.mean(), snr_values.std()
+        values = self.forward(x, y, *args, **kwargs)
+        # Handle potential inf values before calculating stats
+        values = values[torch.isfinite(values)]
+        if values.numel() == 0:
+            # Return NaN if all values were inf or input was empty
+            return torch.tensor(float("nan")), torch.tensor(float("nan"))
+        return values.mean(), values.std()
 
     def reset(self) -> None:
         """Reset accumulated statistics.

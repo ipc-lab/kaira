@@ -15,15 +15,25 @@ from ..registry import MetricRegistry
 
 @MetricRegistry.register_metric("bler")
 class BlockErrorRate(BaseMetric):
-    """Block Error Rate (BLER) Module.
+    """Block Error Rate (BLER) metric.
 
-    This metric calculates the ratio of blocks with errors to the total number of blocks. A block
-    is considered erroneous if any bit/symbol within the block is incorrect.
+    BLER measures the number of blocks containing at least one error divided by the total number of
+    blocks transmitted. Lower values indicate better performance. It's commonly used in systems
+    employing block codes :cite:`lin2004error`.
 
-    BLER is commonly used in communication systems to evaluate the performance of channel coding
-    schemes, especially in scenarios with burst errors :cite:`lin2004error`. In modern cellular
-    systems like 5G, BLER is a critical performance metric :cite:`3gpp2018nr`.
+    This metric can also be used for Frame Error Rate (FER) or Symbol Error Rate (SER) by setting
+    the `block_size` appropriately or leaving it as None to treat each row as a block/frame/symbol.
+
+    Attributes:
+        block_size (Optional[int]): Size of each block. If None, each row is a block.
+        threshold (float): Threshold for considering values as different.
+        reduction (str): Reduction method ('mean', 'sum', 'none').
+        total_blocks (Tensor): Accumulated total number of blocks processed.
+        error_blocks (Tensor): Accumulated number of blocks with errors.
     """
+
+    is_differentiable = False
+    higher_is_better = False
 
     def __init__(
         self,
@@ -46,7 +56,12 @@ class BlockErrorRate(BaseMetric):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(name=name or "BLER", *args, **kwargs)  # Pass args and kwargs
+        super().__init__(name=name or "BLER")  # Pass only name
+        if block_size is not None and block_size <= 0:
+            raise ValueError("block_size must be a positive integer or None")
+        if reduction not in ["mean", "sum", "none"]:
+            raise ValueError("reduction must be 'mean', 'sum', or 'none'")
+
         self.block_size = block_size
         self.threshold = threshold
         self.reduction = reduction
@@ -54,126 +69,83 @@ class BlockErrorRate(BaseMetric):
         self.register_buffer("total_blocks", torch.tensor(0))
         self.register_buffer("error_blocks", torch.tensor(0))
 
-    def _reshape_into_blocks(self, x: Tensor) -> Tensor:
-        """Reshape input tensor into blocks based on block_size.
+    def _reshape_into_blocks(self, data: Tensor) -> Tensor:
+        """Reshape input tensor into blocks based on block_size."""
+        batch_size = data.shape[0]
+        remainder_dims = data.shape[1:]
 
-        Args:
-            x (Tensor): Input tensor
-
-        Returns:
-            Tensor: Reshaped tensor with blocks as the second dimension
-        """
         if self.block_size is None:
-            # Each row is a separate block
-            return x
+            # Treat each row as a block
+            return data.reshape(batch_size, 1, -1)  # Shape: [batch_size, 1, elements_per_row]
 
-        # Handle empty tensor case
-        if x.numel() == 0:
-            return x.reshape(0, 0, 0)
+        elements_per_batch_item = torch.prod(torch.tensor(remainder_dims)).item()
+        if elements_per_batch_item % self.block_size != 0:
+            raise ValueError(f"Total elements per batch item ({elements_per_batch_item}) must be divisible by block_size ({self.block_size})")
 
-        batch_size = x.size(0)
-        # Make sure tensor can be evenly divided into blocks
-        if x.numel() % (batch_size * self.block_size) != 0:
-            raise ValueError(f"Input size {x.numel()} is not divisible by batch_size ({batch_size}) " f"multiplied by block_size ({self.block_size})")
+        num_blocks = elements_per_batch_item // self.block_size
 
-        # Reshape to [batch_size, num_blocks, block_size, ...]
-        remainder_dims = x.shape[1:]
-        elements_per_batch = torch.tensor(remainder_dims).prod().item()
-        num_blocks = elements_per_batch // self.block_size
+        # Flatten the non-batch dimensions first
+        data_flat = data.reshape(batch_size, -1)
+        # Reshape into blocks
+        return data_flat.reshape(batch_size, num_blocks, self.block_size)
 
-        # Handle case where input has more than 2 dimensions
-        if len(remainder_dims) > 1:
-            # Flatten the input to [batch_size, -1] first
-            x_flat = x.reshape(batch_size, -1)
-            # Then reshape to [batch_size, num_blocks, block_size]
-            return x_flat.reshape(batch_size, num_blocks, self.block_size)
-        else:
-            # Simple case: input is [batch_size, sequence_length]
-            return x.reshape(batch_size, num_blocks, self.block_size)
-
-    def forward(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> Tensor:
-        """Calculate Block Error Rate between predictions and targets.
+    def forward(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> Tensor:
+        """Compute the Block Error Rate for the current batch.
 
         Args:
-            preds (Tensor): Predicted values
-            targets (Tensor): Target values
-            *args: Variable length argument list (currently unused).
-            **kwargs: Arbitrary keyword arguments (currently unused).
+            x (Tensor): The predicted tensor.
+            y (Tensor): The target tensor.
+            *args: Variable length argument list (unused).
+            **kwargs: Arbitrary keyword arguments (unused).
 
         Returns:
-            Tensor: Block Error Rate value
+            Tensor: Block error rate for the batch, potentially reduced.
         """
-        # Note: *args and **kwargs are not directly used here
-        # but are included for interface consistency.
+        if x.shape != y.shape:
+            raise ValueError(f"Input shapes must match: {x.shape} vs {y.shape}")
 
-        if preds.shape != targets.shape:
-            raise ValueError(f"Shape mismatch: {preds.shape} vs {targets.shape}")
+        # Reshape inputs into blocks
+        x_blocks = self._reshape_into_blocks(x)
+        y_blocks = self._reshape_into_blocks(y)
 
-        # Handle empty tensors
-        if preds.numel() == 0 or targets.numel() == 0:
-            return torch.tensor(0.0)
+        # Check for errors within each block
+        errors_in_block = torch.abs(x_blocks - y_blocks) > self.threshold
+        # Determine if any error exists in each block
+        block_has_error = errors_in_block.any(dim=-1)  # Check along the block_size dimension
 
-        # Reshape inputs into blocks if needed
-        if self.block_size is not None:
-            preds_blocks = self._reshape_into_blocks(preds)
-            targets_blocks = self._reshape_into_blocks(targets)
-
-            # Check if any element in each block has an error that exceeds the threshold
-            errors = torch.abs(preds_blocks - targets_blocks) > self.threshold
-
-            # Reduce along block_size dimension to check if any element has error in each block
-            block_errors = errors.any(dim=-1)
-        else:
-            # Each row is already a block
-            errors = torch.abs(preds - targets) > self.threshold
-            errors_flat = errors.reshape(errors.shape[0], -1)
-            block_errors = errors_flat.any(dim=-1)
-
-        # Apply reduction
         if self.reduction == "none":
-            return block_errors.float()
+            # Return error status for each block (flattened across batches)
+            return block_has_error.float().flatten()
         elif self.reduction == "sum":
-            return block_errors.sum().float()
-        else:  # default: 'mean'
-            num_errors = block_errors.sum().item()
-            total_blocks = block_errors.numel()
+            # Return total number of error blocks
+            return block_has_error.sum().float()
+        else:  # reduction == "mean"
+            # Return the mean error rate
+            num_errors = block_has_error.sum().item()
+            total_blocks = block_has_error.numel()
             # Ensure exact fraction for the test cases
             return torch.tensor(float(num_errors) / float(total_blocks) if total_blocks > 0 else 0.0)
 
-    def update(self, preds: Tensor, targets: Tensor, *args: Any, **kwargs: Any) -> None:
-        """Update the internal state with a batch of samples.
+    def update(self, x: Tensor, y: Tensor, *args: Any, **kwargs: Any) -> None:
+        """Update accumulated statistics with results from a new batch.
 
         Args:
-            preds (Tensor): Predicted values
-            targets (Tensor): Target values
-            *args: Variable length argument list (currently unused).
-            **kwargs: Arbitrary keyword arguments (currently unused).
+            x (Tensor): The predicted tensor for the current batch.
+            y (Tensor): The target tensor for the current batch.
+            *args: Variable length argument list (unused).
+            **kwargs: Arbitrary keyword arguments (unused).
         """
-        # Note: *args and **kwargs are not directly used here
-        # but are included for interface consistency.
+        if x.shape != y.shape:
+            raise ValueError(f"Input shapes must match: {x.shape} vs {y.shape}")
 
-        if preds.numel() == 0 or targets.numel() == 0:
-            return
+        x_blocks = self._reshape_into_blocks(x)
+        y_blocks = self._reshape_into_blocks(y)
 
-        if self.block_size is not None:
-            preds_blocks = self._reshape_into_blocks(preds)
-            targets_blocks = self._reshape_into_blocks(targets)
+        errors_in_block = torch.abs(x_blocks - y_blocks) > self.threshold
+        block_has_error = errors_in_block.any(dim=-1)
 
-            # Count blocks with errors
-            errors = torch.abs(preds_blocks - targets_blocks) > self.threshold
-            block_errors = errors.any(dim=-1)
-
-            # Count total blocks and blocks with errors
-            self.total_blocks += block_errors.numel()
-            self.error_blocks += block_errors.sum().item()
-        else:
-            # Each row is a block
-            errors = torch.abs(preds - targets) > self.threshold
-            errors_flat = errors.reshape(errors.shape[0], -1)
-            block_errors = errors_flat.any(dim=-1)
-
-            self.total_blocks += block_errors.numel()
-            self.error_blocks += block_errors.sum().item()
+        self.total_blocks += block_has_error.numel()
+        self.error_blocks += block_has_error.sum().item()
 
     def compute(self) -> Tensor:
         """Compute accumulated block error rate.
@@ -182,7 +154,7 @@ class BlockErrorRate(BaseMetric):
             Tensor: Block error rate value
         """
         # Return exact fraction to avoid floating-point issues in tests
-        return torch.tensor(float(self.error_blocks) / float(max(self.total_blocks, 1)), dtype=torch.float32)
+        return torch.tensor(float(self.error_blocks) / float(max(self.total_blocks.item(), 1)), dtype=torch.float32)
 
     def reset(self) -> None:
         """Reset accumulated statistics."""

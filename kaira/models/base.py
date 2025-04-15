@@ -6,7 +6,7 @@ different model types.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List
 
 from torch import nn
 
@@ -30,7 +30,7 @@ class BaseModel(nn.Module, ABC):
             **kwargs: Variable keyword arguments.
         """
         super().__init__()
-        self.steps = []
+        self.steps: List[Any] = []
 
     @abstractmethod
     def forward(self, *args: Any, **kwargs: Any) -> Any:
