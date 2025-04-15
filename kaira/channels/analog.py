@@ -883,6 +883,10 @@ class RicianFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
+        # Validate k_factor is non-negative before passing to parent
+        if k_factor < 0:
+            raise ValueError("K-factor must be non-negative")
+
         kwargs = kwargs.copy()
         kwargs["k_factor"] = k_factor
         kwargs["coherence_time"] = coherence_time
@@ -940,6 +944,10 @@ class LogNormalFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
+        # Validate shadow_sigma_db is non-negative
+        if shadow_sigma_db < 0:
+            raise ValueError("shadow_sigma_db must be non-negative")
+
         kwargs = kwargs.copy()
         kwargs["shadow_sigma_db"] = shadow_sigma_db
         kwargs["coherence_time"] = coherence_time
