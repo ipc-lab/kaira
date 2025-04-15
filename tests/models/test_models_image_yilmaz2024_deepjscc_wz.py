@@ -141,11 +141,9 @@ def test_yilmaz2024_deepjscc_wz_model_initialization(encoder, channel, decoder, 
 def test_yilmaz2024_deepjscc_wz_model_forward(encoder, channel, decoder, constraint, sample_image, side_info):
     model = Yilmaz2024DeepJSCCWZModel(encoder=encoder, channel=channel, decoder=decoder, constraint=constraint)
     csi = torch.ones(1, 1, 1, 1)
-    result = model(sample_image, side_info, csi=csi)
-    assert "encoded" in result
-    assert "quantized" in result
-    assert "constrained" in result
-    assert "received" in result
-    assert "side_info" in result
-    assert "decoded" in result
-    assert result["decoded"].shape == sample_image.shape
+    # The model forward now returns the decoded tensor directly
+    decoded_image = model(sample_image, side_info, csi=csi)
+    # Check if the output is a tensor
+    assert isinstance(decoded_image, torch.Tensor)
+    # Check if the output shape matches the input image shape
+    assert decoded_image.shape == sample_image.shape

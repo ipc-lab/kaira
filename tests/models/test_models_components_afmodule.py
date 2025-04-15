@@ -50,7 +50,7 @@ def test_afmodule_different_sizes(N, csi_length):
 
 
 def test_afmodule_missing_side_info():
-    """Test that AFModule raises ValueError when side information is missing."""
+    """Test that AFModule raises TypeError when side information is missing."""
     N = 64
     csi_length = 1
     module = AFModule(N=N, csi_length=csi_length)
@@ -58,8 +58,8 @@ def test_afmodule_missing_side_info():
     # Create test input without side information
     x = torch.randn(4, N, 32, 32)
 
-    # Test that ValueError is raised when side_info is missing
-    with pytest.raises(ValueError, match="AFModule requires both input tensor and side information"):
+    # Test that TypeError is raised when csi is missing
+    with pytest.raises(TypeError): # Changed from ValueError
         module(x)
 
 
@@ -267,18 +267,18 @@ def test_afmodule_context_padding():
 
 
 def test_afmodule_tuple_input():
-    """Test AFModule with tuple input."""
+    """Test AFModule with separate inputs (previously tuple).""" # Docstring updated for clarity
     N = 64
     csi_length = 1
     module = AFModule(N=N, csi_length=csi_length)
 
-    # Create test inputs as a tuple
+    # Create test inputs
     batch_size = 4
     x = torch.randn(batch_size, N)
     side_info = torch.randn(batch_size, csi_length)
 
-    # Test forward pass with tuple input
-    output = module((x, side_info))
+    # Test forward pass with separate inputs
+    output = module(x, side_info) # Changed from module((x, side_info))
 
     # Check output shape
     assert output.shape == x.shape

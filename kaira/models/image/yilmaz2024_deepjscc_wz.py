@@ -114,8 +114,8 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
         for layer in self.g_a:
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi_transmitter), *args, **kwargs)
+                # Pass x and csi_transmitter as separate arguments
+                x = layer(x, csi_transmitter, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -209,8 +209,8 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
                 xs_list.append(x_side)
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x_side = layer((x_side, csi_sideinfo), *args, **kwargs)
+                # Pass x_side and csi_sideinfo as separate arguments
+                x_side = layer(x_side, csi_sideinfo, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x_side = layer(x_side, *args, **kwargs)
@@ -223,8 +223,8 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi), *args, **kwargs)
+                # Pass x and csi as separate arguments
+                x = layer(x, csi, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -320,8 +320,8 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
         for layer in self.g_a:
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi_transmitter), *args, **kwargs)
+                # Pass x and csi_transmitter as separate arguments
+                x = layer(x, csi_transmitter, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -430,8 +430,8 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                 xs_list.append(xs)  # Save feature before downsampling
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                xs = layer((xs, csi_sideinfo), *args, **kwargs)
+                # Pass xs and csi_sideinfo as separate arguments
+                xs = layer(xs, csi_sideinfo, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 xs = layer(xs, *args, **kwargs)  # Apply the layer
@@ -447,8 +447,8 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi), *args, **kwargs)
+                # Pass x and csi as separate arguments
+                x = layer(x, csi, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -575,10 +575,11 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
                 x = torch.cat([x, xs_encoder], dim=1)
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi_transmitter), *args, **kwargs)
+                # Pass x and csi_transmitter as separate arguments
+                x = layer(x, csi_transmitter, *args, **kwargs)
                 if layer_s is not None:
-                    xs_encoder = layer_s((xs_encoder, csi_transmitter), *args, **kwargs)
+                    # Pass xs_encoder and csi_transmitter as separate arguments
+                    xs_encoder = layer_s(xs_encoder, csi_transmitter, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -693,8 +694,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 xs_list.append(xs)  # Save feature before downsampling
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                xs = layer((xs, csi_sideinfo), *args, **kwargs)
+                # Pass xs and csi_sideinfo as separate arguments
+                xs = layer(xs, csi_sideinfo, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 xs = layer(xs, *args, **kwargs)  # Apply the layer
@@ -710,8 +711,8 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
                 x = torch.cat([x, last_xs], dim=1)
 
             if isinstance(layer, AFModule):
-                # Pass *args, **kwargs to AFModule
-                x = layer((x, csi), *args, **kwargs)
+                # Pass x and csi as separate arguments
+                x = layer(x, csi, *args, **kwargs)
             else:
                 # Pass *args, **kwargs to other layers
                 x = layer(x, *args, **kwargs)
@@ -804,7 +805,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:
@@ -849,9 +850,6 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if csi is None:
             raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ model")
 
-        # Create result dictionary
-        result = {}
-
         # Source encoding - pass *args, **kwargs
         if self.is_conditional:
             encoded = self.encoder(source, side_info, csi, *args, **kwargs)
@@ -859,26 +857,16 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             # For non-conditional models, don't pass the side_info parameter
             encoded = self.encoder(source, csi, *args, **kwargs)
 
-        result["encoded"] = encoded
-        result["quantized"] = encoded  # No explicit quantization in DeepJSCC-WZ
-
         # Apply mandatory power/rate constraint - add safety check
         if self.constraint is None:
             raise RuntimeError("Constraint is unexpectedly None. This should not happen if __init__ validation is working.")
         constrained = self.constraint(encoded, *args, **kwargs)
 
-        result["constrained"] = constrained
-        result["syndromes"] = constrained  # No explicit syndrome generation in DeepJSCC-WZ
 
         # Transmit through channel - pass *args, **kwargs
         received = self.channel(constrained, *args, **kwargs)
-        result["received"] = received
-
-        # Record side information
-        result["side_info"] = side_info
 
         # Decode using received representation and side information - pass *args, **kwargs
         decoded = self.decoder(received, side_info, csi, *args, **kwargs)
-        result["decoded"] = decoded
 
-        return result
+        return decoded
