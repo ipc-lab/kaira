@@ -827,10 +827,12 @@ class RayleighFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-
-        # Filter kwargs before passing to super
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "avg_noise_power", "snr_db")}
-        super().__init__(*args, fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)
+        kwargs = kwargs.copy()
+        kwargs["coherence_time"] = coherence_time
+        kwargs["avg_noise_power"] = avg_noise_power
+        kwargs["snr_db"] = snr_db
+        kwargs["fading_type"] = "rayleigh"
+        super().__init__(*args, **kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -881,9 +883,13 @@ class RicianFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        # Filter kwargs before passing to super
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "k_factor", "avg_noise_power", "snr_db")}
-        super().__init__(*args, fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)
+        kwargs = kwargs.copy()
+        kwargs["k_factor"] = k_factor
+        kwargs["coherence_time"] = coherence_time
+        kwargs["avg_noise_power"] = avg_noise_power
+        kwargs["snr_db"] = snr_db
+        kwargs["fading_type"] = "rician"
+        super().__init__(*args, **kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -934,6 +940,10 @@ class LogNormalFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        # Filter kwargs before passing to super
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "shadow_sigma_db", "avg_noise_power", "snr_db")}
-        super().__init__(*args, fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, **filtered_kwargs)
+        kwargs = kwargs.copy()
+        kwargs["shadow_sigma_db"] = shadow_sigma_db
+        kwargs["coherence_time"] = coherence_time
+        kwargs["avg_noise_power"] = avg_noise_power
+        kwargs["snr_db"] = snr_db
+        kwargs["fading_type"] = "lognormal"
+        super().__init__(*args, **kwargs)

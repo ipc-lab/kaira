@@ -666,13 +666,11 @@ class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
         )
 
     def forward(self, x: torch.Tensor, x_side: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """Decode the conditionally encoded representation.
+        """Decode the received representation into a reconstructed image.
 
         This method first processes the side information through the g_a2 encoder path,
         then progressively decodes the received signal while fusing with side information
-        features at multiple scales. Since the encoded representation already incorporates
-        knowledge of the side information, the decoding process can achieve higher quality
-        reconstruction.
+        features at multiple scales.
 
         Args:
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
@@ -787,17 +785,21 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if constraint is None:
             raise ValueError("A constraint must be provided for Yilmaz2024DeepJSCCWZ model")
 
-        # Filter kwargs before passing to super().__init__
-        base_kwargs = {k: v for k, v in kwargs.items() if k not in ("encoder", "channel", "decoder", "constraint", "correlation_model", "quantizer", "syndrome_generator")}
-
         # Initialize the parent class without quantizer and syndrome_generator
-        # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
-        super().__init__(*args, encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, **base_kwargs)
+        kwargs = kwargs.copy()
+        kwargs["encoder"] = encoder
+        kwargs["decoder"] = decoder
+        kwargs["channel"] = channel
+        kwargs["constraint"] = constraint
+        kwargs["correlation_model"] = None
+        kwargs["quantizer"] = None
+        kwargs["syndrome_generator"] = None
 
+        super().__init__(*args, **kwargs)
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:
@@ -818,11 +820,12 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             side_info: Correlated side information available at the decoder, shape [B, C, H, W].
                       This could be a previous frame in a video, a low-resolution version,
                       or other correlated information that helps in reconstruction.
-            csi: Channel state information tensor of shape [B, 1, 1, 1].
-                 Contains the signal-to-noise ratio (SNR) or other channel quality indicators
-                 that allow the model to adapt to current channel conditions.
             *args: Additional positional arguments passed to internal components.
             **kwargs: Additional keyword arguments passed to internal components.
+                      Must include 'csi' (torch.Tensor): Channel state information tensor
+                      of shape [B, 1, 1, 1]. Contains the signal-to-noise ratio (SNR)
+                      or other channel quality indicators that allow the model to adapt
+                      to current channel conditions.
 
         Returns:
             Dict[str, torch.Tensor]: Dictionary containing intermediate results and the final
@@ -839,8 +842,9 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if side_info is None:
             raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")
 
+        csi = kwargs.get("csi")
         if csi is None:
-            raise ValueError("Channel state information (CSI) must be provided for Yilmaz2024DeepJSCCWZ model")
+            raise ValueError("Channel state information (CSI) must be provided in kwargs for Yilmaz2024DeepJSCCWZ model")
 
         # Source encoding - pass *args, **kwargs
         if self.is_conditional:
