@@ -154,13 +154,7 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         decoder_config = decoder if decoder is not None else DEFAULT_DECODER
 
         # Initialize the base class, passing *args and **kwargs for potential instantiation
-        super().__init__(
-            encoders=encoder_config,  # Pass class or instance directly
-            decoders=decoder_config,  # Pass class or instance directly
-            channel=channel,
-            power_constraint=power_constraint,
-            num_devices=num_devices
-        )
+        super().__init__(encoders=encoder_config, decoders=decoder_config, channel=channel, power_constraint=power_constraint, num_devices=num_devices)  # Pass class or instance directly  # Pass class or instance directly
 
         # Device embedding setup (needs num_devices from base class)
         if self.use_device_embedding:
