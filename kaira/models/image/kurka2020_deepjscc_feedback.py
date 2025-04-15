@@ -80,13 +80,8 @@ class DeepJSCCFeedbackEncoder(BaseModel):
             torch.Tensor: Encoded representation ready for channel transmission.
         """
         for layer in self.layers:
-            # Pass *args, **kwargs to each layer if they accept them
-            # Assuming standard nn.Module layers might not use them directly
-            # but custom layers might.
-            try:
-                x = layer(x, *args, **kwargs)
-            except TypeError:
-                x = layer(x)
+            x = layer(x)
+
         return x
 
 
@@ -150,11 +145,7 @@ class DeepJSCCFeedbackDecoder(BaseModel):
             torch.Tensor: Reconstructed image in range [0, 1].
         """
         for layer in self.layers:
-            # Pass *args, **kwargs to each layer
-            try:
-                x = layer(x, *args, **kwargs)
-            except TypeError:
-                x = layer(x)
+            x = layer(x)
         return x
 
 
@@ -197,23 +188,11 @@ class OutputsCombiner(nn.Module):
         # Concatenate previous image and residual
         reconst = torch.cat([img_prev, residual], dim=1)
 
-        # Apply convolutions - pass *args, **kwargs
-        try:
-            reconst = self.conv1(reconst, *args, **kwargs)
-        except TypeError:
-            reconst = self.conv1(reconst)
-        try:
-            reconst = self.prelu1(reconst, *args, **kwargs)
-        except TypeError:
-             reconst = self.prelu1(reconst)
-        try:
-            reconst = self.conv2(reconst, *args, **kwargs)
-        except TypeError:
-            reconst = self.conv2(reconst)
-        try:
-            reconst = self.sigmoid(reconst, *args, **kwargs)
-        except TypeError:
-            reconst = self.sigmoid(reconst)
+        reconst = self.conv1(reconst)
+        
+        reconst = self.prelu1(reconst)
+        reconst = self.conv2(reconst)
+        reconst = self.sigmoid(reconst)
 
         return reconst
 

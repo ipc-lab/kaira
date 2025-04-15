@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Union
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -171,27 +171,22 @@ class Tung2022DeepJSCCQ2Encoder(BaseModel):
         """
         return 1 / 4  # Downsampling 2x twice
 
-    def forward(self, x: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]], *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the encoder.
 
         Args:
-            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the input image tensor
-                or a tuple of (input tensor, SNR tensor)
-            *args: Additional positional arguments (passed to AFModule if applicable).
-            **kwargs: Additional keyword arguments (passed to AFModule if applicable).
+            x (torch.Tensor): The input image tensor.
+            csi (torch.Tensor): Channel State Information tensor.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             torch.Tensor: The encoded latent representation.
         """
 
-        if isinstance(x, tuple):
-            x, snr = x
-        else:
-            snr = None
-
         for layer in self.g_a:
             if isinstance(layer, AFModule):
-                x = layer((x, snr))
+                x = layer(x, csi=csi)
             else:
                 x = layer(x)
 
@@ -250,27 +245,22 @@ class Tung2022DeepJSCCQ2Decoder(BaseModel):
         """
         return 4.0  # Upsampling 2x twice
 
-    def forward(self, x: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]], *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the decoder.
 
         Args:
-            x (Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]): Either the encoded latent representation tensor
-                or a tuple of (encoded tensor, SNR tensor)
-            *args: Additional positional arguments (passed to AFModule if applicable).
-            **kwargs: Additional keyword arguments (passed to AFModule if applicable).
+            x (torch.Tensor): The encoded latent representation tensor.
+            csi (torch.Tensor): Channel State Information tensor.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             torch.Tensor: The decoded image.
         """
 
-        if isinstance(x, tuple):
-            x, snr = x
-        else:
-            snr = None
-
         for layer in self.g_s:
             if isinstance(layer, AFModule):
-                x = layer((x, snr))
+                x = layer(x, csi=csi)
             else:
                 x = layer(x)
 

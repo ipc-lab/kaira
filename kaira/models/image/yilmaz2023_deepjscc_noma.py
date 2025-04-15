@@ -151,45 +151,17 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         encoder_config = encoder if encoder is not None else DEFAULT_ENCODER
         decoder_config = decoder if decoder is not None else DEFAULT_DECODER
 
-        # Prepare args/kwargs for encoder/decoder instantiation if they are classes
-        encoder_kwargs = {
-            "N": 64, "M": latent_dim,
-            "in_ch": 4 if self.use_device_embedding else 3,
-            "csi_length": csi_length
-        }
-        decoder_kwargs = {
-            "N": 64, "M": latent_dim,
-            "out_ch_per_device": 3,
-            "csi_length": csi_length,
-            "num_devices": num_devices, # Pass num_devices here
-            "shared_decoder": shared_decoder # Pass shared_decoder here
-        }
-        # Combine with potentially passed kwargs, giving precedence to specific ones
-        encoder_kwargs.update(kwargs)
-        decoder_kwargs.update(kwargs)
-
-        # Instantiate if classes are provided
-        if isinstance(encoder_config, type):
-            final_encoder_config = encoder_config(**encoder_kwargs)
-        else:
-            final_encoder_config = encoder_config # Use the provided instance
-
-        if isinstance(decoder_config, type):
-            final_decoder_config = decoder_config(**decoder_kwargs)
-        else:
-            final_decoder_config = decoder_config # Use the provided instance
-
-        # Initialize the base class
+        # Initialize the base class, passing *args and **kwargs for potential instantiation
         super().__init__(
-            encoders=final_encoder_config, # Pass class/instance
-            decoder=final_decoder_config,  # Pass class/instance
+            encoders=encoder_config, # Pass class or instance directly
+            decoder=decoder_config,  # Pass class or instance directly
             channel=channel,
             power_constraint=power_constraint,
             num_devices=num_devices,
             shared_encoder=shared_encoder, # Pass flag
             shared_decoder=shared_decoder, # Pass flag
             *args, # Pass remaining args
-            **kwargs # Pass remaining kwargs (base class might use them)
+            **kwargs # Pass remaining kwargs (base class might use them for instantiation)
         )
 
         # Device embedding setup (needs num_devices from base class)
@@ -282,17 +254,11 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Use shared_encoder flag to get the correct encoder
             encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
             device_input = x[:, i, ...]
-
-            # Handle encoders with different input formats
-            try:
-                # Try tuple input with CSI
-                tx = encoder((device_input, csi), *args, **kwargs)
-            except (TypeError, ValueError):
-                # Fall back to just the input data
-                tx = encoder(device_input, *args, **kwargs)
+            
+            tx = encoder(device_input, csi=csi, *args, **kwargs)
 
             # Pass *args, **kwargs to power_constraint
-            tx = self.power_constraint(tx, *args, **kwargs)
+            tx = self.power_constraint(tx, csi=csi, *args, **kwargs)
             transmissions.append(tx)
 
         # Stack and SUM transmissions across devices to simulate NOMA superposition
@@ -300,40 +266,17 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         x_summed = torch.sum(x_stacked, dim=1)       # Shape: [B, C_latent, H, W]
 
         # Apply channel - Pass *args, **kwargs
-        x_channel_out = self.channel(x_summed, *args, **kwargs) # Shape: [B, C_latent, H, W]
+        x_channel_out = self.channel(x_summed, csi=csi, *args, **kwargs) # Shape: [B, C_latent, H, W]
 
+        decoded_outputs: List[torch.Tensor] = []
+        for i in range(self.num_devices):
+            decoder = self.decoders[i]
+                # Pass *args, **kwargs to decoder
+            x_decoded = decoder(x_channel_out, csi=csi, *args, **kwargs) # Input is 4D
+            # Assuming each non-shared decoder outputs [B, C_out_per_device, H, W]
+            decoded_outputs.append(x_decoded)
 
-        # Decode outputs - support different decoder interfaces
-        if self.shared_decoder:
-            decoder = self.decoders[0]
-            # Pass *args, **kwargs to decoder
-            x_decoded = decoder(x_channel_out, snr=csi, *args, **kwargs) # Input is 4D
-
-            # Make sure output has proper device dimension if needed by subsequent layers/loss
-            # This logic might need adjustment based on how loss is calculated for shared decoder
-            if x_decoded.ndim == 4:  # Decoder outputs [B, C, H, W]
-                 # Expand to [B, num_devices, C, H, W] by repeating the output for each device
-                 # This assumes the goal is to reconstruct each user's image from the shared output
-                 output_channels_per_device = x_decoded.size(1) // self.num_devices # Infer channels per device
-                 x = x_decoded.view(x.size(0), self.num_devices, output_channels_per_device, x_decoded.size(2), x_decoded.size(3))
-            elif x_decoded.ndim == 5 and x_decoded.size(1) == self.num_devices:
-                 x = x_decoded # Assume correct shape already
-            else:
-                 # Handle unexpected output shape
-                 raise ValueError(f"Shared decoder produced unexpected output shape: {x_decoded.shape}")
-
-        else:
-            # Process each device separately using the combined signal
-            # Note: This might require specific decoder design or loss function
-            decoded_outputs: List[torch.Tensor] = []
-            for i in range(self.num_devices):
-                decoder = self.decoders[i]
-                 # Pass *args, **kwargs to decoder
-                x_decoded = decoder(x_channel_out, snr=csi, *args, **kwargs) # Input is 4D
-                # Assuming each non-shared decoder outputs [B, C_out_per_device, H, W]
-                decoded_outputs.append(x_decoded)
-
-            x = torch.stack(decoded_outputs, dim=1) # Stack results -> [B, N_dev, C_out, H, W]
+        x = torch.stack(decoded_outputs, dim=1) # Stack results -> [B, N_dev, C_out, H, W]
 
         return x
 
@@ -363,18 +306,12 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
             device_input = x[:, i, ...]
 
-            # Handle encoders with different input formats
-            try:
-                # Try tuple input with CSI
-                t = encoder((device_input, csi), *args, **kwargs)
-            except (TypeError, ValueError):
-                # Fall back to just the input data
-                t = encoder(device_input, *args, **kwargs)
+            t = encoder(device_input, csi=csi, *args, **kwargs)
 
             # Apply power constraint - Assuming output t is 4D [B, C, H, W]
             # The original power constraint logic seemed specific and might need review
             # For simplicity, let's assume a standard power constraint applied per device signal
-            t = self.power_constraint(t) # Ensure output is 4D
+            t = self.power_constraint(t, *args, **kwargs) # Ensure output is 4D
 
             # Use the provided channel model for each transmission - Pass only the 4D signal tensor
             t_channel = self.channel(t, *args, **kwargs) # Input is 4D, output is 4D
@@ -387,8 +324,8 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             # Use shared_decoder flag
             decoder = self.decoders[0] if self.shared_decoder else self.decoders[i]
 
-            # Pass only the relevant 4D tensor transmission to the decoder, including snr=csi
-            xi = decoder(transmissions[i], snr=csi, *args, **kwargs) # Input is 4D
+            # Pass only the relevant 4D tensor transmission to the decoder, including csi=csi
+            xi = decoder(transmissions[i], csi=csi, *args, **kwargs) # Input is 4D
 
             if self.shared_decoder and xi.ndim == 5:  # [B, num_devices, C, H, W]
                 # If shared decoder outputs all devices, select the relevant one

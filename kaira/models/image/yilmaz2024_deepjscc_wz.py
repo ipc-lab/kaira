@@ -25,7 +25,7 @@ Reference:
 """
 
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import torch
 from compressai.layers import (
@@ -804,7 +804,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> Dict[str, torch.Tensor]:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:
@@ -825,11 +825,11 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             side_info: Correlated side information available at the decoder, shape [B, C, H, W].
                       This could be a previous frame in a video, a low-resolution version,
                       or other correlated information that helps in reconstruction.
+            csi: Channel state information tensor of shape [B, 1, 1, 1].
+                 Contains the signal-to-noise ratio (SNR) or other channel quality indicators
+                 that allow the model to adapt to current channel conditions.
             *args: Additional positional arguments passed to internal components.
-            **kwargs: Additional keyword arguments passed to internal components, including:
-                csi: Channel state information tensor of shape [B, 1, 1, 1].
-                     Contains the signal-to-noise ratio (SNR) or other channel quality indicators
-                     that allow the model to adapt to current channel conditions.
+            **kwargs: Additional keyword arguments passed to internal components.
 
         Returns:
             Dict[str, torch.Tensor]: Dictionary containing intermediate results and the final
@@ -842,12 +842,6 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
             CSI values are typically provided in dB and should be normalized to an appropriate
             range as expected by the model's training configuration.
         """
-        # Extract CSI from kwargs or args
-        csi = kwargs.get("csi", None)
-        if csi is None and len(args) > 0:
-            csi = args[0]  # Try to get csi from the first positional arg
-            args = args[1:]  # Remove csi from args to avoid duplicate passing
-
         # Validate parameters
         if side_info is None:
             raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")

@@ -73,10 +73,10 @@ class MultipleAccessChannelModel(BaseModel):
                 Requires `encoders` to be a class or a single instance. Defaults to False.
             shared_decoder (bool): If True, use a single shared decoder instance for all devices.
                 Requires `decoder` to be a class or a single instance. Defaults to False.
-            *args: Variable positional arguments passed to the base class.
-            **kwargs: Variable keyword arguments passed to the base class.
+            *args: Variable positional arguments passed to the base class and potentially module instantiation.
+            **kwargs: Variable keyword arguments passed to the base class and potentially module instantiation.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs) # Pass *args, **kwargs to base BaseModel
 
         # --- Determine Number of Devices ---
         if isinstance(encoders, (list, nn.ModuleList)):
@@ -104,12 +104,13 @@ class MultipleAccessChannelModel(BaseModel):
 
         # --- Initialize Encoders ---
         self.shared_encoder = shared_encoder
-        self.encoders = self._initialize_modules(encoders, num_devices, shared_encoder, "Encoder")
+        # Pass *args, **kwargs to _initialize_modules
+        self.encoders = self._initialize_modules(encoders, num_devices, shared_encoder, "Encoder", *args, **kwargs)
 
         # --- Initialize Decoders ---
         self.shared_decoder = shared_decoder
-        self.decoders = self._initialize_modules(decoder, num_devices, shared_decoder, "Decoder") # Use shared_decoder
-
+        # Pass *args, **kwargs to _initialize_modules
+        self.decoders = self._initialize_modules(decoder, num_devices, shared_decoder, "Decoder", *args, **kwargs)
 
         # --- Assign Channel and Constraint ---
         if not isinstance(channel, BaseChannel):
@@ -122,7 +123,7 @@ class MultipleAccessChannelModel(BaseModel):
 
 
     def _initialize_modules(self, module_config: Union[Type[BaseModel], BaseModel, List[BaseModel], nn.ModuleList],
-                           num_devices: int, shared: bool, module_name: str) -> nn.ModuleList:
+                           num_devices: int, shared: bool, module_name: str, *args: Any, **kwargs: Any) -> nn.ModuleList:
         """Helper function to initialize encoder or decoder modules."""
         modules_list = []
         if isinstance(module_config, (list, nn.ModuleList)):
@@ -155,13 +156,11 @@ class MultipleAccessChannelModel(BaseModel):
             module_cls = module_config
             if shared:
                 # Create one instance and replicate it
-                # TODO: Consider passing specific args/kwargs for instantiation if needed, separate from forward args
-                instance = module_cls()
+                instance = module_cls(*args, **kwargs) # Pass *args, **kwargs here
                 modules_list = [instance] * num_devices
             else:
                 # Create a new instance for each device
-                # TODO: Consider passing specific args/kwargs for instantiation
-                modules_list = [module_cls() for _ in range(num_devices)]
+                modules_list = [module_cls(*args, **kwargs) for _ in range(num_devices)] # Pass *args, **kwargs here
         else:
             raise TypeError(f"Invalid type for {module_name.lower()} configuration: {type(module_config)}")
 

@@ -40,29 +40,19 @@ class AFModule(BaseModel):
             nn.Sigmoid(),
         )
 
-    def forward(self, x, *args: Any, **kwargs: Any):
+    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the AFModule.
 
         Args:
-            x (torch.Tensor or Tuple[torch.Tensor, torch.Tensor]): The input tensor or tuple of (tensor, side_info).
-            *args: Additional positional arguments. The first positional argument is expected
-                   to be the side_info if x is not a tuple.
+            x (torch.Tensor): The input tensor.
+            csi (torch.Tensor): Channel State Information tensor.
+            *args: Additional positional arguments (unused).
             **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor after passing through the linear layer,
-            normalization layer, and activation function.
+            torch.Tensor: The output tensor after applying the attention mechanism.
         """
-        # Handle both tuple input and separate arguments
-        if isinstance(x, tuple) and len(x) == 2:
-            input_tensor, side_info = x
-        else:
-            # Assume x is the input tensor and side_info is the first arg
-            input_tensor = x
-            if args and len(args) > 0:
-                side_info = args[0]
-            else:
-                raise ValueError("AFModule requires both input tensor and side information")
+        input_tensor = x
 
         # Handle different input dimensions
         input_dims = len(input_tensor.shape)
@@ -79,15 +69,15 @@ class AFModule(BaseModel):
             actual_channels = input_tensor.shape[1] if len(input_tensor.shape) > 1 else 1
             context = input_tensor
 
-        # Convert side_info to 2D tensor if needed
-        if len(side_info.shape) == 1:
-            side_info = side_info.view(batch_size, 1)
-        elif len(side_info.shape) > 2:
-            side_info = side_info.flatten(start_dim=1)
+        # Convert csi to 2D tensor if needed
+        if len(csi.shape) == 1:
+            csi = csi.view(batch_size, 1)
+        elif len(csi.shape) > 2:
+            csi = csi.flatten(start_dim=1)
 
-        # Make sure the context and side_info dimensions match what the linear layer expects
+        # Make sure the context and csi dimensions match what the linear layer expects
         # The first linear layer expects N + csi_length input features
-        expected_context_dim = self.layers[0].in_features - side_info.shape[1]
+        expected_context_dim = self.layers[0].in_features - csi.shape[1]
 
         if context.shape[1] != expected_context_dim:
             if context.shape[1] > expected_context_dim:
@@ -98,7 +88,7 @@ class AFModule(BaseModel):
                 padding = torch.zeros(batch_size, expected_context_dim - context.shape[1], device=context.device)
                 context = torch.cat([context, padding], dim=1)
 
-        context_input = torch.cat([context, side_info], dim=1)
+        context_input = torch.cat([context, csi], dim=1)
 
         mask = self.layers(context_input)
 

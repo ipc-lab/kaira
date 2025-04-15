@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 
+from kaira.channels.base import BaseChannel
+from kaira.constraints.base import BaseConstraint
 from kaira.channels import AWGNChannel
 from kaira.constraints import TotalPowerConstraint
 from kaira.models.image import (
@@ -13,13 +15,14 @@ from kaira.models.registry import ModelRegistry
 
 
 # Mock classes for testing
-class MockChannel:
+class MockChannel(BaseChannel): # Inherit from BaseChannel
     """A simple channel that works with the tuple format (x, csi) passed by the model."""
 
     def __init__(self, snr_db=10.0):
+        super().__init__() # Call base class init
         self.snr_db = snr_db
 
-    def __call__(self, x):
+    def forward(self, x): # Rename __call__ to forward
         # Support both tensor and tuple inputs
         if isinstance(x, tuple):
             tensor_x, csi = x
@@ -27,13 +30,14 @@ class MockChannel:
         return x  # Pass through for testing
 
 
-class MockConstraint:
+class MockConstraint(BaseConstraint): # Inherit from BaseConstraint
     """A simple power constraint that accepts the 'mult' parameter used in perfect_sic."""
 
     def __init__(self, total_power=1.0):
+        super().__init__() # Call base class init
         self.total_power = total_power
 
-    def __call__(self, x, mult=None):
+    def forward(self, x, mult=None): # Rename __call__ to forward
         return x  # Just pass through for testing
 
 
@@ -176,26 +180,31 @@ def test_yilmaz2023_deepjscc_noma_shared_components():
     """Test Yilmaz2023DeepJSCCNOMA with shared encoder/decoder."""
     channel = MockChannel(snr_db=10.0)
     constraint = MockConstraint(total_power=1.0)
+    num_devices = 3 # Define for clarity
 
     # Create custom encoder and a mock decoder that can handle the dimensionality issues
     encoder = Yilmaz2023DeepJSCCNOMAEncoder(N=64, M=16, in_ch=3, csi_length=1)
     mock_decoder = MockDecoder(out_ch_per_device=3)
 
-    model = Yilmaz2023DeepJSCCNOMAModel(channel=channel, power_constraint=constraint, num_devices=3, M=0.5, shared_encoder=True, shared_decoder=True, use_device_embedding=False, encoder=encoder, decoder=mock_decoder)  # Disable device embedding
+    model = Yilmaz2023DeepJSCCNOMAModel(channel=channel, power_constraint=constraint, num_devices=num_devices, M=0.5, shared_encoder=True, shared_decoder=True, use_device_embedding=False, encoder=encoder, decoder=mock_decoder)  # Disable device embedding
 
-    # Check that we only have one encoder and one decoder
-    assert len(model.encoders) == 1
-    assert len(model.decoders) == 1
+    # Check that the lists have length num_devices but contain the same shared instance
+    assert len(model.encoders) == num_devices
+    assert len(model.decoders) == num_devices
+    assert all(enc is model.encoders[0] for enc in model.encoders)
+    assert all(dec is model.decoders[0] for dec in model.decoders)
+
 
     # Create dummy input
-    x = torch.randn(2, 3, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
+    x = torch.randn(2, num_devices, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
     csi = torch.ones(2)  # SNR values
 
     # Run forward pass
     output = model(x, csi)
 
     # Check output shape
-    assert output.shape == (2, 3, 3, 32, 32)
+    # The output shape should match the input shape for this model
+    assert output.shape == (2, num_devices, 3, 32, 32)
 
 
 def test_yilmaz2023_deepjscc_noma_perfect_sic():
@@ -206,15 +215,34 @@ def test_yilmaz2023_deepjscc_noma_perfect_sic():
     # Create custom encoder and decoder with matching parameters
     encoder = Yilmaz2023DeepJSCCNOMAEncoder(N=64, M=16, in_ch=3, csi_length=1)
     decoder = Yilmaz2023DeepJSCCNOMADecoder(N=64, M=16, out_ch_per_device=3, csi_length=1)
+    num_devices = 2 # Define for clarity
 
-    model = Yilmaz2023DeepJSCCNOMAModel(channel=channel, power_constraint=constraint, num_devices=2, M=0.5, use_perfect_sic=True, use_device_embedding=False, encoder=encoder, decoder=decoder)  # Disable device embedding
+    model = Yilmaz2023DeepJSCCNOMAModel(
+        channel=channel,
+        power_constraint=constraint,
+        num_devices=num_devices,
+        M=0.5,
+        use_perfect_sic=True,
+        use_device_embedding=False,
+        encoder=encoder,
+        decoder=decoder,
+        shared_encoder=True,  # Set shared to True as single instances are provided
+        shared_decoder=True   # Set shared to True as single instances are provided
+    )
+
+    # Check that the lists have length num_devices but contain the same shared instance
+    assert len(model.encoders) == num_devices
+    assert len(model.decoders) == num_devices
+    assert all(enc is model.encoders[0] for enc in model.encoders)
+    assert all(dec is model.decoders[0] for dec in model.decoders)
+
 
     # Create dummy input
-    x = torch.randn(2, 2, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
+    x = torch.randn(2, num_devices, 3, 32, 32)  # [batch_size, num_devices, channels, height, width]
     csi = torch.ones(2)  # SNR values
 
     # Run forward pass
     output = model(x, csi)
 
     # Check output shape
-    assert output.shape == (2, 2, 3, 32, 32)
+    assert output.shape == (2, num_devices, 3, 32, 32)
