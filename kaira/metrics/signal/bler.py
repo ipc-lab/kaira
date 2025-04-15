@@ -71,6 +71,16 @@ class BlockErrorRate(BaseMetric):
 
     def _reshape_into_blocks(self, data: Tensor) -> Tensor:
         """Reshape input tensor into blocks based on block_size."""
+        if data.numel() == 0:
+            batch_size = data.shape[0]
+            if self.block_size is None:
+                # Shape: [batch_size, 1, elements_per_row (0 if original cols=0)]
+                return data.reshape(batch_size, 1, -1)
+            else:
+                # Shape: [batch_size, num_blocks (0), block_size]
+                # Explicitly set the middle dimension to 0 for empty tensors
+                return data.reshape(batch_size, 0, self.block_size)
+
         batch_size = data.shape[0]
         remainder_dims = data.shape[1:]
 

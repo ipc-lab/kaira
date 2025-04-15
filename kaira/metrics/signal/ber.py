@@ -60,31 +60,31 @@ class BitErrorRate(BaseMetric):
         if x.shape != y.shape:
             raise ValueError(f"Input shapes must match: {x.shape} vs {y.shape}")
 
-        # Handle complex inputs by comparing real and imaginary parts separately if needed
-        # This simple implementation assumes real inputs or that complex comparison logic
-        # is handled before calling BER (e.g., by comparing magnitudes or decoded bits).
-        # For direct complex comparison, a different approach might be needed.
-        if y.is_complex():
-            # Example: Treat real and imag parts as separate bits if appropriate
-            # y_real = y.real
-            # y_imag = y.imag
-            # y = torch.cat([y_real.unsqueeze(-1), y_imag.unsqueeze(-1)], dim=-1).view(x.shape) # Adjust shape if needed
-            # Or raise error if complex input is not expected/handled
-            raise NotImplementedError("BER for complex inputs needs specific handling definition.")
-        if x.is_complex():
-            raise NotImplementedError("BER for complex inputs needs specific handling definition.")
+        # Handle complex inputs by comparing real and imaginary parts separately
+        if x.is_complex() or y.is_complex():
+            if not x.is_complex() or not y.is_complex():
+                 raise ValueError("Both inputs must be complex if one is complex.")
+            # Treat real and imaginary parts as separate bits
+            x_real = (x.real > self.threshold).bool()
+            x_imag = (x.imag > self.threshold).bool()
+            y_real = (y.real > self.threshold).bool()
+            y_imag = (y.imag > self.threshold).bool()
 
-        # Threshold received values to get binary decisions
-        # Ensure x is also treated as bits (e.g., if it's probabilities)
-        x_bits = (x > self.threshold).bool()
-        y_bits = (y > self.threshold).bool()
+            errors_real = (x_real != y_real).float()
+            errors_imag = (x_imag != y_imag).float()
 
-        # Count errors (using not equal comparison instead of XOR for broader type compatibility)
-        errors = (x_bits != y_bits).float()
+            num_errors = errors_real.sum().item() + errors_imag.sum().item()
+            total_bits = float(x.numel() * 2) # Each complex number represents 2 "bits" (real/imag)
+        else:
+            # Threshold received values to get binary decisions
+            x_bits = (x > self.threshold).bool()
+            y_bits = (y > self.threshold).bool()
 
-        # Calculate overall error rate for the batch
-        num_errors = errors.sum().item()
-        total_bits = float(x.numel())
+            # Count errors
+            errors = (x_bits != y_bits).float()
+            num_errors = errors.sum().item()
+            total_bits = float(x.numel())
+
         error_rate = torch.tensor(num_errors / total_bits if total_bits > 0 else 0.0)
         return error_rate
 
@@ -100,21 +100,30 @@ class BitErrorRate(BaseMetric):
         if x.shape != y.shape:
             raise ValueError(f"Input shapes must match: {x.shape} vs {y.shape}")
 
-        # Handle complex inputs (same logic/caveats as in forward)
-        if y.is_complex():
-            raise NotImplementedError("BER update for complex inputs needs specific handling definition.")
-        if x.is_complex():
-            raise NotImplementedError("BER update for complex inputs needs specific handling definition.")
+        # Handle complex inputs
+        if x.is_complex() or y.is_complex():
+            if not x.is_complex() or not y.is_complex():
+                 raise ValueError("Both inputs must be complex if one is complex for update.")
+            x_real = (x.real > self.threshold).bool()
+            x_imag = (x.imag > self.threshold).bool()
+            y_real = (y.real > self.threshold).bool()
+            y_imag = (y.imag > self.threshold).bool()
 
-        x_bits = (x > self.threshold).bool()
-        y_bits = (y > self.threshold).bool()
+            errors_real = (x_real != y_real).float()
+            errors_imag = (x_imag != y_imag).float()
 
-        # Count errors using not equal comparison
-        errors = (x_bits != y_bits).float()
+            batch_errors = errors_real.sum().long() + errors_imag.sum().long()
+            batch_bits = x.numel() * 2
+        else:
+            x_bits = (x > self.threshold).bool()
+            y_bits = (y > self.threshold).bool()
+            errors = (x_bits != y_bits).float()
+            batch_errors = errors.sum().long()
+            batch_bits = x.numel()
 
         # Update cumulative statistics
-        self.total_bits += x.numel()  # Use numel() for total elements
-        self.error_bits += errors.sum().long()  # Convert to long to match buffer type
+        self.total_bits += batch_bits
+        self.error_bits += batch_errors
 
     def compute(self) -> Tensor:
         """Compute the accumulated BER.
