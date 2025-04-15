@@ -278,7 +278,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 feedback_channel = AWGNChannel(snr_db=feedback_snr)
 
         # Initialize the parent class with our components
-        super().__init__(encoder=encoder, forward_channel=forward_channel, decoder=decoder, feedback_generator=feedback_generator, feedback_channel=feedback_channel, feedback_processor=feedback_processor, max_iterations=max_iterations, *args, **kwargs)  # Pass args  # Pass kwargs
+        super().__init__(encoder=encoder, forward_channel=forward_channel, decoder=decoder, feedback_generator=feedback_generator, feedback_channel=feedback_channel, feedback_processor=feedback_processor, max_iterations=max_iterations)  # Pass args  # Pass kwargs
 
         # Store additional parameters specific to this model
         self.refinement_layer = refinement_layer

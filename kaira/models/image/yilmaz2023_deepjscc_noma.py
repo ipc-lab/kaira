@@ -40,7 +40,7 @@ class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(N=N, M=M, in_ch=in_ch, csi_length=csi_length, *args, **kwargs)
+        super().__init__(N=N, M=M, in_ch=in_ch, csi_length=csi_length)
 
     # Forward method is inherited from Tung2022DeepJSCCQ2Encoder, which already handles *args, **kwargs
 
@@ -71,7 +71,7 @@ class Yilmaz2023DeepJSCCNOMADecoder(Tung2022DeepJSCCQ2Decoder):
         self.num_devices = num_devices
         self.shared_decoder = shared_decoder
 
-        super().__init__(N=N, M=M, out_ch=self.num_devices * out_ch_per_device, csi_length=csi_length, *args, **kwargs)
+        super().__init__(N=N, M=M, out_ch=self.num_devices * out_ch_per_device, csi_length=csi_length)
 
     # Forward method is inherited from Tung2022DeepJSCCQ2Decoder, which already handles *args, **kwargs
 
@@ -160,8 +160,6 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             num_devices=num_devices,
             shared_encoder=shared_encoder,  # Pass flag
             shared_decoder=shared_decoder,  # Pass flag
-            *args,  # Pass remaining args
-            **kwargs,  # Pass remaining kwargs (base class might use them for instantiation)
         )
 
         # Device embedding setup (needs num_devices from base class)
@@ -227,38 +225,58 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
             self.device_images.load_state_dict(img_dict)
         print("checkpoint loaded")
 
-    def forward(self, x: torch.Tensor, csi: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, x: List[torch.Tensor], *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the DeepJSCC-NOMA model.
 
         Args:
-            x: Input data with shape [batch_size, num_devices, channels, height, width]
-            csi: Channel state information with shape [batch_size, csi_length]
+            x: Input data, a list of tensors [batch_size, channels, height, width] for each device.
             *args: Additional positional arguments passed to internal components.
-            **kwargs: Additional keyword arguments passed to internal components.
+            **kwargs: Additional keyword arguments passed to internal components (e.g., csi).
 
         Returns:
             Reconstructed signals with shape [batch_size, num_devices, channels, height, width]
         """
+        # Retrieve csi from kwargs if it exists, otherwise None
+        kwargs.get("csi")
+
+        if not isinstance(x, list) or len(x) != self.num_devices:
+            raise ValueError(f"Input 'x' must be a list of {self.num_devices} tensors, but got {type(x)} with length {len(x) if isinstance(x, list) else 'N/A'}.")
+
+        processed_x = []
         # Add device embeddings if enabled
         if self.use_device_embedding:
             h, w = self.image_shape
-            emb = torch.stack([self.device_images(torch.ones((x.size(0)), dtype=torch.long, device=x.device) * i).view(x.size(0), 1, h, w) for i in range(self.num_devices)], dim=1)
-            x = torch.cat([x, emb], dim=2)
+            if not x:  # Handle empty input list
+                raise ValueError("Input list 'x' cannot be empty when use_device_embedding is True.")
+            batch_size = x[0].size(0)  # Get batch size from the first tensor
+            device = x[0].device  # Get device from the first tensor
+            for i in range(self.num_devices):
+                if i >= len(x):
+                    raise ValueError(f"Input list 'x' has length {len(x)}, but expected at least {i+1} tensors for num_devices={self.num_devices}.")
+                emb_i = self.device_images(torch.ones((batch_size), dtype=torch.long, device=device) * i).view(batch_size, 1, h, w)
+                # Ensure x[i] has 4 dimensions [B, C, H, W] before concatenating
+                if x[i].ndim != 4:
+                    raise ValueError(f"Input tensor for device {i} has unexpected dimensions: {x[i].shape}")
+                processed_x.append(torch.cat([x[i], emb_i], dim=1))  # Concatenate along channel dim
+        else:
+            processed_x = x  # Use original list if no embedding
 
         if self.use_perfect_sic:
-            return self._forward_perfect_sic(x, csi, *args, **kwargs)
+            # Pass the processed list and original args/kwargs
+            return self._forward_perfect_sic(processed_x, *args, **kwargs)
 
         # Encode inputs - support different encoder interfaces
         transmissions: List[torch.Tensor] = []
         for i in range(self.num_devices):
             # Use shared_encoder flag to get the correct encoder
             encoder = self.encoders[0] if self.shared_encoder else self.encoders[i]
-            device_input = x[:, i, ...]
+            device_input = processed_x[i]  # Use the i-th tensor from the processed list
 
-            tx = encoder(device_input, csi=csi, *args, **kwargs)
+            # Pass original args and kwargs (which includes csi if needed by encoder)
+            tx = encoder(device_input, *args, **kwargs)
 
-            # Pass *args, **kwargs to power_constraint
-            tx = self.power_constraint(tx, csi=csi, *args, **kwargs)
+            # Pass *args, **kwargs to power_constraint (includes csi if needed)
+            tx = self.power_constraint(tx, *args, **kwargs)
             transmissions.append(tx)
 
         # Stack and SUM transmissions across devices to simulate NOMA superposition
@@ -266,13 +284,13 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         x_summed = torch.sum(x_stacked, dim=1)  # Shape: [B, C_latent, H, W]
 
         # Apply channel - Pass *args, **kwargs
-        x_channel_out = self.channel(x_summed, csi=csi, *args, **kwargs)  # Shape: [B, C_latent, H, W]
+        x_channel_out = self.channel(x_summed, *args, **kwargs)  # Shape: [B, C_latent, H, W]
 
         decoded_outputs: List[torch.Tensor] = []
         for i in range(self.num_devices):
             decoder = self.decoders[i]
             # Pass *args, **kwargs to decoder
-            x_decoded = decoder(x_channel_out, csi=csi, *args, **kwargs)  # Input is 4D
+            x_decoded = decoder(x_channel_out, *args, **kwargs)  # Input is 4D
             # Assuming each non-shared decoder outputs [B, C_out_per_device, H, W]
             decoded_outputs.append(x_decoded)
 
