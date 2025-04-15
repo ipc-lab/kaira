@@ -122,7 +122,19 @@ plt.tight_layout()
 
 
 def train_deepjscc_model(model, train_loader, optimizer, criterion, epochs=5, snr_range=(0, 20)):
-    """Example training loop for a DeepJSCC model."""
+    """Example training loop for a DeepJSCC model.
+
+    Args:
+        model (DeepJSCCModel): The DeepJSCC model to train.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        optimizer (torch.optim.Optimizer): Optimizer for updating model weights.
+        criterion (torch.nn.Module): Loss function (e.g., MSE, PSNR-based).
+        epochs (int): Number of training epochs.
+        snr_range (tuple): Range (min_snr_db, max_snr_db) for sampling SNR during training.
+
+    Returns:
+        list: A list of average loss values for each epoch.
+    """
     model.train()
     losses = []
 

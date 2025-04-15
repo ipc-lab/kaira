@@ -1,4 +1,4 @@
-"""Implementation of the DeepJSCC-Q model from Tung et al. (2022)."""
+"""Implementation of the DeepJSCC-Q model from :cite:`tung2022deepjsccq`."""
 
 from typing import Any
 

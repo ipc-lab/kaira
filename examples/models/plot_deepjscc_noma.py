@@ -8,22 +8,24 @@ which enables efficient image transmission for multiple users sharing the same
 channel through non-orthogonal multiple access techniques.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # -------------------------------
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from torch import nn
+
+from kaira.channels import AWGNChannel
+from kaira.metrics import PSNR, SSIM
 
 # Import necessary model components
 from kaira.models.image import (
-    Yilmaz2023DeepJSCCNOMAModel,
+    Yilmaz2023DeepJSCCNOMADecoder,
     Yilmaz2023DeepJSCCNOMAEncoder,
-    Yilmaz2023DeepJSCCNOMADecoder
+    Yilmaz2023DeepJSCCNOMAModel,
 )
-from kaira.channels import AWGNChannel
-from kaira.metrics import PSNR, SSIM
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -39,10 +41,7 @@ channels = 3
 num_users = 2
 
 # Create separate images for each user
-user_images_list = [
-    torch.rand(batch_size, channels, image_height, image_width)
-    for _ in range(num_users)
-]
+user_images_list = [torch.rand(batch_size, channels, image_height, image_width) for _ in range(num_users)]
 
 # Stack images into a single tensor with shape [batch_size, num_users, channels, height, width]
 user_images = torch.stack(user_images_list, dim=1)
@@ -50,22 +49,22 @@ user_images = torch.stack(user_images_list, dim=1)
 # Display sample images from each user
 plt.figure(figsize=(8, 4))
 for i in range(num_users):
-    plt.subplot(1, num_users, i+1)
+    plt.subplot(1, num_users, i + 1)
     plt.imshow(user_images[0, i].permute(1, 2, 0).numpy())
-    plt.title(f'User {i+1} Sample')
-    plt.axis('off')
+    plt.title(f"User {i+1} Sample")
+    plt.axis("off")
 plt.tight_layout()
 
 # %%
 # Creating the DeepJSCC-NOMA Model
 # ------------------------------------------------------
 # Define model parameters
-compression_ratio = 1/6
+compression_ratio = 1 / 6
 # Calculate N based on image dimensions and compression ratio
 N = int(image_height * image_width * channels * compression_ratio)
-M_internal = 16 # Internal dimension for encoder/decoder, adjust as needed
-fixed_snr = 10.0 # Define a fixed SNR for the experiment
-csi_length = 1 # Length of the CSI vector (just SNR in this case)
+M_internal = 16  # Internal dimension for encoder/decoder, adjust as needed
+fixed_snr = 10.0  # Define a fixed SNR for the experiment
+csi_length = 1  # Length of the CSI vector (just SNR in this case)
 
 # Create channel and power constraint
 channel = AWGNChannel(snr_db=fixed_snr)
@@ -93,7 +92,7 @@ model = Yilmaz2023DeepJSCCNOMAModel(
     # latent_dim=M_internal, # Example if latent_dim was needed
     image_shape=(image_height, image_width),
     csi_length=csi_length,
-    use_device_embedding=True # Explicitly enable device embedding
+    use_device_embedding=True,  # Explicitly enable device embedding
 )
 
 # Metrics
@@ -125,8 +124,8 @@ with torch.no_grad():
 
         # Accessing power allocation might fail if it's not an attribute or handled differently
         power_val = "N/A"
-        if hasattr(model, 'power_allocation') and model.power_allocation is not None and len(model.power_allocation) > user_idx:
-             power_val = f"{model.power_allocation[user_idx]:.2f}"
+        if hasattr(model, "power_allocation") and model.power_allocation is not None and len(model.power_allocation) > user_idx:
+            power_val = f"{model.power_allocation[user_idx]:.2f}"
 
         print(f"User {user_idx+1} (Power: {power_val}) - PSNR: {psnr:.2f} dB, SSIM: {ssim:.4f}")
 print("-" * 60)
@@ -135,19 +134,19 @@ print("-" * 60)
 # %%
 # Comparing NOMA with Orthogonal Multiple Access (OMA)
 # --------------------------------------------------------------------------------------------
-"""
+_ = """
 Key advantages of DeepJSCC-NOMA over traditional approaches:
 
-1. Spectral Efficiency: NOMA allows multiple users to share the same time-frequency 
+1. Spectral Efficiency: NOMA allows multiple users to share the same time-frequency
    resources, improving overall spectral efficiency compared to OMA.
 
-2. User Fairness: Power allocation coefficients can be adjusted to balance 
+2. User Fairness: Power allocation coefficients can be adjusted to balance
    quality of service between users with different channel conditions.
 
-3. Successive Interference Cancellation (SIC): The decoder uses SIC to 
+3. Successive Interference Cancellation (SIC): The decoder uses SIC to
    extract user signals sequentially, starting with the strongest user signal.
 
-4. Graceful Degradation: As SNR decreases, all users experience quality 
+4. Graceful Degradation: As SNR decreases, all users experience quality
    reduction gracefully instead of some users losing connection entirely.
 """
 
@@ -176,16 +175,16 @@ for power1 in power_allocations:
     # NOTE: This attribute might not exist or work as expected in the original model
     try:
         # Check if the attribute exists before trying to set it
-        if hasattr(model, 'power_allocation'):
+        if hasattr(model, "power_allocation"):
             model.power_allocation = torch.tensor([power1, power2], device=user_images.device)
             print(f"Testing Power allocation [{power1:.1f}, {power2:.1f}]...")
         else:
             print("Warning: model.power_allocation attribute not found. Power allocation might not be applied.")
             # If power allocation is handled differently (e.g., via CSI or kwargs), adjust here.
-            pass # Continue assuming the model uses some default or internal mechanism
+            pass  # Continue assuming the model uses some default or internal mechanism
     except Exception as e:
-         print(f"Warning: Could not set model.power_allocation: {e}")
-         pass # Continue
+        print(f"Warning: Could not set model.power_allocation: {e}")
+        pass  # Continue
 
     with torch.no_grad():
         # Transmit images using the CSI tensor
@@ -206,14 +205,14 @@ for power1 in power_allocations:
             print(f"  Failed processing for power allocation [{power1:.1f}, {power2:.1f}] due to TypeError: {e}")
             print("  This likely stems from the model's internal channel call.")
             # Append NaN or skip to avoid plotting errors if the model call fails
-            user1_psnr.append(float('nan'))
-            user2_psnr.append(float('nan'))
+            user1_psnr.append(float("nan"))
+            user2_psnr.append(float("nan"))
             # Optionally break the loop if the error persists
             # break
         except Exception as e:
             print(f"  Failed processing for power allocation [{power1:.1f}, {power2:.1f}] due to unexpected error: {e}")
-            user1_psnr.append(float('nan'))
-            user2_psnr.append(float('nan'))
+            user1_psnr.append(float("nan"))
+            user2_psnr.append(float("nan"))
             # break
 
 
@@ -226,25 +225,23 @@ if valid_indices:
     valid_psnr1 = [user1_psnr[i] for i in valid_indices]
     valid_psnr2 = [user2_psnr[i] for i in valid_indices]
 
-    plt.plot(valid_power, valid_psnr1, 'o-', label='User 1')
-    plt.plot(valid_power, valid_psnr2, 's-', label='User 2')
+    plt.plot(valid_power, valid_psnr1, "o-", label="User 1")
+    plt.plot(valid_power, valid_psnr2, "s-", label="User 2")
 
     # Add arrows to show power transfer
     for i in range(len(valid_power)):
-        plt.annotate('', xy=(valid_power[i], valid_psnr1[i]),
-                    xytext=(valid_power[i], valid_psnr2[i]),
-                    arrowprops=dict(arrowstyle='<->', color='gray', lw=1, ls='--'))
+        plt.annotate("", xy=(valid_power[i], valid_psnr1[i]), xytext=(valid_power[i], valid_psnr2[i]), arrowprops=dict(arrowstyle="<->", color="gray", lw=1, ls="--"))
 else:
     print("\nNo valid PSNR results obtained to plot power allocation effect.")
 
 
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlabel('Power Allocation for User 1')
-plt.ylabel('PSNR (dB)')
-plt.title(f'Effect of Power Allocation on User Performance (SNR = {fixed_snr} dB)')
+plt.grid(True, linestyle="--", alpha=0.7)
+plt.xlabel("Power Allocation for User 1")
+plt.ylabel("PSNR (dB)")
+plt.title(f"Effect of Power Allocation on User Performance (SNR = {fixed_snr} dB)")
 plt.legend()
 plt.tight_layout()
-plt.show() # Ensure plot is displayed
+plt.show()  # Ensure plot is displayed
 
 # %%
 # Conclusion

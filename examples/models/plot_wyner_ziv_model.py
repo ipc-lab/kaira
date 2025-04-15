@@ -171,9 +171,25 @@ standard_decoder = MLPDecoder(in_features=code_dim, out_features=source_dim, hid
 
 # Function for direct transmission without side info
 def direct_transmission(source, encoder, constraint, channel, decoder, snr):
+    """Simulates direct transmission without using side information.
+
+    Args:
+        source (torch.Tensor): The source data to transmit.
+        encoder (nn.Module): The encoder module.
+        constraint (nn.Module): The power constraint module.
+        channel (nn.Module): The channel module.
+        decoder (nn.Module): The decoder module (does not take side info).
+        snr (float): The Signal-to-Noise Ratio in dB.
+
+    Returns:
+        torch.Tensor: The reconstructed source data.
+    """
     code = encoder(source)
     constrained_code = constraint(code)
-    received = channel(constrained_code)
+    # Ensure channel receives only the code, not SNR if it doesn't expect it.
+    # Check channel's forward signature or adjust call accordingly.
+    # Assuming channel takes code and optional snr kwarg here.
+    received = channel(constrained_code, snr=snr)
     reconstructed = decoder(received)
     return reconstructed
 

@@ -171,6 +171,16 @@ with torch.no_grad():
 
 # Function to evaluate a model across different SNRs
 def evaluate_model(model, test_data, snr_values):
+    """Evaluate a channel code model over a range of SNRs.
+
+    Args:
+        model (ChannelCodeModel): The channel code model to evaluate.
+        test_data (torch.Tensor): The input binary data for testing.
+        snr_values (list or np.ndarray): A list or array of SNR values in dB.
+
+    Returns:
+        list: A list of Bit Error Rates (BER) corresponding to each SNR value.
+    """
     ber_values = []
     # Create BER metric with mean reduction
     ber_metric = BER(reduction="mean")

@@ -94,7 +94,19 @@ print("-" * (26 + len(str(fixed_snr))))
 
 
 def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=10, code_dim=20, batch_size=128):
-    """Simulates transmission with varying number of active users."""
+    """Simulates transmission with varying number of active users.
+
+    Args:
+        base_model (MultipleAccessChannelModel): The base MAC model with pre-defined components.
+        max_users (int): The maximum number of users to simulate.
+        snr (float): The fixed SNR (dB) for the simulation.
+        message_dim (int): Dimensionality of each user's message.
+        code_dim (int): Dimensionality of the channel code.
+        batch_size (int): Number of samples per batch.
+
+    Returns:
+        list: A list of average MSE values for each number of active users.
+    """
     mse_results = []
     original_encoders = base_model.encoders
     original_decoder = base_model.decoder
@@ -170,7 +182,21 @@ def simulate_with_varying_users(base_model, max_users=4, snr=10.0, message_dim=1
 
 # Modify train_mac_model to accept a fixed training_snr
 def train_mac_model(model, optimizer, num_epochs=50, steps_per_epoch=100, batch_size=64, message_dim=10, num_users=2, training_snr=10.0):  # Use fixed training_snr
-    """Trains the Multiple Access Channel model at a fixed SNR."""
+    """Trains the Multiple Access Channel model at a fixed SNR.
+
+    Args:
+        model (MultipleAccessChannelModel): The MAC model to train.
+        optimizer (torch.optim.Optimizer): The optimizer for training.
+        num_epochs (int): Number of training epochs.
+        steps_per_epoch (int): Number of training steps per epoch.
+        batch_size (int): Batch size for training.
+        message_dim (int): Dimensionality of each user's message.
+        num_users (int): Number of users in the model.
+        training_snr (float): The fixed SNR (dB) to use during training.
+
+    Returns:
+        list: A list of average loss values for each epoch.
+    """
     losses = []
     print(f"--- Starting Training at SNR = {training_snr} dB ---")
     model.train()  # Set model to training mode

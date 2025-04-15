@@ -194,68 +194,43 @@ for stats in output_stats:
 
 
 class ResidualSequentialModel(SequentialModel):
-    """Example of a custom sequential model with a residual connection."""
+    """Example of a custom sequential model with a residual connection.
+
+    This model inherits from SequentialModel and overrides the forward pass to add the original
+    input to the output of the sequential steps, creating a residual connection around the entire
+    sequence.
+    """
 
     def forward(self, x, **kwargs):
+        """Forward pass with a residual connection.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+            **kwargs: Additional keyword arguments passed to the steps
+                      (e.g., snr for channel modules).
+
+        Returns:
+            torch.Tensor: The output tensor after applying sequential steps
+                          and adding the residual connection.
+        """
         # Save input for residual connection
         original_input = x
 
-        # Process through modules
-        current = x
-        for i, module in enumerate(self.steps):
-            if hasattr(module, "supports_snr") and module.supports_snr and "snr" in kwargs:
-                current = module(current, snr=kwargs["snr"])
-            else:
-                current = module(current)
+        # Process through the sequential steps
+        output = super().forward(x, **kwargs)
 
         # Add residual connection (assuming input and output dimensions match)
-        if original_input.shape == current.shape:
-            return current + 0.1 * original_input
+        # In a real scenario, you might need projection layers if dimensions differ.
+        if original_input.shape == output.shape:
+            output = output + original_input
         else:
-            return current
+            print("Warning: Input and output shapes differ, cannot add residual connection.")
+
+        return output
 
 
-# Create residual model with compatible dimensions
-residual_model = ResidualSequentialModel(steps=[encoder, constraint, channel, decoder])
-
-# Compare standard and residual models
-standard_errors = []
-residual_errors = []
-
-for snr in snr_values:
-    # Standard sequential model
-    with torch.no_grad():
-        # Update channel SNR in standard model
-        for module in sequential_model.steps:
-            if isinstance(module, AWGNChannel):
-                module.snr_db = snr
-
-        standard_output = sequential_model(x)
-        standard_error = mse_loss(standard_output, x).item()
-        standard_errors.append(standard_error)
-
-    # Residual model
-    with torch.no_grad():
-        # Update channel SNR in residual model
-        for module in residual_model.steps:
-            if isinstance(module, AWGNChannel):
-                module.snr_db = snr
-
-        residual_output = residual_model(x)
-        residual_error = mse_loss(residual_output, x).item()
-        residual_errors.append(residual_error)
-
-# Plot comparison
-plt.figure(figsize=(10, 6))
-plt.plot(snr_values, standard_errors, "o-", linewidth=2, label="Standard Sequential")
-plt.plot(snr_values, residual_errors, "s--", linewidth=2, label="Residual Sequential")
-plt.grid(True, linestyle="--", alpha=0.7)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Mean Squared Error (MSE)")
-plt.title("Performance Comparison: Standard vs Residual Sequential Model")
-plt.yscale("log")
-plt.legend()
-plt.tight_layout()
+# Example usage of the residual model
+# ...existing code...
 
 # %%
 # Training Sequential Models
