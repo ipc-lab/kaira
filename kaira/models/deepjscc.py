@@ -70,9 +70,8 @@ class DeepJSCCModel(SequentialModel):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        # Filter out 'steps' from kwargs to avoid conflict with the explicit steps argument
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k != "steps"}
-        super().__init__(steps=[encoder, constraint, channel, decoder], *args, **filtered_kwargs)
+        # Pass steps as a positional argument
+        super().__init__([encoder, constraint, channel, decoder], *args, **kwargs)
         self.encoder = encoder
         self.constraint = constraint
         self.channel = channel

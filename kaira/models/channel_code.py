@@ -60,7 +60,8 @@ class ChannelCodeModel(SequentialModel):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(steps=[encoder, modulator, constraint, channel, demodulator, decoder], *args, **kwargs)
+        # Pass steps as a positional argument
+        super().__init__([encoder, modulator, constraint, channel, demodulator, decoder], *args, **kwargs)
         self.encoder = encoder
         self.modulator = modulator
         self.constraint = constraint
