@@ -65,6 +65,7 @@ def test_deepjscc_model_registry():
 
 def test_deepjscc_model_with_kwargs(deepjscc_model):
     """Test DeepJSCCModel with additional keyword arguments."""
+    torch.manual_seed(42)
     input_data = torch.randn(4, 10)
     # Pass SNR as a kwarg that should be passed to the channel
     output_data = deepjscc_model(input_data, randomkwarg=15.0)

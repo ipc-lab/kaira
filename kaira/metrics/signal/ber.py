@@ -63,7 +63,7 @@ class BitErrorRate(BaseMetric):
         # Handle complex inputs by comparing real and imaginary parts separately
         if x.is_complex() or y.is_complex():
             if not x.is_complex() or not y.is_complex():
-                 raise ValueError("Both inputs must be complex if one is complex.")
+                raise ValueError("Both inputs must be complex if one is complex.")
             # Treat real and imaginary parts as separate bits
             x_real = (x.real > self.threshold).bool()
             x_imag = (x.imag > self.threshold).bool()
@@ -74,7 +74,7 @@ class BitErrorRate(BaseMetric):
             errors_imag = (x_imag != y_imag).float()
 
             num_errors = errors_real.sum().item() + errors_imag.sum().item()
-            total_bits = float(x.numel() * 2) # Each complex number represents 2 "bits" (real/imag)
+            total_bits = float(x.numel() * 2)  # Each complex number represents 2 "bits" (real/imag)
         else:
             # Threshold received values to get binary decisions
             x_bits = (x > self.threshold).bool()
@@ -103,7 +103,7 @@ class BitErrorRate(BaseMetric):
         # Handle complex inputs
         if x.is_complex() or y.is_complex():
             if not x.is_complex() or not y.is_complex():
-                 raise ValueError("Both inputs must be complex if one is complex for update.")
+                raise ValueError("Both inputs must be complex if one is complex for update.")
             x_real = (x.real > self.threshold).bool()
             x_imag = (x.imag > self.threshold).bool()
             y_real = (y.real > self.threshold).bool()

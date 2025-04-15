@@ -211,14 +211,14 @@ class TestBitErrorRate:
         # Test forward (should return aggregated BER)
         error_rate_forward = ber_metric.forward(transmitted, received)
         expected_ber_aggregated = 3.0 / 8.0
-        assert error_rate_forward.shape == torch.Size([]) # Should be scalar
+        assert error_rate_forward.shape == torch.Size([])  # Should be scalar
         assert torch.isclose(error_rate_forward, torch.tensor(expected_ber_aggregated)), f"Forward aggregated BER mismatch: expected {expected_ber_aggregated}, got {error_rate_forward}"
 
         # Test update/compute path
         ber_metric.reset()
         ber_metric.update(transmitted, received)
         error_rate_compute = ber_metric.compute()
-        assert error_rate_compute.shape == torch.Size([]) # Should be scalar
+        assert error_rate_compute.shape == torch.Size([])  # Should be scalar
         assert torch.isclose(error_rate_compute, torch.tensor(expected_ber_aggregated)), f"Computed aggregated BER mismatch: expected {expected_ber_aggregated}, got {error_rate_compute}"
 
     def test_ber_zero_errors(self, binary_data):

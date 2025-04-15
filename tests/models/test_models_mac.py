@@ -39,11 +39,14 @@ def mac_components():
     num_devices = 3
 
     # Pass classes for encoder and decoder
-    return {"channel": channel, "power_constraint": power_constraint, "encoders": SimpleEncoder, "decoder": SimpleDecoder, "num_devices": num_devices}  # Pass class  # Pass class
+    # Use 'decoders' (plural) key
+    return {"channel": channel, "power_constraint": power_constraint, "encoders": SimpleEncoder, "decoders": SimpleDecoder, "num_devices": num_devices}  # Pass class  # Pass class
 
 
 def test_mac_model_initialization(mac_components):
-    """Test MultipleAccessChannelModel initialization with default parameters (non-shared)."""
+    """Test MultipleAccessChannelModel initialization with classes (separate encoders, joint
+    decoder)."""
+    # Use 'decoders' (plural) key when unpacking
     model = MultipleAccessChannelModel(**mac_components)
 
     # Check basic components
@@ -52,44 +55,47 @@ def test_mac_model_initialization(mac_components):
     assert model.num_devices == mac_components["num_devices"]
     assert model.num_users == mac_components["num_devices"]
 
-    # Check encoder/decoder lists and shared flags
+    # Check encoder/decoder lists based on class initialization
+    # Encoders: Separate instances created from class
     assert len(model.encoders) == model.num_devices
-    assert len(model.decoders) == model.num_devices
-    assert model.shared_encoder is False
-    assert model.shared_decoder is False
+    # Decoders: Single joint instance created from class
+    assert len(model.decoders) == 1
+    assert isinstance(model.decoders[0], SimpleDecoder)
 
-    # Check all encoders and decoders are different instances
-    for i in range(model.num_devices - 1):
-        assert model.encoders[i] is not model.encoders[i + 1]
-        assert model.decoders[i] is not model.decoders[i + 1]
+    # Check encoders are different instances
+    if model.num_devices > 1:
+        assert model.encoders[0] is not model.encoders[1]
 
 
 def test_mac_model_shared_components(mac_components):
-    """Test MultipleAccessChannelModel with shared encoder and decoder."""
+    """Test MultipleAccessChannelModel with shared encoder and decoder instances."""
     components = mac_components.copy()
-    components["shared_encoder"] = True
-    components["shared_decoder"] = True
+    # Create single instances to be shared
+    shared_encoder_instance = SimpleEncoder()
+    shared_decoder_instance = SimpleDecoder()
+    components["encoders"] = shared_encoder_instance  # Pass instance for shared encoder
+    components["decoders"] = shared_decoder_instance  # Pass instance for shared decoder
 
+    # Remove shared_* flags, pass instances instead
     model = MultipleAccessChannelModel(**components)
 
-    # Check shared flags
-    assert model.shared_encoder is True
-    assert model.shared_decoder is True
-
-    # Check encoder/decoder lists length
+    # Check encoder/decoder lists length and content for shared instances
+    # Encoders: List contains num_devices references to the shared instance
     assert len(model.encoders) == model.num_devices
-    assert len(model.decoders) == model.num_devices
+    # Decoders: List contains 1 reference to the shared instance
+    assert len(model.decoders) == 1
 
-    # Check all encoders and decoders are the same instance
-    for i in range(model.num_devices - 1):
-        assert model.encoders[i] is model.encoders[i + 1]
-        assert model.decoders[i] is model.decoders[i + 1]
+    # Check all encoders and the decoder are the correct shared instances
+    assert model.decoders[0] is shared_decoder_instance
+    for i in range(model.num_devices):
+        assert model.encoders[i] is shared_encoder_instance
 
 
 def test_mac_model_forward_pass(mac_components):
     """Test the forward pass of MultipleAccessChannelModel (joint decoding)."""
-    # Use non-shared components for this test
-    model = MultipleAccessChannelModel(**mac_components, shared_encoder=False, shared_decoder=False)
+    # Initialize with classes (default: separate encoders, joint decoder)
+    # Use 'decoders' (plural) key, remove shared_* flags
+    model = MultipleAccessChannelModel(**mac_components)
 
     # Create test inputs
     inputs = [torch.randn(2, 10) for _ in range(model.num_devices)]
@@ -98,10 +104,11 @@ def test_mac_model_forward_pass(mac_components):
     output = model(inputs)
 
     # Check output shape (single tensor for joint decoding)
-    # Output dim should be num_devices * output_dim_per_decoder
+    # Output dim should be output_dim_of_decoder
     # SimpleDecoder output_dim is 10
     assert isinstance(output, torch.Tensor)
-    assert output.shape == (2, model.num_devices * 10)
+    # Correct shape for joint decoding
+    assert output.shape == (2, 10)
 
 
 def test_mac_model_invalid_initialization():
@@ -111,39 +118,39 @@ def test_mac_model_invalid_initialization():
 
     # Test with num_devices mismatch (encoders list)
     with pytest.raises(ValueError, match="does not match the number of encoders"):
-        MultipleAccessChannelModel(encoders=[SimpleEncoder(), SimpleEncoder()], decoder=SimpleDecoder, channel=channel, power_constraint=power_constraint, num_devices=3)
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=[SimpleEncoder(), SimpleEncoder()], decoders=SimpleDecoder, channel=channel, power_constraint=power_constraint, num_devices=3)
 
-    # Test with num_devices mismatch (decoders list)
+    # Test with num_devices mismatch (decoders list - separate decoding case)
     with pytest.raises(ValueError, match="does not match the number of decoders"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder, decoder=[SimpleDecoder(), SimpleDecoder()], channel=channel, power_constraint=power_constraint, num_devices=3)
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=SimpleEncoder, decoders=[SimpleDecoder(), SimpleDecoder()], channel=channel, power_constraint=power_constraint, num_devices=3)
 
-    # Test shared_encoder=True with list of encoders
-    with pytest.raises(ValueError, match="shared_encoder cannot be True"):
-        MultipleAccessChannelModel(encoders=[SimpleEncoder(), SimpleEncoder()], decoder=SimpleDecoder, channel=channel, power_constraint=power_constraint, shared_encoder=True, num_devices=2)
+    # Test with num_devices mismatch (decoders list vs encoders list - separate decoding case)
+    # This case actually triggers the mismatch between num_devices and len(encoders) first.
+    with pytest.raises(ValueError, match="Provided num_devices .* does not match the number of encoders"):
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=[SimpleEncoder()], decoders=[SimpleDecoder(), SimpleDecoder()], channel=channel, power_constraint=power_constraint, num_devices=2)  # num_devices=2 != len(encoders)=1
 
-    # Test shared_decoder=True with list of decoders
-    with pytest.raises(ValueError, match="shared_decoder cannot be True"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder, decoder=[SimpleDecoder(), SimpleDecoder()], channel=channel, power_constraint=power_constraint, shared_decoder=True, num_devices=2)
-
-    # Test missing num_devices when using classes
+    # Test missing num_devices when using classes/instances
     with pytest.raises(ValueError, match="num_devices must be specified"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder, decoder=SimpleDecoder, channel=channel, power_constraint=power_constraint)
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=SimpleEncoder, decoders=SimpleDecoder, channel=channel, power_constraint=power_constraint)
+    with pytest.raises(ValueError, match="num_devices must be specified"):
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=SimpleEncoder(), decoders=SimpleDecoder(), channel=channel, power_constraint=power_constraint)
 
     # Test invalid encoder type
     # Match the actual error message (lowercase 'encoder')
     with pytest.raises(TypeError, match="Invalid type for encoder configuration"):
-        MultipleAccessChannelModel(encoders=123, decoder=SimpleDecoder, channel=channel, power_constraint=power_constraint, num_devices=2)
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=123, decoders=SimpleDecoder, channel=channel, power_constraint=power_constraint, num_devices=2)
 
     # Test invalid decoder type
     # Match the actual error message (lowercase 'decoder')
     with pytest.raises(TypeError, match="Invalid type for decoder configuration"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder, decoder="abc", channel=channel, power_constraint=power_constraint, num_devices=2)
-
-    # Test single instance with shared=False and num_devices > 1
-    with pytest.raises(ValueError, match="A single Encoder instance was provided"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder(), decoder=SimpleDecoder, channel=channel, power_constraint=power_constraint, num_devices=2, shared_encoder=False)
-    with pytest.raises(ValueError, match="A single Decoder instance was provided"):
-        MultipleAccessChannelModel(encoders=SimpleEncoder, decoder=SimpleDecoder(), channel=channel, power_constraint=power_constraint, num_devices=2, shared_decoder=False)
+        # Use 'decoders' (plural)
+        MultipleAccessChannelModel(encoders=SimpleEncoder, decoders="abc", channel=channel, power_constraint=power_constraint, num_devices=2)
 
 
 def test_mac_model_registry(mac_components):
@@ -152,8 +159,9 @@ def test_mac_model_registry(mac_components):
     assert "multiple_access_channel" in ModelRegistry._models
 
     # Create model through registry
-    # Need to provide necessary args like encoders, decoder, num_devices
-    model = ModelRegistry.create("multiple_access_channel", encoders=mac_components["encoders"], decoder=mac_components["decoder"], channel=mac_components["channel"], power_constraint=mac_components["power_constraint"], num_devices=mac_components["num_devices"])
+    # Need to provide necessary args like encoders, decoders, num_devices
+    # Use 'decoders' (plural) argument
+    model = ModelRegistry.create("multiple_access_channel", encoders=mac_components["encoders"], decoders=mac_components["decoders"], channel=mac_components["channel"], power_constraint=mac_components["power_constraint"], num_devices=mac_components["num_devices"])
 
     assert isinstance(model, MultipleAccessChannelModel)
     assert model.num_devices == mac_components["num_devices"]
@@ -164,7 +172,8 @@ def test_mac_model_with_csi_and_noise():
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
     num_devices = 2
-    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoders=SimpleEncoder, decoder=SimpleDecoder, num_devices=num_devices)
+    # Use 'decoders' (plural) argument
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoders=SimpleEncoder, decoders=SimpleDecoder, num_devices=num_devices)
 
     # Create inputs
     inputs = [torch.randn(2, 10) for _ in range(num_devices)]
@@ -176,16 +185,17 @@ def test_mac_model_with_csi_and_noise():
     # Run forward pass with CSI and noise
     output = model(inputs, csi=csi, noise=noise)
 
-    # Basic output validation (single tensor)
+    # Basic output validation (single tensor for joint decoding)
     assert isinstance(output, torch.Tensor)
-    assert output.shape == (2, num_devices * 10)
+    assert output.shape == (2, 10)  # Joint decoder output dim is 10
 
 
 def test_mac_model_invalid_forward_call():
     """Test error handling for invalid forward calls."""
     channel = AWGNChannel(avg_noise_power=0.1)
     power_constraint = TotalPowerConstraint(total_power=1.0)
-    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoders=SimpleEncoder, decoder=SimpleDecoder, num_devices=2)
+    # Use 'decoders' (plural) argument
+    model = MultipleAccessChannelModel(channel=channel, power_constraint=power_constraint, encoders=SimpleEncoder, decoders=SimpleDecoder, num_devices=2)
 
     # Test with incorrect positional argument (not a list)
     with pytest.raises(ValueError, match="Input 'x' must be a list"):
@@ -202,6 +212,7 @@ def test_mac_model_invalid_forward_call():
 
 def test_mac_model_device_compatibility(mac_components):
     """Test MultipleAccessChannelModel compatibility with different devices."""
+    # Use 'decoders' (plural) key when unpacking
     model = MultipleAccessChannelModel(**mac_components)
 
     # Create test inputs

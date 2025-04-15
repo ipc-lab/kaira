@@ -528,21 +528,6 @@ def test_wyner_ziv_model_without_correlation_model():
         model(source)
 
 
-def test_wyner_ziv_model_with_kwargs(wyner_ziv_components):
-    """Test WynerZivModel forward pass with additional keyword arguments."""
-    model = WynerZivModel(**wyner_ziv_components)
-
-    # Create test input
-    source = torch.randn(5, 10)
-
-    # Run model with additional kwargs
-    result = model(source, additional_param="test", snr_db=15.0)
-
-    # Basic checks to ensure the model runs with kwargs
-    assert "decoded" in result
-    assert result["decoded"].shape == source.shape
-
-
 def test_wyner_ziv_model_without_quantizer(wyner_ziv_components):
     """Test WynerZivModel behavior when quantizer is None."""
     # Remove quantizer

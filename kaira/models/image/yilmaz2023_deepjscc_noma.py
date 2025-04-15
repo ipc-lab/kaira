@@ -148,20 +148,42 @@ class Yilmaz2023DeepJSCCNOMAModel(MultipleAccessChannelModel):
         self.image_shape = image_shape
         self.csi_length = csi_length
         self.embedding_dim = image_shape[0] * image_shape[1]
+        # Ensure num_devices is set before using it below
+        self.num_devices = num_devices
 
         # Determine encoder/decoder classes or instances
         encoder_config = encoder if encoder is not None else DEFAULT_ENCODER
         decoder_config = decoder if decoder is not None else DEFAULT_DECODER
 
-        # Initialize the base class, passing *args and **kwargs for potential instantiation
-        super().__init__(encoders=encoder_config, decoders=decoder_config, channel=channel, power_constraint=power_constraint, num_devices=num_devices)  # Pass class or instance directly  # Pass class or instance directly
+        # Prepare decoder config based on shared_decoder flag BEFORE calling super().__init__
+        final_decoder_config: Union[Type[BaseModel], BaseModel, List[BaseModel], nn.ModuleList]
+        if not self.shared_decoder and isinstance(decoder_config, type):
+            # Need separate instances, create them now using appropriate args
+            # Assuming default N=64, out_ch_per_device=3 based on context/defaults
+            decoder_args = {
+                "N": kwargs.get("N", 64),  # Allow override via kwargs if provided
+                "M": self.latent_dim,
+                "out_ch_per_device": kwargs.get("out_ch_per_device", 3),  # Allow override, assume 3 for RGB
+                "csi_length": self.csi_length,
+                # Pass specific args for Yilmaz decoder
+                "num_devices": 1,  # Each instance conceptually handles one device stream
+                "shared_decoder": False,  # Explicitly false for each instance
+            }
+            # Instantiate num_devices separate decoders
+            final_decoder_config = [decoder_config(**decoder_args) for _ in range(self.num_devices)]
+        else:
+            # Shared decoder, or already an instance/list: pass as is to superclass
+            final_decoder_config = decoder_config
+
+        # Initialize the base class, passing the potentially modified decoder config
+        super().__init__(encoders=encoder_config, decoders=final_decoder_config, channel=channel, power_constraint=power_constraint, num_devices=num_devices)  # Use the processed config
 
         # Device embedding setup (needs num_devices from base class)
         if self.use_device_embedding:
             self.device_images = nn.Embedding(self.num_devices, embedding_dim=self.embedding_dim)
-            # Loading checkpoint needs to happen *after* models are created by super().__init__
-            if ckpt_path is not None:
-                self._load_checkpoint(ckpt_path)
+        # Loading checkpoint needs to happen *after* models are created by super().__init__
+        if ckpt_path is not None:
+            self._load_checkpoint(ckpt_path)
 
     def forward(self, x: List[torch.Tensor], *args: Any, **kwargs: Any) -> torch.Tensor:
         """Forward pass through the DeepJSCC-NOMA model.
