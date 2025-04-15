@@ -221,6 +221,8 @@ class BPGCompressor(BaseModel):
             # Pass *args, **kwargs
             result = self.compress_with_quality(idx, img, self.quality, return_info, *args, **kwargs)
         else:
+            # Ensure max_bits_per_image is not None before calling compress_with_target_size
+            assert self.max_bits_per_image is not None, "max_bits_per_image must be set if quality is not provided"
             # Pass *args, **kwargs
             result = self.compress_with_target_size(idx, img, self.max_bits_per_image, return_info, *args, **kwargs)
 

@@ -146,7 +146,9 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
     - Residual connections for improved gradient flow
     """
 
-    def __init__(self, N: int, M: int, encoder: BaseModel, *args: Any, **kwargs: Any) -> None:
+    encoder: Yilmaz2024DeepJSCCWZSmallEncoder  # More specific type hint
+
+    def __init__(self, N: int, M: int, encoder: Yilmaz2024DeepJSCCWZSmallEncoder, *args: Any, **kwargs: Any) -> None:
         """Initialize the DeepJSCC-WZ-sm decoder.
 
         Args:
@@ -154,7 +156,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
                      Controls the network capacity and feature dimension.
             M (int): Number of input channels from the encoded representation.
                      Matches the encoder's output channel count.
-            encoder (BaseModel): Reference to the encoder model for feature sharing.
+            encoder (Yilmaz2024DeepJSCCWZSmallEncoder): Reference to the small encoder model for feature sharing.
                                 This enables the decoder to process side information
                                 using the same parameters as the main encoder.
             *args: Variable positional arguments passed to the base class.
@@ -785,9 +787,12 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if constraint is None:
             raise ValueError("A constraint must be provided for Yilmaz2024DeepJSCCWZ model")
 
+        # Filter kwargs before passing to super().__init__
+        base_kwargs = {k: v for k, v in kwargs.items() if k not in ("encoder", "channel", "decoder", "constraint", "correlation_model", "quantizer", "syndrome_generator")}
+
         # Initialize the parent class without quantizer and syndrome_generator
         # since DeepJSCC-WZ doesn't use explicit quantization/syndrome generation
-        super().__init__(encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, *args, **kwargs)  # Pass args  # Pass kwargs
+        super().__init__(encoder=encoder, channel=channel, decoder=decoder, constraint=constraint, correlation_model=None, quantizer=None, syndrome_generator=None, *args, **base_kwargs)
 
         # Explicitly set constraint to ensure it's properly initialized
         self.constraint = constraint

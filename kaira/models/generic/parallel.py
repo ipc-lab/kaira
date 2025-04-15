@@ -78,11 +78,11 @@ class ParallelModel(ConfigurableModel):
         self.steps.pop(index)
         return self
 
-    def forward(self, x: Any, *args: Any, **kwargs: Any) -> Any:
+    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model in parallel on the input data.
 
         Args:
-            x: The data to process
+            input_data: The data to process
             *args: Additional positional arguments passed to each step.
             **kwargs: Additional keyword arguments passed to each step.
 
@@ -97,7 +97,7 @@ class ParallelModel(ConfigurableModel):
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Pass *args and **kwargs to each step submitted to the executor
-            future_to_step = {executor.submit(step, x, *args, **kwargs): name for name, step in self.steps}
+            future_to_step = {executor.submit(step, input_data, *args, **kwargs): name for name, step in self.steps}
 
             for future in as_completed(future_to_step):
                 step_name = future_to_step[future]

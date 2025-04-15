@@ -374,11 +374,10 @@ class DBPSKModulator(DPSKModulator):
 
     def __init__(self, *args: Any, **kwargs: Any):
         """Initialize DBPSK Modulator."""
-        # Remove potentially conflicting keys before passing kwargs
-        kwargs.pop("order", None)
-        kwargs.pop("gray_coding", None)
-        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
-        super().__init__(*args, order=2, gray_coding=False, **kwargs)
+        # Filter out conflicting keys to avoid duplicate argument errors
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
+        # Pass remaining args and filtered kwargs
+        super().__init__(*args, order=2, gray_coding=False, **filtered_kwargs)
 
 
 @ModulationRegistry.register_demodulator("dbpsk")
@@ -387,11 +386,10 @@ class DBPSKDemodulator(DPSKDemodulator):
 
     def __init__(self, *args: Any, **kwargs: Any):
         """Initialize DBPSK Demodulator."""
-        # Remove potentially conflicting keys before passing kwargs
-        kwargs.pop("order", None)
-        kwargs.pop("gray_coding", None)
-        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
-        super().__init__(*args, order=2, gray_coding=False, **kwargs)
+        # Filter out conflicting keys to avoid duplicate argument errors
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
+        # Pass remaining args and filtered kwargs
+        super().__init__(*args, order=2, gray_coding=False, **filtered_kwargs)
 
 
 @ModulationRegistry.register_modulator("dqpsk")
@@ -400,11 +398,10 @@ class DQPSKModulator(DPSKModulator):
 
     def __init__(self, *args: Any, **kwargs: Any):
         """Initialize DQPSK Modulator."""
-        # Remove potentially conflicting keys before passing kwargs
-        kwargs.pop("order", None)
-        kwargs.pop("gray_coding", None)
-        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
-        super().__init__(*args, order=4, gray_coding=True, **kwargs)
+        # Filter out conflicting keys to avoid duplicate argument errors
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
+        # Pass remaining args and filtered kwargs
+        super().__init__(*args, order=4, gray_coding=True, **filtered_kwargs)
 
 
 @ModulationRegistry.register_demodulator("dqpsk")
@@ -413,8 +410,7 @@ class DQPSKDemodulator(DPSKDemodulator):
 
     def __init__(self, *args: Any, **kwargs: Any):
         """Initialize DQPSK Demodulator."""
-        # Remove potentially conflicting keys before passing kwargs
-        kwargs.pop("order", None)
-        kwargs.pop("gray_coding", None)
-        # Pass remaining args and kwargs, letting the base class handle order and gray_coding
-        super().__init__(*args, order=4, gray_coding=True, **kwargs)
+        # Filter out conflicting keys to avoid duplicate argument errors
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("order", "gray_coding")}
+        # Pass remaining args and filtered kwargs
+        super().__init__(*args, order=4, gray_coding=True, **filtered_kwargs)

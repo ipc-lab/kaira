@@ -91,6 +91,9 @@ class AWGNChannel(BaseChannel):
         >>> y_complex = channel(x_complex)  # Complex noisy output
     """
 
+    avg_noise_power: Optional[float]
+    snr_db: Optional[float]
+
     def __init__(self, avg_noise_power: Optional[float] = None, snr_db: Optional[float] = None, *args: Any, **kwargs: Any):
         """Initialize the AWGN channel.
 
@@ -106,7 +109,7 @@ class AWGNChannel(BaseChannel):
             self.snr_db = snr_db
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power  # Remove to_tensor
+            self.avg_noise_power = avg_noise_power
             self.snr_db = None
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
@@ -160,6 +163,10 @@ class LaplacianChannel(BaseChannel):
         >>> y = channel(x)  # Output with Laplacian noise
     """
 
+    scale: Optional[float]
+    avg_noise_power: Optional[float]
+    snr_db: Optional[float]
+
     def __init__(self, scale: Optional[float] = None, avg_noise_power: Optional[float] = None, snr_db: Optional[float] = None, *args: Any, **kwargs: Any):
         """Initialize the Laplacian channel.
 
@@ -174,7 +181,7 @@ class LaplacianChannel(BaseChannel):
 
         # Handle different parameter specifications
         if scale is not None:
-            self.scale = scale  # Remove to_tensor
+            self.scale = scale
             self.avg_noise_power = None
             self.snr_db = None
         elif snr_db is not None:
@@ -182,7 +189,7 @@ class LaplacianChannel(BaseChannel):
             self.scale = None
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power  # Remove to_tensor
+            self.avg_noise_power = avg_noise_power
             self.scale = None
             self.snr_db = None
         else:
@@ -267,6 +274,8 @@ class PoissonChannel(BaseChannel):
         >>> y = channel(x)  # Output with Poisson noise
     """
 
+    rate_factor: float
+
     def __init__(self, rate_factor: float = 1.0, normalize: bool = False, *args: Any, **kwargs: Any):
         """Initialize the Poisson channel.
 
@@ -279,7 +288,7 @@ class PoissonChannel(BaseChannel):
         super().__init__(*args, **kwargs)
         if rate_factor <= 0:
             raise ValueError("Rate factor must be positive")
-        self.rate_factor = rate_factor  # Remove to_tensor
+        self.rate_factor = rate_factor
         self.normalize = normalize
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
@@ -345,6 +354,8 @@ class PhaseNoiseChannel(BaseChannel):
         phase_noise_std (float): Standard deviation of phase noise in radians.
     """
 
+    phase_noise_std: float
+
     def __init__(self, phase_noise_std: float, *args: Any, **kwargs: Any):
         """Initialize the Phase Noise channel.
 
@@ -356,7 +367,7 @@ class PhaseNoiseChannel(BaseChannel):
         super().__init__(*args, **kwargs)
         if phase_noise_std < 0:
             raise ValueError("Phase noise standard deviation must be non-negative")
-        self.phase_noise_std = phase_noise_std  # Remove to_tensor
+        self.phase_noise_std = phase_noise_std
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply phase noise to the input signal.
@@ -415,6 +426,11 @@ class FlatFadingChannel(BaseChannel):
         >>> y = channel(x)  # Output with block fading effects
     """
 
+    k_factor: Optional[float]
+    avg_noise_power: Optional[float]
+    snr_db: Optional[float]
+    shadow_sigma_db: Optional[float]
+
     def __init__(
         self,
         fading_type: str,
@@ -448,8 +464,8 @@ class FlatFadingChannel(BaseChannel):
 
         # Store fading parameters
         self.coherence_time = coherence_time
-        self.k_factor = k_factor  # Remove to_tensor
-        self.shadow_sigma_db = shadow_sigma_db  # Remove to_tensor
+        self.k_factor = k_factor
+        self.shadow_sigma_db = shadow_sigma_db
 
         # Verify required parameters based on fading type
         if fading_type == "rician" and k_factor is None:
@@ -462,7 +478,7 @@ class FlatFadingChannel(BaseChannel):
             self.snr_db = snr_db
             self.avg_noise_power = None
         elif avg_noise_power is not None:
-            self.avg_noise_power = avg_noise_power  # Remove to_tensor
+            self.avg_noise_power = avg_noise_power
             self.snr_db = None
         else:
             raise ValueError("Either avg_noise_power or snr_db must be provided")
@@ -492,7 +508,7 @@ class FlatFadingChannel(BaseChannel):
             # Rician fading with K factor
             # Ensure k_factor is tensor for calculations
             if self.k_factor is None:
-                raise ValueError("K-factor must be provided for Rician fading")  # Should not happen due to __init__ check
+                raise ValueError("K-factor must be provided for Rician fading")
             k = torch.tensor(self.k_factor, device=device)
 
             # Direct component (line of sight)
@@ -518,7 +534,7 @@ class FlatFadingChannel(BaseChannel):
             # Generate log-normal shadowing in linear scale
             # Ensure shadow_sigma_db is tensor for calculations
             if self.shadow_sigma_db is None:
-                raise ValueError("shadow_sigma_db must be provided for lognormal fading")  # Should not happen due to __init__ check
+                raise ValueError("shadow_sigma_db must be provided for lognormal fading")
             shadow_sigma_db_tensor = torch.tensor(self.shadow_sigma_db, device=device)
             sigma_ln = shadow_sigma_db_tensor * (np.log(10) / 10)  # Convert from dB to natural log
             ln_mean = -(sigma_ln**2) / 2  # Ensure unit mean
@@ -607,8 +623,16 @@ class FlatFadingChannel(BaseChannel):
             if self.snr_db is not None:
                 signal_power = torch.mean(torch.abs(y) ** 2)
                 # Ensure snr_db is float
-                snr_db_float = self.snr_db.item() if isinstance(self.snr_db, torch.Tensor) else self.snr_db
-                noise_power = snr_to_noise_power(signal_power, snr_db_float)
+                snr_db_float = self.snr_db # Already Optional[float]
+                if isinstance(snr_db_float, torch.Tensor):
+                    snr_db_float = snr_db_float.item()
+                # Check if snr_db_float is None before using it
+                if snr_db_float is not None:
+                    noise_power = snr_to_noise_power(signal_power, snr_db_float)
+                else:
+                    # Handle case where snr_db is None but avg_noise_power is also None (should not happen)
+                    if noise_power is None:
+                         raise ValueError("Noise power could not be determined: both snr_db and avg_noise_power are None")
 
             # Ensure noise_power is tensor for calculations
             if noise_power is None:
@@ -670,6 +694,9 @@ class NonlinearChannel(BaseChannel):
         >>> y = channel(x)  # Output with magnitude distortion, phase preserved
     """
 
+    avg_noise_power: Optional[float]
+    snr_db: Optional[float]
+
     def __init__(
         self,
         nonlinear_fn,
@@ -706,7 +733,7 @@ class NonlinearChannel(BaseChannel):
                 self.snr_db = snr_db
                 self.avg_noise_power = None
             elif avg_noise_power is not None:
-                self.avg_noise_power = avg_noise_power  # No to_tensor needed
+                self.avg_noise_power = avg_noise_power
                 self.snr_db = None
             else:
                 raise ValueError("If add_noise=True, either avg_noise_power or snr_db must be provided")
@@ -723,7 +750,7 @@ class NonlinearChannel(BaseChannel):
             **kwargs: Additional keyword arguments (unused).
 
         Returns:
-            torch.Tensor: The output tensor after nonlinear transformation and optional noise.
+            torch.Tensor: The output tensor after applying nonlinearity and noise.
         """
         # Handle complex inputs according to specified mode
         if torch.is_complex(x):
@@ -753,6 +780,8 @@ class NonlinearChannel(BaseChannel):
 
         # Add noise if requested
         if self.add_noise:
+            # Check if avg_noise_power or snr_db is None before passing to _apply_noise
+            # _apply_noise already handles the case where one is None
             y = _apply_noise(y, snr_db=self.snr_db, noise_power=self.avg_noise_power)
 
         return y
@@ -802,7 +831,9 @@ class RayleighFadingChannel(FlatFadingChannel):
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
 
-        super().__init__(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
+        # Filter kwargs before passing to super
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "avg_noise_power", "snr_db")}
+        super().__init__(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -853,7 +884,9 @@ class RicianFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
+        # Filter kwargs before passing to super
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "k_factor", "avg_noise_power", "snr_db")}
+        super().__init__(fading_type="rician", coherence_time=coherence_time, k_factor=k_factor, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
 
 
 @ChannelRegistry.register_channel()
@@ -904,4 +937,6 @@ class LogNormalFadingChannel(FlatFadingChannel):
             *args: Variable length argument list passed to the base class.
             **kwargs: Arbitrary keyword arguments passed to the base class.
         """
-        super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **kwargs)
+        # Filter kwargs before passing to super
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ("fading_type", "coherence_time", "shadow_sigma_db", "avg_noise_power", "snr_db")}
+        super().__init__(fading_type="lognormal", coherence_time=coherence_time, shadow_sigma_db=shadow_sigma_db, avg_noise_power=avg_noise_power, snr_db=snr_db, *args, **filtered_kwargs)
