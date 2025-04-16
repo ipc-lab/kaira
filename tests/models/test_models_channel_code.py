@@ -1,4 +1,5 @@
 """Comprehensive tests for the ChannelCodeModel class."""
+
 import pytest
 import torch
 import torch.nn as nn

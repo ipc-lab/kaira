@@ -24,7 +24,6 @@ Reference:
     Yilmaz et al. "DeepJSCC-WZ: Deep Joint Source-Channel Coding with Wyner-Ziv", 2024
 """
 
-
 from typing import Any
 
 import torch

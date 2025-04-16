@@ -8,6 +8,7 @@ in the Kaira library. Composite metrics allow you to combine multiple
 metrics into a single entity, which is useful for multi-objective
 evaluation of communication systems.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

@@ -10,7 +10,6 @@ signal strength, making it essential for accurate modeling of optical communicat
 and imaging systems.
 """
 
-
 import matplotlib.pyplot as plt
 
 # %%

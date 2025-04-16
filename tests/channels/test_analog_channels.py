@@ -1,4 +1,5 @@
 """Tests for analog channel implementations in Kaira."""
+
 import math
 
 import numpy as np

@@ -7,6 +7,7 @@ This file contains all tests for power related constraints including:
 
 Tests cover basic functionality, complex inputs, edge cases, and advanced scenarios.
 """
+
 import numpy as np
 import pytest
 import torch

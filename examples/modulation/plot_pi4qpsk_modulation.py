@@ -9,6 +9,7 @@ on alternating symbols, providing improved envelope properties and phase transit
 This modulation scheme is used in several digital mobile communications systems
 including North American TDMA (IS-136) and Japanese Digital Cellular.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

@@ -1,4 +1,5 @@
 """Tests for the Yilmaz2023DeepJSCCNOMA model."""
+
 import torch
 import torch.nn as nn
 

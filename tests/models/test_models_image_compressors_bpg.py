@@ -1,4 +1,5 @@
 """Tests for BPG image compression model."""
+
 import subprocess  # nosec B404
 from unittest.mock import MagicMock, mock_open, patch
 

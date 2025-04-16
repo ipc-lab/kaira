@@ -1,4 +1,5 @@
 """Tests for Tung2022DeepJSCCQ2 model."""
+
 import pytest
 import torch
 

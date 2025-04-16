@@ -7,6 +7,7 @@ in Kaira, focusing on 8-PSK and 16-PSK. Higher-order PSK schemes increase
 spectral efficiency by encoding more bits per symbol at the cost of reduced
 noise immunity.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

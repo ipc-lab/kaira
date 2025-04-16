@@ -6,6 +6,7 @@ This example explores higher-order Quadrature Amplitude Modulation (QAM) schemes
 available in Kaira, focusing on 16-QAM, 64-QAM, and 256-QAM. QAM combines both
 amplitude and phase modulation to achieve high spectral efficiency.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

@@ -1,4 +1,5 @@
 """Tests for digital channel implementations in Kaira."""
+
 import pytest
 import torch
 

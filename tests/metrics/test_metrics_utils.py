@@ -1,4 +1,5 @@
 """Tests for metrics utility functions."""
+
 import time
 
 import matplotlib.pyplot as plt

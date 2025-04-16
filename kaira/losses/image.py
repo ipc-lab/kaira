@@ -5,7 +5,6 @@ LPIPS loss, and SSIM loss. These loss functions are widely used in image process
 computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
 """
 
-
 from typing import Sequence
 
 import torch

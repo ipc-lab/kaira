@@ -1,4 +1,5 @@
 """Common fixtures for metrics tests."""
+
 import pytest
 import torch
 

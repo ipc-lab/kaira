@@ -1,4 +1,5 @@
 """Tests for correlation models."""
+
 import pytest
 import torch
 

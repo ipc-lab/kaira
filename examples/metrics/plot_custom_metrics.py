@@ -8,6 +8,7 @@ the BaseMetric class in the Kaira library. Custom metrics allow you to
 implement specialized performance measurements for your particular
 communication system requirements.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

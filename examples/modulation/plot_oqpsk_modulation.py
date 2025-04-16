@@ -10,6 +10,7 @@ This delay ensures that only one bit can change at a time, restricting
 phase changes to 90° and reducing envelope fluctuations, which is beneficial
 for power-efficient RF amplification.
 """
+
 import matplotlib.pyplot as plt
 
 # %%

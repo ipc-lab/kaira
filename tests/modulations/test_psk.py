@@ -1,4 +1,5 @@
 """Comprehensive tests for PSK modulation schemes."""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest

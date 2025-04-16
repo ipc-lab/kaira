@@ -1,4 +1,5 @@
 """Tests for channel registry and special channel implementations."""
+
 import pytest
 import torch
 

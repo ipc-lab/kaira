@@ -27,11 +27,11 @@ Describe what actually happened.
 
 ## Environment
 
-- Kaira Version: \[e.g., 0.1.0\]
-- Python Version: \[e.g., 3.10\]
-- OS: \[e.g., Ubuntu 22.04, macOS 13.0, Windows 11\]
-- PyTorch Version: \[e.g., 2.0.0\]
-- CUDA Version (if applicable): \[e.g., 11.8\]
+- Kaira Version: [e.g., 0.1.0]
+- Python Version: [e.g., 3.10]
+- OS: [e.g., Ubuntu 22.04, macOS 13.0, Windows 11]
+- PyTorch Version: [e.g., 2.0.0]
+- CUDA Version (if applicable): [e.g., 11.8]
 
 ## Additional Context
 

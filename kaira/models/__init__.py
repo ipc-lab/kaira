@@ -1,4 +1,5 @@
 """Models module for Kaira."""
+
 from . import binary, components, generic, image
 from .base import BaseModel, ConfigurableModel
 from .channel_code import ChannelCodeModel

@@ -1,4 +1,5 @@
 """Tests for the Kurmukova2025TransCoder model."""
+
 import pytest
 import torch
 

@@ -4,6 +4,7 @@ PSNR is a widely used objective quality metric for image and video processing
 :cite:`hore2010image` :cite:`huynh2008scope`. Despite its limitations in perceptual
 correlation, it remains one of the most common benchmarks for image quality assessment.
 """
+
 import inspect
 from typing import Any, Optional, Tuple
 

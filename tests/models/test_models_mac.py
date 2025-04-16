@@ -1,4 +1,5 @@
 """Tests for the Multiple Access Channel (MAC) model."""
+
 import pytest
 import torch
 import torch.nn as nn

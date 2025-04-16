@@ -1,4 +1,5 @@
 """Comprehensive tests for the modulation registry."""
+
 import pytest
 import torch
 

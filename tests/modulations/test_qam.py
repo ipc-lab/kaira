@@ -1,4 +1,5 @@
 """Comprehensive tests for QAM modulation schemes."""
+
 import numpy as np
 import pytest
 import torch

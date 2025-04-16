@@ -8,6 +8,7 @@ information from multiple users over a shared channel. This model simulates
 scenarios where multiple transmitters send signals simultaneously and a single
 receiver tries to recover all messages.
 """
+
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn

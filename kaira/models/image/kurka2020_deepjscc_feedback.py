@@ -6,7 +6,6 @@ The implementation supports both base layer transmission and refinement
 layers for iterative image quality improvement.
 """
 
-
 from typing import Any, Optional
 
 import torch

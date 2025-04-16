@@ -1,5 +1,6 @@
 """Tests for generic model classes (LambdaModel, ParallelModel, BranchingModel,
 SequentialModel)."""
+
 import pytest
 import torch
 
