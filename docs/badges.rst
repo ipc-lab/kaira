@@ -41,6 +41,6 @@ Kaira —  Communications Simulation Toolbox for PyTorch
    :target: https://gitter.im/kaira/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link
    :alt: Gitter Chat
 
-Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced wireless transmission algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
+Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced communications algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
 
 `Documentation <https://kaira.readthedocs.io/en/latest/>`__

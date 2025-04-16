@@ -1,13 +1,8 @@
 """
-Kaira: A Toolbox for Simulating Wireless Communication Systems
+Kaira: A Toolbox for Simulating Communication Systems
 ================================================================
 
-Kaira focuses on wireless data transmission using deep joint
-source-channel coding (DeepJSCC), providing simulation tools for
-advanced wireless transmission algorithms that integrate with modern
-deep learning frameworks.
-
-License: MIT
+Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced communications algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies. License: MIT
 
 Versioning
 ----------
