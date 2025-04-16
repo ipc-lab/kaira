@@ -799,7 +799,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         # Auto-detect if using conditional model based on encoder class
         self.is_conditional = isinstance(encoder, Yilmaz2024DeepJSCCWZConditionalEncoder)
 
-    def forward(self, source: torch.Tensor, side_info: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, side_info: torch.Tensor | None = None, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Execute the complete Wyner-Ziv coding process on the source image.
 
         This method implements the full DeepJSCC-WZ model:
@@ -828,8 +828,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
                       to current channel conditions.
 
         Returns:
-            Dict[str, torch.Tensor]: Dictionary containing intermediate results and the final
-                                    reconstructed image under the 'decoded' key.
+            torch.Tensor: The final reconstructed image tensor of shape [B, C, H, W].
 
         Raises:
             ValueError: If side_info or csi is None, as these are required parameters.
@@ -842,26 +841,29 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         if side_info is None:
             raise ValueError("Side information must be provided for Yilmaz2024DeepJSCCWZ model")
 
-        csi = kwargs.get("csi")
+        # Extract csi and remove it from kwargs to prevent duplicate passing
+        csi = kwargs.pop("csi", None)
         if csi is None:
             raise ValueError("Channel state information (CSI) must be provided in kwargs for Yilmaz2024DeepJSCCWZ model")
 
-        # Source encoding - pass *args, **kwargs
+        # Source encoding - pass *args and the modified **kwargs (without csi)
         if self.is_conditional:
             encoded = self.encoder(source, side_info, csi, *args, **kwargs)
         else:
             # For non-conditional models, don't pass the side_info parameter
             encoded = self.encoder(source, csi, *args, **kwargs)
 
-        # Apply mandatory power/rate constraint - add safety check
+        # Apply mandatory power/rate constraint - pass *args and modified **kwargs
         if self.constraint is None:
             raise RuntimeError("Constraint is unexpectedly None. This should not happen if __init__ validation is working.")
+        # Assuming constraint does not need csi explicitly, pass remaining kwargs
         constrained = self.constraint(encoded, *args, **kwargs)
 
-        # Transmit through channel - pass *args, **kwargs
+        # Transmit through channel - pass *args and modified **kwargs
+        # Assuming channel does not need csi explicitly, pass remaining kwargs
         received = self.channel(constrained, *args, **kwargs)
 
-        # Decode using received representation and side information - pass *args, **kwargs
+        # Decode using received representation and side information - pass *args and modified **kwargs (without csi)
         decoded = self.decoder(received, side_info, csi, *args, **kwargs)
 
         return decoded

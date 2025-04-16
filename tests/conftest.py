@@ -17,6 +17,13 @@ def binary_tensor():
 
 
 @pytest.fixture
+def binary_source():
+    """Fixture providing binary source data for testing."""
+    torch.manual_seed(42)
+    return torch.randint(0, 2, (100,), dtype=torch.float32)
+
+
+@pytest.fixture
 def bipolar_tensor():
     """Fixture that provides a bipolar (-1 or 1) tensor for testing digital channels."""
     torch.manual_seed(42)  # For reproducibility
@@ -30,6 +37,27 @@ def complex_tensor():
     real_part = torch.randn(1000)
     imag_part = torch.randn(1000)
     return torch.complex(real_part, imag_part)
+
+
+@pytest.fixture
+def continuous_source():
+    """Fixture that provides a continuous-valued tensor (e.g., Gaussian)."""
+    torch.manual_seed(43)  # Different seed
+    return torch.randn(2000)  # Larger 1D tensor
+
+
+@pytest.fixture
+def large_binary_source():
+    """Fixture that provides a large binary (0 or 1) tensor for statistical tests."""
+    torch.manual_seed(44)  # Different seed
+    return torch.randint(0, 2, (10000,))  # 10000 random binary values
+
+
+@pytest.fixture
+def multidimensional_source():
+    """Fixture that provides a multi-dimensional tensor."""
+    torch.manual_seed(45)  # Different seed
+    return torch.randn(10, 5, 5)  # Example: Batch of 10, 5x5 tensors
 
 
 @pytest.fixture

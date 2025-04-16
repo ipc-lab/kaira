@@ -96,8 +96,8 @@ class WynerZivCorrelationModel(nn.Module):
         elif self.correlation_type == "binary":
             # Binary symmetric channel with crossover probability p
             p = self.correlation_params.get("crossover_prob", 0.1)
-            flip_mask = torch.bernoulli(torch.full_like(source, p))
-            return source * (1 - flip_mask) + (1 - source) * flip_mask
+            flip_mask = torch.bernoulli(torch.full_like(source, p, dtype=torch.float))
+            return (source.float() * (1 - flip_mask) + (1 - source.float()) * flip_mask).to(source.dtype)
 
         elif self.correlation_type == "custom":
             # Custom correlation model
@@ -186,28 +186,7 @@ class WynerZivModel(BaseModel):
         self.syndrome_generator = syndrome_generator
         self.constraint = constraint
 
-    def validate_side_info(self, source: torch.Tensor, side_info: Optional[torch.Tensor]) -> torch.Tensor:
-        """Validate and/or generate side information if needed.
-
-        Args:
-            source: The source data
-            side_info: Optional side information
-
-        Returns:
-            Valid side information, either provided or generated
-
-        Raises:
-            ValueError: If side_info is None and no correlation_model is available
-        """
-        if side_info is None:
-            if self.correlation_model is None:
-                raise ValueError("Side information must be provided when correlation_model is not available")
-            # Generate side information from correlation model
-            generated_side_info = self.correlation_model(source)
-            return generated_side_info
-        return side_info
-
-    def forward(self, source: torch.Tensor, side_info: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, side_info: Optional[torch.Tensor] = None, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Process source through the Wyner-Ziv coding system.
 
         Implements the full Wyner-Ziv coding model:
@@ -222,14 +201,15 @@ class WynerZivModel(BaseModel):
         Args:
             source: The source data to encode and transmit efficiently
             side_info: Optional pre-generated side information available at decoder.
-                If None, side information is generated using the correlation_model,
-                simulating a real-world scenario where side info is independently
-                available at the decoder
+                If None, side information is generated using the correlation_model.
             *args: Additional positional arguments passed to encoder, quantizer, syndrome_generator, channel, and decoder.
             **kwargs: Additional keyword arguments passed to encoder, quantizer, syndrome_generator, channel, and decoder.
 
         Returns:
             torch.Tensor: The final reconstructed source tensor after decoding.
+
+        Raises:
+            ValueError: If side_info is None and no correlation_model is available.
         """
         # Source encoding
         res = self.encoder(source, *args, **kwargs)
@@ -249,8 +229,13 @@ class WynerZivModel(BaseModel):
         # Transmit syndromes through channel
         res = self.channel(res, *args, **kwargs)
 
-        # Validate/generate side information if needed
-        side_info = self.validate_side_info(source, side_info)
+        # Validate/generate side information if needed (moved from validate_side_info)
+        if side_info is None:
+            if self.correlation_model is None:
+                raise ValueError("Side information must be provided when correlation_model is not available")
+            # Generate side information from correlation model
+            side_info = self.correlation_model(source)
+        # If side_info was provided, use it directly.
 
         # Decode using received syndromes and side information
         res = self.decoder(res, side_info, *args, **kwargs)
