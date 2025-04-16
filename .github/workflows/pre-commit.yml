@@ -36,5 +36,5 @@ jobs:
           pre-commit clean
           pre-commit migrate-config
           pre-commit install
-          pre-commit migrate-config
+          pre-commit autoupdate # Add autoupdate here
           pre-commit run --all-files
