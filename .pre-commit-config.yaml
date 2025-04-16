@@ -2,12 +2,12 @@ default_language_version:
   python: python3
 
 # Define common configuration variables
-default_stages: [commit]
+default_stages: [pre-commit]
 
 repos:
   # Standard pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0 # Updated version
+    rev: v5.0.0 # Updated version
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -24,28 +24,28 @@ repos:
 
   # Python code formatting
   - repo: https://github.com/psf/black
-    rev: 23.9.1 # Updated version
+    rev: 25.1.0 # Updated version
     hooks:
       - id: black
         args: [--line-length, "299"]
 
   # Python import sorting
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 6.0.1
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
 
   # Python upgrading syntax to newer version
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0 # Updated version
+    rev: v3.19.1 # Updated version
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
 
   # Python docstring formatting
   - repo: https://github.com/myint/docformatter
-    rev: v1.7.5 # Updated version
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38 # Don't autoupdate until https://github.com/PyCQA/docformatter/issues/293 is fixed
     hooks:
       - id: docformatter
         args:
@@ -59,7 +59,7 @@ repos:
 
   # Python docstring coverage checking
   - repo: https://github.com/econchick/interrogate
-    rev: 1.5.0
+    rev: 1.7.0
     hooks:
       - id: interrogate
         args:
@@ -76,14 +76,14 @@ repos:
 
   # Replace flake8 with ruff (faster and more comprehensive)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.292
+    rev: v0.11.5
     hooks:
       - id: ruff
         args: ["--fix", "--line-length=299"]
 
   # Type checking with mypy (fixed)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.15.0
     hooks:
       - id: mypy
         # Removed problematic types-all and added specific type stubs
@@ -93,14 +93,14 @@ repos:
 
   # Python security linter
   - repo: https://github.com/PyCQA/bandit
-    rev: "1.7.5"
+    rev: "1.8.3"
     hooks:
       - id: bandit
         args: ["-s", "B101"]
 
   # yaml formatting
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.3 # Updated version
+    rev: v4.0.0-alpha.8 # Updated version
     hooks:
       - id: prettier
         types: [yaml]
@@ -108,13 +108,13 @@ repos:
 
   # shell scripts linter
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6 # Updated version
+    rev: v0.10.0.1 # Updated version
     hooks:
       - id: shellcheck
 
   # md formatting
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17 # Updated version
+    rev: 0.7.22 # Updated version
     hooks:
       - id: mdformat
         args: ["--number"]
@@ -125,7 +125,7 @@ repos:
 
   # word spelling linter
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6 # Updated version
+    rev: v2.4.1 # Updated version
     hooks:
       - id: codespell
         args:
@@ -134,13 +134,13 @@ repos:
 
   # jupyter notebook cell output clearing
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.1
+    rev: 0.8.1
     hooks:
       - id: nbstripout
 
   # jupyter notebook linting
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0 # Updated version
+    rev: 1.9.1 # Updated version
     hooks:
       - id: nbqa-black
         args: ["--line-length=299"]
@@ -151,14 +151,14 @@ repos:
 
   # Validate GitHub Actions workflows (new)
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.27.0
+    rev: 0.33.0
     hooks:
       - id: check-github-workflows
         files: ^\.github/workflows/
 
   # Check commit message format (new)
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.10.0
+    rev: v4.6.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
