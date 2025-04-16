@@ -34,7 +34,6 @@ jobs:
       - name: Run pre-commit hooks
         run: |
           pre-commit clean
-          pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
           pre-commit migrate-config
           pre-commit install
           pre-commit run --all-files
