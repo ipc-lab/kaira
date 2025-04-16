@@ -36,5 +36,5 @@ jobs:
           pre-commit clean
           pre-commit migrate-config
           pre-commit install
-          pre-commit autoupdate # Add autoupdate here
+          pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
           pre-commit run --all-files
