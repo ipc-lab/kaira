@@ -157,6 +157,22 @@ techniques commonly used in modern communications systems.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to create visually appealing visualizations of different modulation schemes using the Kaira library. We'll visualize signal constellations, decision boundaries, and performance characteristics.">
+
+.. only:: html
+
+    .. image:: /auto_examples/modulation/images/thumb/sphx_glr_plot_modulation_schemes_thumb.png
+      :alt: Modulation Visualization
+
+    :ref:`sphx_glr_auto_examples_modulation_plot_modulation_schemes.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Modulation Visualization</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 .. toctree::
@@ -171,6 +187,7 @@ techniques commonly used in modern communications systems.
    /auto_examples/modulation/plot_oqpsk_modulation
    /auto_examples/modulation/plot_differential_modulation
    /auto_examples/modulation/plot_constellation_comparison
+   /auto_examples/modulation/plot_modulation_schemes
 
 Detailed Topics
 ---------------------

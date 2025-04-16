@@ -26,6 +26,15 @@
   --backreference-bg: #f0f9ff; /* New: Background for backreferences section */
   --backreference-border: #bae6fd; /* New: Border color for backreferences section */
   --backreference-heading: #0284c7; /* New: Color for backreferences heading */
+
+  /* Inheritance diagram colors */
+  --inheritance-bg: rgba(237, 247, 255, 0.8);
+  --inheritance-border: #c2d7ff;
+  --inheritance-node-bg: #e8f0ff;
+  --inheritance-node-border: #3366cc;
+  --inheritance-node-text: #1a365d;
+  --inheritance-edge: #2f6eb6;
+  --inheritance-highlight: #4dabf5;
 }
 
 /* Add direct favicon link to ensure it loads properly */
@@ -1180,4 +1189,42 @@ div.binder-badge a:hover {
 .rst-content .sphx-glr-thumbnails::before,
 .rst-content .sphx-glr-thumbnails::after {
     content: none !important;
+}
+
+/* Styling for inheritance diagrams */
+div.inheritance-diagram {
+    margin: 2em 0;
+}
+
+div.inheritance-diagram svg {
+    background-color: var(--inheritance-bg) !important;
+}
+
+div.inheritance-diagram g.node rect {
+    shape-rendering: crispEdges;
+    fill: var(--inheritance-node-bg) !important;
+    stroke: var(--inheritance-node-border) !important;
+    stroke-width: 1px !important;
+}
+
+div.inheritance-diagram g.node text {
+    fill: var(--inheritance-node-text) !important;
+    font-family: 'Roboto', sans-serif !important;
+    font-size: 0.9em !important;
+}
+
+div.inheritance-diagram g.edgePath path {
+    stroke: var(--inheritance-edge) !important;
+    stroke-width: 1.5px !important;
+}
+
+div.inheritance-diagram g.edgePath polygon {
+    fill: var(--inheritance-edge) !important;
+}
+
+div.inheritance-diagram g.cluster rect {
+    fill: transparent !important;
+    stroke: var(--inheritance-node-border) !important;
+    stroke-dasharray: 4,2 !important;
+    stroke-width: 1px !important;
 }

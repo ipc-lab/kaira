@@ -139,6 +139,22 @@ Examples demonstrating various communication channel models and their characteri
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to create a visually appealing comparison of different communication channels in Kaira. We'll visualize the effects of various channels on transmitted signals and compare their characteristics.">
+
+.. only:: html
+
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_channel_comparison_thumb.png
+      :alt:
+
+    :ref:`sphx_glr_auto_examples_channels_plot_channel_comparison.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Channel Comparison</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 .. toctree::
@@ -152,3 +168,4 @@ Examples demonstrating various communication channel models and their characteri
    /auto_examples/channels/plot_nonlinear_channel
    /auto_examples/channels/plot_composite_channels
    /auto_examples/channels/plot_poisson_channel
+   /auto_examples/channels/plot_channel_comparison

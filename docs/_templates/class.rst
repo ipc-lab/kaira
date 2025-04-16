@@ -2,6 +2,12 @@
 
 .. currentmodule:: {{ module }}
 
+.. inheritance-diagram:: {{ objname }}
+   :parts: 1
+   :private-bases:
+   :caption: Inheritance diagram for {{ objname }}
+   :top-classes: abc.ABC torch.nn.Module
+
 .. autoclass:: {{ objname }}
    :members:
    :show-inheritance:

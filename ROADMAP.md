@@ -12,17 +12,17 @@ This document outlines the planned development trajectory for Kaira. Note that t
 
 ### Metrics and Evaluation
 
-- [ ] Add more performance metrics for wireless communication (e.g., bit error rate, spectral efficiency)
+- [x] Add more performance metrics for communication (e.g., bit error rate, spectral efficiency)
 - [ ] Implement visualization tools for simulation results
 - [ ] Create benchmark datasets and reference implementations for common tasks
 
 ### Documentation and Examples
 
-- [ ] Add detailed tutorials for common use cases
-- [ ] Expand API documentation with more examples
-- [ ] Create interactive notebooks demonstrating key features
-- [ ] Automatically generate README.md instead of README.rst. Remove README_template.
-- [ ] Include Inheritance Diagrams to the docs.
+- [x] Add detailed tutorials for common use cases
+- [x] Expand API documentation with more examples
+- [x] Create interactive notebooks demonstrating key features
+- [x] Automatically generate README.md instead of README.rst. Remove README_template.
+- [x] Include Inheritance Diagrams to the docs.
 - [ ] Change logo
 
 ## Medium-term Goals (6-12 months)

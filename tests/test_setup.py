@@ -157,7 +157,7 @@ setup(
     license="MIT",
     author="Selim Firat Yilmaz",
     author_email="yilmazselimfirat@gmail.com",
-    description="Kaira is a toolbox for simulating wireless communication systems.",
+    description="Kaira is a toolbox for simulating communication systems.",
     long_description=readme,
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=["tests"]),

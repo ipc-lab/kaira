@@ -13,6 +13,16 @@ from sphinx_gallery.sorting import FileNameSortKey
 # First, add the root directory containing the kaira package
 sys.path.insert(0, os.path.abspath(".."))
 
+# Check for graphviz installation and configure it
+try:
+    import graphviz
+
+    has_graphviz = True
+    print(f"Successfully imported Python graphviz package version {graphviz.__version__}")
+except ImportError:
+    has_graphviz = False
+    print("WARNING: Python graphviz package not found. Inheritance diagrams may not render properly.")
+
 # Debug information - print the current path
 print("Python sys.path:")
 for p in sys.path:
@@ -65,6 +75,7 @@ extensions = [
     "sphinx.ext.intersphinx",  # Link to other projects
     "sphinx.ext.coverage",  # Check documentation coverage
     "sphinx.ext.mathjax",
+    "sphinx.ext.inheritance_diagram",  # Add inheritance diagrams
     "sphinx_rtd_theme",
     "sphinx_gallery.gen_gallery",  # Add sphinx-gallery for plot directive
     "matplotlib.sphinxext.plot_directive",
@@ -229,6 +240,18 @@ html_css_files = [
     "custom.css",
     "plot_directive.css",  # Add the plot directive CSS file
 ]
+
+# Configuration for inheritance diagrams
+inheritance_graph_attrs = {
+    "rankdir": "TB",
+    "size": '"12.0, 8.0"',  # already quoted
+    "bgcolor": "transparent",
+    "splines": "ortho",
+    "ratio": "compress",
+    "fontsize": "12",
+    # escape the comma so it isn’t seen as an attr‐separator by dot
+    "fontname": '"Roboto\\, sans-serif"',
+}
 
 # Add custom JavaScript files
 html_js_files = [

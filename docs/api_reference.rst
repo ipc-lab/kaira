@@ -14,7 +14,7 @@ Each component is documented with its parameters, methods, and usage examples.
 Overview
 --------------
 
-Kaira is a modular toolkit for wireless communication systems built on PyTorch. The library is organized into
+Kaira is a modular toolkit for communication systems built on PyTorch. The library is organized into
 several key modules that handle different aspects of communication systems:
 
 - **Channels**: Model transmission mediums with various noise and distortion characteristics

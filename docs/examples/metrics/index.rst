@@ -90,6 +90,22 @@ Examples demonstrating various metrics for performance evaluation in communicati
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates how to create visually appealing visualizations of performance metrics used in communication systems including BER, SNR, capacity, and other important measures.">
+
+.. only:: html
+
+    .. image:: /auto_examples/metrics/images/thumb/sphx_glr_plot_performance_metrics_thumb.png
+      :alt: Performance Metrics Visualization
+
+    :ref:`sphx_glr_auto_examples_metrics_plot_performance_metrics.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Performance Metrics Visualization</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 .. toctree::

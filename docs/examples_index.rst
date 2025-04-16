@@ -286,7 +286,7 @@ Examples and Tutorials
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Practical Applications of Constraints in Wireless Communication Systems</div>
+      <div class="sphx-glr-thumbnail-title">Practical Applications of Constraints in Communication Systems</div>
     </div>
 
 

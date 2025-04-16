@@ -8,6 +8,7 @@ matplotlib>=3.3.0
 sphinx-hoverxref
 sphinx-rtd-theme>=1.0.0
 sphinx-design>=0.3.0
+graphviz>=0.20.1
 flake8>=6.0.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
