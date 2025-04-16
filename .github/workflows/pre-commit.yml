@@ -34,5 +34,7 @@ jobs:
       - name: Run pre-commit hooks
         run: |
           pre-commit clean
+          pre-commit migrate-config
           pre-commit install
+          pre-commit migrate-config
           pre-commit run --all-files
