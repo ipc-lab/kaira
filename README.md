@@ -31,7 +31,7 @@ supporting rapid prototyping of novel communication strategies.
 
 # Installation
 
-The fastest way to install Kaira is directly from PyTorch:
+The fastest way to install Kaira is directly from PyPI:
 
 ```bash
 pip install kaira

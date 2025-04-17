@@ -122,6 +122,7 @@ The fastest way to install Kaira is directly from PyPI:
 ```bash
 pip install kaira
 ```
+
 """
 
     # Read the current README.md
