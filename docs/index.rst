@@ -35,6 +35,7 @@ Kaira Documentation
    :caption: Getting Started
 
    introduction
+   research_storyline
    installation
    examples_index
 
