@@ -65,15 +65,10 @@ Kaira provides researchers with:
 Kaira specifically enables breakthrough research in key emerging areas:
 
 * **End-to-End Communications**: Pre-built architectures and customizable components for joint source-channel coding systems, with implementations of state-of-the-art DeepJSCC models that outperform traditional separated designs
-
 * **Semantic Communications**: Advanced tools for measuring and optimizing semantic fidelity of transmitted information, focusing on content relevance rather than bit-level accuracy
-
 * **Advanced Channel Modeling**: Comprehensive simulation frameworks for diverse propagation environments including AWGN, fading, interference, and hardware impairments, enabling research into robust communication systems for real-world deployment scenarios
-
 * **Multi-Agent Communications**: Extensible architectures for cooperative and competitive multi-agent scenarios including broadcast, multiple access, interference, and relay channels, facilitating research into network information theory applications
-
 * **Adaptive Transmission Strategies**: Flexible frameworks for developing communication systems that dynamically respond to varying channel conditions, network states, and application requirements through both model-based and learning-based approaches
-
 * **Cross-Layer Optimization**: Tools for jointly optimizing multiple layers of the communication stack, breaking down traditional siloed approaches to system design
 
 The Future Horizon
