@@ -17,13 +17,13 @@ If you use Kaira in your research, please cite it using the following format:
 ## APA Style
 
 ```
-Kaira Contributors. (2025). Kaira: Communication Simulation Toolbox for PyTorch (Version 0.1.0) [Software]. Available from https://github.com/ipc-lab/kaira
+Kaira Contributors. (2025). Kaira: A PyTorch-based toolkit for simulating communication systems (Version 0.1.0) [Software]. Available from https://github.com/ipc-lab/kaira
 ```
 
 ## IEEE Style
 
 ```
-[1] Kaira Contributors, "Kaira: Communication Simulation Toolbox for PyTorch," 2025. [Online]. Available: https://github.com/ipc-lab/kaira.
+[1] Kaira Contributors, "Kaira: A PyTorch-based toolkit for simulating communication systems," 2025. [Online]. Available: https://github.com/ipc-lab/kaira.
 ```
 
 ## Integration with Research Papers
