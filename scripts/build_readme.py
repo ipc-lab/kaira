@@ -112,3 +112,64 @@ except FileNotFoundError:
     print("Error: Changelog file 'docs/changelog.rst' not found.")
 except Exception as e:
     print(f"An error occurred: {e}")
+
+# Add Installation section after Features
+try:
+    simplified_installation = """# Installation
+
+The fastest way to install Kaira is directly from PyPI:
+
+```bash
+pip install kaira
+```
+"""
+
+    # Read the current README.md
+    with open(readme_md_path) as md_file:
+        md_content = md_file.read()
+
+    # Remove any existing Installation sections first
+    installation_pattern = r"#\s+(?:🔧\s+)?Installation[\s\S]+?(?=^#\s+[^#])"
+    md_content = re.sub(installation_pattern, "", md_content, flags=re.MULTILINE)
+
+    # Find the Features section
+    features_pattern = r"(#\s+(?:✨\s+)?Features[\s\S]+?)(?=^#\s+[^#])"
+    features_match = re.search(features_pattern, md_content, re.MULTILINE)
+
+    if features_match:
+        # Insert the installation section after the Features section
+        md_content = md_content.replace(features_match.group(1), features_match.group(1) + "\n\n" + simplified_installation)
+
+        # Write back to README.md
+        with open(readme_md_path, "w") as md_file:
+            md_file.write(md_content)
+
+        print("Added Installation section after Features")
+    else:
+        print("Warning: Could not find Features section")
+
+    # Fix the Citing Kaira section formatting if needed
+    citing_pattern = r"\\#\s+Citing Kaira"
+    citing_replacement = "# Citing Kaira"
+    md_content = re.sub(citing_pattern, citing_replacement, md_content)
+
+    # Fix any broken code blocks in the citing section
+    broken_bibtex = r"``\s*`bibtex\s+@software\{.*?\}\s+``\\`"
+    if re.search(broken_bibtex, md_content, re.DOTALL):
+        fixed_bibtex = """```bibtex
+@software{kaira2025,
+  title = {Kaira: A {PyTorch}-based toolkit for simulating communication systems},
+  author = {{Kaira Contributors}},
+  year = {2025},
+  url = {https://github.com/ipc-lab/kaira},
+  version = {0.1.0}
+}
+```"""
+        md_content = re.sub(broken_bibtex, fixed_bibtex, md_content, flags=re.DOTALL)
+
+    # Write back to README.md
+    with open(readme_md_path, "w") as md_file:
+        md_file.write(md_content)
+
+except Exception as e:
+    print(f"Error replacing Installation section: {e}")

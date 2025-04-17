@@ -6,8 +6,6 @@
 
 .. include:: docs/features.rst
 
-.. include:: docs/installation.rst
-
 .. include:: docs/quick_links.rst
 
 .. include:: docs/license.rst
