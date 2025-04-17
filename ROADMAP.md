@@ -44,6 +44,11 @@ This document outlines the planned development trajectory for Kaira. Note that t
 - [ ] Integration with popular wireless simulation frameworks
 - [ ] Support for exporting models to embedded platforms
 - [ ] Comprehensive test suite for model validation
+- [ ] Develop Colab/Jupyter Notebooks: Create ready-to-use notebooks that researchers can run without installation
+- [ ] Publish on PyTorch Ecosystem: Get listed in PyTorch's ecosystem page
+- [ ] Standardized Benchmarks: Create benchmark suites that allow fair comparison of algorithms
+- [ ] Visualization Tools: Develop better visualization capabilities for analyzing results
+- [ ] Interactive Demo Website: Build an interactive web demo showcasing Kaira's capabilities
 
 ## Long-term Vision (1-2 years)
 
@@ -64,6 +69,8 @@ This document outlines the planned development trajectory for Kaira. Note that t
 - [ ] Establish regular contribution cycles and maintainer protocols
 - [ ] Develop plugin architecture for community extensions
 - [ ] Create educational resources for academic adoption
+- [ ] Present at Conferences: Submit talks and posters to relevant conferences in communications and ML
+- [ ] Guest Blog Posts: Write articles about Kaira for popular ML and communications blogs
 
 ## How to Contribute
 
