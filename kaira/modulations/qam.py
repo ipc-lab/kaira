@@ -101,7 +101,7 @@ class QAMModulator(BaseModulator):
         self.register_buffer("bit_patterns", bit_patterns)
 
     def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Modulate bit groups to QAM symbols.
+        """Modulate binary inputs to QAM symbols.
 
         Args:
             x: Input tensor of bits with shape (..., K*N), where K is bits_per_symbol
@@ -111,27 +111,52 @@ class QAMModulator(BaseModulator):
         Returns:
             Complex tensor of QAM symbols with shape (..., N)
         """
-        # Ensure input length is divisible by bits_per_symbol
         batch_shape = x.shape[:-1]
-        bit_len = x.shape[-1]
-        if bit_len % self._bits_per_symbol != 0:
-            raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
+        num_bits = x.shape[-1]
 
-        # Reshape to groups of bits_per_symbol
-        x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+        if num_bits % self._bits_per_symbol != 0:
+            raise ValueError(f"Number of input bits ({num_bits}) must be divisible by bits_per_symbol ({self._bits_per_symbol})")
 
-        # For each group of bits, find the matching constellation point
-        symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
+        # Reshape to (..., N, K)
+        x_groups = x.reshape(*batch_shape, -1, self._bits_per_symbol)
 
-        # Search through bit_patterns for each group of bits to find the matching constellation point
-        for i in range(self.order):
-            # Create a mask for where the current bit pattern matches the input bits
-            # Need to compare across the bits_per_symbol dimension
-            pattern = self.bit_patterns[i].to(x.device)
-            mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
+        # Map bit groups to symbol indices
+        indices = torch.zeros((*batch_shape, x_groups.shape[-2]), dtype=torch.long, device=x.device)
+        for i in range(self._bits_per_symbol):
+            indices = indices * 2 + x_groups[..., i].long()
 
-            # Assign the corresponding constellation point
-            symbols[mask] = self.constellation[i]
+        # Map indices to constellation symbols
+        symbols = self.constellation[indices]
+
+        return symbols
+
+    def forward_soft(self, x: torch.Tensor, temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Modulate soft bits to QAM symbols in a differentiable manner.
+
+        Args:
+            x: Input tensor of soft bit probabilities with shape (..., K*N),
+               where K is bits_per_symbol. Values should be in [0, 1] range,
+               representing P(bit=1)
+            temp: Temperature parameter for soft decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Complex tensor of QAM symbols with shape (..., N)
+        """
+        from .differentiable import soft_symbol_mapping
+
+        batch_shape = x.shape[:-1]
+        num_bits = x.shape[-1]
+
+        if num_bits % self._bits_per_symbol != 0:
+            raise ValueError(f"Number of input bits ({num_bits}) must be divisible by bits_per_symbol ({self._bits_per_symbol})")
+
+        # Reshape to (..., N, K)
+        x_groups = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+
+        # Use differentiable symbol mapping
+        symbols = soft_symbol_mapping(x_groups, self.constellation, self.bit_patterns)
 
         return symbols
 
@@ -144,12 +169,8 @@ class QAMModulator(BaseModulator):
         Returns:
             Matplotlib figure object
         """
-        labels = []
-        for i in range(self.order):
-            bit_pattern = self.bit_patterns[i]
-            bit_str = "".join(str(int(bit)) for bit in bit_pattern)
-            labels.append(bit_str)
-
+        # Format labels as binary strings
+        labels = [format(i, f"0{self._bits_per_symbol}b") for i in range(self.order)]
         return plot_constellation(self.constellation, labels=labels, title=f"{self.order}-QAM Constellation", **kwargs)
 
 
@@ -226,62 +247,65 @@ class QAMDemodulator(BaseDemodulator):
                 noise_var = noise_var.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
+            bit_patterns = self.modulator.bit_patterns.to(y.device)  # (order, bits_per_symbol)
             llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
 
-            # For each bit position
+            # Expand constellation for vectorized calculation of distances
+            expanded_y = y.unsqueeze(-1)  # (..., N, 1)
+            expanded_const = constellation.expand(*([1] * len(batch_shape)), symbol_shape, self.order)  # (..., N, order)
+
+            # Calculate Euclidean distances
+            # We don't need to square these for the LLR calculation since we'll use them directly
+            # in the exponential function, and we want to use the true distance
+            distances = torch.abs(expanded_y - expanded_const) ** 2  # (..., N, order)
+
+            # Apply -dist^2/(2*sigma^2) to get log-likelihoods (up to a constant)
+            log_likelihoods = -distances / (2 * noise_var.unsqueeze(-1))  # (..., N, order)
+
+            # For each bit position, calculate LLR = log(P(y|b=0)/P(y|b=1))
             for bit_idx in range(self._bits_per_symbol):
-                # Create masks for symbols where bit is 0 or 1
-                bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
-                bit_1_mask = ~bit_0_mask
+                # Get constellation points corresponding to bit=0 and bit=1
+                bit_0_mask = bit_patterns[:, bit_idx] == 0  # Binary mask for bit=0 symbols
+                bit_1_mask = bit_patterns[:, bit_idx] == 1  # Binary mask for bit=1 symbols
 
-                # Get constellation points for each bit value
-                const_bit_0 = constellation[bit_0_mask]
-                const_bit_1 = constellation[bit_1_mask]
+                # Apply max-log approximation to compute LLRs
+                # LLR ≈ max(log(P(y|x_i))) for all i with b_i=1 - max(log(P(y|x_j))) for all j with b_j=0
+                # This avoids numerical issues with very large exponents
+                max_ll_bit_0 = log_likelihoods.masked_fill(~bit_0_mask.unsqueeze(0).unsqueeze(0), -float("inf")).max(dim=-1)[0]
+                max_ll_bit_1 = log_likelihoods.masked_fill(~bit_1_mask.unsqueeze(0).unsqueeze(0), -float("inf")).max(dim=-1)[0]
 
-                # Calculate minimum squared Euclidean distance for each bit value
-                # For LLR calculation, smaller distance means higher probability
-                dist_0 = self._min_squared_distance(y, const_bit_0)
-                dist_1 = self._min_squared_distance(y, const_bit_1)
+                # LLR = log(P(b=0|y)/P(b=1|y)) = log(P(y|b=0)/P(y|b=1)) = max_ll_bit_0 - max_ll_bit_1
+                llrs[..., bit_idx] = max_ll_bit_0 - max_ll_bit_1
 
-                # Calculate LLR as log(P(bit=0)/P(bit=1))
-                # For AWGN channel: LLR = (dist_1 - dist_0)/(2*noise_var)
-                # Positive LLR means bit 0 is more likely
-                llrs[..., bit_idx] = (dist_1 - dist_0) / (2 * noise_var)
-
+            # Reshape to final bit sequence
             return llrs.reshape(*batch_shape, -1)
 
-    def _min_squared_distance(self, y: torch.Tensor, points: torch.Tensor) -> torch.Tensor:
-        """Calculate minimum squared Euclidean distance to constellation points.
+    def forward_soft(self, y: torch.Tensor, noise_var: Union[float, torch.Tensor], temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Demodulate QAM symbols to soft bit probabilities in a differentiable manner.
 
         Args:
             y: Received symbols with shape (..., N)
-            points: Constellation points to compare against with shape (M,)
+            noise_var: Noise variance (required)
+            temp: Temperature parameter for controlling softness of decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
-            Minimum squared distance for each symbol in y
+            Soft bit probabilities with shape (..., N*bits_per_symbol)
+            Values are in [0, 1] range, representing P(bit=1)
         """
         batch_shape = y.shape[:-1]
         symbol_shape = y.shape[-1]
-        num_points = points.shape[0]
 
-        # Handle different tensor shapes correctly
-        if batch_shape:
-            # Multi-dimensional tensors
-            y_expanded = y.unsqueeze(-1).expand(*batch_shape, symbol_shape, num_points)
+        # Get LLRs
+        llrs = self.forward(y, noise_var, *args, **kwargs)
 
-            # Properly reshape points for broadcasting
-            points_expanded = points.reshape(*([1] * len(batch_shape)), 1, -1)
-            points_expanded = points_expanded.expand(*batch_shape, symbol_shape, num_points)
-        else:
-            # 1D tensors
-            y_expanded = y.unsqueeze(-1).expand(symbol_shape, num_points)
-            points_expanded = points.reshape(1, -1).expand(symbol_shape, num_points)
+        # Reshape LLRs to (..., N, bits_per_symbol)
+        llrs = llrs.reshape(*batch_shape, symbol_shape, self._bits_per_symbol)
 
-        # Calculate squared Euclidean distances
-        # For complex numbers: |a - b|^2 = (a - b) * conj(a - b)
-        diff = y_expanded - points_expanded
-        squared_distances = torch.real(diff * torch.conj(diff))
+        # Convert LLRs to probabilities with temperature scaling
+        # P(bit=1) = 1 / (1 + exp(LLR/temp))
+        probs = torch.sigmoid(-llrs / temp)
 
-        # Find minimum distance across all points
-        min_distances, _ = torch.min(squared_distances, dim=-1)
-        return min_distances
+        # Reshape to final probability sequence
+        return probs.reshape(*batch_shape, -1)

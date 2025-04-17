@@ -49,6 +49,29 @@ class BaseModulator(nn.Module, ABC):
         """
         pass
 
+    def forward_soft(self, x: torch.Tensor, temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Modulate soft bits to symbols in a differentiable manner.
+
+        This method enables differentiability through the modulator using soft bit
+        probabilities as input. Default implementation calls forward, but subclasses
+        should override for true differentiability.
+
+        Args:
+            x: Input tensor of soft bit probabilities with shape (..., K*N),
+               where K is bits_per_symbol. Values should be in [0, 1] range,
+               representing P(bit=1).
+            temp: Temperature parameter for soft decisions (lower = harder)
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Modulated symbols with shape (..., N)
+        """
+        # Default implementation just calls forward with hard decisions
+        # Subclasses should override this for true differentiability
+        hard_bits = (x > 0.5).float()
+        return self.forward(hard_bits, *args, **kwargs)
+
     def plot_constellation(self, **kwargs):
         """Plot the constellation diagram.
 
@@ -108,6 +131,32 @@ class BaseDemodulator(nn.Module, ABC):
             with shape (..., N*bits_per_symbol)
         """
         pass
+
+    def forward_soft(self, y: torch.Tensor, noise_var: Union[float, torch.Tensor], temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Demodulate symbols to soft bit probabilities in a differentiable manner.
+
+        This method enables differentiability through the demodulator. The default
+        implementation converts LLRs to probabilities, but subclasses should override
+        this method if a more efficient implementation is available.
+
+        Args:
+            y: Received symbols with shape (..., N)
+            noise_var: Noise variance (required)
+            temp: Temperature parameter for controlling softness of decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Soft bit probabilities with shape (..., N*bits_per_symbol)
+            Values are in [0, 1] range, representing P(bit=1)
+        """
+        # Default implementation converts LLRs to probabilities
+        # Subclasses can override for more efficient implementations
+        llrs = self.forward(y, noise_var, *args, **kwargs)
+        # Convert LLRs to probabilities with temperature scaling
+        # P(bit=1) = 1 / (1 + exp(LLR / temp))
+        probs = torch.sigmoid(-llrs / temp)
+        return probs
 
     def reset_state(self) -> None:
         """Reset any stateful components.
