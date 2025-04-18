@@ -79,13 +79,18 @@ class MajorityVoteDecoder(BaseModel):
 
     Args:
         repetition_factor: Number of times each bit was repeated in the encoding process
+        input_type: Type of soft input, can be 'prob' (probabilities between 0 and 1) or
+                   'llr' (log-likelihood ratios). Only used when input is floating point.
+                   Default is 'prob'.
     """
 
-    def __init__(self, repetition_factor: int = 3, *args: Any, **kwargs: Any):
+    def __init__(self, repetition_factor: int = 3, input_type: str = "prob", *args: Any, **kwargs: Any):
         """Initialize the majority vote decoder.
 
         Args:
             repetition_factor: Number of times each bit was repeated. Must be a positive integer.
+            input_type: Type of soft input, can be 'prob' (probabilities between 0 and 1) or
+                       'llr' (log-likelihood ratios). Only used when input is floating point.
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
@@ -94,7 +99,13 @@ class MajorityVoteDecoder(BaseModel):
             raise ValueError("Repetition factor must be a positive integer")
         if repetition_factor % 2 == 0:
             raise ValueError("Repetition factor should be odd for unambiguous majority voting")
+
         self.repetition_factor = repetition_factor
+
+        valid_input_types = ["prob", "llr"]
+        if input_type not in valid_input_types:
+            raise ValueError(f"input_type must be one of {valid_input_types}, got {input_type}")
+        self.input_type = input_type
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decode the input tensor using majority voting.
@@ -117,8 +128,15 @@ class MajorityVoteDecoder(BaseModel):
 
         if torch.is_floating_point(x):
             # For soft decoding (input contains probabilities or LLRs)
-            # Take average across repetitions and threshold at 0.5
-            decoded = reshaped.mean(dim=2) > 0.5
+            if self.input_type == "prob":
+                # For probability values (between 0 and 1)
+                # Take average across repetitions and threshold at 0.5
+                decoded = reshaped.mean(dim=2) > 0.5
+            elif self.input_type == "llr":
+                # For log-likelihood ratios
+                # Sum LLRs and check if result > 0
+                # Positive LLRs favor bit=0, negative LLRs favor bit=1
+                decoded = reshaped.sum(dim=2) < 0  # Sum LLRs and threshold at 0
         else:
             # For hard decoding (input contains binary values)
             # Take majority vote across repetitions
