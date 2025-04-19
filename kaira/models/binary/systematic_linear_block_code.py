@@ -224,7 +224,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         # Use apply_blockwise to handle the projection
         return apply_blockwise(x, self._length, projection_fn)
 
-    def encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input tensor using systematic encoding.
 
         For systematic codes, encoding can be done efficiently by placing information
@@ -270,21 +270,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
 
         # Use apply_blockwise to handle the encoding
         return apply_blockwise(x, self._dimension, systematic_encode_fn)
-
-    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """Alias for the encode method.
-
-        This method uses the specialized systematic encoding implementation.
-
-        Args:
-            x: The input tensor.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            Encoded tensor
-        """
-        return self.encode(x, *args, **kwargs)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word.
@@ -368,23 +353,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         syndrome = self.calculate_syndrome(x)
 
         return decoded, syndrome
-
-    def check(self, x: torch.Tensor) -> torch.Tensor:
-        """Check if a received word contains errors.
-
-        This method calculates the syndrome of a received word, which is equivalent
-        to checking if it's a valid codeword. A non-zero syndrome indicates errors.
-
-        For systematic codes, this simply uses the specialized syndrome calculation.
-
-        Args:
-            x: Input tensor of shape (..., codeword_length) or (..., b*codeword_length)
-               where b is a positive integer.
-
-        Returns:
-            Syndrome tensor indicating errors, of shape (..., b*redundancy)
-        """
-        return self.calculate_syndrome(x)
 
     def __repr__(self) -> str:
         """Return a string representation of the object.
