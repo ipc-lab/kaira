@@ -42,7 +42,6 @@ class RepetitionCodeEncoder(LinearBlockCodeEncoder):
 
     Attributes:
         repetition_factor (int): The length n of the code. Must be a positive integer.
-        minimum_distance (int): The minimum distance of the code, which equals n.
 
     Args:
         repetition_factor (int): Number of times to repeat each bit
