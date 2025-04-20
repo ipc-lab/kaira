@@ -107,8 +107,80 @@ def process_module(module_path: str, module: ModuleType) -> Dict[str, str]:
     return blocks
 
 
+def scan_modules_recursively(base_module: ModuleType, base_path: str, visited: set) -> Dict[str, Dict[str, str]]:
+    """Recursively scan modules and their submodules for documentation.
+
+    Args:
+        base_module: The base module to start from.
+        base_path: The base module path.
+        visited: Set of already visited module paths to avoid cycles.
+
+    Returns:
+        A nested dictionary of module paths and their documentation blocks.
+    """
+    if base_path in visited:
+        return {}
+
+    visited.add(base_path)
+    result = {}
+
+    # Process the base module itself
+    base_blocks = process_module(base_path, base_module)
+    if base_blocks:
+        result[base_path] = base_blocks
+
+    # Check if the module is a package (has __file__ and is a directory with __init__.py)
+    is_package = False
+    if hasattr(base_module, "__file__") and base_module.__file__ is not None:
+        module_file = Path(base_module.__file__)
+        module_dir = module_file.parent
+        is_package = module_file.name == "__init__.py" and module_dir.is_dir()
+
+        # If it's a package, scan its subdirectories for submodules
+        if is_package:
+            for item in module_dir.iterdir():
+                # Check for Python files (modules) or directories with __init__.py (packages)
+                if (item.is_file() and item.suffix == ".py" and item.name != "__init__.py") or (item.is_dir() and (item / "__init__.py").exists()):
+
+                    # Determine the submodule name and path
+                    submodule_name = item.stem if item.is_file() else item.name
+                    submodule_path = f"{base_path}.{submodule_name}"
+
+                    # Skip if this module path has already been processed
+                    if submodule_path in visited:
+                        continue
+
+                    try:
+                        # Try to import the submodule
+                        submodule = importlib.import_module(submodule_path)
+
+                        # Process the submodule recursively
+                        submodule_results = scan_modules_recursively(submodule, submodule_path, visited)
+                        result.update(submodule_results)
+                    except (ImportError, AttributeError, ModuleNotFoundError) as e:
+                        print(f"Warning: Could not import {submodule_path}: {e}")
+
+    # Also check the __all__ attribute for any modules
+    if hasattr(base_module, "__all__"):
+        for name in base_module.__all__:
+            # Skip if not a module or already processed
+            if not hasattr(base_module, name) or not inspect.ismodule(getattr(base_module, name)) or f"{base_path}.{name}" in visited:
+                continue
+
+            submodule = getattr(base_module, name)
+            submodule_path = f"{base_path}.{name}"
+
+            # Process the submodule recursively if not already processed
+            submodule_results = scan_modules_recursively(submodule, submodule_path, visited)
+            result.update(submodule_results)
+
+    return result
+
+
 def scan_submodules(base_module: ModuleType, base_path: str) -> Dict[str, Dict[str, str]]:
     """Recursively scan submodules and generate documentation.
+
+    This is a wrapper around scan_modules_recursively that initializes the visited set.
 
     Args:
         base_module: The base module to start from.
@@ -117,51 +189,7 @@ def scan_submodules(base_module: ModuleType, base_path: str) -> Dict[str, Dict[s
     Returns:
         A nested dictionary of module paths and their documentation blocks.
     """
-    result = {}
-
-    # Process the base module itself
-    base_blocks = process_module(base_path, base_module)
-    if base_blocks:
-        result[base_path] = base_blocks
-
-    # Check if the module has an __all__ attribute with submodules
-    if hasattr(base_module, "__all__"):
-        for name in base_module.__all__:
-            # Skip if not a module
-            if not hasattr(base_module, name) or not inspect.ismodule(getattr(base_module, name)):
-                continue
-
-            submodule = getattr(base_module, name)
-            submodule_path = f"{base_path}.{name}"
-
-            # Process the submodule
-            blocks = process_module(submodule_path, submodule)
-            if blocks:
-                result[submodule_path] = blocks
-
-            # Try to import and scan submodules of this submodule
-            try:
-                # Check for presence of subdirectory matching the module name
-                module_dir = Path(submodule.__file__).parent
-                if module_dir.is_dir():
-                    for subitem in module_dir.iterdir():
-                        if subitem.is_dir() and (subitem / "__init__.py").exists():
-                            subsubmodule_name = subitem.name
-                            try:
-                                subsubmodule = importlib.import_module(f"{submodule_path}.{subsubmodule_name}")
-                                subsubmodule_path = f"{submodule_path}.{subsubmodule_name}"
-
-                                # Process the subsubmodule
-                                subblocks = process_module(subsubmodule_path, subsubmodule)
-                                if subblocks:
-                                    result[subsubmodule_path] = subblocks
-                            except (ImportError, AttributeError):
-                                pass
-            except (AttributeError, ValueError):
-                # Module might not have a __file__ attribute or it might not be a directory
-                pass
-
-    return result
+    return scan_modules_recursively(base_module, base_path, set())
 
 
 def generate_api_reference() -> str:
@@ -327,6 +355,9 @@ if __name__ == "__main__":
 
     # Get the output path from command line arguments or use a default
     output_path = sys.argv[1] if len(sys.argv) > 1 else "docs/api_reference.rst"
+
+    # Ensure output_path is not None (for type checking)
+    assert output_path is not None, "Output path cannot be None"
 
     with open(output_path, "w") as f:
         f.write(api_reference)

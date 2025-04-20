@@ -139,6 +139,51 @@ Metrics module for Kaira.
    SymbolErrorRate
 
 
+Image
+^^^^^
+
+Image metrics module.
+
+.. currentmodule:: kaira.metrics.image
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   LPIPS
+   LearnedPerceptualImagePatchSimilarity
+   MultiScaleSSIM
+   PSNR
+   PeakSignalNoiseRatio
+   SSIM
+   StructuralSimilarityIndexMeasure
+
+
+Signal
+^^^^^^
+
+Signal metrics module.
+
+.. currentmodule:: kaira.metrics.signal
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BER
+   BLER
+   BitErrorRate
+   BlockErrorRate
+   FER
+   FrameErrorRate
+   SER
+   SNR
+   SignalToNoiseRatio
+   SymbolErrorRate
+
+
 Models
 ------
 
@@ -193,6 +238,51 @@ Components module for Kaira models.
    ConvEncoder
    MLPDecoder
    MLPEncoder
+
+
+Decoders
+^^^^^^^^
+
+Forward Error Correction (FEC) decoders for Kaira.
+
+.. currentmodule:: kaira.models.fec.decoders
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BerlekampMasseyDecoder
+   BlockDecoder
+   BruteForceMLDecoder
+   ReedMullerDecoder
+   SyndromeLookupDecoder
+   WagnerSoftDecisionDecoder
+
+
+Encoders
+^^^^^^^^
+
+Forward Error Correction encoders for Kaira.
+
+.. currentmodule:: kaira.models.fec.encoders
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BCHCodeEncoder
+   BlockCodeEncoder
+   CyclicCodeEncoder
+   GolayCodeEncoder
+   HammingCodeEncoder
+   LinearBlockCodeEncoder
+   MajorityVoteDecoder
+   ReedSolomonCodeEncoder
+   RepetitionCodeEncoder
+   SingleParityCheckCodeEncoder
+   SystematicLinearBlockCodeEncoder
 
 
 Generic

@@ -9,6 +9,7 @@ This module provides various encoder implementations for forward error correctio
 - Hamming codes
 - Repetition codes
 - Golay codes
+- Single parity-check codes
 
 These encoders can be used to add redundancy to data to enable error detection and correction.
 """
@@ -21,6 +22,7 @@ from .hamming_code import HammingCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
 from .reed_solomon_code import ReedSolomonCodeEncoder
 from .repetition_code import MajorityVoteDecoder, RepetitionCodeEncoder
+from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder"]
+__all__ = ["BlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]

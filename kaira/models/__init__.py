@@ -1,6 +1,6 @@
 """Models module for Kaira."""
 
-from . import binary, components, generic, image
+from . import binary, components, fec, generic, image
 from .base import BaseModel, ConfigurableModel
 from .channel_code import ChannelCodeModel
 from .deepjscc import DeepJSCCModel
@@ -15,6 +15,7 @@ __all__ = [
     "components",
     "binary",
     "image",
+    "fec",
     # Base classes
     "BaseModel",
     "ConfigurableModel",
