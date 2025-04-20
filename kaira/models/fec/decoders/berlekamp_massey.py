@@ -3,6 +3,15 @@
 This module implements the Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes. The
 algorithm efficiently solves the key equation for the error locator polynomial, which is then used
 to find the locations of errors in the received codeword.
+
+The Berlekamp-Massey algorithm is an iterative procedure that efficiently determines the smallest
+linear feedback shift register (LFSR) that can generate a given sequence, which in this context
+is the syndrome sequence. This makes it particularly suitable for decoding BCH and Reed-Solomon
+codes with large error-correcting capabilities.
+
+:cite:`berlekamp1968algebraic`
+:cite:`massey1969shift`
+:cite:`moon2005error`
 """
 
 from typing import Any, List, Tuple, Union
@@ -14,15 +23,19 @@ from kaira.models.fec.encoders.bch_code import BCHCodeEncoder
 from kaira.models.fec.encoders.reed_solomon_code import ReedSolomonCodeEncoder
 
 from ..utils import apply_blockwise
-from .base import BlockDecoder
+from .base import BaseBlockDecoder
 
 
-class BerlekampMasseyDecoder(BlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeEncoder]]):
+class BerlekampMasseyDecoder(BaseBlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeEncoder]]):
     """Berlekamp-Massey decoder for BCH and Reed-Solomon codes.
 
     This decoder implements the Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes.
     It is particularly efficient for these algebraic codes and can correct up to t = ⌊(d-1)/2⌋ errors,
-    where d is the minimum distance of the code.
+    where d is the minimum distance of the code :cite:`lin2004error,berlekamp1968algebraic`.
+
+    The algorithm finds the shortest linear feedback shift register (LFSR) that generates the
+    syndrome sequence, which corresponds to the error locator polynomial. The roots of this
+    polynomial identify the positions of errors in the received word.
 
     The decoder works by:
     1. Computing the syndrome polynomial from the received word
@@ -33,17 +46,57 @@ class BerlekampMasseyDecoder(BlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeE
 
     Attributes:
         encoder (Union[BCHCodeEncoder, ReedSolomonCodeEncoder]): The encoder instance
-        field (GaloisField): The finite field used by the code
-        t (int): Error-correcting capability of the code
+                providing code parameters and syndrome calculation methods
+        field (GaloisField): The finite field used by the code for algebraic operations
+        t (int): Error-correcting capability of the code (maximum number of correctable errors)
 
     Args:
         encoder (Union[BCHCodeEncoder, ReedSolomonCodeEncoder]): The encoder for the code being decoded
         *args: Variable positional arguments passed to the base class
         **kwargs: Variable keyword arguments passed to the base class
+
+    Raises:
+        TypeError: If the encoder is not a BCHCodeEncoder or ReedSolomonCodeEncoder
+
+    Examples:
+        >>> from kaira.models.fec.encoders import BCHCodeEncoder
+        >>> from kaira.models.fec.decoders import BerlekampMasseyDecoder
+        >>> import torch
+        >>>
+        >>> # Create an encoder for a BCH(15,7) code
+        >>> encoder = BCHCodeEncoder(mu=4, delta=5)
+        >>> decoder = BerlekampMasseyDecoder(encoder)
+        >>>
+        >>> # Encode a message
+        >>> message = torch.tensor([1., 0., 1., 1., 0., 1., 0.])
+        >>> codeword = encoder(message)
+        >>>
+        >>> # Introduce some errors
+        >>> received = codeword.clone()
+        >>> received[2] = 1 - received[2]  # Flip a bit
+        >>> received[8] = 1 - received[8]  # Flip another bit
+        >>>
+        >>> # Decode and check if recovered correctly
+        >>> decoded = decoder(received)
+        >>> print(torch.all(decoded == message))
+        True
     """
 
     def __init__(self, encoder: Union[BCHCodeEncoder, ReedSolomonCodeEncoder], *args: Any, **kwargs: Any):
-        """Initialize the Berlekamp decoder."""
+        """Initialize the Berlekamp-Massey decoder.
+
+        Sets up the decoder with an encoder instance and extracts relevant parameters
+        needed for the decoding process, such as the finite field and error correction
+        capability.
+
+        Args:
+            encoder: The encoder instance for the code being decoded
+            *args: Variable positional arguments passed to the base class
+            **kwargs: Variable keyword arguments passed to the base class
+
+        Raises:
+            TypeError: If the encoder is not a BCHCodeEncoder or ReedSolomonCodeEncoder
+        """
         super().__init__(encoder, *args, **kwargs)
 
         if not isinstance(encoder, (BCHCodeEncoder, ReedSolomonCodeEncoder)):
@@ -53,15 +106,27 @@ class BerlekampMasseyDecoder(BlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeE
         self.t = encoder.error_correction_capability
 
     def berlekamp_massey_algorithm(self, syndrome: List[Any]) -> List[Any]:
-        """Implement the Berlekamp-Massey algorithm.
+        """Implement the Berlekamp-Massey algorithm to find the error locator polynomial.
 
-        This algorithm finds the error locator polynomial from the syndrome values.
+        This algorithm iteratively determines the minimal LFSR (Linear Feedback Shift Register)
+        that can generate the syndrome sequence. The connection polynomial of this LFSR
+        corresponds to the error locator polynomial, whose roots identify error positions.
+
+        The algorithm maintains two key polynomials:
+        - sigma: The current error locator polynomial
+        - discrepancy: Measure of how well the current polynomial fits the syndrome
+
+        At each iteration, it updates these polynomials based on the discrepancy value.
 
         Args:
-            syndrome: List of syndrome values in the Galois field
+            syndrome: List of syndrome values in the Galois field, representing the syndrome
+                     polynomial coefficients S(x)
 
         Returns:
-            Coefficients of the error locator polynomial
+            Coefficients of the error locator polynomial sigma(x)
+
+            :cite:`berlekamp1968algebraic`
+            :cite:`massey1969shift`
         """
         # Initialize variables
         field = self.field
@@ -104,11 +169,20 @@ class BerlekampMasseyDecoder(BlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeE
     def _find_error_locations(self, error_locator_poly: List[Any]) -> List[int]:
         """Find the error locations by finding the roots of the error locator polynomial.
 
+        Once the error locator polynomial sigma(x) is determined, its roots correspond to
+        the inverse locations of errors in the codeword. This method finds these roots by
+        evaluating the polynomial at each field element and checking if the result is zero.
+
         Args:
-            error_locator_poly: Coefficients of the error locator polynomial
+            error_locator_poly: Coefficients of the error locator polynomial sigma(x),
+                               from lowest to highest degree
 
         Returns:
-            List of error positions in the codeword
+            List of error positions (indices) in the codeword
+
+        Note:
+            In a binary field, if sigma(alpha^i) = 0, then position n-1-i has an error,
+            where n is the code length and alpha is a primitive element of the field.
         """
         # Use BinaryPolynomial to represent the error locator polynomial
         poly = BinaryPolynomial(0)
@@ -128,22 +202,33 @@ class BerlekampMasseyDecoder(BlockDecoder[Union[BCHCodeEncoder, ReedSolomonCodeE
         return roots
 
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """Decode received codewords using the Berlekamp algorithm.
+        """Decode received codewords using the Berlekamp-Massey algorithm.
+
+        This method implements the complete decoding process for BCH and Reed-Solomon codes:
+        1. Calculate the syndrome of the received word
+        2. If syndrome is zero, no errors occurred, so return the message directly
+        3. Otherwise, use the Berlekamp-Massey algorithm to find the error locator polynomial
+        4. Find the roots of this polynomial to determine error locations
+        5. Correct the errors and extract the message
 
         Args:
-            received: Received codeword tensor. The last dimension should be
-                    a multiple of the code length (n).
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-                return_errors: If True, also return the estimated error patterns.
+            received: Received codeword tensor with shape (..., n) or (..., m*n)
+                     where n is the code length and m is some multiple
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+                return_errors: If True, also return the estimated error patterns
 
         Returns:
             Either:
-            - Decoded tensor containing estimated messages
+            - Decoded tensor containing estimated messages with shape (..., k) or (..., m*k)
             - A tuple of (decoded tensor, error pattern tensor) if return_errors=True
 
         Raises:
-            ValueError: If the last dimension of received is not a multiple of n.
+            ValueError: If the last dimension of received is not a multiple of the code length
+
+        Note:
+            The decoder can correct up to t errors per codeword, where t is the error correction
+            capability of the code. If more errors occur, the decoding may fail.
         """
         return_errors = kwargs.get("return_errors", False)
 

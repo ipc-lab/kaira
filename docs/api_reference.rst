@@ -281,8 +281,8 @@ Forward Error Correction (FEC) decoders for Kaira.
    :template: class.rst
    :nosignatures:
 
+   BaseBlockDecoder
    BerlekampMasseyDecoder
-   BlockDecoder
    BruteForceMLDecoder
    ReedMullerDecoder
    SyndromeLookupDecoder
@@ -302,7 +302,7 @@ Forward Error Correction encoders for Kaira.
    :nosignatures:
 
    BCHCodeEncoder
-   BlockCodeEncoder
+   BaseBlockCodeEncoder
    CyclicCodeEncoder
    GolayCodeEncoder
    HammingCodeEncoder
@@ -472,6 +472,7 @@ Data utilities for Kaira, including data generation and correlation models.
 
    BinaryTensorDataset
    UniformTensorDataset
+   WynerZivCorrelationDataset
 
 
 .. currentmodule:: kaira.data

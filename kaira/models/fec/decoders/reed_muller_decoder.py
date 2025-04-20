@@ -3,6 +3,16 @@
 This module implements the majority-logic decoding algorithm for Reed-Muller codes. The algorithm
 efficiently decodes Reed-Muller codes by exploiting their recursive structure and the properties of
 their codewords.
+
+Reed-Muller codes form an important family of linear error-correcting codes with a rich mathematical
+structure based on finite geometries. The majority-logic decoding algorithm leverages this structure
+to provide an efficient decoding method that can correct multiple errors while avoiding the complexity
+of brute-force maximum likelihood decoding.
+
+:cite:`reed1954class`
+:cite:`muller1954application`
+:cite:`macwilliams1977theory`
+:cite:`lin2004error`
 """
 
 from typing import Any, List, Literal, Tuple, Union
@@ -12,33 +22,82 @@ import torch
 from kaira.models.fec.encoders.reed_muller_code import ReedMullerCodeEncoder
 
 from ..utils import apply_blockwise
-from .base import BlockDecoder
+from .base import BaseBlockDecoder
 
 
-class ReedMullerDecoder(BlockDecoder[ReedMullerCodeEncoder]):
+class ReedMullerDecoder(BaseBlockDecoder[ReedMullerCodeEncoder]):
     """Reed-Muller decoder using majority-logic decoding.
 
     This decoder implements the majority-logic decoding algorithm developed by Reed
-    for Reed-Muller codes. It works by recursively decoding the received word using
-    a series of majority-logic decisions based on special partitions of the code.
+    for Reed-Muller codes :cite:`reed1954class`. It works by recursively decoding the
+    received word using a series of majority-logic decisions based on special partitions
+    of the code that correspond to geometrical subspaces in the finite geometry interpretation.
+
+    For an RM(r,m) code, the algorithm can correct up to 2^(m-r-1) - 1 errors, which is
+    optimal for first-order Reed-Muller codes (r=1) :cite:`macwilliams1977theory`.
 
     The decoder supports both hard-decision and soft-decision decoding, with the
-    soft-decision variant offering better performance in the presence of noise.
+    soft-decision variant offering better performance in the presence of noise by
+    taking into account reliability information from the channel.
 
     Attributes:
-        encoder (ReedMullerCodeEncoder): The Reed-Muller encoder instance
-        input_type (str): The type of input the decoder accepts ('hard' or 'soft')
-        _reed_partitions (List[List[int]]): Precomputed Reed partitions for efficient decoding
+        encoder (ReedMullerCodeEncoder): The Reed-Muller encoder instance providing
+                                        code parameters and encoding functionality
+        input_type (str): The type of input the decoder accepts:
+                         'hard' for binary inputs (0s and 1s)
+                         'soft' for real-valued inputs with reliability information
+        _reed_partitions (List[List[int]]): Precomputed Reed partitions for efficient decoding,
+                                           where each partition corresponds to a specific
+                                           information bit
 
     Args:
         encoder (ReedMullerCodeEncoder): The encoder for the Reed-Muller code being decoded
-        input_type (str): The type of input the decoder accepts ('hard' or 'soft')
+        input_type (Literal["hard", "soft"]): The type of input the decoder accepts.
+                                             Default is "hard".
         *args: Variable positional arguments passed to the base class
         **kwargs: Variable keyword arguments passed to the base class
+
+    Examples:
+        >>> from kaira.models.fec.encoders import ReedMullerCodeEncoder
+        >>> from kaira.models.fec.decoders import ReedMullerDecoder
+        >>> import torch
+        >>>
+        >>> # Create a RM(1,3) code encoder and decoder
+        >>> encoder = ReedMullerCodeEncoder(r=1, m=3)
+        >>> decoder = ReedMullerDecoder(encoder)
+        >>>
+        >>> # Encode a message
+        >>> message = torch.tensor([1., 0., 1., 0.])
+        >>> codeword = encoder(message)
+        >>>
+        >>> # Introduce an error
+        >>> received = codeword.clone()
+        >>> received[2] = 1 - received[2]
+        >>>
+        >>> # Decode using majority-logic decoding
+        >>> decoded = decoder(received)
+        >>> print(torch.all(decoded == message))
+        True
     """
 
     def __init__(self, encoder: ReedMullerCodeEncoder, input_type: Literal["hard", "soft"] = "hard", *args: Any, **kwargs: Any):
-        """Initialize the Reed decoder."""
+        """Initialize the Reed-Muller decoder.
+
+        Sets up the decoder with a Reed-Muller encoder instance and computes the
+        Reed partitions needed for majority-logic decoding.
+
+        Args:
+            encoder: The Reed-Muller encoder instance for the code being decoded
+            input_type: The type of decoder input, either "hard" for binary inputs
+                      or "soft" for real-valued inputs with reliability information
+            *args: Variable positional arguments passed to the base class
+            **kwargs: Variable keyword arguments passed to the base class
+
+        Note:
+            The Reed partitions are precomputed during initialization to make the
+            decoding process more efficient. These partitions depend on the specific
+            parameters of the Reed-Muller code (r,m).
+        """
         super().__init__(encoder, *args, **kwargs)
 
         self.input_type = input_type
@@ -47,13 +106,27 @@ class ReedMullerDecoder(BlockDecoder[ReedMullerCodeEncoder]):
         self._reed_partitions = self._generate_reed_partitions()
 
     def _generate_reed_partitions(self) -> List[List[torch.Tensor]]:
-        """Generate Reed partitions for efficient decoding.
+        """Generate Reed partitions for efficient majority-logic decoding.
 
-        Reed partitions are special subsets of positions in the codeword that
-        are used for majority-logic decoding of Reed-Muller codes.
+        Reed partitions are special subsets of positions in the codeword that form
+        orthogonal check sums for decoding specific information bits in a Reed-Muller
+        code. These partitions correspond to geometrical subspaces in the finite
+        geometry interpretation of Reed-Muller codes.
+
+        In the context of an RM(r,m) code:
+        - For r=0 (repetition code), there is a single partition with all positions
+        - For r=1 (first-order RM code), partitions correspond to hyperplanes
+        - For higher-order RM codes, partitions are constructed recursively
 
         Returns:
-            List of Reed partitions, where each partition is a list of position indices
+            List of Reed partitions, where each partition is a list of position groups
+            that form check sums for a specific information bit
+
+        Note:
+            This implementation is simplified and would need to be expanded for a full
+            production implementation to handle all possible Reed-Muller parameters
+            correctly. The actual construction of these partitions is based on the
+            recursive structure of Reed-Muller codes and their relation to finite geometries.
         """
         # This is a simplified implementation of Reed partitions generation
         # In a full implementation, this would depend on the specific parameters
@@ -122,23 +195,37 @@ class ReedMullerDecoder(BlockDecoder[ReedMullerCodeEncoder]):
         return partitions
 
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """Decode received values using the Reed algorithm.
+        """Decode received values using the Reed majority-logic algorithm.
+
+        This method implements the majority-logic decoding process for Reed-Muller codes.
+        For each information bit, it computes a set of check sums based on the Reed
+        partitions and then makes a decision based on the majority value of these sums.
+
+        For soft-decision decoding, it also takes into account the reliability information
+        of each received bit, which can significantly improve performance in AWGN channels.
 
         Args:
-            received: Received tensor. The last dimension should be a multiple of the code length (n).
-                     For hard inputs, values should be 0 or 1. For soft inputs, positive values
-                     represent 0 bits and negative values represent 1 bits.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-                return_errors: If True, also return the estimated error patterns.
+            received: Received tensor with shape (..., n) or (..., m*n) where n is the code length.
+                     For hard inputs, values should be 0 or 1.
+                     For soft inputs, positive values represent likelihood of 0 bits and
+                     negative values represent likelihood of 1 bits (e.g., LLR values).
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+                return_errors: If True, also return the estimated error patterns
 
         Returns:
             Either:
-            - Decoded tensor containing estimated messages
+            - Decoded tensor containing estimated messages with shape (..., k) or (..., m*k)
             - A tuple of (decoded tensor, error pattern tensor) if return_errors=True
 
         Raises:
-            ValueError: If the last dimension of received is not a multiple of n.
+            ValueError: If the last dimension of received is not a multiple of the code length
+
+        Note:
+            For first-order Reed-Muller codes (r=1), this decoder can correct up to
+            2^(m-2) errors, which matches the code's error-correcting capability.
+            For higher-order RM codes, the performance may not be optimal but the
+            algorithm provides an efficient decoding approach.
         """
         return_errors = kwargs.get("return_errors", False)
 

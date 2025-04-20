@@ -1,8 +1,19 @@
 """Finite field algebra utilities for forward error correction.
 
 This module provides mathematical utilities for working with binary polynomials and finite fields,
-which are essential for many error correction codes such as BCH codes, Reed-Solomon codes, and
-other algebraic codes.
+which are essential for algebraic error correction codes such as BCH, Reed-Solomon, and others.
+
+The module implements:
+- Binary polynomials over GF(2) with efficient arithmetic operations
+- Finite fields GF(2^m) with complete field arithmetic
+- Field element operations including inverses, minimal polynomials, and traces
+
+These implementations form the mathematical foundation for more complex error correction codes
+and are optimized for both correctness and computational efficiency. The module supports both
+symbolic manipulations and numeric computations compatible with PyTorch tensors.
+
+    :cite:`lin2004error`
+    :cite:`blahut2003algebraic`
 """
 
 from typing import Any, Dict, List

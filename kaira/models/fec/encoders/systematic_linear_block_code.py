@@ -117,14 +117,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
     described in the error control coding literature :cite:`lin2004error,moon2005error,sklar2001digital`.
 
     Attributes:
-        parity_submatrix (torch.Tensor): The parity submatrix P of the code
         information_set (torch.Tensor): Indices of the information positions
-        parity_set (torch.Tensor): Indices of the parity positions
-        generator_matrix (torch.Tensor): The generator matrix G of the code
-        check_matrix (torch.Tensor): The parity check matrix H of the code
-        length (int): Code length (n)
-        dimension (int): Code dimension (k)
-        redundancy (int): Code redundancy (r = n - k)
 
     Args:
         parity_submatrix (torch.Tensor): The parity submatrix for the code.
@@ -178,20 +171,12 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
 
     @property
     def parity_submatrix(self) -> torch.Tensor:
-        """Get the parity submatrix P of the code.
-
-        Returns:
-            The parity submatrix P
-        """
+        """Parity submatrix P of the code."""
         return self._parity_submatrix
 
     @property
     def parity_set(self) -> torch.Tensor:
-        """Get the parity set M of the code.
-
-        Returns:
-            Indices of the parity positions
-        """
+        """Parity set M of the code."""
         return self._parity_set
 
     def project_word(self, x: torch.Tensor) -> torch.Tensor:

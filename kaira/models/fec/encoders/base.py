@@ -5,8 +5,13 @@ error correction technique where a message is encoded into a codeword by adding 
 Block codes provide systematic approaches to detect and correct errors that might occur
 during transmission over noisy channels.
 
-The implementation provides base classes for various types of block codes, following
-standard conventions in coding theory :cite:`lin2004error,moon2005error,richardson2008modern`.
+The implementation follows standard conventions in coding theory and provides base classes
+for various types of block codes with well-defined interfaces for encoding, decoding,
+and error detection processes.
+
+    :cite:`lin2004error`
+    :cite:`moon2005error`
+    :cite:`richardson2008modern`
 """
 
 from abc import ABC, abstractmethod
@@ -17,7 +22,7 @@ import torch
 from kaira.models.base import BaseModel
 
 
-class BlockCodeEncoder(BaseModel, ABC):
+class BaseBlockCodeEncoder(BaseModel, ABC):
     """Base class for block code encoders.
 
     This abstract class provides a common interface and functionality for all types of
@@ -25,21 +30,30 @@ class BlockCodeEncoder(BaseModel, ABC):
     linear block codes, cyclic codes, BCH codes, etc.
 
     Block codes transform k information bits into n coded bits (n > k), providing
-    error detection and correction capabilities :cite:`lin2004error,moon2005error`.
+    error detection and correction capabilities. The redundancy added during encoding
+    enables the receiver to detect and possibly correct errors introduced by the channel.
 
-    Attributes:
-        code_length (int): The length of the codeword (n)
-        code_dimension (int): The dimension of the code (k)
 
     Args:
         code_length (int): The length of the codeword (n)
         code_dimension (int): The dimension of the code (k)
-        *args: Variable positional arguments passed to the base class.
-        **kwargs: Variable keyword arguments passed to the base class.
+        *args: Variable positional arguments passed to the base class
+        **kwargs: Variable keyword arguments passed to the base class
+
+    Raises:
+        ValueError: If code parameters are invalid (e.g., non-positive or dimension > length)
+
+    Note:
+        All concrete implementations must override the forward, inverse_encode, and
+        calculate_syndrome methods to provide specific encoding and decoding behavior.
     """
 
     def __init__(self, code_length: int, code_dimension: int, *args: Any, **kwargs: Any):
-        """Initialize the block code encoder."""
+        """Initialize the block code encoder with specified parameters.
+
+        Sets up the basic code parameters and validates that they meet the requirements for a valid
+        block code (positive length, positive dimension, dimension <= length).
+        """
         super().__init__(*args, **kwargs)
 
         if code_length <= 0:
@@ -55,10 +69,10 @@ class BlockCodeEncoder(BaseModel, ABC):
 
     @property
     def code_length(self) -> int:
-        """Get the code length (n).
+        """Get the codeword length (n).
 
         Returns:
-            The length of the code (number of bits in a codeword)
+            The number of bits in each codeword after encoding
         """
         return self._length
 
@@ -67,7 +81,7 @@ class BlockCodeEncoder(BaseModel, ABC):
         """Get the code dimension (k).
 
         Returns:
-            The dimension of the code (number of information bits)
+            The number of information bits encoded in each codeword
         """
         return self._dimension
 
@@ -76,25 +90,28 @@ class BlockCodeEncoder(BaseModel, ABC):
         """Get the code redundancy (r = n - k).
 
         Returns:
-            The redundancy of the code (number of parity bits)
+            The number of redundant bits added during encoding
         """
         return self._redundancy
 
     @property
     def parity_bits(self) -> int:
-        """Get the number of parity bits (r = n - k).
+        """Get the number of parity bits (synonym for redundancy).
 
         Returns:
-            The number of parity bits in the code
+            The number of parity/check bits in each codeword
         """
         return self._redundancy
 
     @property
     def code_rate(self) -> float:
-        """Get the code rate (k/n).
+        """Get the rate of the code (k/n).
+
+        The code rate is a measure of efficiency, representing the proportion
+        of the total bits that carry information (as opposed to redundancy).
 
         Returns:
-            The rate of the code (ratio of information bits to total bits)
+            The ratio of information bits to total bits (between 0 and 1)
         """
         return self._dimension / self._length
 
@@ -102,11 +119,14 @@ class BlockCodeEncoder(BaseModel, ABC):
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply the encoding operation to the input tensor.
 
+        Transforms message bits into codewords by adding redundancy according to
+        the specific encoding scheme implemented by the subclass.
+
         Args:
             x: Input tensor containing message bits. The last dimension should be
                a multiple of the code dimension (k).
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            *args: Additional positional arguments for specific encoder implementations.
+            **kwargs: Additional keyword arguments for specific encoder implementations.
 
         Returns:
             Encoded tensor with codewords. Has the same shape as the input except
@@ -114,6 +134,11 @@ class BlockCodeEncoder(BaseModel, ABC):
 
         Raises:
             ValueError: If the last dimension of x is not a multiple of k.
+
+        Note:
+            The specific encoding method depends on the subclass implementation.
+            For example, linear codes use matrix multiplication, while other codes
+            may use different algorithms.
         """
         raise NotImplementedError("Subclasses must implement forward method")
 
@@ -121,21 +146,29 @@ class BlockCodeEncoder(BaseModel, ABC):
     def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Decode a received codeword back to a message.
 
-        This method is the inverse of the encoding process (though not all errors may be correctable).
+        This method is the inverse of the encoding process, attempting to recover
+        the original message from a potentially corrupted codeword. The ability to
+        correct errors depends on the specific code properties and the error pattern.
 
         Args:
             x: Input tensor containing received codewords. The last dimension should be
                a multiple of the code length (n).
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            *args: Additional positional arguments for specific decoder implementations.
+            **kwargs: Additional keyword arguments for specific decoder implementations.
 
         Returns:
             Either:
-            - Decoded tensor containing messages
+            - Decoded tensor containing messages, or
             - A tuple of (decoded tensor, syndrome or error information)
+
+            The return type depends on the specific implementation and parameters.
 
         Raises:
             ValueError: If the last dimension of x is not a multiple of n.
+
+        Note:
+            This method may not recover the original message perfectly if the number
+            of errors exceeds the error-correcting capability of the code.
         """
         raise NotImplementedError("Subclasses must implement inverse_encode method")
 
@@ -144,13 +177,22 @@ class BlockCodeEncoder(BaseModel, ABC):
         """Calculate the syndrome of a received codeword.
 
         The syndrome provides information about errors that may have occurred during
-        transmission. A zero syndrome indicates that the received word is a valid codeword,
-        though not necessarily the transmitted one.
+        transmission. A zero syndrome indicates that the received word is a valid codeword
+        (though not necessarily the transmitted one if the number of errors is large).
+
+        The syndrome pattern helps identify the error pattern and is used in the
+        decoding process to correct errors.
 
         Args:
-            x: Received codeword tensor
+            x: Received codeword tensor with shape (..., n) or (..., m*n)
+               where n is the code length and m is some multiple.
 
         Returns:
-            Syndrome tensor
+            Syndrome tensor that characterizes the error pattern (if any).
+            A zero syndrome indicates a valid codeword.
+
+        Note:
+            For linear codes, the syndrome is computed as H·r where H is the parity-check
+            matrix and r is the received codeword vector.
         """
         raise NotImplementedError("Subclasses must implement calculate_syndrome method")

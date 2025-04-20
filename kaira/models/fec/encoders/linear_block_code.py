@@ -17,7 +17,7 @@ import torch
 from kaira.models.registry import ModelRegistry
 
 from ..utils import apply_blockwise
-from .block_code import BlockCodeEncoder
+from .base import BaseBlockCodeEncoder
 
 
 def compute_null_space_matrix(matrix: torch.Tensor) -> torch.Tensor:
@@ -122,7 +122,7 @@ def compute_right_pseudo_inverse(matrix: torch.Tensor) -> torch.Tensor:
 
 
 @ModelRegistry.register_model("linear_block_code_encoder")
-class LinearBlockCodeEncoder(BlockCodeEncoder):
+class LinearBlockCodeEncoder(BaseBlockCodeEncoder):
     """Encoder for linear block coding.
 
     This encoder transforms binary input messages into codewords according to

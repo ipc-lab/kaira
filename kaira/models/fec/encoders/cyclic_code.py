@@ -46,14 +46,6 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
 
     For more details, see :cite:`lin2004error,moon2005error`.
 
-    Attributes:
-        code_length (int): The length n of the code
-        code_dimension (int): The dimension k of the code
-        redundancy (int): The redundancy m of the code
-        generator_poly (BinaryPolynomial): The generator polynomial g(X) of the code
-        check_poly (BinaryPolynomial): The check polynomial h(X) of the code
-        modulus_poly (BinaryPolynomial): The modulus X^n + 1 of the code
-
     Args:
         code_length (int): The length n of the code
         generator_polynomial (int, optional): The generator polynomial g(X) of the code
@@ -253,29 +245,17 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
 
     @property
     def generator_poly(self) -> BinaryPolynomial:
-        """Get the generator polynomial g(X) of the code.
-
-        Returns:
-            The generator polynomial
-        """
+        """Generator polynomial g(X) of the code."""
         return self._generator_poly
 
     @property
     def check_poly(self) -> BinaryPolynomial:
-        """Get the check polynomial h(X) of the code.
-
-        Returns:
-            The check polynomial
-        """
+        """Check polynomial h(X) of the code."""
         return self._check_poly
 
     @property
     def modulus_poly(self) -> BinaryPolynomial:
-        """Get the modulus polynomial X^n + 1 of the code.
-
-        Returns:
-            The modulus polynomial
-        """
+        """Modulus polynomial X^n + 1 of the code."""
         return self._modulus_poly
 
     def encode_message_polynomial(self, message_poly: BinaryPolynomial) -> BinaryPolynomial:
@@ -329,7 +309,7 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         Returns:
             Encoded tensor of shape (..., codeword_length) or (..., b*codeword_length)
         """
-        return super().forward(x, *args, **kwargs)
+        return super().forward(x, *args, kwargs)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word using polynomial operations.

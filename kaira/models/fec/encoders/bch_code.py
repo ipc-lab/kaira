@@ -3,7 +3,7 @@
 This module implements Bose-Chaudhuri-Hocquenghem (BCH) codes, a class of cyclic error-correcting
 codes that are constructed using polynomials over finite fields. BCH codes are powerful and
 versatile, providing the ability to control the trade-off between redundancy and error-correcting
-capability :cite:`lin2004error,moon2005error,richardson2008modern`.
+capability.
 
 For given parameters μ ≥ 2 and δ satisfying 2 ≤ δ ≤ 2^μ - 1, a binary BCH code has
 the following parameters, where δ = 2τ + 1:
@@ -13,7 +13,13 @@ the following parameters, where δ = 2τ + 1:
 - Redundancy: m ≤ μτ
 - Minimum distance: d ≥ δ
 
-This implementation handles narrow-sense, primitive BCH codes.
+This implementation handles narrow-sense, primitive BCH codes, which are optimal
+for many applications requiring reliable transmission over noisy channels.
+
+References:
+    :cite:`lin2004error`
+    :cite:`moon2005error`
+    :cite:`richardson2008modern`
 """
 
 from functools import lru_cache
@@ -208,15 +214,6 @@ class BCHCodeEncoder(CyclicCodeEncoder):
     This implementation handles narrow-sense, primitive BCH codes
     :cite:`lin2004error,moon2005error,sklar2001digital`.
 
-    Attributes:
-        mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
-        delta (int): The design distance δ of the code.
-        length (int): Code length (n = 2^μ - 1)
-        dimension (int): Code dimension (k)
-        redundancy (int): Code redundancy (m)
-        generator_matrix (torch.Tensor): The generator matrix G of the code
-        check_matrix (torch.Tensor): The parity check matrix H of the code
-
     Args:
         mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
         delta (int): The design distance δ of the code. Must satisfy 2 ≤ δ ≤ 2^μ - 1
@@ -323,50 +320,18 @@ class BCHCodeEncoder(CyclicCodeEncoder):
 
     @property
     def mu(self) -> int:
-        """Get the parameter μ of the code.
-
-        Returns:
-            The parameter μ
-        """
+        """Parameter μ of the code."""
         return self._mu
 
     @property
     def delta(self) -> int:
-        """Get the design distance δ of the code.
-
-        Returns:
-            The design distance δ
-        """
+        """Design distance δ of the code."""
         return self._delta
 
     @property
     def error_correction_capability(self) -> int:
-        """Get the error correction capability of the code.
-
-        For a BCH code with design distance δ, the code can correct up to t = ⌊(δ-1)/2⌋ errors.
-
-        Returns:
-            The number of errors that can be corrected
-        """
+        """Error correction capability of the code (t = ⌊(δ-1)/2⌋)."""
         return self._error_correction_capability
-
-    @property
-    def generator_polynomial(self) -> BinaryPolynomial:
-        """Get the generator polynomial of the code.
-
-        Returns:
-            The generator polynomial
-        """
-        return self._generator_polynomial
-
-    @property
-    def dtype(self) -> torch.dtype:
-        """Get the data type used for internal tensors.
-
-        Returns:
-            The data type
-        """
-        return self._dtype
 
     @lru_cache(maxsize=None)
     def minimum_distance(self) -> int:

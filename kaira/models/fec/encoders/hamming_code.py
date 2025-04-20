@@ -131,16 +131,6 @@ class HammingCodeEncoder(SystematicLinearBlockCodeEncoder):
     The implementation follows standard techniques in error control coding literature
     :cite:`lin2004error,moon2005error,sklar2001digital`.
 
-    Attributes:
-        mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
-        extended (bool): Whether this is an extended Hamming code.
-        length (int): Code length (n)
-        dimension (int): Code dimension (k)
-        redundancy (int): Code redundancy (r = n - k)
-        parity_submatrix (torch.Tensor): The parity submatrix P of the code
-        generator_matrix (torch.Tensor): The generator matrix G of the code
-        check_matrix (torch.Tensor): The parity check matrix H of the code
-
     Args:
         mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
         extended (bool, optional): Whether to use the extended version of the Hamming code.
@@ -220,30 +210,13 @@ class HammingCodeEncoder(SystematicLinearBlockCodeEncoder):
 
     @property
     def mu(self) -> int:
-        """Get the parameter μ of the code.
-
-        Returns:
-            The parameter μ
-        """
+        """Get the parameter μ of the code."""
         return self._mu
 
     @property
     def extended(self) -> bool:
-        """Get whether this is an extended Hamming code.
-
-        Returns:
-            True if this is an extended Hamming code, False otherwise
-        """
+        """Get whether this is an extended Hamming code."""
         return self._extended
-
-    @property
-    def dtype(self) -> torch.dtype:
-        """Get the data type used for internal tensors.
-
-        Returns:
-            The data type
-        """
-        return self._dtype
 
     @lru_cache(maxsize=None)
     def minimum_distance(self) -> int:

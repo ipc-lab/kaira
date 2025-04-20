@@ -114,16 +114,6 @@ class GolayCodeEncoder(SystematicLinearBlockCodeEncoder):
     The extended Golay code adds an additional parity check column to ensure the overall
     parity of each codeword is even.
 
-    Attributes:
-        extended (bool): Whether this is an extended Golay code.
-        length (int): Code length (n = 23 for standard, n = 24 for extended).
-        dimension (int): Code dimension (k = 12).
-        redundancy (int): Code redundancy (r = 11 for standard, r = 12 for extended).
-        parity_submatrix (torch.Tensor): The parity submatrix P of the code.
-        generator_matrix (torch.Tensor): The generator matrix G of the code.
-        check_matrix (torch.Tensor): The parity check matrix H of the code.
-        error_correction_capability (int): Number of errors the code can correct (3).
-
     Args:
         extended (bool, optional): Whether to use the extended version of the Golay code.
             Default is False.
@@ -199,29 +189,12 @@ class GolayCodeEncoder(SystematicLinearBlockCodeEncoder):
 
     @property
     def extended(self) -> bool:
-        """Get whether this is an extended Golay code.
-
-        Returns:
-            bool: True if this is an extended Golay code, False otherwise.
-        """
+        """Whether this is an extended Golay code."""
         return self._extended
 
     @property
-    def dtype(self) -> torch.dtype:
-        """Get the data type used for internal tensors.
-
-        Returns:
-            torch.dtype: The data type of internal tensors.
-        """
-        return self._dtype
-
-    @property
     def error_correction_capability(self) -> int:
-        """Get the error correction capability of the code.
-
-        Returns:
-            int: The number of errors that can be corrected (3).
-        """
+        """Number of errors the code can correct (3)."""
         return self._error_correction_capability
 
     @lru_cache(maxsize=None)

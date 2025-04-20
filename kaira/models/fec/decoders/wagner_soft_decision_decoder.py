@@ -3,40 +3,97 @@
 This module implements the Wagner algorithm for soft-decision decoding of single parity-check
 codes. The algorithm efficiently decodes single parity-check codes by making decisions based on the
 reliability of received soft values, providing optimal performance in AWGN channels.
+
+The Wagner algorithm is a classic technique for soft-decision decoding of single parity-check codes.
+It leverages reliability information from the channel to make optimal decisions, providing
+significant performance gains over hard-decision decoding approaches. This algorithm is especially
+valuable in applications involving concatenated codes where single parity-check codes serve as
+component codes.
+
+:cite:`wagner1986simple`
+:cite:`hagenauer1989iterative`
+:cite:`moon2005error`
 """
 
 from typing import Any, Tuple, Union
 
 import torch
 
-from kaira.models.fec.encoders.block_code import BlockCodeEncoder
+from kaira.models.fec.encoders.base import BaseBlockCodeEncoder
 
 from ..utils import apply_blockwise
-from .base import BlockDecoder
+from .base import BaseBlockDecoder
 
 
-class WagnerSoftDecisionDecoder(BlockDecoder[BlockCodeEncoder]):
+class WagnerSoftDecisionDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
     """Wagner soft-decision decoder for single parity-check codes.
 
-    This decoder implements the Wagner algorithm, which is designed specifically
-    for single parity-check codes with soft-decision inputs. It works by:
-    1. Making hard decisions based on the sign of the received values
-    2. Checking if the parity constraint is satisfied
-    3. If not, flipping the bit with the smallest absolute value (i.e., the least reliable bit)
+    This decoder implements the Wagner algorithm :cite:`wagner1986simple`, which is designed
+    specifically for single parity-check codes with soft-decision inputs. It leverages
+    reliability information to make optimal decoding decisions under the assumption of an
+    AWGN channel.
 
-    This approach is optimal for single parity-check codes under AWGN channels.
+    The Wagner algorithm works by:
+    1. Making initial hard decisions based on the sign of the received soft values
+    2. Checking if the parity constraint is satisfied by these decisions
+    3. If not, flipping the bit with the smallest absolute value (least reliable bit)
+
+    This simple but elegant approach achieves optimal maximum likelihood decoding for
+    single parity-check codes with soft inputs :cite:`moon2005error,hagenauer1989iterative`.
 
     Attributes:
-        encoder (BlockCodeEncoder): The encoder instance
+        encoder (BaseBlockCodeEncoder): The encoder instance providing code parameters
+                                       and encoding functionality
 
     Args:
-        encoder (BlockCodeEncoder): The encoder for the code being decoded
+        encoder (BaseBlockCodeEncoder): The encoder for the code being decoded. Must represent
+                                       a single parity-check code where code_length = code_dimension + 1
         *args: Variable positional arguments passed to the base class
         **kwargs: Variable keyword arguments passed to the base class
+
+    Raises:
+        ValueError: If the encoder does not represent a single parity-check code
+
+    Examples:
+        >>> from kaira.models.fec.encoders import SingleParityCheckCodeEncoder
+        >>> from kaira.models.fec.decoders import WagnerSoftDecisionDecoder
+        >>> import torch
+        >>>
+        >>> # Create a (4,3) single parity-check code encoder and decoder
+        >>> encoder = SingleParityCheckCodeEncoder(code_dimension=3)
+        >>> decoder = WagnerSoftDecisionDecoder(encoder)
+        >>>
+        >>> # Encode a message
+        >>> message = torch.tensor([1., 0., 1.])
+        >>> codeword = encoder(message)
+        >>> print(codeword)  # Output: tensor([1., 0., 1., 0.])
+        >>>
+        >>> # Simulate soft decision values from AWGN channel
+        >>> # Positive values represent 0, negative values represent 1
+        >>> # The magnitudes represent reliability
+        >>> soft_received = torch.tensor([-2.1, 1.5, -1.8, 0.2])
+        >>>
+        >>> # Decode using the Wagner algorithm
+        >>> decoded = decoder(soft_received)
+        >>> print(decoded)  # Output: tensor([1, 0, 1])
     """
 
-    def __init__(self, encoder: BlockCodeEncoder, *args: Any, **kwargs: Any):
-        """Initialize the Wagner soft-decision decoder."""
+    def __init__(self, encoder: BaseBlockCodeEncoder, *args: Any, **kwargs: Any):
+        """Initialize the Wagner soft-decision decoder.
+
+        Sets up the decoder with an encoder instance and verifies that it
+        represents a single parity-check code, which is required for the
+        Wagner algorithm.
+
+        Args:
+            encoder: The encoder instance for the code being decoded
+            *args: Variable positional arguments passed to the base class
+            **kwargs: Variable keyword arguments passed to the base class
+
+        Raises:
+            ValueError: If the encoder does not represent a single parity-check code,
+                      i.e., if code_length ≠ code_dimension + 1
+        """
         super().__init__(encoder, *args, **kwargs)
 
         # Verify that this is a single parity-check code
@@ -46,21 +103,40 @@ class WagnerSoftDecisionDecoder(BlockDecoder[BlockCodeEncoder]):
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Decode received soft values using the Wagner algorithm.
 
+        This method implements the complete Wagner soft-decision decoding process:
+        1. Make initial hard decisions based on the sign of received values
+        2. Check if the parity constraint is satisfied
+        3. If not, find the least reliable bit (smallest absolute value) and flip it
+        4. Extract the message bits from the corrected codeword
+
+        The algorithm assumes soft-input values where:
+        - Positive values represent a likelihood of '0' bits
+        - Negative values represent a likelihood of '1' bits
+        - The magnitude of the value represents the reliability of the decision
+
         Args:
-            received: Received soft-decision tensor. The last dimension should be
-                    a multiple of the code length (n). For soft inputs, positive values
-                    represent 0 bits and negative values represent 1 bits.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-                return_errors: If True, also return the estimated error patterns.
+            received: Received soft-decision tensor with shape (..., n) or (..., m*n)
+                     where n is the code length and m is some multiple.
+                     Values represent soft bit likelihoods (e.g., LLRs) where:
+                     - Positive values suggest bit=0
+                     - Negative values suggest bit=1
+                     - Magnitude indicates reliability
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+                     return_errors: If True, also return the estimated error patterns compared to the initial hard decisions
 
         Returns:
             Either:
-            - Decoded tensor containing estimated messages
+            - Decoded tensor containing estimated messages with shape (..., k) or (..., m*k)
             - A tuple of (decoded tensor, error pattern tensor) if return_errors=True
 
         Raises:
-            ValueError: If the last dimension of received is not a multiple of n.
+            ValueError: If the last dimension of received is not a multiple of the code length
+
+        Note:
+            This decoder provides optimal maximum likelihood performance for single parity-check
+            codes under AWGN channels. It is computationally efficient, requiring only O(n)
+            operations for an (n,n-1) single parity-check code.
         """
         return_errors = kwargs.get("return_errors", False)
 
@@ -73,6 +149,10 @@ class WagnerSoftDecisionDecoder(BlockDecoder[BlockCodeEncoder]):
         def decode_block(r_block):
             batch_size = r_block.shape[0]
             decoded = torch.zeros(batch_size, self.code_dimension, dtype=torch.int, device=received.device)
+
+            # If return_errors is True, we need to keep track of the original hard decisions
+            original_hard = (r_block < 0).to(torch.int) if return_errors else None
+            final_decisions = torch.zeros_like(r_block) if return_errors else None
 
             for i in range(batch_size):
                 # Get the current received word (soft values)
@@ -89,14 +169,16 @@ class WagnerSoftDecisionDecoder(BlockDecoder[BlockCodeEncoder]):
                     # Flip the least reliable bit
                     hard_decisions[least_reliable_idx] = 1 - hard_decisions[least_reliable_idx]
 
+                # Store the final decisions if needed
+                if return_errors:
+                    final_decisions[i] = hard_decisions
+
                 # Extract message bits (assuming systematic form where parity is the last bit)
                 decoded[i] = hard_decisions[: self.code_dimension]
 
             if return_errors:
-                # For return_errors, we need to calculate the error pattern
-                # This is the difference between our hard decisions and the original hard decisions
-                original_hard = (r_block < 0).to(torch.int)
-                errors = (hard_decisions != original_hard).to(torch.int)
+                # Calculate the error pattern (difference between our final and initial hard decisions)
+                errors = (final_decisions != original_hard).to(torch.int)
                 return decoded, errors
             else:
                 return decoded

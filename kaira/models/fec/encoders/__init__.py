@@ -1,21 +1,23 @@
 """Forward Error Correction encoders for Kaira.
 
 This module provides various encoder implementations for forward error correction, including:
-- Block codes
-- Linear block codes
-- Cyclic codes
-- BCH codes
-- Reed-Solomon codes
-- Hamming codes
-- Repetition codes
-- Golay codes
-- Single parity-check codes
+- Block codes: Fundamental error correction codes that operate on fixed-size blocks
+- Linear block codes: Codes with linear algebraic structure allowing matrix operations
+- Cyclic codes: Special class of linear codes with cyclic shift properties
+- BCH codes: Powerful algebraic codes with precise error-correction capabilities
+- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
+- Hamming codes: Simple single-error-correcting codes with efficient implementation
+- Repetition codes: Basic codes that repeat each bit multiple times
+- Golay codes: Perfect codes with specific error correction properties
+- Single parity-check codes: Simple error detection through parity bit addition
 
-These encoders can be used to add redundancy to data to enable error detection and correction.
+These encoders can be used to add redundancy to data for enabling error detection and correction
+in communication systems, storage devices, and other applications requiring reliable data
+transmission over noisy channels :cite:`lin2004error,moon2005error`.
 """
 
+from .base import BaseBlockCodeEncoder
 from .bch_code import BCHCodeEncoder
-from .block_code import BlockCodeEncoder
 from .cyclic_code import CyclicCodeEncoder
 from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
@@ -25,4 +27,4 @@ from .repetition_code import MajorityVoteDecoder, RepetitionCodeEncoder
 from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]
+__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]
