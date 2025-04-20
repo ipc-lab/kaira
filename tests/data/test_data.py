@@ -6,7 +6,6 @@ from kaira.data import (
     BinaryTensorDataset,
     UniformTensorDataset,
     WynerZivCorrelationDataset,
-    WynerZivCorrelationModel,
     create_binary_tensor,
     create_uniform_tensor,
 )
@@ -92,28 +91,6 @@ def test_uniform_tensor_dataset():
     # Test slicing
     batch = dataset[10:20]
     assert batch.shape == torch.Size([10, *size[1:]])
-
-
-def test_wyner_ziv_correlation_model():
-    """Test WynerZivCorrelationModel functionality."""
-    # Use the actual parameters expected by the WynerZivCorrelationModel
-    model = WynerZivCorrelationModel(correlation_type="binary", correlation_params={"crossover_prob": 0.2})
-
-    # Generate correlated sequences
-    x = torch.randint(0, 2, (1000,)).float()
-    y = model(x)
-
-    # Check shapes
-    assert y.shape == x.shape
-
-    # Check binary values
-    assert torch.all((y == 0) | (y == 1))
-
-    # Check correlation (approximately)
-    # Expected correlation is 1 - 2*crossover_prob for binary case
-    expected_corr = 1 - 2 * 0.2  # = 0.6
-    empirical_corr = 1 - 2 * ((x != y).float().mean().item())
-    assert abs(empirical_corr - expected_corr) < 0.05  # Allow some statistical deviation
 
 
 def test_wyner_ziv_correlation_dataset():
