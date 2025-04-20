@@ -11,7 +11,7 @@ efficient encoding and decoding algorithms :cite:`lin2004error,moon2005error,ric
 """
 
 from functools import lru_cache
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Union
 
 import torch
 
@@ -364,47 +364,6 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
 
         # Use BlockCodeEncoder's apply_blockwise to handle the syndrome calculation
         return apply_blockwise(x, self._length, polynomial_syndrome_fn)
-
-    def decode(self, received_word: torch.Tensor) -> torch.Tensor:
-        """Decode a received word using syndrome decoding for cyclic codes.
-
-        For systematic codes, this simply extracts the message part.
-        For more advanced decoding, specific decoders for particular cyclic codes
-        (like BCH, Reed-Solomon, etc.) should be used.
-
-        Args:
-            received_word: The received word tensor of shape (..., codeword_length) or
-                          (..., b*codeword_length) where b is a positive integer.
-
-        Returns:
-            The decoded message tensor of shape (..., message_length) or
-            (..., b*message_length)
-
-        Note:
-            This implementation only performs error detection, not correction.
-            For error correction, use specialized decoders for specific cyclic codes.
-        """
-        # For systematic codes, we can directly extract the message part
-        return self.project_word(received_word)
-
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Decode the input tensor using cyclic code decoding.
-
-        This method combines syndrome calculation with message extraction to perform decoding.
-
-        Args:
-            x: The input tensor of shape (..., codeword_length) or (..., b*codeword_length)
-               where b is a positive integer.
-            *args: Additional positional arguments (unused).
-            **kwargs: Additional keyword arguments (unused).
-
-        Returns:
-            Tuple containing:
-                - Decoded tensor of shape (..., b*k). Has the same shape as the input, with the last
-                  dimension reduced from b*n to b*k, where b is a positive integer.
-                - Syndrome tensor for error detection of shape (..., b*r), where r is the redundancy.
-        """
-        return super().inverse_encode(x, *args, **kwargs)
 
     @classmethod
     def create_standard_code(cls, name: str, **kwargs: Any) -> "CyclicCodeEncoder":

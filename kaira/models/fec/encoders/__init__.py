@@ -23,8 +23,8 @@ from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
 from .reed_solomon_code import ReedSolomonCodeEncoder
-from .repetition_code import MajorityVoteDecoder, RepetitionCodeEncoder
+from .repetition_code import RepetitionCodeEncoder
 from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]
+__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]

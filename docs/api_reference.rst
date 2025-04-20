@@ -307,7 +307,6 @@ Forward Error Correction encoders for Kaira.
    GolayCodeEncoder
    HammingCodeEncoder
    LinearBlockCodeEncoder
-   MajorityVoteDecoder
    ReedSolomonCodeEncoder
    RepetitionCodeEncoder
    SingleParityCheckCodeEncoder
