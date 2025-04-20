@@ -296,9 +296,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         Args:
             input_data: Either:
                 - For base layer: the input image tensor of shape [B, C, H, W]
-                - For refinement layer: a tuple containing (input_image, previous_feedback_image,
-                  previous_feedback_channel_output, previous_decoded_image,
-                  previous_decoded_channel_output, previous_channel_gain)
+                - For refinement layer: a tuple containing (input_image, previous_feedback_image, previous_feedback_channel_output, previous_decoded_image, previous_decoded_channel_output, previous_channel_gain)
             *args: Additional positional arguments passed to internal components.
             **kwargs: Additional keyword arguments passed to internal components.
 
