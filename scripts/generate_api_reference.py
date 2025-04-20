@@ -1,0 +1,334 @@
+#!/usr/bin/env python
+"""Script to automatically generate API reference documentation for Kaira.
+
+This script inspects the Kaira package structure and generates reStructuredText content for the API
+reference documentation, ensuring all exposed modules, classes, functions, and other objects are
+properly documented.
+"""
+
+import importlib
+import inspect
+import sys
+from pathlib import Path
+from types import ModuleType
+from typing import Dict, List
+
+# Add the parent directory to the path so we can import kaira
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import kaira
+
+
+def get_module_members(module: ModuleType) -> Dict[str, List[str]]:
+    """Get all exposed members from a module and categorize them by type.
+
+    Args:
+        module: The module to inspect.
+
+    Returns:
+        A dictionary mapping member types to lists of member names.
+    """
+    if not hasattr(module, "__all__"):
+        return {}
+
+    members: Dict[str, List[str]] = {}
+    for name in module.__all__:
+        if not hasattr(module, name):
+            continue
+
+        obj = getattr(module, name)
+
+        # Categorize by type
+        if inspect.isclass(obj):
+            members.setdefault("classes", []).append(name)
+        elif inspect.isfunction(obj):
+            members.setdefault("functions", []).append(name)
+        elif inspect.ismodule(obj):
+            members.setdefault("modules", []).append(name)
+        else:
+            members.setdefault("others", []).append(name)
+
+    # Sort each category alphabetically
+    for category in members:
+        members[category].sort()
+
+    return members
+
+
+def generate_autosummary_block(module_path: str, members: List[str], template: str = "class.rst") -> str:
+    """Generate an autosummary block for a list of members.
+
+    Args:
+        module_path: The full module path.
+        members: List of member names to include.
+        template: The template to use for the autosummary.
+
+    Returns:
+        A string containing the reStructuredText autosummary block.
+    """
+    if not members:
+        return ""
+
+    block = [
+        f".. currentmodule:: {module_path}",
+        "",
+        ".. autosummary::",
+        "   :toctree: generated",
+        f"   :template: {template}",
+        "   :nosignatures:",
+        "",
+    ]
+
+    for member in members:
+        block.append(f"   {member}")
+
+    return "\n".join(block)
+
+
+def process_module(module_path: str, module: ModuleType) -> Dict[str, str]:
+    """Process a module to generate documentation blocks.
+
+    Args:
+        module_path: The full module path.
+        module: The module object.
+
+    Returns:
+        A dictionary mapping content types to reStructuredText blocks.
+    """
+    members = get_module_members(module)
+    blocks = {}
+
+    if "classes" in members and members["classes"]:
+        blocks["classes"] = generate_autosummary_block(module_path, members["classes"], "class.rst")
+
+    if "functions" in members and members["functions"]:
+        blocks["functions"] = generate_autosummary_block(module_path, members["functions"], "function.rst")
+
+    return blocks
+
+
+def scan_submodules(base_module: ModuleType, base_path: str) -> Dict[str, Dict[str, str]]:
+    """Recursively scan submodules and generate documentation.
+
+    Args:
+        base_module: The base module to start from.
+        base_path: The base module path.
+
+    Returns:
+        A nested dictionary of module paths and their documentation blocks.
+    """
+    result = {}
+
+    # Process the base module itself
+    base_blocks = process_module(base_path, base_module)
+    if base_blocks:
+        result[base_path] = base_blocks
+
+    # Check if the module has an __all__ attribute with submodules
+    if hasattr(base_module, "__all__"):
+        for name in base_module.__all__:
+            # Skip if not a module
+            if not hasattr(base_module, name) or not inspect.ismodule(getattr(base_module, name)):
+                continue
+
+            submodule = getattr(base_module, name)
+            submodule_path = f"{base_path}.{name}"
+
+            # Process the submodule
+            blocks = process_module(submodule_path, submodule)
+            if blocks:
+                result[submodule_path] = blocks
+
+            # Try to import and scan submodules of this submodule
+            try:
+                # Check for presence of subdirectory matching the module name
+                module_dir = Path(submodule.__file__).parent
+                if module_dir.is_dir():
+                    for subitem in module_dir.iterdir():
+                        if subitem.is_dir() and (subitem / "__init__.py").exists():
+                            subsubmodule_name = subitem.name
+                            try:
+                                subsubmodule = importlib.import_module(f"{submodule_path}.{subsubmodule_name}")
+                                subsubmodule_path = f"{submodule_path}.{subsubmodule_name}"
+
+                                # Process the subsubmodule
+                                subblocks = process_module(subsubmodule_path, subsubmodule)
+                                if subblocks:
+                                    result[subsubmodule_path] = subblocks
+                            except (ImportError, AttributeError):
+                                pass
+            except (AttributeError, ValueError):
+                # Module might not have a __file__ attribute or it might not be a directory
+                pass
+
+    return result
+
+
+def generate_api_reference() -> str:
+    """Generate the full API reference content.
+
+    Returns:
+        A string containing the reStructuredText content for the API reference.
+    """
+    # Header of the API reference
+    header = """Kaira API Reference
+=====================================
+
+.. note::
+   Kaira version |version| documentation. For older versions, please refer to the version selector above.
+
+This documentation provides a comprehensive reference of Kaira's components organized by functional category.
+Each component is documented with its parameters, methods, and usage examples.
+
+.. contents:: Table of Contents
+   :depth: 3
+   :local:
+
+Overview
+--------------
+
+Kaira is a modular toolkit for communication systems built on PyTorch. The library is organized into
+several key modules that handle different aspects of communication systems:
+
+- **Channels**: Model transmission mediums with various noise and distortion characteristics
+- **Constraints**: Enforce practical limitations on transmitted signals
+- **Metrics**: Evaluate quality and performance of communication systems
+- **Models**: Implement neural network architectures for encoding/decoding and end-to-end communication systems
+- **Modulations**: Implement digital modulation schemes for wireless transmission
+- **Losses**: Provide objective functions for training neural networks
+- **Utilities**: Helper functions and tools for common operations
+
+Base Components
+--------------------------
+
+Base classes define the fundamental interfaces that all implementations must adhere to.
+These abstract classes establish the contract that derived classes must fulfill.
+
+.. currentmodule:: kaira
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :recursive:
+   :nosignatures:
+
+   channels.BaseChannel
+   constraints.BaseConstraint
+   metrics.BaseMetric
+   models.BaseModel
+   modulations.BaseModulator
+   modulations.BaseDemodulator
+   losses.BaseLoss
+"""
+
+    # Collect all documentation blocks
+    all_blocks: Dict[str, Dict[str, str]] = {}
+
+    # Process main modules
+    for module_name in kaira.__all__:
+        if module_name == "__version__":
+            continue
+
+        module = getattr(kaira, module_name)
+        module_path = f"kaira.{module_name}"
+
+        # Add the main module section
+        section_title = module_name.capitalize()
+        section_underline = "-" * len(section_title)
+
+        description = module.__doc__.strip().split("\n\n")[0] if module.__doc__ else f"{section_title} module for Kaira."
+
+        all_blocks[module_path] = {
+            "title": f"{section_title}\n{section_underline}\n\n{description}\n",
+        }
+
+        # Process the module and its submodules
+        submodule_blocks = scan_submodules(module, module_path)
+
+        # Add the blocks to the result
+        for submodule_path, blocks in submodule_blocks.items():
+            # Skip the main module as we've already added it
+            if submodule_path == module_path:
+                all_blocks[submodule_path].update(blocks)
+            else:
+                # Extract the submodule name for the section title
+                submodule_name = submodule_path.split(".")[-1]
+                formatted_name = " ".join(word.capitalize() for word in submodule_name.split("_"))
+
+                subsection_title = formatted_name
+                subsection_underline = "^" * len(subsection_title)
+
+                # Try to get the module docstring
+                try:
+                    submodule = importlib.import_module(submodule_path)
+                    description = submodule.__doc__.strip().split("\n\n")[0] if submodule.__doc__ else f"{formatted_name} submodule."
+                except (ImportError, AttributeError):
+                    description = f"{formatted_name} submodule."
+
+                all_blocks[submodule_path] = {
+                    "title": f"{subsection_title}\n{subsection_underline}\n\n{description}\n",
+                }
+                all_blocks[submodule_path].update(blocks)
+
+    # Combine all blocks into the final document
+    output: List[str] = [header]
+
+    # Add the main module sections in a specific order
+    module_order = ["channels", "constraints", "metrics", "models", "modulations", "losses", "data", "utils"]
+
+    for module_name in module_order:
+        module_path = f"kaira.{module_name}"
+        if module_path not in all_blocks:
+            continue
+
+        module_blocks = all_blocks.pop(module_path)
+        output.append(module_blocks.pop("title"))
+
+        # Add the main module's classes and functions
+        if "classes" in module_blocks:
+            output.append(module_blocks["classes"])
+            output.append("\n")
+
+        if "functions" in module_blocks:
+            output.append(module_blocks["functions"])
+            output.append("\n")
+
+        # Add submodule sections for this module
+        submodule_paths = [p for p in all_blocks.keys() if p.startswith(f"{module_path}.")]
+        for submodule_path in sorted(submodule_paths):
+            cur_submodule_blocks = all_blocks.pop(submodule_path)
+            output.append(cur_submodule_blocks.pop("title"))
+
+            if "classes" in cur_submodule_blocks:
+                output.append(cur_submodule_blocks["classes"])
+                output.append("\n")
+
+            if "functions" in cur_submodule_blocks:
+                output.append(cur_submodule_blocks["functions"])
+                output.append("\n")
+
+    # Add any remaining modules
+    for module_path, module_blocks in sorted(all_blocks.items()):
+        output.append(module_blocks.pop("title"))
+
+        if "classes" in module_blocks:
+            output.append(module_blocks["classes"])
+            output.append("\n")
+
+        if "functions" in module_blocks:
+            output.append(module_blocks["functions"])
+            output.append("\n")
+
+    return "\n".join(output)
+
+
+if __name__ == "__main__":
+    api_reference = generate_api_reference()
+
+    # Get the output path from command line arguments or use a default
+    output_path = sys.argv[1] if len(sys.argv) > 1 else "docs/api_reference.rst"
+
+    with open(output_path, "w") as f:
+        f.write(api_reference)
+
+    print(f"API reference generated and saved to {output_path}")

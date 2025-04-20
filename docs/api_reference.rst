@@ -36,6 +36,7 @@ These abstract classes establish the contract that derived classes must fulfill.
 .. autosummary::
    :toctree: generated
    :template: class.rst
+   :recursive:
    :nosignatures:
 
    channels.BaseChannel
@@ -47,10 +48,9 @@ These abstract classes establish the contract that derived classes must fulfill.
    losses.BaseLoss
 
 Channels
---------------
+--------
 
-Channel models simulate the transmission medium between sender and receiver.
-They apply noise, distortion, fading, and other effects that impact signal quality in real-world scenarios.
+Channel models for communication systems.
 
 .. currentmodule:: kaira.channels
 
@@ -59,39 +59,31 @@ They apply noise, distortion, fading, and other effects that impact signal quali
    :template: class.rst
    :nosignatures:
 
-   BaseChannel
-   LambdaChannel
-
-   # Perfect/Identity channels
-   PerfectChannel
-   IdentityChannel
-   IdealChannel
-
-   # Analog channels
    AWGNChannel
-   GaussianChannel
-   LaplacianChannel
-   PoissonChannel
-   PhaseNoiseChannel
-   FlatFadingChannel
-   NonlinearChannel
-
-   # Digital channels
-   BinarySymmetricChannel
+   BaseChannel
    BinaryErasureChannel
+   BinarySymmetricChannel
    BinaryZChannel
-
-   # Registry
    ChannelRegistry
+   FlatFadingChannel
+   GaussianChannel
+   IdealChannel
+   IdentityChannel
+   LambdaChannel
+   LaplacianChannel
+   LogNormalFadingChannel
+   NonlinearChannel
+   PerfectChannel
+   PhaseNoiseChannel
+   PoissonChannel
+   RayleighFadingChannel
+   RicianFadingChannel
 
-.. seealso::
-   :class:`~kaira.modulations.BaseModulator` for modulation schemes that prepare signals for channel transmission.
 
 Constraints
---------------------
+-----------
 
-Constraints enforce signal limitations that must be satisfied in physical systems.
-These include power limitations, hardware restrictions, and regulatory requirements.
+Constraints module for Kaira.
 
 .. currentmodule:: kaira.constraints
 
@@ -100,49 +92,23 @@ These include power limitations, hardware restrictions, and regulatory requireme
    :template: class.rst
    :nosignatures:
 
+   AveragePowerConstraint
    BaseConstraint
    CompositeConstraint
-
-   # Power constraints
-   TotalPowerConstraint
-   AveragePowerConstraint
-   PAPRConstraint
-
-   # Antenna constraints
-   PerAntennaPowerConstraint
-
-   # Signal constraints
-   PeakAmplitudeConstraint
-   SpectralMaskConstraint
-
-   # Basic functional constraints
+   ConstraintRegistry
    IdentityConstraint
    LambdaConstraint
+   PAPRConstraint
+   PeakAmplitudeConstraint
+   PerAntennaPowerConstraint
+   SpectralMaskConstraint
+   TotalPowerConstraint
 
-   # Registry
-   ConstraintRegistry
-
-Constraint Utilities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Helper functions to create and combine constraints for common scenarios.
-
-.. currentmodule:: kaira.constraints.utils
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   combine_constraints
-   create_ofdm_constraints
-   create_mimo_constraints
 
 Metrics
--------------
+-------
 
-Metrics evaluate the quality of transmitted and reconstructed signals.
-They quantify performance in terms of accuracy, fidelity, and perceptual quality.
+Metrics module for Kaira.
 
 .. currentmodule:: kaira.metrics
 
@@ -151,53 +117,32 @@ They quantify performance in terms of accuracy, fidelity, and perceptual quality
    :template: class.rst
    :nosignatures:
 
-   BaseMetric
-   CompositeMetric
-
-   # Image quality metrics
-   PeakSignalNoiseRatio
-   PSNR
-   StructuralSimilarityIndexMeasure
-   SSIM
-   MultiScaleSSIM
-   LearnedPerceptualImagePatchSimilarity
-   LPIPS
-
-   # Signal metrics
-   SignalToNoiseRatio
-   SNR
-   BitErrorRate
    BER
-   BlockErrorRate
    BLER
-   FrameErrorRate
+   BaseMetric
+   BitErrorRate
+   BlockErrorRate
+   CompositeMetric
    FER
-   SymbolErrorRate
-   SER
-
-   # Registry
+   FrameErrorRate
+   LPIPS
+   LearnedPerceptualImagePatchSimilarity
    MetricRegistry
+   MultiScaleSSIM
+   PSNR
+   PeakSignalNoiseRatio
+   SER
+   SNR
+   SSIM
+   SignalToNoiseRatio
+   StructuralSimilarityIndexMeasure
+   SymbolErrorRate
 
-Metric Utilities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Helper functions for working with metrics and formatting results.
-
-.. currentmodule:: kaira.metrics.utils
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   compute_multiple_metrics
-   format_metric_results
 
 Models
-------------
+------
 
-Models implement the neural network architectures for encoders, decoders, and other learnable components.
-These form the core of learning-based communication systems.
+Models module for Kaira.
 
 .. currentmodule:: kaira.models
 
@@ -207,48 +152,19 @@ These form the core of learning-based communication systems.
    :nosignatures:
 
    BaseModel
+   ChannelCodeModel
    ConfigurableModel
    DeepJSCCModel
    FeedbackChannelModel
-   WynerZivModel
    ModelRegistry
+   MultipleAccessChannelModel
+   WynerZivModel
 
-Generic Models
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Generic model implementations that serve as building blocks for more complex architectures.
+Binary
+^^^^^^
 
-.. currentmodule:: kaira.models.generic
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   IdentityModel
-   SequentialModel
-   ParallelModel
-   BranchingModel
-   LambdaModel
-
-Model Components
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Reusable neural network building blocks for constructing communication models.
-
-.. currentmodule:: kaira.models.components
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   AFModule
-
-Binary Models
-^^^^^^^^^^^^^^^^^^^^
-
-Models specialized for binary data transmission.
+Binary data communication model implementations for Kaira.
 
 .. currentmodule:: kaira.models.binary
 
@@ -259,10 +175,49 @@ Models specialized for binary data transmission.
 
    Kurmukova2025TransCoder
 
-Image Models
-^^^^^^^^^^^^^^^^^^^^
 
-Models specialized for image transmission and reconstruction.
+Components
+^^^^^^^^^^
+
+Components module for Kaira models.
+
+.. currentmodule:: kaira.models.components
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   AFModule
+   ConvDecoder
+   ConvEncoder
+   MLPDecoder
+   MLPEncoder
+
+
+Generic
+^^^^^^^
+
+Generic model implementations for Kaira.
+
+.. currentmodule:: kaira.models.generic
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BranchingModel
+   IdentityModel
+   LambdaModel
+   ParallelModel
+   SequentialModel
+
+
+Image
+^^^^^
+
+Image model implementations for Kaira.
 
 .. currentmodule:: kaira.models.image
 
@@ -271,16 +226,31 @@ Models specialized for image transmission and reconstruction.
    :template: class.rst
    :nosignatures:
 
-   Tung2022DeepJSCCQEncoder
-   Tung2022DeepJSCCQDecoder
-   Tung2022DeepJSCCQ2Encoder
+   Bourtsoulatze2019DeepJSCCDecoder
+   Bourtsoulatze2019DeepJSCCEncoder
+   DeepJSCCFeedbackDecoder
+   DeepJSCCFeedbackEncoder
+   DeepJSCCFeedbackModel
    Tung2022DeepJSCCQ2Decoder
+   Tung2022DeepJSCCQ2Encoder
+   Tung2022DeepJSCCQDecoder
+   Tung2022DeepJSCCQEncoder
+   Yilmaz2023DeepJSCCNOMADecoder
+   Yilmaz2023DeepJSCCNOMAEncoder
    Yilmaz2023DeepJSCCNOMAModel
+   Yilmaz2024DeepJSCCWZConditionalDecoder
+   Yilmaz2024DeepJSCCWZConditionalEncoder
+   Yilmaz2024DeepJSCCWZDecoder
+   Yilmaz2024DeepJSCCWZEncoder
+   Yilmaz2024DeepJSCCWZModel
+   Yilmaz2024DeepJSCCWZSmallDecoder
+   Yilmaz2024DeepJSCCWZSmallEncoder
 
-Image Compressors
-'''''''''''''''''''''''''''''
 
-Specialized image compression components.
+Compressors
+^^^^^^^^^^^
+
+Image compressor models, including standard and neural network-based methods.
 
 .. currentmodule:: kaira.models.image.compressors
 
@@ -292,128 +262,66 @@ Specialized image compression components.
    BPGCompressor
    NeuralCompressor
 
-Losses
-------------
-
-Loss functions used for training neural network models with different optimization objectives.
-
-.. currentmodule:: kaira.losses
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BaseLoss
-   CompositeLoss
-   LossRegistry
-
 
 Modulations
---------------------
+-----------
 
-Digital modulation schemes for mapping bits to symbols for wireless transmission.
-These transform digital data into waveforms suitable for transmission over physical channels.
+Digital modulation schemes for wireless communications.
 
 .. currentmodule:: kaira.modulations
 
-Basic Modulation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Base classes and simple modulation schemes.
-
 .. autosummary::
    :toctree: generated
    :template: class.rst
    :nosignatures:
 
-   BaseModulator
-   BaseDemodulator
-   ModulationRegistry
-
-   # Identity schemes
-   IdentityModulator
-   IdentityDemodulator
-
-PSK Modulation
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Phase Shift Keying modulation schemes, which encode data by varying the phase of a carrier wave.
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   PSKModulator
-   PSKDemodulator
-   BPSKModulator
    BPSKDemodulator
-   QPSKModulator
-   QPSKDemodulator
-
-   # Special PSK variants
-   Pi4QPSKModulator
-   Pi4QPSKDemodulator
-   OQPSKModulator
-   OQPSKDemodulator
-
-QAM & PAM Modulation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Quadrature Amplitude Modulation and Pulse Amplitude Modulation schemes.
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   QAMModulator
-   QAMDemodulator
-   PAMModulator
-   PAMDemodulator
-
-Differential Modulation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Differential encoding schemes that encode information in the change between symbols.
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   DPSKModulator
-   DPSKDemodulator
-   DBPSKModulator
+   BPSKModulator
+   BaseDemodulator
+   BaseModulator
    DBPSKDemodulator
-   DQPSKModulator
+   DBPSKModulator
+   DPSKDemodulator
+   DPSKModulator
    DQPSKDemodulator
+   DQPSKModulator
+   IdentityDemodulator
+   IdentityModulator
+   ModulationRegistry
+   OQPSKDemodulator
+   OQPSKModulator
+   PAMDemodulator
+   PAMModulator
+   PSKDemodulator
+   PSKModulator
+   Pi4QPSKDemodulator
+   Pi4QPSKModulator
+   QAMDemodulator
+   QAMModulator
+   QPSKDemodulator
+   QPSKModulator
 
-Modulation Utilities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Helper functions for working with modulation schemes and analyzing their properties.
-
-.. currentmodule:: kaira.modulations.utils
+.. currentmodule:: kaira.modulations
 
 .. autosummary::
    :toctree: generated
    :template: function.rst
    :nosignatures:
 
-   binary_to_gray
-   gray_to_binary
    binary_array_to_gray
-   gray_array_to_binary
-   plot_constellation
-   calculate_theoretical_ber
+   binary_to_gray
    calculate_spectral_efficiency
+   calculate_theoretical_ber
+   gray_array_to_binary
+   gray_to_binary
+   plot_constellation
+
 
 Data
---------------
+----
 
-Datasets and data generation utilities for training and evaluation.
+Data utilities for Kaira, including data generation and correlation models.
 
 .. currentmodule:: kaira.data
 
@@ -422,15 +330,11 @@ Datasets and data generation utilities for training and evaluation.
    :template: class.rst
    :nosignatures:
 
-   WynerZivCorrelationModel
-   WynerZivCorrelationDataset
    BinaryTensorDataset
    UniformTensorDataset
+   WynerZivCorrelationDataset
+   WynerZivCorrelationModel
 
-Data Generation Functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Functions for creating synthetic datasets.
 
 .. currentmodule:: kaira.data
 
@@ -441,26 +345,4 @@ Functions for creating synthetic datasets.
 
    create_binary_tensor
    create_uniform_tensor
-
-Utilities
-------------------
-
-General utility functions for data manipulation, visualization, and configuration.
-
-.. currentmodule:: kaira.utils
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   seed_everything
-   to_tensor
-   calculate_num_filters_factor_image
-   snr_db_to_linear
-   snr_linear_to_db
-   snr_to_noise_power
-   noise_power_to_snr
-   calculate_snr
-   add_noise_for_snr
-   estimate_signal_power
+   load_sample_images
