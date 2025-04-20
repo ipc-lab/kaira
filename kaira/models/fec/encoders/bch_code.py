@@ -16,7 +16,6 @@ the following parameters, where δ = 2τ + 1:
 This implementation handles narrow-sense, primitive BCH codes, which are optimal
 for many applications requiring reliable transmission over noisy channels.
 
-References:
     :cite:`lin2004error`
     :cite:`moon2005error`
     :cite:`richardson2008modern`
