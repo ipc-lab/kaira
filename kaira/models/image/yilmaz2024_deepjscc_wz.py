@@ -106,9 +106,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
             **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
-            torch.Tensor: Encoded representation ready for transmission.
-                          Shape: [B, M, H/16, W/16], where M is the number of channels
-                          specified during initialization.
+            torch.Tensor: Encoded representation ready for transmission. Shape: [B, M, H/16, W/16], where M is the number of channels specified during initialization.
         """
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
         for layer in self.g_a:
