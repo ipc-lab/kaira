@@ -16,6 +16,7 @@ import torch
 
 from kaira.models.registry import ModelRegistry
 
+from ..utils import apply_blockwise
 from .block_code import BlockCodeEncoder
 
 
@@ -228,7 +229,7 @@ class LinearBlockCodeEncoder(BlockCodeEncoder):
             return torch.matmul(reshaped_x, self.generator_matrix) % 2
 
         # Use apply_blockwise to handle the encoding
-        return self.apply_blockwise(x, self.code_dimension, encode_fn)
+        return apply_blockwise(x, self.code_dimension, encode_fn)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word.
@@ -258,7 +259,7 @@ class LinearBlockCodeEncoder(BlockCodeEncoder):
             return torch.matmul(reshaped_x, self.check_matrix.transpose(0, 1)) % 2
 
         # Use apply_blockwise to handle the syndrome calculation
-        return self.apply_blockwise(x, self.code_length, syndrome_fn)
+        return apply_blockwise(x, self.code_length, syndrome_fn)
 
     def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
         """Decode the input tensor using the generator matrix right inverse.
@@ -298,6 +299,6 @@ class LinearBlockCodeEncoder(BlockCodeEncoder):
             return torch.matmul(reshaped_x, self.generator_right_inverse) % 2
 
         # Use apply_blockwise to handle the decoding
-        decoded = self.apply_blockwise(x, self.code_length, decode_fn)
+        decoded = apply_blockwise(x, self.code_length, decode_fn)
 
         return decoded, syndrome

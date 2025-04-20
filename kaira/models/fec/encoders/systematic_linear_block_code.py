@@ -17,6 +17,7 @@ import torch
 
 from kaira.models.registry import ModelRegistry
 
+from ..utils import apply_blockwise
 from .linear_block_code import LinearBlockCodeEncoder
 
 
@@ -222,7 +223,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return reshaped_x[..., self.information_set]
 
         # Use apply_blockwise to handle the projection
-        return self.apply_blockwise(x, self._length, projection_fn)
+        return apply_blockwise(x, self._length, projection_fn)
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input tensor using systematic encoding.
@@ -269,7 +270,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return codewords
 
         # Use apply_blockwise to handle the encoding
-        return self.apply_blockwise(x, self._dimension, systematic_encode_fn)
+        return apply_blockwise(x, self._dimension, systematic_encode_fn)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word.
@@ -309,7 +310,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return syndrome
 
         # Use apply_blockwise to handle the syndrome calculation
-        return self.apply_blockwise(x, self._length, systematic_syndrome_fn)
+        return apply_blockwise(x, self._length, systematic_syndrome_fn)
 
         # Alternative implementation using parent class:
         # return super().calculate_syndrome(x)

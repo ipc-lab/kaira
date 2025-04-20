@@ -10,7 +10,7 @@ standard conventions in coding theory :cite:`lin2004error,moon2005error,richards
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Tuple, Union
 
 import torch
 
@@ -97,38 +97,6 @@ class BlockCodeEncoder(BaseModel, ABC):
             The rate of the code (ratio of information bits to total bits)
         """
         return self._dimension / self._length
-
-    @staticmethod
-    def apply_blockwise(x: torch.Tensor, block_size: int, fn: Callable) -> torch.Tensor:
-        """Apply a function blockwise to the last dimension of a tensor.
-
-        This utility method is useful for processing tensors in block-sized chunks,
-        which is common in block coding operations.
-
-        Args:
-            x: Input tensor with shape (..., L) where L is a multiple of block_size
-            block_size: Size of each block in the last dimension
-            fn: Function to apply to each block. Should accept a tensor and return
-               a transformed tensor preserving the batch dimensions.
-
-        Returns:
-            Tensor with transformed blocks
-
-        Raises:
-            AssertionError: If the last dimension is not divisible by block_size
-        """
-        *leading_dims, L = x.shape
-        assert L % block_size == 0, f"Last dimension ({L}) must be divisible by block_size ({block_size})"
-
-        # Reshape to expose blocks: (..., L) -> (..., L//block_size, block_size)
-        new_shape = (*leading_dims, L // block_size, block_size)
-        x_reshaped = x.view(*new_shape)
-
-        # Apply function along the last dimension (block)
-        result = fn(x_reshaped)
-
-        # Flatten the result back to original structure
-        return result.view(*leading_dims, -1)
 
     @abstractmethod
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:

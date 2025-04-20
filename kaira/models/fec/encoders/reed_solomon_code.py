@@ -32,7 +32,7 @@ class ReedSolomonCodeEncoder(BCHCodeEncoder):
         **kwargs: Additional keyword arguments passed to the parent class.
 
     Examples:
-        >>> encoder = ReedSolomonEncoder(mu=4, delta=5)
+        >>> encoder = ReedSolomonCodeEncoder(mu=4, delta=5)
         >>> message = torch.tensor([1., 0., 1., 1., 0., 1., 0., 1., 0., 1., 0.])
         >>> codeword = encoder(message)
     """

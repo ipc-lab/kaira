@@ -18,6 +18,7 @@ import torch
 from kaira.models.registry import ModelRegistry
 
 from ..algebra import BinaryPolynomial
+from ..utils import apply_blockwise
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
 
@@ -382,7 +383,7 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
             return syndromes
 
         # Use BlockCodeEncoder's apply_blockwise to handle the syndrome calculation
-        return self.apply_blockwise(x, self._length, polynomial_syndrome_fn)
+        return apply_blockwise(x, self._length, polynomial_syndrome_fn)
 
     def decode(self, received_word: torch.Tensor) -> torch.Tensor:
         """Decode a received word using syndrome decoding for cyclic codes.

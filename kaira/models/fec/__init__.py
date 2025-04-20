@@ -5,6 +5,6 @@ focusing on binary error correction codes like block codes, cyclic codes, and mo
 algebraic codes like BCH codes.
 """
 
-from . import algebra, encoders
+from . import algebra, decoders, encoders, utils
 
-__all__ = ["algebra", "encoders"]
+__all__ = ["algebra", "encoders", "decoders", "utils"]
