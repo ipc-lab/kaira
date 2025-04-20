@@ -106,7 +106,9 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
             **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
-            torch.Tensor: Encoded representation ready for transmission. Shape: [B, M, H/16, W/16], where M is the number of channels specified during initialization.
+            torch.Tensor: Encoded representation ready for transmission.
+                          Shape: [B, M, H/16, W/16], where M is the number of channels
+                          specified during initialization.
         """
         csi_transmitter = torch.cat([csi, torch.zeros_like(csi)], dim=1)
         for layer in self.g_a:
@@ -814,9 +816,7 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         Args:
             source: Source image tensor to encode and transmit, shape [B, C, H, W].
                    Typically RGB images with values normalized to [0,1].
-            side_info: Correlated side information available at the decoder, shape [B, C, H, W].
-                      This could be a previous frame in a video, a low-resolution version,
-                      or other correlated information that helps in reconstruction.
+            side_info: Correlated side information available at the decoder, shape [B, C, H, W]. This could be a previous frame in a video, a low-resolution version, or other correlated information that helps in reconstruction.
             *args: Additional positional arguments passed to internal components.
             **kwargs: Additional keyword arguments passed to internal components.
                       Must include 'csi' (torch.Tensor): Channel state information tensor
