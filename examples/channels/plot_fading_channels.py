@@ -22,7 +22,7 @@ import torch
 from scipy import signal  # Added here to fix E402 error
 
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
-from kaira.metrics import BitErrorRate
+from kaira.metrics.signal import BitErrorRate
 from kaira.modulations import QPSKModulator
 from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.utils import snr_to_noise_power

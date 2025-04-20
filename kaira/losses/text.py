@@ -189,3 +189,6 @@ class Word2VecLoss(BaseLoss):
         loss = -(pos_loss + neg_loss).mean()
 
         return loss
+
+
+__all__ = ["CrossEntropyLoss", "LabelSmoothingLoss", "CosineSimilarityLoss", "Word2VecLoss"]

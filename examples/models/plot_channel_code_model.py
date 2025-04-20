@@ -20,8 +20,8 @@ import torch
 from kaira.channels import AWGNChannel
 from kaira.constraints.power import TotalPowerConstraint
 
-# Import BER metric from kaira.metrics
-from kaira.metrics import BER
+# Import BER metric from kaira.metrics.signal
+from kaira.metrics.signal import BER
 from kaira.models import ChannelCodeModel
 from kaira.models.fec.encoders import MajorityVoteDecoder, RepetitionCodeEncoder
 from kaira.modulations import BPSKDemodulator, BPSKModulator

@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from kaira.channels import AWGNChannel
-from kaira.metrics import (
+from kaira.metrics.signal import (
     BitErrorRate,
     BlockErrorRate,
     FrameErrorRate,

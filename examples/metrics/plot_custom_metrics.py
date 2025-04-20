@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from kaira.metrics import BER, BaseMetric
+from kaira.metrics import BaseMetric
+from kaira.metrics.signal import BER
 from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility

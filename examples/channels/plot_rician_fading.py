@@ -20,7 +20,7 @@ import seaborn as sns
 import torch
 
 from kaira.channels import RayleighFadingChannel, RicianFadingChannel
-from kaira.metrics import BitErrorRate, SymbolErrorRate
+from kaira.metrics.signal import BitErrorRate, SymbolErrorRate
 from kaira.modulations import QPSKDemodulator, QPSKModulator
 
 # Set random seed for reproducibility

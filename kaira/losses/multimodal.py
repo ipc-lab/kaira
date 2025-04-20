@@ -381,3 +381,6 @@ class AlignmentLoss(BaseLoss):
             return 1 - torch.mean(torch.sum(x1 * x2, dim=1))
         else:
             raise ValueError(f"Unsupported alignment type: {self.alignment_type}")
+
+
+__all__ = ["ContrastiveLoss", "TripletLoss", "InfoNCELoss", "CMCLoss", "AlignmentLoss"]

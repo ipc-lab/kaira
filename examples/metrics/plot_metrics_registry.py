@@ -15,8 +15,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from kaira.metrics import BER, SNR, BaseMetric
+from kaira.metrics import BaseMetric
 from kaira.metrics.registry import MetricRegistry
+from kaira.metrics.signal import BER, SNR  # Import from the signal submodule instead
 
 # Set random seed for reproducibility
 torch.manual_seed(42)

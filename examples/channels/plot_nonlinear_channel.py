@@ -19,7 +19,7 @@ import torch
 from scipy import signal
 
 from kaira.channels import AWGNChannel, NonlinearChannel, PerfectChannel
-from kaira.metrics import SymbolErrorRate
+from kaira.metrics.signal import SymbolErrorRate
 from kaira.modulations import QAMModulator
 
 # Set random seed for reproducibility

@@ -3,6 +3,7 @@
 This module provides models specifically designed for image data transmission.
 """
 
+from . import compressors
 from .bourtsoulatze2019_deepjscc import (
     Bourtsoulatze2019DeepJSCCDecoder,
     Bourtsoulatze2019DeepJSCCEncoder,
@@ -34,6 +35,7 @@ from .yilmaz2024_deepjscc_wz import (
 )
 
 __all__ = [
+    "compressors",
     "Bourtsoulatze2019DeepJSCCEncoder",
     "Bourtsoulatze2019DeepJSCCDecoder",
     "DeepJSCCFeedbackEncoder",

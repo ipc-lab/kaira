@@ -19,7 +19,7 @@ import torch
 from kaira.channels import AWGNChannel, FlatFadingChannel
 from kaira.constraints import TotalPowerConstraint
 from kaira.data.sample_data import load_sample_images
-from kaira.metrics import PSNR, SSIM
+from kaira.metrics.image import PSNR, SSIM
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image.bourtsoulatze2019_deepjscc import (
     Bourtsoulatze2019DeepJSCCDecoder,

@@ -20,7 +20,7 @@ several key modules that handle different aspects of communication systems:
 - **Channels**: Model transmission mediums with various noise and distortion characteristics
 - **Constraints**: Enforce practical limitations on transmitted signals
 - **Metrics**: Evaluate quality and performance of communication systems
-- **Models**: Implement neural network architectures for encoding/decoding, forward error correction and end-to-end communication systems
+- **Models**: Implement neural network architectures for encoding/decoding and end-to-end communication systems
 - **Modulations**: Implement digital modulation schemes for wireless transmission
 - **Losses**: Provide objective functions for training neural networks
 - **Utilities**: Helper functions and tools for common operations
@@ -105,6 +105,26 @@ Constraints module for Kaira.
    TotalPowerConstraint
 
 
+Utils
+^^^^^
+
+Utility functions for constraints.
+
+.. currentmodule:: kaira.constraints.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   apply_constraint_chain
+   combine_constraints
+   create_mimo_constraints
+   create_ofdm_constraints
+   measure_signal_properties
+   verify_constraint
+
+
 Metrics
 -------
 
@@ -117,26 +137,9 @@ Metrics module for Kaira.
    :template: class.rst
    :nosignatures:
 
-   BER
-   BLER
    BaseMetric
-   BitErrorRate
-   BlockErrorRate
    CompositeMetric
-   FER
-   FrameErrorRate
-   LPIPS
-   LearnedPerceptualImagePatchSimilarity
    MetricRegistry
-   MultiScaleSSIM
-   PSNR
-   PeakSignalNoiseRatio
-   SER
-   SNR
-   SSIM
-   SignalToNoiseRatio
-   StructuralSimilarityIndexMeasure
-   SymbolErrorRate
 
 
 Image
@@ -266,23 +269,6 @@ Components module for Kaira models.
    MLPEncoder
 
 
-FEC Algebra
-^^^^^^^^^^^
-
-Finite field algebra utilities for forward error correction.
-
-.. currentmodule:: kaira.models.fec.algebra
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BinaryPolynomial
-   FiniteBifield
-   FiniteBifieldElement
-
-
 Decoders
 ^^^^^^^^
 
@@ -326,25 +312,6 @@ Forward Error Correction encoders for Kaira.
    RepetitionCodeEncoder
    SingleParityCheckCodeEncoder
    SystematicLinearBlockCodeEncoder
-
-
-FEC Utilities
-^^^^^^^^^^^^^
-
-Utility functions for decoders.
-
-.. currentmodule:: kaira.models.fec.utils
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   apply_blockwise
-   from_binary_tensor
-   hamming_distance
-   hamming_weight
-   to_binary_tensor
 
 
 Generic
@@ -470,6 +437,27 @@ Digital modulation schemes for wireless communications.
    plot_constellation
 
 
+Utils
+^^^^^
+
+Utility functions for digital modulation schemes.
+
+.. currentmodule:: kaira.modulations.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   binary_array_to_gray
+   binary_to_gray
+   calculate_spectral_efficiency
+   calculate_theoretical_ber
+   gray_array_to_binary
+   gray_to_binary
+   plot_constellation
+
+
 Data
 ----
 
@@ -484,8 +472,6 @@ Data utilities for Kaira, including data generation and correlation models.
 
    BinaryTensorDataset
    UniformTensorDataset
-   WynerZivCorrelationDataset
-   WynerZivCorrelationModel
 
 
 .. currentmodule:: kaira.data
@@ -498,24 +484,3 @@ Data utilities for Kaira, including data generation and correlation models.
    create_binary_tensor
    create_uniform_tensor
    load_sample_images
-
-
-SNR Utilities
-^^^^^^^^^^^^^
-
-Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
-
-.. currentmodule:: kaira.utils.snr
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   add_noise_for_snr
-   calculate_snr
-   estimate_signal_power
-   noise_power_to_snr
-   snr_db_to_linear
-   snr_linear_to_db
-   snr_to_noise_power

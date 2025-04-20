@@ -12,7 +12,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models  # type: ignore
 
-from kaira.metrics import LearnedPerceptualImagePatchSimilarity, StructuralSimilarityIndexMeasure
+from kaira.metrics.image import (
+    LearnedPerceptualImagePatchSimilarity,
+    StructuralSimilarityIndexMeasure,
+)
 
 from .base import BaseLoss
 from .registry import LossRegistry
@@ -705,3 +708,6 @@ class ElasticLoss(BaseLoss):
             return point_losses.sum()
         else:  # 'none'
             return point_losses
+
+
+__all__ = ["MSELoss", "CombinedLoss", "MSELPIPSLoss", "LPIPSLoss", "SSIMLoss", "MSSSIMLoss", "L1Loss", "VGGLoss", "TotalVariationLoss", "GradientLoss", "PSNRLoss", "StyleLoss", "FocalLoss"]

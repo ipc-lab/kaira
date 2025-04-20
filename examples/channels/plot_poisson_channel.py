@@ -20,7 +20,7 @@ import torch
 from scipy.special import erfc
 
 from kaira.channels import AWGNChannel, PoissonChannel
-from kaira.metrics import BitErrorRate
+from kaira.metrics.signal import BitErrorRate
 
 # Set random seed for reproducibility
 torch.manual_seed(42)

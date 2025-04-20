@@ -312,3 +312,6 @@ class R1GradientPenalty(BaseLoss):
         grad_penalty = (grad_real.norm(2, dim=1) ** 2).mean()
 
         return self.gamma * 0.5 * grad_penalty
+
+
+__all__ = ["VanillaGANLoss", "LSGANLoss", "WassersteinGANLoss", "HingeLoss", "FeatureMatchingLoss", "R1GradientPenalty"]

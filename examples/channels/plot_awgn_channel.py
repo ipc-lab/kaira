@@ -20,7 +20,8 @@ import numpy as np
 import torch
 
 from kaira.channels import AWGNChannel
-from kaira.metrics import PSNR, SNR
+from kaira.metrics.image import PSNR
+from kaira.metrics.signal import SNR
 from kaira.utils import snr_to_noise_power
 
 # Set random seed for reproducibility
@@ -91,6 +92,7 @@ for snr_db, channel in awgn_channels:
     outputs.append((snr_db, output_signal.numpy().flatten()))
     measured_metrics.append({"target_snr_db": snr_db, "measured_snr_db": measured_snr, "measured_psnr_db": measured_psnr})
 
+    # Ensure we're using float values for string formatting
     print(f"Target SNR: {snr_db:.1f} dB, Measured SNR: {measured_snr:.1f} dB, PSNR: {measured_psnr:.1f} dB")
 
 # %%

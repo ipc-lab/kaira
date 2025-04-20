@@ -380,24 +380,3 @@ def setup(app):
     """
     app.connect("autodoc-skip-member", skip_member)
     app.add_config_value("current_date", get_current_date(), "env")
-
-
-# Mock imports for modules that might not be installed
-# This prevents build failures due to missing dependencies
-autodoc_mock_imports = [
-    # Core dependencies that might not be available during doc building
-    "torch",
-    "numpy",
-    "matplotlib",
-    "scipy",
-    "torchmetrics",
-    # Kaira modules that might have import issues
-    "kaira.losses",
-    "kaira.models",
-    "kaira.channels",
-    "kaira.metrics",
-    "kaira.modulations",
-    "kaira.constraints",
-    "kaira.data",
-    "kaira.utils",
-]

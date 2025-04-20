@@ -451,3 +451,6 @@ class AudioContrastiveLoss(BaseLoss):
             loss = -mean_log_prob_pos
 
         return loss
+
+
+__all__ = ["L1AudioLoss", "SpectralConvergenceLoss", "LogSTFTMagnitudeLoss", "STFTLoss", "MultiResolutionSTFTLoss", "MelSpectrogramLoss", "FeatureMatchingLoss", "AudioContrastiveLoss"]

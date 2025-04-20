@@ -17,7 +17,7 @@ import numpy as np
 import torch
 
 from kaira.channels import AWGNChannel
-from kaira.metrics import BER
+from kaira.metrics.signal import BER
 from kaira.modulations import BPSKDemodulator, BPSKModulator, QPSKDemodulator, QPSKModulator
 from kaira.modulations.utils import plot_constellation
 from kaira.utils import snr_to_noise_power

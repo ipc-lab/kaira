@@ -17,7 +17,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from kaira.metrics import BER, PSNR, SNR, SSIM, BaseMetric
+from kaira.metrics import BaseMetric
+from kaira.metrics.image import PSNR, SSIM
+from kaira.metrics.signal import BER, SNR
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
