@@ -803,8 +803,8 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
 
         This method implements the full DeepJSCC-WZ model:
         1. Encodes the source image into a compact representation
-           - For conditional models: utilizes side information during encoding
-           - For non-conditional models: encodes without access to side information
+        - For conditional models: utilizes side information during encoding
+        - For non-conditional models: encodes without access to side information
         2. Applies power normalization to the encoded representation
         3. Simulates transmission through a noisy channel
         4. Reconstructs the image using the received data and side information
@@ -816,7 +816,9 @@ class Yilmaz2024DeepJSCCWZModel(WynerZivModel):
         Args:
             source: Source image tensor to encode and transmit, shape [B, C, H, W].
                    Typically RGB images with values normalized to [0,1].
-            side_info: Correlated side information available at the decoder, shape [B, C, H, W]. This could be a previous frame in a video, a low-resolution version, or other correlated information that helps in reconstruction.
+            side_info: Correlated side information available at the decoder, shape [B, C, H, W].
+                      This could be a previous frame in a video, a low-resolution version,
+                      or other correlated information that helps in reconstruction.
             *args: Additional positional arguments passed to internal components.
             **kwargs: Additional keyword arguments passed to internal components.
                       Must include 'csi' (torch.Tensor): Channel state information tensor
