@@ -1,4 +1,4 @@
-"""Systematic linear block coding module for Kaira.
+"""Systematic linear block coding module for forward error correction.
 
 This module implements systematic linear block coding for binary data transmission, a specific
 form of linear block coding where the information bits appear unchanged in predefined positions
@@ -17,7 +17,7 @@ import torch
 
 from kaira.models.registry import ModelRegistry
 
-from .linear_block_code import LinearBlockCodeEncoder, apply_blockwise
+from .linear_block_code import LinearBlockCodeEncoder
 
 
 def create_systematic_generator_matrix(parity_submatrix: torch.Tensor, information_set: Union[List[int], torch.Tensor, str] = "left") -> torch.Tensor:
@@ -222,7 +222,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return reshaped_x[..., self.information_set]
 
         # Use apply_blockwise to handle the projection
-        return apply_blockwise(x, self._length, projection_fn)
+        return self.apply_blockwise(x, self._length, projection_fn)
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Encode the input tensor using systematic encoding.
@@ -269,7 +269,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return codewords
 
         # Use apply_blockwise to handle the encoding
-        return apply_blockwise(x, self._dimension, systematic_encode_fn)
+        return self.apply_blockwise(x, self._dimension, systematic_encode_fn)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word.
@@ -309,7 +309,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             return syndrome
 
         # Use apply_blockwise to handle the syndrome calculation
-        return apply_blockwise(x, self._length, systematic_syndrome_fn)
+        return self.apply_blockwise(x, self._length, systematic_syndrome_fn)
 
         # Alternative implementation using parent class:
         # return super().calculate_syndrome(x)

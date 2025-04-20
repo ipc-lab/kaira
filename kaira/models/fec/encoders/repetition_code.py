@@ -1,4 +1,4 @@
-"""Repetition coding module for binary data.
+"""Repetition coding module for forward error correction.
 
 This module implements repetition coding for binary data transmission, a simple error correction
 technique where each bit is repeated multiple times. For decoding, a majority vote scheme is used
@@ -18,9 +18,9 @@ from typing import Any
 import torch
 from scipy.special import comb
 
+from kaira.models.base import BaseModel
 from kaira.models.registry import ModelRegistry
 
-from ..base import BaseModel
 from .linear_block_code import LinearBlockCodeEncoder
 
 
@@ -116,7 +116,6 @@ class RepetitionCodeEncoder(LinearBlockCodeEncoder):
         return f"{self.__class__.__name__}(repetition_factor={self.repetition_factor})"
 
 
-# TODO: move to its own file
 @ModelRegistry.register_model("majority_vote_decoder")
 class MajorityVoteDecoder(BaseModel):
     """Decoder for repetition coding using majority vote.

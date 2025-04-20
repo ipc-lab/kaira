@@ -1,4 +1,4 @@
-"""Linear block coding module for Kaira.
+"""Linear block coding module for forward error correction.
 
 This module implements linear block coding for binary data transmission, a fundamental
 error correction technique where a message is encoded into a code word using generator
@@ -16,7 +16,7 @@ import torch
 
 from kaira.models.registry import ModelRegistry
 
-from ..base import BaseModel
+from .block_code import BlockCodeEncoder
 
 
 def compute_null_space_matrix(matrix: torch.Tensor) -> torch.Tensor:
@@ -120,34 +120,8 @@ def compute_right_pseudo_inverse(matrix: torch.Tensor) -> torch.Tensor:
     return (pseudo_inv.abs() > 0.5).type(matrix.dtype)
 
 
-def apply_blockwise(x, block_size, fn):
-    """Apply a function blockwise to the last dimension of a tensor.
-
-    Args:
-        x: Input tensor with shape (..., L) where L is a multiple of block_size
-        block_size: Size of each block in the last dimension
-        fn: Function to apply to each block. Should accept a tensor and dim parameter.
-           The function should operate on the specified dimension and preserve the shape.
-
-    Returns:
-        Tensor with transformed blocks
-    """
-    *leading_dims, L = x.shape
-    assert L % block_size == 0, "Last dimension must be divisible by block_size"
-
-    # Reshape to expose blocks: (..., L) -> (..., L//block_size, block_size)
-    new_shape = (*leading_dims, L // block_size, block_size)
-    x_reshaped = x.view(*new_shape)
-
-    # Apply function along the last dimension (block)
-    result = fn(x_reshaped)
-
-    # Flatten the result back to original structure
-    return result.view(*leading_dims, -1)
-
-
 @ModelRegistry.register_model("linear_block_code_encoder")
-class LinearBlockCodeEncoder(BaseModel):
+class LinearBlockCodeEncoder(BlockCodeEncoder):
     """Encoder for linear block coding.
 
     This encoder transforms binary input messages into codewords according to
@@ -164,12 +138,15 @@ class LinearBlockCodeEncoder(BaseModel):
 
     Attributes:
         generator_matrix (torch.Tensor): The generator matrix G of the code
-        length (int): Code length (n)
-        dimension (int): Code dimension (k)
-        redundancy (int): Code redundancy (r = n - k)
+        generator_right_inverse (torch.Tensor): The right pseudo-inverse of the generator matrix
+        check_matrix (torch.Tensor): The parity check matrix H
 
     Args:
-        generator_matrix (torch.Tensor): The generator matrix for encoding
+        generator_matrix (torch.Tensor): The generator matrix for encoding.
+            Must be a binary matrix of shape (k, n) where k is the message length
+            and n is the codeword length.
+        *args: Variable positional arguments passed to the base class.
+        **kwargs: Variable keyword arguments passed to the base class.
     """
 
     def __init__(self, generator_matrix: torch.Tensor, *args: Any, **kwargs: Any):
@@ -182,75 +159,30 @@ class LinearBlockCodeEncoder(BaseModel):
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.
         """
-        super().__init__(*args, **kwargs)
-
         # Ensure generator matrix is a torch tensor
         if not isinstance(generator_matrix, torch.Tensor):
             generator_matrix = torch.tensor(generator_matrix)
 
-        self._generator_matrix = generator_matrix
-        self._dimension, self._length = self._generator_matrix.size()
-        self._redundancy = self._length - self._dimension
+        # Extract dimensions from generator matrix
+        dimension, length = generator_matrix.size()
+
+        # Initialize the base class with dimensions
+        super().__init__(code_length=length, code_dimension=dimension)
 
         # Register buffer for the generator matrix
-        self.register_buffer("generator_matrix", self._generator_matrix)
+        self.register_buffer("generator_matrix", generator_matrix)
 
         # Create generator matrix right inverse for decoding
-        self._generator_right_inverse = compute_right_pseudo_inverse(self._generator_matrix)
+        self._generator_right_inverse = compute_right_pseudo_inverse(generator_matrix)
 
         # Register buffer for the generator right inverse
         self.register_buffer("generator_right_inverse", self._generator_right_inverse)
 
         # Compute check matrix for syndrome calculation
-        self._check_matrix = compute_null_space_matrix(self._generator_matrix)
+        self._check_matrix = compute_null_space_matrix(generator_matrix)
 
         # Register buffer for the check matrix
         self.register_buffer("check_matrix", self._check_matrix)
-
-    @property
-    def code_length(self) -> int:
-        """Get the code length (n).
-
-        Returns:
-            The length of the code (number of bits in a codeword)
-        """
-        return self._length
-
-    @property
-    def code_dimension(self) -> int:
-        """Get the code dimension (k).
-
-        Returns:
-            The dimension of the code (number of information bits)
-        """
-        return self._dimension
-
-    @property
-    def redundancy(self) -> int:
-        """Get the code redundancy (r = n - k).
-
-        Returns:
-            The redundancy of the code (number of parity bits)
-        """
-        return self._redundancy
-
-    @property
-    def parity_bits(self) -> int:
-        """Get the code redundancy (r = n - k).
-
-        Returns:
-            The number of parity bits in the code
-        """
-        return self._redundancy
-
-    @property
-    def code_rate(self) -> float:
-        """Get the code rate (k/n).
-
-        Returns:
-            The rate of the code (ratio of information bits to total bits)
-        """
-        return self._dimension / self._length
 
     @property
     def parity_check_matrix(self) -> torch.Tensor:
@@ -261,7 +193,7 @@ class LinearBlockCodeEncoder(BaseModel):
         Returns:
             The check matrix H of the code
         """
-        return self._check_matrix
+        return self.check_matrix
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Applies the encoding mapping Enc: B^k → B^n of the code.
@@ -287,8 +219,8 @@ class LinearBlockCodeEncoder(BaseModel):
         last_dim_size = x.shape[-1]
 
         # Check if the last dimension is a multiple of k
-        if last_dim_size % self._dimension != 0:
-            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of the code dimension {self._dimension}")
+        if last_dim_size % self.code_dimension != 0:
+            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of the code dimension {self.code_dimension}")
 
         # Define encoding function to apply to blocks
         def encode_fn(reshaped_x):
@@ -296,7 +228,7 @@ class LinearBlockCodeEncoder(BaseModel):
             return torch.matmul(reshaped_x, self.generator_matrix) % 2
 
         # Use apply_blockwise to handle the encoding
-        return apply_blockwise(x, self._dimension, encode_fn)
+        return self.apply_blockwise(x, self.code_dimension, encode_fn)
 
     def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the syndrome of a received word.
@@ -317,8 +249,8 @@ class LinearBlockCodeEncoder(BaseModel):
         last_dim_size = x.shape[-1]
 
         # Check if the last dimension is a multiple of n
-        if last_dim_size % self._length != 0:
-            raise ValueError(f"Input codeword length {last_dim_size} must be a multiple of the code length {self._length}")
+        if last_dim_size % self.code_length != 0:
+            raise ValueError(f"Input codeword length {last_dim_size} must be a multiple of the code length {self.code_length}")
 
         # Define syndrome calculation function to apply to blocks
         def syndrome_fn(reshaped_x):
@@ -326,7 +258,7 @@ class LinearBlockCodeEncoder(BaseModel):
             return torch.matmul(reshaped_x, self.check_matrix.transpose(0, 1)) % 2
 
         # Use apply_blockwise to handle the syndrome calculation
-        return apply_blockwise(x, self._length, syndrome_fn)
+        return self.apply_blockwise(x, self.code_length, syndrome_fn)
 
     def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
         """Decode the input tensor using the generator matrix right inverse.
@@ -354,8 +286,8 @@ class LinearBlockCodeEncoder(BaseModel):
         last_dim_size = x.shape[-1]
 
         # Check if the last dimension is a multiple of n
-        if last_dim_size % self._length != 0:
-            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of the code length {self._length}")
+        if last_dim_size % self.code_length != 0:
+            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of the code length {self.code_length}")
 
         # Calculate syndrome using the calculate_syndrome method which already uses apply_blockwise
         syndrome = self.calculate_syndrome(x)
@@ -366,6 +298,6 @@ class LinearBlockCodeEncoder(BaseModel):
             return torch.matmul(reshaped_x, self.generator_right_inverse) % 2
 
         # Use apply_blockwise to handle the decoding
-        decoded = apply_blockwise(x, self._length, decode_fn)
+        decoded = self.apply_blockwise(x, self.code_length, decode_fn)
 
         return decoded, syndrome

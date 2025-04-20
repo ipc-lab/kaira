@@ -1,0 +1,716 @@
+"""BCH code implementation for forward error correction.
+
+This module implements Bose-Chaudhuri-Hocquenghem (BCH) codes, a class of cyclic error-correcting
+codes that are constructed using polynomials over finite fields. BCH codes are powerful and
+versatile, providing the ability to control the trade-off between redundancy and error-correcting
+capability :cite:`lin2004error,moon2005error,richardson2008modern`.
+
+For given parameters μ ≥ 2 and δ satisfying 2 ≤ δ ≤ 2^μ - 1, a binary BCH code has
+the following parameters, where δ = 2τ + 1:
+
+- Length: n = 2^μ - 1
+- Dimension: k ≥ n - μτ
+- Redundancy: m ≤ μτ
+- Minimum distance: d ≥ δ
+
+This implementation handles narrow-sense, primitive BCH codes.
+"""
+
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import torch
+
+from kaira.models.registry import ModelRegistry
+
+from ..algebra import BinaryPolynomial, FiniteBifield, FiniteBifieldElement
+from .cyclic_code import CyclicCodeEncoder
+
+# Dictionary to cache generator polynomials for each (mu, delta) pair
+_generator_poly_cache: Dict[Tuple[int, int], BinaryPolynomial] = {}
+
+
+@lru_cache(maxsize=32)
+def compute_bch_generator_polynomial(mu: int, delta: int) -> BinaryPolynomial:
+    """Compute the generator polynomial for a BCH code.
+
+    Args:
+        mu: The parameter μ of the BCH code.
+        delta: The design distance δ of the BCH code.
+
+    Returns:
+        The generator polynomial.
+    """
+    # Check cache first
+    cache_key = (mu, delta)
+    if cache_key in _generator_poly_cache:
+        return _generator_poly_cache[cache_key]
+
+    # Create the finite field
+    field = FiniteBifield(mu)
+
+    # Get the primitive element
+    alpha = field.primitive_element()
+
+    # Compute the minimal polynomials of alpha^1, alpha^2, ..., alpha^(delta-1)
+    minimal_polys = set()
+    for i in range(1, delta):
+        minimal_poly = (alpha**i).minimal_polynomial()
+        minimal_polys.add(minimal_poly)
+
+    # Compute the LCM of the minimal polynomials
+    if not minimal_polys:
+        raise ValueError("No minimal polynomials found")
+
+    # Convert the set to a list for consistent ordering
+    minimal_polys_list = list(minimal_polys)
+
+    # Compute the LCM
+    generator_poly = minimal_polys_list[0]
+    for poly in minimal_polys_list[1:]:
+        generator_poly = generator_poly.lcm(poly)
+
+    # Cache the result
+    _generator_poly_cache[cache_key] = generator_poly
+    return generator_poly
+
+
+# Cache of valid Bose distances for each mu
+_bose_distance_cache: Dict[int, List[int]] = {}
+
+
+@lru_cache(maxsize=16)
+def get_valid_bose_distances(mu: int) -> List[int]:
+    """Get all valid Bose distances for a given mu.
+
+    Args:
+        mu: The parameter μ of the BCH code.
+
+    Returns:
+        List of all valid Bose distances for the given mu.
+    """
+    if mu in _bose_distance_cache:
+        return _bose_distance_cache[mu]
+
+    valid_distances = []
+    for delta in range(2, 2**mu):
+        if is_bose_distance(mu, delta):
+            valid_distances.append(delta)
+
+    _bose_distance_cache[mu] = valid_distances
+    return valid_distances
+
+
+@lru_cache(maxsize=64)
+def is_bose_distance(mu: int, delta: int) -> bool:
+    """Check if delta is a Bose distance for the given mu.
+
+    A Bose distance is a value δ such that the BCH code with parameters μ and δ
+    has a different generator polynomial than the BCH code with parameters μ and δ-1.
+
+    Args:
+        mu: The parameter μ of the BCH code.
+        delta: The potential Bose distance δ.
+
+    Returns:
+        True if delta is a Bose distance, False otherwise.
+    """
+    # Simple checks first
+    if delta < 2 or delta > 2**mu - 1:
+        return False
+
+    if delta == 2:
+        return True  # δ=2 is always a Bose distance
+
+    # Special cases for efficiency
+    if delta == 3:
+        return True  # δ=3 is always a Bose distance
+    if delta == 2**mu - 1:
+        return True  # Maximum possible δ is always a Bose distance
+
+    # Check if the minimal polynomial of alpha^delta is already in the LCM set
+    field = FiniteBifield(mu)
+    alpha = field.primitive_element()
+
+    # Get minimal polynomials for powers 1 to delta-1
+    minimal_polys = set()
+    for i in range(1, delta):
+        minimal_poly = (alpha**i).minimal_polynomial()
+        minimal_polys.add(minimal_poly.value)  # Store the value for easier comparison
+
+    # Check if the minimal polynomial of alpha^delta is already included
+    delta_poly = (alpha**delta).minimal_polynomial()
+    return delta_poly.value not in minimal_polys
+
+
+def create_bch_generator_matrix(length: int, generator_poly: BinaryPolynomial, dtype: torch.dtype = torch.float32, device: Optional[torch.device] = None) -> torch.Tensor:
+    """Create the generator matrix for a BCH code.
+
+    This function creates a systematic generator matrix for a BCH code.
+
+    Args:
+        length: The length of the code.
+        generator_poly: The generator polynomial.
+        dtype: The data type for the resulting tensor. Default is torch.float32.
+        device: The device to place the tensor on. Default is None (uses current device).
+
+    Returns:
+        The generator matrix.
+    """
+    # Compute dimensions
+    n = length
+    redundancy = generator_poly.degree
+    dimension = n - redundancy
+
+    # Create the generator matrix
+    G = torch.zeros((dimension, n), dtype=dtype, device=device)
+
+    # Create systematic form generator matrix
+    for i in range(dimension):
+        # Start with a monomial x^i
+        message_poly = BinaryPolynomial(1 << i)
+
+        # Multiply by x^(n-k) to shift it
+        shifted_poly = BinaryPolynomial(message_poly.value << redundancy)
+
+        # Compute the remainder when divided by the generator polynomial
+        remainder_poly = shifted_poly % generator_poly
+
+        # The codeword is the shifted message concatenated with the remainder
+        codeword_poly = BinaryPolynomial((message_poly.value << redundancy) ^ remainder_poly.value)
+
+        # Convert the polynomial to a row in the generator matrix
+        codeword_value = codeword_poly.value
+        for j in range(n):
+            if codeword_value & (1 << j):
+                G[i, n - j - 1] = 1.0
+
+    return G
+
+
+@ModelRegistry.register_model("bch_code_encoder")
+class BCHCodeEncoder(CyclicCodeEncoder):
+    r"""Encoder for BCH (Bose–Chaudhuri–Hocquenghem) codes.
+
+    BCH codes are a class of powerful cyclic error-correcting codes that can be designed
+    to correct multiple errors. They are constructed using polynomials over finite fields
+    and provide great flexibility in the trade-off between redundancy and error-correcting
+    capability :cite:`lin2004error,richardson2008modern`.
+
+    For given parameters μ ≥ 2 and δ satisfying 2 ≤ δ ≤ 2^μ - 1, a binary BCH code has
+    the following parameters, where δ = 2τ + 1:
+
+    - Length: n = 2^μ - 1
+    - Dimension: k ≥ n - μτ
+    - Redundancy: m ≤ μτ
+    - Minimum distance: d ≥ δ
+
+    This implementation handles narrow-sense, primitive BCH codes
+    :cite:`lin2004error,moon2005error,sklar2001digital`.
+
+    Attributes:
+        mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
+        delta (int): The design distance δ of the code.
+        length (int): Code length (n = 2^μ - 1)
+        dimension (int): Code dimension (k)
+        redundancy (int): Code redundancy (m)
+        generator_matrix (torch.Tensor): The generator matrix G of the code
+        check_matrix (torch.Tensor): The parity check matrix H of the code
+
+    Args:
+        mu (int): The parameter μ of the code. Must satisfy μ ≥ 2.
+        delta (int): The design distance δ of the code. Must satisfy 2 ≤ δ ≤ 2^μ - 1
+            and be a valid Bose distance.
+        information_set (Union[List[int], torch.Tensor, str], optional): Information set
+            specification. Default is "left".
+        dtype (torch.dtype, optional): Data type for internal tensors. Default is torch.float32.
+        **kwargs: Additional keyword arguments passed to the parent class.
+
+    Examples:
+        >>> encoder = BCHCodeEncoder(mu=4, delta=5)
+        >>> print(f"Length: {encoder.length}, Dimension: {encoder.dimension}, Redundancy: {encoder.redundancy}")
+        Length: 15, Dimension: 7, Redundancy: 8
+        >>> message = torch.tensor([1., 0., 1., 1., 0., 1., 0.])
+        >>> codeword = encoder(message)
+        >>> print(codeword)
+        tensor([1., 0., 1., 1., 0., 1., 0., 1., 0., 0., 1., 1., 0., 0., 1.])
+    """
+
+    def __init__(self, mu: int, delta: int, information_set: Union[List[int], torch.Tensor, str] = "left", dtype: torch.dtype = torch.float32, **kwargs: Any):
+        """Initialize the BCH code encoder.
+
+        Args:
+            mu: The parameter μ of the code. Must satisfy μ ≥ 2.
+            delta: The design distance δ of the code. Must satisfy 2 ≤ δ ≤ 2^μ - 1
+                and be a valid Bose distance.
+            information_set: Either indices of information positions, which must be a k-sublist
+                of [0...n), or one of the strings 'left' or 'right'. Default is 'left'.
+            dtype: Data type for internal tensors. Default is torch.float32.
+            **kwargs: Additional keyword arguments passed to the parent class.
+
+        Raises:
+            ValueError: If μ < 2 or if δ is not a valid Bose distance.
+        """
+        if mu < 2:
+            raise ValueError("'mu' must satisfy mu >= 2")
+        if not 2 <= delta <= 2**mu - 1:
+            raise ValueError("'delta' must satisfy 2 <= delta <= 2**mu - 1")
+
+        # Store parameters
+        self._mu = mu
+        self._delta = delta
+        self._dtype = dtype
+
+        # Check if delta is a valid Bose distance
+        if not is_bose_distance(mu, delta):
+            # Find the next valid Bose distance
+            valid_distances = get_valid_bose_distances(mu)
+            next_deltas = [d for d in valid_distances if d > delta]
+
+            if next_deltas:
+                next_delta = next_deltas[0]
+                raise ValueError(f"'delta' must be a Bose distance (the next one is {next_delta})")
+            else:
+                raise ValueError("'delta' must be a Bose distance")
+
+        # Compute the generator polynomial
+        self._generator_polynomial = compute_bch_generator_polynomial(mu, delta)
+
+        # Compute code parameters
+        n = 2**mu - 1
+        m = self._generator_polynomial.degree
+        k = n - m
+
+        # Calculate error correction capability
+        self._error_correction_capability = (delta - 1) // 2
+
+        # Get device from kwargs if provided
+        device = kwargs.get("device", None)
+
+        # Create generator matrix
+        generator_matrix = create_bch_generator_matrix(length=n, generator_poly=self._generator_polynomial, dtype=dtype, device=device)
+
+        # Initialize the parent class with the generator matrix directly
+        # Note: We're bypassing the parity submatrix approach from SystematicLinearBlockCodeEncoder
+        super(CyclicCodeEncoder, self).__init__(*kwargs)
+
+        # Register buffers
+        self.register_buffer("generator_matrix", generator_matrix)
+
+        # Store dimensions
+        self._length = n
+        self._dimension = k
+        self._redundancy = m
+
+        # Create the finite field (used for decoding)
+        self._field = FiniteBifield(mu)
+        self._alpha = self._field.primitive_element()
+
+        # Compute the check matrix
+        self._compute_check_matrix()
+
+        # Register the check matrix buffer
+        self.register_buffer("check_matrix", self._check_matrix)
+
+    def _compute_check_matrix(self) -> None:
+        """Compute the parity check matrix from the generator matrix."""
+        # For a systematic code, the check matrix can be derived from the generator matrix
+        identity_part = torch.eye(self._redundancy, dtype=self._dtype, device=self.generator_matrix.device)
+        parity_part = self.generator_matrix[:, : self._redundancy].T
+
+        # Construct H = [P^T | I_m]
+        self._check_matrix = torch.cat([parity_part, identity_part], dim=1)
+
+    @property
+    def mu(self) -> int:
+        """Get the parameter μ of the code.
+
+        Returns:
+            The parameter μ
+        """
+        return self._mu
+
+    @property
+    def delta(self) -> int:
+        """Get the design distance δ of the code.
+
+        Returns:
+            The design distance δ
+        """
+        return self._delta
+
+    @property
+    def error_correction_capability(self) -> int:
+        """Get the error correction capability of the code.
+
+        For a BCH code with design distance δ, the code can correct up to t = ⌊(δ-1)/2⌋ errors.
+
+        Returns:
+            The number of errors that can be corrected
+        """
+        return self._error_correction_capability
+
+    @property
+    def generator_polynomial(self) -> BinaryPolynomial:
+        """Get the generator polynomial of the code.
+
+        Returns:
+            The generator polynomial
+        """
+        return self._generator_polynomial
+
+    @property
+    def dtype(self) -> torch.dtype:
+        """Get the data type used for internal tensors.
+
+        Returns:
+            The data type
+        """
+        return self._dtype
+
+    @lru_cache(maxsize=None)
+    def minimum_distance(self) -> int:
+        """Get the minimum distance of the code.
+
+        For BCH codes, the minimum distance is at least the design distance.
+
+        Returns:
+            The minimum distance of the code, which is at least δ.
+        """
+        return self._delta
+
+    def bch_syndrome(self, received_word: torch.Tensor) -> List[List[Tuple[int, int]]]:
+        """Compute the BCH syndrome of a received word.
+
+        This method computes the BCH syndrome, which is useful for decoding and
+        error correction in BCH codes.
+
+        Args:
+            received_word: The received word tensor with shape (..., n) or (..., b*n)
+                where n is the code length and b is a positive integer.
+
+        Returns:
+            A list of syndromes for each received word.
+        """
+        # Convert the received word to polynomial form
+        # Handle batch dimensions
+        if received_word.dim() > 1:
+            received_word = received_word.reshape(-1, self._length)
+        else:
+            received_word = received_word.unsqueeze(0)
+
+        batch_size = received_word.size(0)
+        syndromes = []
+
+        # Create the finite field
+        alpha = self._alpha
+
+        # Compute syndromes for each received word
+        for i in range(batch_size):
+            # Convert the received word to a polynomial
+            r_poly_value = 0
+            for j in range(self._length):
+                if received_word[i, j] > 0.5:  # Binarize
+                    r_poly_value |= 1 << (self._length - j - 1)
+
+            r_poly = BinaryPolynomial(r_poly_value)
+
+            # Compute the syndromes
+            syndrome = []
+            for j in range(1, self._delta):
+                value = r_poly.evaluate(alpha**j)
+                if isinstance(value, FiniteBifieldElement):
+                    syndrome.append((j, value.value))
+
+            syndromes.append(syndrome)
+
+        return syndromes
+
+    def correct_errors(self, received_word: torch.Tensor) -> torch.Tensor:
+        """Correct errors in a received word using the Berlekamp-Massey algorithm.
+
+        This implements the Berlekamp-Massey algorithm for BCH decoding, which can
+        correct up to t = ⌊(δ-1)/2⌋ errors.
+
+        Args:
+            received_word: The received word tensor with shape (..., n) or (..., b*n)
+                where n is the code length and b is a positive integer.
+
+        Returns:
+            The corrected word tensor with the same shape as the input.
+        """
+        # Handle batch dimensions
+        orig_shape = received_word.shape
+        if received_word.dim() > 1:
+            received_word = received_word.reshape(-1, self._length)
+        else:
+            received_word = received_word.unsqueeze(0)
+
+        batch_size = received_word.size(0)
+        corrected = received_word.clone()
+
+        # Process each received word
+        for i in range(batch_size):
+            # Convert to polynomial
+            r_poly_value = 0
+            for j in range(self._length):
+                if received_word[i, j] > 0.5:  # Binarize
+                    r_poly_value |= 1 << (self._length - j - 1)
+
+            r_poly = BinaryPolynomial(r_poly_value)
+
+            # Compute syndromes
+            syndromes = []
+            for j in range(1, 2 * self._error_correction_capability + 1):
+                value = r_poly.evaluate(self._alpha**j)
+                if isinstance(value, FiniteBifieldElement):
+                    syndromes.append(value)
+
+            # If all syndromes are zero, no errors
+            if all(s.value == 0 for s in syndromes):
+                continue
+
+            # Use the Berlekamp-Massey algorithm to find the error locator polynomial
+            error_locator = self._berlekamp_massey(syndromes)
+
+            # Find the roots of the error locator polynomial
+            error_positions = self._find_error_positions(error_locator)
+
+            # Correct the errors
+            for pos in error_positions:
+                # Flip the bit at the error position
+                corrected[i, pos] = 1.0 - corrected[i, pos]
+
+        # Reshape back to original shape
+        return corrected.reshape(orig_shape)
+
+    def _berlekamp_massey(self, syndromes: List[FiniteBifieldElement]) -> BinaryPolynomial:
+        """Implement the Berlekamp-Massey algorithm to find the error locator polynomial.
+
+        Args:
+            syndromes: List of syndrome values.
+
+        Returns:
+            The error locator polynomial.
+        """
+        # Initialize
+        n = len(syndromes)
+        C = BinaryPolynomial(1)  # Current error locator polynomial
+        B = BinaryPolynomial(1)  # Previous error locator polynomial
+        L = 0  # Current error locator degree
+        m = 1  # Number of iterations since L was updated
+
+        # Main loop
+        for j in range(n):
+            # Compute discrepancy
+            delta = self._field(0)
+            for i in range(L + 1):
+                if i >= len(C.to_coefficient_list()):
+                    continue
+                if C.to_coefficient_list()[i] == 1:
+                    if j - i < 0 or j - i >= len(syndromes):
+                        continue
+                    delta = delta + syndromes[j - i]
+
+            # Update
+            if delta.value == 0:
+                # No update needed
+                m += 1
+            else:
+                # Update C
+                T = C
+                x_to_m = BinaryPolynomial(1 << m)  # x^m
+                term = x_to_m * B
+
+                # In GF(2), multiplication by any non-zero element is the element itself
+                C_new_value = C.value ^ term.value
+                C = BinaryPolynomial(C_new_value)
+
+                # Update L, B, m if needed
+                if 2 * L <= j:
+                    L = j + 1 - L
+                    B = T
+                    m = 1
+                else:
+                    m += 1
+
+        return C
+
+    def _find_error_positions(self, error_locator: BinaryPolynomial) -> List[int]:
+        """Find the roots of the error locator polynomial and convert to error positions.
+
+        Args:
+            error_locator: The error locator polynomial.
+
+        Returns:
+            List of error positions (indices) in the received word.
+        """
+        error_positions = []
+
+        # Check each position in the codeword
+        for i in range(self._length):
+            # Check if alpha^(-i) is a root of the error locator polynomial
+            # This is equivalent to evaluating at alpha^i and checking if it's zero
+            element = self._alpha**i
+            if error_locator.evaluate(element).value == 0:
+                # Convert to position in the codeword (n-1-i for systematic form)
+                error_positions.append(self._length - 1 - i)
+
+        return error_positions
+
+    def decode(self, received_word: torch.Tensor) -> torch.Tensor:
+        """Decode a received word using BCH decoding.
+
+        This method first attempts to correct errors using the Berlekamp-Massey algorithm,
+        then extracts the message part from the corrected codeword.
+
+        Args:
+            received_word: The received word tensor with shape (..., n) or (..., b*n)
+                where n is the code length and b is a positive integer.
+
+        Returns:
+            The decoded message tensor with shape (..., k) or (..., b*k).
+        """
+        # Correct errors first
+        corrected = self.correct_errors(received_word)
+
+        # Then use the parent class's decoding logic to extract the message
+        return super().decode(corrected)
+
+    def encode_decode_pipeline(self, message: torch.Tensor, error_rate: float = 0.0, error_pattern: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Run a complete encode-transmit-decode pipeline with optional errors.
+
+        This is a convenience method that encodes a message, optionally introduces
+        bit-flip errors, and then attempts to decode and correct the received word.
+
+        Args:
+            message: The message tensor to encode
+            error_rate: Probability of bit flip for each bit in the codeword (default: 0.0)
+            error_pattern: Optional specific error pattern to apply (overrides error_rate)
+                Must be the same shape as the codeword.
+
+        Returns:
+            Tuple containing:
+                - Original message
+                - Decoded message
+                - Received word with errors
+        """
+        # Encode the message
+        codeword = self(message)
+
+        # Introduce errors
+        if error_pattern is not None:
+            # Use specific error pattern
+            if error_pattern.shape != codeword.shape:
+                raise ValueError("Error pattern must have the same shape as the codeword")
+            received_word = (codeword + error_pattern) % 2
+        elif error_rate > 0.0:
+            # Random bit-flip errors
+            noise = torch.bernoulli(torch.full(codeword.shape, error_rate, dtype=codeword.dtype, device=codeword.device))
+            received_word = (codeword + noise) % 2
+        else:
+            received_word = codeword
+
+        # Decode the received word using BCH decoding
+        decoded_message = self.decode(received_word)
+
+        return message, decoded_message, received_word
+
+    @classmethod
+    def from_design_rate(cls, mu: int, target_rate: float, **kwargs: Any) -> "BCHCodeEncoder":
+        """Create a BCH code with a design rate close to the target rate.
+
+        Args:
+            mu: The parameter μ of the BCH code.
+            target_rate: The target rate (k/n) of the code.
+            **kwargs: Additional arguments passed to the constructor.
+
+        Returns:
+            A BCH code encoder with rate close to the target rate.
+
+        Raises:
+            ValueError: If no suitable code can be found.
+        """
+        if mu < 2:
+            raise ValueError("'mu' must satisfy mu >= 2")
+        if not 0 < target_rate < 1:
+            raise ValueError("'target_rate' must be between 0 and 1")
+
+        # Get all valid Bose distances for this mu
+        valid_distances = get_valid_bose_distances(mu)
+
+        # Calculate the code length
+        n = 2**mu - 1
+
+        # Find the delta that gives the closest rate to the target
+        best_delta = None
+        best_diff = float("inf")
+
+        for delta in valid_distances:
+            # Compute the generator polynomial to get the dimension
+            generator_poly = compute_bch_generator_polynomial(mu, delta)
+            k = n - generator_poly.degree
+            rate = k / n
+
+            diff = abs(rate - target_rate)
+            if diff < best_diff:
+                best_diff = diff
+                best_delta = delta
+
+        if best_delta is None:
+            raise ValueError(f"Could not find a suitable BCH code for mu={mu} and rate={target_rate}")
+
+        return cls(mu=mu, delta=best_delta, **kwargs)
+
+    @classmethod
+    def get_standard_codes(cls) -> Dict[str, Dict[str, Any]]:
+        """Get a dictionary of standard BCH codes with their parameters.
+
+        Returns:
+            Dictionary mapping code names to their parameters.
+        """
+        return {
+            "BCH(7,4)": {"mu": 3, "delta": 3},  # Equivalent to Hamming(7,4)
+            "BCH(15,7)": {"mu": 4, "delta": 5},  # Can correct 2 errors
+            "BCH(15,5)": {"mu": 4, "delta": 7},  # Can correct 3 errors
+            "BCH(31,16)": {"mu": 5, "delta": 7},  # Can correct 3 errors
+            "BCH(31,11)": {"mu": 5, "delta": 11},  # Can correct 5 errors
+            "BCH(63,36)": {"mu": 6, "delta": 11},  # Can correct 5 errors
+            "BCH(63,24)": {"mu": 6, "delta": 15},  # Can correct 7 errors
+            "BCH(127,64)": {"mu": 7, "delta": 21},  # Can correct 10 errors
+            "BCH(127,36)": {"mu": 7, "delta": 31},  # Can correct 15 errors
+            "BCH(255,123)": {"mu": 8, "delta": 39},  # Can correct 19 errors
+            "BCH(255,71)": {"mu": 8, "delta": 59},  # Can correct 29 errors
+        }
+
+    @classmethod
+    def create_standard_code(cls, name: str, **kwargs: Any) -> "BCHCodeEncoder":
+        """Create a standard BCH code by name.
+
+        Args:
+            name: Name of the standard code from get_standard_codes().
+            **kwargs: Additional arguments passed to the constructor.
+
+        Returns:
+            A BCH code encoder for the requested standard code.
+
+        Raises:
+            ValueError: If the requested code is not recognized.
+        """
+        standard_codes = cls.get_standard_codes()
+        if name not in standard_codes:
+            valid_names = list(standard_codes.keys())
+            raise ValueError(f"Unknown standard code: {name}. Valid options are: {valid_names}")
+
+        params = standard_codes[name].copy()
+        params.update(kwargs)
+
+        return cls(**params)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the encoder.
+
+        Returns:
+            A string representation with key parameters
+        """
+        return f"{self.__class__.__name__}(" f"mu={self._mu}, " f"delta={self._delta}, " f"length={self._length}, " f"dimension={self._dimension}, " f"redundancy={self._redundancy}, " f"t={self._error_correction_capability}, " f"dtype={self._dtype.__repr__()}" f")"

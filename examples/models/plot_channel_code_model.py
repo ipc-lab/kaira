@@ -23,7 +23,7 @@ from kaira.constraints.power import TotalPowerConstraint
 # Import BER metric from kaira.metrics
 from kaira.metrics import BER
 from kaira.models import ChannelCodeModel
-from kaira.models.binary import MajorityVoteDecoder, RepetitionEncoder
+from kaira.models.fec.encoders import MajorityVoteDecoder, RepetitionCodeEncoder
 from kaira.modulations import BPSKDemodulator, BPSKModulator
 
 # Set random seed for reproducibility
@@ -52,7 +52,7 @@ print(f"Example message: {x[0].int().tolist()}")
 rep_factor = 3
 
 # Create model components
-encoder = RepetitionEncoder(repetition_factor=rep_factor)
+encoder = RepetitionCodeEncoder(repetition_factor=rep_factor)
 constraint = TotalPowerConstraint(total_power=1.0)
 modulator = BPSKModulator()
 channel = AWGNChannel(snr_db=5.0)  # Initialize with a default SNR value
