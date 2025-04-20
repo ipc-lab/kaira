@@ -85,6 +85,6 @@ Kaira integrates seamlessly with PyTorch for deep learning applications:
 Next Steps
 ----------
 
-- Check out the :ref:`API Reference <api_reference>` for detailed information on Kaira's modules
-- Browse through :ref:`Examples <examples_index>` for more advanced use cases
-- Learn about :ref:`Best Practices <best_practices>` for using Kaira effectively
+- Check out the :doc:`API Reference </api_reference>` for detailed information on Kaira's modules
+- Browse through :ref:`kaira_examples_gallery` for more advanced use cases
+- Learn about :doc:`Best Practices </best_practices>` for using Kaira effectively

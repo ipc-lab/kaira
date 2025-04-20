@@ -5,6 +5,7 @@ This module provides various encoder implementations for forward error correctio
 - Linear block codes
 - Cyclic codes
 - BCH codes
+- Reed-Solomon codes
 - Hamming codes
 - Repetition codes
 - Golay codes
@@ -18,7 +19,8 @@ from .cyclic_code import CyclicCodeEncoder
 from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
+from .reed_solomon_code import ReedSolomonCodeEncoder
 from .repetition_code import MajorityVoteDecoder, RepetitionCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder"]
+__all__ = ["BlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "MajorityVoteDecoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder"]

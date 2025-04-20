@@ -136,7 +136,8 @@ sphinx_gallery_conf = {
     # Custom template
     "default_thumb_file": "_static/logo.png",
     # Build settings
-    "only_warn_on_example_error": True,
+    "only_warn_on_example_error": True,  # Only warn on example errors, don't fail
+    "abort_on_example_error": False,  # Don't abort on example errors
     "reset_modules": ("matplotlib",),
     # Backreference settings
     "backreferences_dir": "gen_modules/backreferences",
@@ -171,6 +172,9 @@ autodoc_inherit_docstrings = False
 # Automatically generate autosummary pages
 autosummary_generate = True
 autosummary_imported_members = False
+# Set recursive to true to document items in submodules automatically
+autosummary_recursive = True
+# Configure template mapping for different types of objects
 autosummary_template_mapping = {
     "class": "class.rst",
     "function": "function.rst",
@@ -380,11 +384,20 @@ def setup(app):
 
 # Mock imports for modules that might not be installed
 # This prevents build failures due to missing dependencies
-autodoc_mock_imports = []
-
-# Check if we need to mock kaira modules that failed to import
-try:
-    import kaira.data
-except ImportError:
-    print("Adding kaira.data to mock imports")
-    autodoc_mock_imports.append("kaira.data")
+autodoc_mock_imports = [
+    # Core dependencies that might not be available during doc building
+    "torch",
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "torchmetrics",
+    # Kaira modules that might have import issues
+    "kaira.losses",
+    "kaira.models",
+    "kaira.channels",
+    "kaira.metrics",
+    "kaira.modulations",
+    "kaira.constraints",
+    "kaira.data",
+    "kaira.utils",
+]

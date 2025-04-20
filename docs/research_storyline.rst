@@ -104,7 +104,7 @@ Communications research thrives on collaboration. The Kaira community welcomes r
 * **Bug Reports and Feature Requests**: Help improve the framework by reporting issues and suggesting enhancements
 
 **Research Collaboration**
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * **Citation Network**: When you publish work using Kaira, cite the framework to strengthen the research community
 * **Reproducibility**: Share your experiment configurations to enable others to build upon your work
