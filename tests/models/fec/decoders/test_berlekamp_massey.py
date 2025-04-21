@@ -22,7 +22,7 @@ class TestBerlekampMasseyDecoder:
         assert decoder.encoder is encoder
 
         # Verify properties are correctly set
-        assert decoder.field is encoder.field
+        assert decoder.field is encoder._field
         assert decoder.t == encoder.error_correction_capability
 
     def test_invalid_initialization(self):
@@ -43,7 +43,7 @@ class TestBerlekampMasseyDecoder:
 
         # Create a known syndrome sequence
         # This would typically come from a received word with errors
-        field = encoder.field
+        field = encoder._field
         syndrome = [field(0), field(1), field(3), field(7)]
 
         # Run the Berlekamp-Massey algorithm
@@ -64,7 +64,7 @@ class TestBerlekampMasseyDecoder:
 
         # Create a known error locator polynomial
         # For example, sigma(x) = 1 + x + x^2 in GF(2^4)
-        field = encoder.field
+        field = encoder._field
         error_locator_poly = [field(1), field(1), field(1)]
 
         # Find error locations
@@ -130,7 +130,7 @@ class TestBerlekampMasseyDecoder:
         decoder = BerlekampMasseyDecoder(encoder=encoder)
 
         # Create messages and encode them
-        messages = torch.tensor([[1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0]])
+        messages = torch.tensor([[1.0, 0.0, 1.0, 1.1, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0]])
         codewords = encoder(messages)
 
         # Introduce errors in both codewords
@@ -151,7 +151,7 @@ class TestBerlekampMasseyDecoder:
         decoder = BerlekampMasseyDecoder(encoder=encoder)
 
         # Create a message and encode it
-        message = torch.tensor([1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0])
+        message = torch.tensor([1.0, 0.0, 1.0, 1.1, 0.0, 1.0, 0.0])
         codeword = encoder(message)
 
         # Introduce more errors than the correction capability

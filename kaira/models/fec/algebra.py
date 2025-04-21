@@ -439,6 +439,24 @@ class FiniteBifield:
         self._log_table = [0] * self.size
         self._init_log_exp_tables()
 
+    @property
+    def zero(self) -> "FiniteBifieldElement":
+        """Get the zero element of the field.
+
+        Returns:
+            The zero element (additive identity) of the field.
+        """
+        return self(0)
+
+    @property
+    def one(self) -> "FiniteBifieldElement":
+        """Get the one element of the field.
+
+        Returns:
+            The one element (multiplicative identity) of the field.
+        """
+        return self(1)
+
     def _init_log_exp_tables(self) -> None:
         """Initialize log and exponential tables for fast field arithmetic."""
         # Initialize exp and log tables

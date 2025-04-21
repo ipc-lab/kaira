@@ -423,3 +423,28 @@ class BCHCodeEncoder(CyclicCodeEncoder):
             A string representation with key parameters
         """
         return f"{self.__class__.__name__}(" f"mu={self._mu}, " f"delta={self._delta}, " f"length={self._length}, " f"dimension={self._dimension}, " f"redundancy={self._redundancy}, " f"t={self._error_correction_capability}, " f"dtype={self._dtype.__repr__()}" f")"
+
+    def calculate_syndrome_polynomial(self, received: List[Any]) -> List[Any]:
+        """Calculate the syndrome polynomial for a received word.
+
+        This method computes the syndrome polynomial S(x) for a received codeword by evaluating
+        the received polynomial at powers of alpha, which are the roots of the generator polynomial.
+
+        Args:
+            received: List of field elements representing the received word
+
+        Returns:
+            List of syndrome values in the field, S = [S_0, S_1, ..., S_{2t-1}]
+        """
+        syndrome = []
+        for i in range(1, 2 * self._error_correction_capability + 1):
+            # Evaluate the received polynomial at alpha^i
+            alpha_i = self._alpha**i
+            eval_result = self._field(0)  # Initialize with field zero element
+            for j, bit in enumerate(received):
+                if bit != self._field.zero:
+                    # For each non-zero bit, add alpha^(j*i) to the result
+                    eval_result = eval_result + (alpha_i**j)
+            syndrome.append(eval_result)
+
+        return syndrome
