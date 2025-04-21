@@ -98,7 +98,7 @@ class TestRepetitionCodeEncoder:
         # Test syndrome for valid codeword
         x = torch.tensor([1.0, 1.0, 1.0])
         syndrome = encoder.calculate_syndrome(x)
-        expected = torch.zeros(syndrome.shape)
+        expected = torch.zeros(syndrome.shape, dtype=syndrome.dtype)
         assert torch.all(syndrome == expected)
 
         # Test syndrome for invalid codeword

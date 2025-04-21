@@ -236,3 +236,59 @@ class HammingCodeEncoder(SystematicLinearBlockCodeEncoder):
             A string representation with key parameters
         """
         return f"{self.__class__.__name__}(" f"mu={self._mu}, " f"extended={self._extended}, " f"length={self._length}, " f"dimension={self._dimension}, " f"redundancy={self._redundancy}, " f"dtype={self._dtype.__repr__()}" f")"
+
+    def inverse_encode(self, y):
+        """Decode a codeword back to its original message, correcting single-bit errors.
+
+        Args:
+            y: A tensor of codewords to decode. The last dimension should match the code length.
+                Supports batch processing with arbitrary batch dimensions.
+
+        Returns:
+            tuple: (decoded_message, syndrome)
+                - decoded_message: The decoded information bits with corrected errors
+                - syndrome: The syndrome vectors for each codeword
+        """
+        # Calculate syndrome
+        syndrome = self.calculate_syndrome(y)
+
+        # Prepare shapes
+        original_dims = y.size()[:-1]
+        y_reshaped = y.reshape(-1, self.code_length).clone()
+        syndrome_reshaped = syndrome.reshape(-1, self.redundancy)
+
+        # Vectorized error correction
+        error_positions = torch.tensor([self._syndrome_to_error_position(s) for s in syndrome_reshaped], device=y.device)
+
+        # Create mask for valid error positions (less than code_length)
+        valid_errors = error_positions < self.code_length
+
+        # Apply corrections using vectorized operations
+        if valid_errors.any():
+            # Create batch indices for the samples with errors
+            batch_indices = torch.nonzero(valid_errors, as_tuple=True)[0]
+            # Get corresponding error positions
+            pos = error_positions[valid_errors]
+
+            # Flip the bits at error positions
+            for i, p in zip(batch_indices, pos):
+                y_reshaped[i, p] = 1 - y_reshaped[i, p]
+
+        # Extract information bits
+        decoded = y_reshaped[..., self.information_set]
+        decoded = decoded.reshape(*original_dims, self.code_dimension)
+
+        return decoded, syndrome
+
+    def _syndrome_to_error_position(self, syndrome):
+        """Convert a syndrome to an error position by matching check matrix columns."""
+        # check_matrix shape: (m, n)
+        # compare syndrome to each column of check_matrix
+        H = self.check_matrix  # shape (m, n)
+        # ensure float dtype
+        syn = syndrome.float()
+        for j in range(self.code_length):
+            col = H[:, j].float()
+            if torch.equal(col, syn):
+                return j
+        return self.code_length
