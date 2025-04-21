@@ -74,6 +74,7 @@ class TestSingleParityCheckCodeEncoder:
 
         # Single message
         message = torch.tensor([1, 0, 1], dtype=torch.float)
+
         codeword = encoder(message)
 
         # Expected codeword: [1, 0, 1, 0] - ensures even number of 1s

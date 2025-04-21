@@ -391,7 +391,7 @@ class LinearBlockCodeEncoder(BaseBlockCodeEncoder):
         # Define encoding function to apply to blocks
         def encode_fn(reshaped_x):
             # Apply matrix multiplication to the last dimension
-            return torch.matmul(reshaped_x, self.generator_matrix) % 2
+            return torch.matmul(reshaped_x, self.generator_matrix.to(reshaped_x.dtype)) % 2
 
         # Use apply_blockwise to handle the encoding
         return apply_blockwise(x, self.code_dimension, encode_fn)
@@ -421,7 +421,7 @@ class LinearBlockCodeEncoder(BaseBlockCodeEncoder):
         # Define syndrome calculation function to apply to blocks
         def syndrome_fn(reshaped_x):
             # Apply matrix multiplication with check matrix transposed
-            return torch.matmul(reshaped_x, self.check_matrix.transpose(0, 1)) % 2
+            return torch.matmul(reshaped_x, self.check_matrix.transpose(0, 1).to(reshaped_x.dtype)) % 2
 
         # Use apply_blockwise to handle the syndrome calculation
         return apply_blockwise(x, self.code_length, syndrome_fn)
@@ -461,7 +461,7 @@ class LinearBlockCodeEncoder(BaseBlockCodeEncoder):
         # Define decoding function to apply to blocks
         def decode_fn(reshaped_x):
             # Apply matrix multiplication with generator right inverse
-            return torch.matmul(reshaped_x, self.generator_right_inverse) % 2
+            return torch.matmul(reshaped_x, self.generator_right_inverse.to(reshaped_x.dtype)) % 2
 
         # Use apply_blockwise to handle the decoding
         decoded = apply_blockwise(x, self.code_length, decode_fn)
