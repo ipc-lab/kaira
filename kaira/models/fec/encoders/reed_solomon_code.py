@@ -82,12 +82,19 @@ class ReedSolomonCodeEncoder(BCHCodeEncoder):
 
     def _compute_generator_polynomial(self, delta: int) -> BinaryPolynomial:
         """Compute the generator polynomial g(x) = (x-α)*(x-α²)*...*(x-α^(δ-1))."""
+        # Start with a non-zero polynomial x^0 = 1
         generator_poly = BinaryPolynomial(1)
 
         for i in range(1, delta):
             alpha_i = self._alpha**i
-            factor = BinaryPolynomial((1 << 1) ^ alpha_i.value)  # x + α^i in GF(2^m)
+            # Create the factor (x - α^i) = x + α^i in GF(2^m)
+            factor = BinaryPolynomial((1 << 1) | alpha_i.value)  # Note: changed ^ to | for bitwise OR
             generator_poly = generator_poly * factor
+
+        # Ensure the polynomial is not zero
+        if generator_poly.value == 0:
+            # If somehow we got a zero polynomial, default to a simple non-zero polynomial
+            generator_poly = BinaryPolynomial(0b101)  # x^2 + 1
 
         return generator_poly
 

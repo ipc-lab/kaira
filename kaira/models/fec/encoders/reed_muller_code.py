@@ -15,7 +15,7 @@ with elements belonging to the binary field GF(2) :cite:`richardson2008modern`.
 """
 
 from itertools import combinations, product
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import torch
 
@@ -38,8 +38,8 @@ def _generate_evaluation_vectors(m: int) -> torch.Tensor:
         block_size = 2 ** (m - i - 1)
         # Create a block pattern of 0s followed by 1s
         block = torch.cat([torch.zeros(block_size, dtype=torch.int64), torch.ones(block_size, dtype=torch.int64)])
-        # Repeat the block pattern as needed
-        v[m - i - 1] = block.repeat(2**i)
+        # Assign in natural order: row i
+        v[i] = block.repeat(2**i)
 
     return v
 
@@ -90,13 +90,10 @@ def calculate_reed_muller_dimension(r: int, m: int) -> int:
     if not (0 <= r < m):
         raise ValueError(f"Parameters must satisfy 0 ≤ r < m, got r={r}, m={m}")
 
-    # Dimension formula: sum of binomial coefficients
-    dimension = 0
-    for i in range(r + 1):
-        # Calculate binomial coefficient (m choose i)
-        dimension += torch.binomial(torch.tensor(m, dtype=torch.float), torch.tensor(i, dtype=torch.float)).item()
+    # Dimension is sum_{i=0}^r binomial(m, i)
+    from math import comb
 
-    return int(dimension)
+    return sum(comb(m, i) for i in range(r + 1))
 
 
 @ModelRegistry.register_model("reed_muller_code_encoder")
@@ -149,16 +146,21 @@ class ReedMullerCodeEncoder(LinearBlockCodeEncoder):
         if not (0 <= order < length_param):
             raise ValueError(f"Parameters must satisfy 0 ≤ r < m, got r={order}, m={length_param}")
 
-        # Generate the generator matrix for the code
-        generator_matrix = _generate_reed_muller_matrix(order, length_param)
+        # Generate the generator matrix for the code and cast to float for tensor operations
+        matrix = _generate_reed_muller_matrix(order, length_param)
+        generator_matrix = matrix.to(torch.float)
 
-        # Initialize the base class with the generator matrix
+        # Initialize the base class with the (float) generator matrix
         super().__init__(generator_matrix, *args, **kwargs)
 
         # Store Reed-Muller specific parameters
         self.order = order
         self.length_param = length_param
         self.minimum_distance = 2 ** (length_param - order)
+
+    def __repr__(self) -> str:
+        """Formal string representation including key parameters."""
+        return f"ReedMullerCodeEncoder(order={self.order}, length_param={self.length_param}, " f"length={self.code_length}, dimension={self.code_dimension})"
 
     @classmethod
     def from_parameters(cls, order: int, length_param: int, *args: Any, **kwargs: Any) -> "ReedMullerCodeEncoder":
@@ -217,3 +219,65 @@ class ReedMullerCodeEncoder(LinearBlockCodeEncoder):
                 reed_partitions.append(partition)
 
         return reed_partitions
+
+    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Decode codeword(s) by brute-force nearest-codeword search.
+
+        This method implements a maximum-likelihood decoder for Reed-Muller codes
+        by finding the closest valid codeword to the received word(s).
+
+        Args:
+            x: The received codeword(s). Can be a single vector or a batch.
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            Tuple containing:
+                - Decoded message(s)
+                - Syndrome (difference between closest valid codeword and received word)
+        """
+        # Make input a batch
+        if x.dim() == 1:
+            y2d = x.unsqueeze(0)
+            single = True
+        else:
+            y2d = x
+            single = False
+        device = y2d.device
+
+        # Enumerate all possible messages (2^k of them)
+        import itertools
+
+        msgs = torch.tensor(list(itertools.product([0, 1], repeat=self.code_dimension)), dtype=torch.float, device=device)  # (M, k)
+
+        # Generate their codewords
+        cws = (msgs @ self.generator_matrix) % 2  # (M, n)
+
+        # Compute Hamming distances to each received y
+        diff = (cws.unsqueeze(1) != y2d.unsqueeze(0)).float()
+        dists = diff.sum(dim=2)  # (M, B)
+        best = dists.argmin(dim=0)  # (B,)
+
+        # Pick best messages and their codewords
+        decoded = msgs[best]  # (B, k)
+        pred_cw = cws[best]  # (B, n)
+        syndrome = (pred_cw != y2d).float()  # (B, n)
+
+        if single:
+            return decoded[0], syndrome[0]
+        return decoded, syndrome
+
+    def calculate_syndrome(self, y: torch.Tensor):
+        """Return the syndrome (error pattern) for given codeword(s).
+
+        For Reed-Muller codes, we define the syndrome as the difference between
+        the received word and the nearest valid codeword.
+
+        Args:
+            y: The received codeword(s)
+
+        Returns:
+            Syndrome tensor (difference between nearest valid codeword and received word)
+        """
+        _, syn = self.inverse_encode(y)
+        return syn

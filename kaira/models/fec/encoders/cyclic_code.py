@@ -90,10 +90,7 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         if generator_polynomial is not None and check_polynomial is None:
             self._generator_poly = BinaryPolynomial(generator_polynomial)
             # Use custom division implementation to avoid divmod error
-            quotient = self._custom_div(self._modulus_poly, self._generator_poly)
-            # Use XOR for subtraction in GF(2) instead of the - operator
-            remainder_value = self._modulus_poly.value ^ (quotient.value * self._generator_poly.value)
-            remainder = BinaryPolynomial(remainder_value)
+            quotient, remainder = self._custom_div_with_remainder(self._modulus_poly, self._generator_poly)
             if remainder.value != 0:
                 raise ValueError("'generator_polynomial' must be a factor of X^n + 1")
             self._check_poly = quotient
@@ -102,10 +99,7 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         elif generator_polynomial is None and check_polynomial is not None:
             self._check_poly = BinaryPolynomial(check_polynomial)
             # Use custom division implementation to avoid divmod error
-            quotient = self._custom_div(self._modulus_poly, self._check_poly)
-            # Use XOR for subtraction in GF(2) instead of the - operator
-            remainder_value = self._modulus_poly.value ^ (quotient.value * self._check_poly.value)
-            remainder = BinaryPolynomial(remainder_value)
+            quotient, remainder = self._custom_div_with_remainder(self._modulus_poly, self._check_poly)
             if remainder.value != 0:
                 raise ValueError("'check_polynomial' must be a factor of X^n + 1")
             self._generator_poly = quotient
@@ -173,26 +167,26 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
 
         return generator_matrix
 
-    def _custom_div(self, dividend: BinaryPolynomial, divisor: BinaryPolynomial) -> BinaryPolynomial:
-        """Custom polynomial division implementation to avoid using divmod operator.
+    def _custom_div_with_remainder(self, dividend: BinaryPolynomial, divisor: BinaryPolynomial) -> tuple[BinaryPolynomial, BinaryPolynomial]:
+        """Custom polynomial division implementation that returns both quotient and remainder.
 
         Args:
             dividend: The dividend polynomial
             divisor: The divisor polynomial
 
         Returns:
-            The quotient polynomial
+            A tuple of (quotient, remainder) polynomials
         """
         if divisor.value == 0:
             raise ValueError("Division by zero polynomial")
 
         # Optimizations
         if dividend.value == 0:
-            return BinaryPolynomial(0)
+            return BinaryPolynomial(0), BinaryPolynomial(0)
         if dividend == divisor:
-            return BinaryPolynomial(1)
+            return BinaryPolynomial(1), BinaryPolynomial(0)
         if dividend.degree < divisor.degree:
-            return BinaryPolynomial(0)
+            return BinaryPolynomial(0), dividend
 
         quotient = 0
         remainder = dividend.value
@@ -201,7 +195,8 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
 
         # Implement polynomial division in GF(2)
         while True:
-            remainder_degree = BinaryPolynomial(remainder).degree
+            remainder_poly = BinaryPolynomial(remainder)
+            remainder_degree = remainder_poly.degree
             if remainder_degree < divisor_degree:
                 break
 
@@ -214,7 +209,20 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
             # Subtract (XOR) divisor * x^shift from the remainder
             remainder ^= divisor_value << shift
 
-        return BinaryPolynomial(quotient)
+        return BinaryPolynomial(quotient), BinaryPolynomial(remainder)
+
+    def _custom_div(self, dividend: BinaryPolynomial, divisor: BinaryPolynomial) -> BinaryPolynomial:
+        """Custom polynomial division implementation to avoid using divmod operator.
+
+        Args:
+            dividend: The dividend polynomial
+            divisor: The divisor polynomial
+
+        Returns:
+            The quotient polynomial
+        """
+        quotient, _ = self._custom_div_with_remainder(dividend, divisor)
+        return quotient
 
     def _custom_pow(self, base: BinaryPolynomial, exponent: int) -> BinaryPolynomial:
         """Custom polynomial exponentiation implementation to avoid using ** operator.

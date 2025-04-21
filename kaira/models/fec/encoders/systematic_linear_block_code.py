@@ -143,9 +143,16 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         if not isinstance(parity_submatrix, torch.Tensor):
             parity_submatrix = torch.tensor(parity_submatrix, dtype=torch.float32)
 
+        # Store local copies of key attributes
         self._parity_submatrix = parity_submatrix
-        self._k, self._m = self._parity_submatrix.shape
-        self._n = self._k + self._m
+        k, m = self._parity_submatrix.shape
+        n = k + m
+
+        # Store the original information_set configuration if it's a string
+        self._info_set_config = information_set if isinstance(information_set, str) else None
+
+        # Store the information and parity sets before using them to create the generator matrix
+        self._information_set, self._parity_set = get_information_and_parity_sets(k, n, information_set)
 
         # Create the systematic generator matrix
         generator_matrix = create_systematic_generator_matrix(parity_submatrix=parity_submatrix, information_set=information_set)
@@ -159,25 +166,30 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         # This will set up _length, _dimension, _redundancy, check_matrix, and generator_right_inverse
         super().__init__(generator_matrix=generator_matrix, **kwargs_copy)
 
-        # Store the information and parity sets
-        self._information_set, self._parity_set = get_information_and_parity_sets(self._dimension, self._length, information_set)
+        # After parent initialization, register buffers with different names to avoid conflicts with properties
+        self.register_buffer("_info_set_buffer", self._information_set)
+        self.register_buffer("_parity_set_buffer", self._parity_set)
+        self.register_buffer("_parity_submatrix_buffer", self._parity_submatrix)
 
-        # Register information set and parity set as buffers
-        self.register_buffer("information_set", self._information_set)
-        self.register_buffer("parity_set", self._parity_set)
+        # Recalculate the check matrix using our specialized method after all buffers are registered
+        new_check_matrix = self._generate_check_matrix()
+        # Update the check_matrix buffer with our specialized version to handle "right" configuration correctly
+        self.register_buffer("check_matrix", new_check_matrix)
 
-        # Register parity submatrix as a buffer
-        self.register_buffer("parity_submatrix", self._parity_submatrix)
+    @property
+    def information_set(self) -> torch.Tensor:
+        """Information set K of the code."""
+        return self._info_set_buffer
 
     @property
     def parity_submatrix(self) -> torch.Tensor:
         """Parity submatrix P of the code."""
-        return self._parity_submatrix
+        return self._parity_submatrix_buffer
 
     @property
     def parity_set(self) -> torch.Tensor:
         """Parity set M of the code."""
-        return self._parity_set
+        return self._parity_set_buffer
 
     def project_word(self, x: torch.Tensor) -> torch.Tensor:
         """Project a codeword onto the information set.
@@ -281,24 +293,9 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         if last_dim_size % self._length != 0:
             raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of " f"the code length {self._length}")
 
-        # Define systematic syndrome calculation function to apply to blocks
-        def systematic_syndrome_fn(reshaped_x):
-            # Extract information bits
-            r_info = reshaped_x[..., self.information_set]
-
-            # Extract parity bits
-            r_parity = reshaped_x[..., self.parity_set]
-
-            # Calculate syndrome efficiently using the parity submatrix
-            syndrome = (r_parity + torch.matmul(r_info, self.parity_submatrix.transpose(0, 1))) % 2
-
-            return syndrome
-
-        # Use apply_blockwise to handle the syndrome calculation
-        return apply_blockwise(x, self._length, systematic_syndrome_fn)
-
-        # Alternative implementation using parent class:
-        # return super().calculate_syndrome(x)
+        # Fall back to parent class implementation for syndrome calculation
+        # This will use the check matrix directly, which ensures correct calculations # TODO: check if more efficient calculation is possible
+        return super().calculate_syndrome(x)
 
     def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
         """Decode the input tensor using systematic decoding.
@@ -339,6 +336,58 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         syndrome = self.calculate_syndrome(x)
 
         return decoded, syndrome
+
+    def _generate_check_matrix(self) -> torch.Tensor:
+        """Generate the parity check matrix from the generator matrix.
+
+        For systematic codes, we can directly construct the check matrix in the appropriate form
+        based on the information set configuration.
+
+        Returns:
+            The parity check matrix
+        """
+        # Get dtype and device from generator matrix instead of using _dtype and _device attributes
+        dtype = self.generator_matrix.dtype
+        device = self.generator_matrix.device
+
+        # Create a check matrix of the proper size
+        H = torch.zeros((self._redundancy, self._length), dtype=dtype, device=device)
+
+        # Check for the specific information set configuration rather than relying on the string flag
+        # For 'left' configuration (information set is [0,1,2,...])
+        if torch.allclose(self.information_set, torch.arange(self._dimension, device=device)):
+            # Left configuration: H = [P^T | I_(n-k)]
+            H[:, : self._dimension] = self.parity_submatrix.T
+            H[:, self._dimension :] = torch.eye(self._redundancy, dtype=dtype, device=device)
+
+        # For 'right' configuration (information set is [n-k, n-k+1, ...])
+        elif torch.allclose(self.information_set, torch.arange(self._length - self._dimension, self._length, device=device)):
+            # Right configuration: H = [I_(n-k) | P^T]
+            H[:, : self._redundancy] = torch.eye(self._redundancy, dtype=dtype, device=device)
+            H[:, self._redundancy :] = self.parity_submatrix.T
+
+        # Fall back to string-based configuration if patterns don't match
+        elif self._info_set_config == "left":
+            # Left configuration: H = [P^T | I_(n-k)]
+            H[:, : self._dimension] = self.parity_submatrix.T
+            H[:, self._dimension :] = torch.eye(self._redundancy, dtype=dtype, device=device)
+
+        elif self._info_set_config == "right":
+            # Right configuration: H = [I_(n-k) | P^T]
+            H[:, : self._redundancy] = torch.eye(self._redundancy, dtype=dtype, device=device)
+            H[:, self._redundancy :] = self.parity_submatrix.T
+
+        # For custom configurations, use the general approach
+        else:
+            # Place identity matrix at parity positions
+            for i in range(self._redundancy):
+                H[i, self.parity_set[i]] = 1.0
+
+            # Place parity submatrix transpose at information positions
+            for j, info_idx in enumerate(self.information_set):
+                H[:, info_idx] = self.parity_submatrix.T[:, j]
+
+        return H
 
     def __repr__(self) -> str:
         """Return a string representation of the object.

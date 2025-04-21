@@ -65,8 +65,10 @@ def hamming_weight(x: torch.Tensor) -> torch.Tensor:
     return torch.sum(x, dim=-1)
 
 
-def to_binary_tensor(x: int, length: int, device=None) -> torch.Tensor:
+def to_binary_tensor(x: int, length: int, device=None, dtype=torch.int) -> torch.Tensor:
     """Convert an integer to its binary representation as a tensor.
+
+    Supports custom device and dtype, and handles negative values by using absolute.
 
     This utility is useful for converting numerical values to their binary form
     for processing with binary error correction codes.
@@ -75,6 +77,7 @@ def to_binary_tensor(x: int, length: int, device=None) -> torch.Tensor:
         x: Integer to convert
         length: Length of the binary representation (padded with leading zeros if needed)
         device: Device to place the tensor on (CPU or GPU)
+        dtype: Data type of the resulting tensor
 
     Returns:
         Binary tensor representation of the integer with shape (length,)
@@ -83,9 +86,10 @@ def to_binary_tensor(x: int, length: int, device=None) -> torch.Tensor:
         >>> to_binary_tensor(10, 6)  # Decimal 10 = Binary 001010
         tensor([0, 0, 1, 0, 1, 0])
     """
-    result = torch.zeros(length, dtype=torch.int, device=device)
+    x_abs = abs(x)
+    result = torch.zeros(length, dtype=dtype, device=device)
     for i in range(length):
-        result[length - i - 1] = (x >> i) & 1
+        result[length - i - 1] = (x_abs >> i) & 1
     return result
 
 

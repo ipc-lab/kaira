@@ -107,6 +107,23 @@ class ModelRegistry:
         return cls._models[name]
 
     @classmethod
+    def get_model_cls(cls, name: str) -> Type[BaseModel]:
+        """Get a model class by name.
+
+        This is an alias for the get() method for backwards compatibility.
+
+        Args:
+            name (str): The registered name of the model class to retrieve
+
+        Returns:
+            Type[BaseModel]: The requested model class
+
+        Raises:
+            KeyError: If no model is registered under the given name
+        """
+        return cls.get(name)
+
+    @classmethod
     def get_model_info(cls, name: str) -> Dict:
         """Get information about a registered model.
 
