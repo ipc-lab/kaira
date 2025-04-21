@@ -69,25 +69,25 @@ class TestRepetitionCodeEncoder:
 
         # Test decoding a perfect codeword
         x = torch.tensor([1.0, 1.0, 1.0, 1.0, 1.0])
-        decoded = encoder.inverse_encode(x)
+        decoded, syndrome = encoder.inverse_encode(x)
         expected = torch.tensor([1.0])
         assert torch.all(decoded == expected)
 
         # Test decoding with errors (still recoverable)
         x = torch.tensor([1.0, 0.0, 1.0, 1.0, 1.0])  # One error
-        decoded = encoder.inverse_encode(x)
+        decoded, syndrome = encoder.inverse_encode(x)
         expected = torch.tensor([1.0])  # Should correct to 1
         assert torch.all(decoded == expected)
 
         # Test decoding with batch dimension
         x = torch.tensor([[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0, 1.0]])
-        decoded = encoder.inverse_encode(x)
+        decoded, syndrome = encoder.inverse_encode(x)
         expected = torch.tensor([[1.0], [0.0]])  # Should correct to [1, 0]
         assert torch.all(decoded == expected)
 
         # Test decoding multiple codewords
         x = torch.tensor([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-        decoded = encoder.inverse_encode(x)
+        decoded, syndrome = encoder.inverse_encode(x)
         expected = torch.tensor([1.0, 0.0])
         assert torch.all(decoded == expected)
 
@@ -98,7 +98,7 @@ class TestRepetitionCodeEncoder:
         # Test syndrome for valid codeword
         x = torch.tensor([1.0, 1.0, 1.0])
         syndrome = encoder.calculate_syndrome(x)
-        expected = torch.zeros(syndrome.shape, dtype=syndrome.dtype)
+        expected = torch.zeros_like(syndrome)
         assert torch.all(syndrome == expected)
 
         # Test syndrome for invalid codeword

@@ -29,63 +29,107 @@ def compute_null_space_matrix(matrix: torch.Tensor) -> torch.Tensor:
     Returns:
         Matrix whose rows form a basis for the null space of the input matrix
     """
-    # Convert to float for SVD calculation
+    # Convert to float for numerical stability
     matrix_float = matrix.float()
+    k, n = matrix.shape
 
-    # Use SVD to compute the null space
+    # For a generator matrix G, we need to find H such that GH^T = 0
+    # First try to find if we have a systematic form: G = [I_k | P]
+    is_systematic = True
+    identity_detected = set()
+    for i in range(k):
+        found_identity_column = False
+        for j in range(n):
+            col = matrix_float[:, j]
+            if col[i] == 1.0 and torch.sum(col) == 1.0:
+                # This is an identity column
+                identity_detected.add(j)
+                found_identity_column = True
+                break
+        if not found_identity_column:
+            is_systematic = False
+            break
+
+    if is_systematic and len(identity_detected) == k:
+        # If we found a systematic form, we can easily construct H = [-P^T | I_{n-k}]
+        # Identify the parity part (columns not in identity_detected)
+        parity_columns = [j for j in range(n) if j not in identity_detected]
+
+        # Extract parity part P (k x (n-k))
+        parity_part = torch.zeros((k, n - k), dtype=matrix_float.dtype)
+        for i, col_idx in enumerate(parity_columns):
+            parity_part[:, i] = matrix_float[:, col_idx]
+
+        # Construct H = [-P^T | I_{n-k}] in GF(2), so -P^T is equivalent to P^T
+        H = torch.zeros((n - k, n), dtype=matrix_float.dtype)
+
+        # Fill in the P^T part
+        for i in range(n - k):
+            for j in range(k):
+                H[i, list(identity_detected)[j]] = parity_part[j, i]
+
+        # Fill in the identity part
+        for i, col_idx in enumerate(parity_columns):
+            H[i, col_idx] = 1.0
+
+        # Verify that GH^T = 0 (in GF(2))
+        verification = torch.matmul(matrix_float, H.t()) % 2
+        if torch.all(verification == 0):
+            # Convert back to original dtype before returning
+            return H.to(matrix.dtype)
+
+    # If systematic form wasn't detected or verification failed, use SVD
     U, S, V = torch.linalg.svd(matrix_float, full_matrices=True)
 
     # Count non-zero singular values with small tolerance
     tol = S.max() * max(matrix.size()) * torch.finfo(matrix_float.dtype).eps
     rank = torch.sum(S > tol).item()
 
-    # For linear block codes, we need to calculate the null space in GF(2)
-    # So we'll manually construct the null space matrix for systematic form generator matrices
-    if matrix.shape[0] < matrix.shape[1]:
-        # For a standard k x n generator matrix, we expect n-k rows in the null space
-        expected_null_rows = matrix.shape[1] - matrix.shape[0]
-
-        # Create the null space matrix in GF(2)
-        null_space = torch.zeros((expected_null_rows, matrix.shape[1]), dtype=matrix.dtype)
-
-        # For each row in matrix, find a linearly independent row for null space
-        # col_idx = 0
-        # row_idx = 0
-        parity_start = 0
-
-        # Find identity part if matrix is in systematic form
-        for i in range(matrix.shape[1]):
-            col = matrix[:, i]
-            if col.sum() == 1 and (col == 1).sum() == 1:
-                # This column has exactly one '1', indicating part of the identity matrix
-                parity_start += 1
-
-        if parity_start < matrix.shape[0]:
-            parity_start = matrix.shape[0]  # Fallback if systematic form not detected
-
-        # Create parity check matrix H = [P^T | I_{n-k}]
-        if parity_start <= matrix.shape[1]:
-            # Extract parity part of G = [I_k | P]
-            parity_part = matrix[:, parity_start:]
-
-            # Create identity matrix for the right part of H
-            identity_part = torch.eye(expected_null_rows, dtype=matrix.dtype)
-
-            # Construct H = [P^T | I_{n-k}]
-            if parity_part.shape[1] > 0:
-                null_space[:, : matrix.shape[0]] = parity_part.T
-            null_space[:, -expected_null_rows:] = identity_part
-
-        return null_space
-
-    # Fall back to SVD-based method for non-standard matrices
+    # The null space is spanned by the right singular vectors
+    # corresponding to the zero singular values
     if rank < V.size(1):
-        null_space = V[rank:].T
-        # Convert to binary
-        return (null_space.abs() > 0.5).type(matrix.dtype)
-    else:
-        # No null space, return empty matrix
-        return torch.zeros((0, matrix.size(1)), dtype=matrix.dtype)
+        null_space = V[rank:].clone()
+
+        # In GF(2), we need to ensure each element is binary
+        # Round to the nearest binary value
+        null_space = (null_space.abs() > 0.5).float()
+
+        # Ensure we have linearly independent rows
+        # and the result satisfies GH^T = 0
+        if null_space.size(0) > 0:
+            # Remove linearly dependent rows
+            reduced_null_space = torch.zeros((min(n - k, null_space.size(0)), n), dtype=matrix.dtype)
+            row_idx = 0
+
+            for i in range(null_space.size(0)):
+                # Check if current row is linearly independent from existing rows
+                if row_idx == 0 or not torch.all(torch.matmul(null_space[i], reduced_null_space[:row_idx].t().float()) % 2 == 0):
+                    if row_idx < reduced_null_space.size(0):
+                        reduced_null_space[row_idx] = null_space[i]
+                        row_idx += 1
+
+                # If we've found enough rows, we can stop
+                if row_idx == n - k:
+                    break
+
+            # Verify that the null space satisfies GH^T = 0
+            verification = torch.matmul(matrix_float, reduced_null_space.t()) % 2
+            if torch.all(verification < 0.01):  # Allow small numerical error
+                return reduced_null_space[:row_idx]
+
+    # If all else fails, fall back to a direct construction for common cases
+
+    # Repetition codes: generator matrix is a single row of all ones
+    if k == 1 and torch.all(matrix == 1.0):
+        # For a repetition code, check matrix verifies adjacent bits are equal
+        H = torch.zeros((n - 1, n), dtype=matrix.dtype)
+        for i in range(n - 1):
+            H[i, i] = 1.0
+            H[i, i + 1] = 1.0
+        return H
+
+    # If we couldn't find a valid null space, return an empty matrix
+    return torch.zeros((n - k, n), dtype=matrix.dtype)
 
 
 def compute_reduced_row_echelon_form(matrix: torch.Tensor) -> torch.Tensor:

@@ -171,11 +171,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         self.register_buffer("_parity_set_buffer", self._parity_set)
         self.register_buffer("_parity_submatrix_buffer", self._parity_submatrix)
 
-        # Recalculate the check matrix using our specialized method after all buffers are registered
-        new_check_matrix = self._generate_check_matrix()
-        # Update the check_matrix buffer with our specialized version to handle "right" configuration correctly
-        self.register_buffer("check_matrix", new_check_matrix)
-
     @property
     def information_set(self) -> torch.Tensor:
         """Information set K of the code."""
@@ -268,126 +263,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
 
         # Use apply_blockwise to handle the encoding
         return apply_blockwise(x, self._dimension, systematic_encode_fn)
-
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Calculate the syndrome of a received word.
-
-        For systematic codes, the syndrome can be calculated more efficiently as:
-        s = r_M + r_K * P^T (mod 2)
-        where r_M are the parity bits and r_K are the information bits.
-
-        Args:
-            x: Received word tensor of shape (..., codeword_length) or (..., b*codeword_length)
-               where b is a positive integer.
-
-        Returns:
-            Syndrome tensor of shape (..., redundancy) or (..., b*redundancy)
-
-        Raises:
-            ValueError: If the last dimension of the input is not a multiple of n.
-        """
-        # Get the last dimension size
-        last_dim_size = x.shape[-1]
-
-        # Check if the last dimension is a multiple of n
-        if last_dim_size % self._length != 0:
-            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of " f"the code length {self._length}")
-
-        # Fall back to parent class implementation for syndrome calculation
-        # This will use the check matrix directly, which ensures correct calculations # TODO: check if more efficient calculation is possible
-        return super().calculate_syndrome(x)
-
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Decode the input tensor using systematic decoding.
-
-        For systematic codes, decoding is more efficient because the message bits are
-        already present in the information positions of the codeword. We can extract
-        them directly and calculate the syndrome for error detection.
-
-        This is more efficient than the general matrix multiplication approach used
-        in the parent class.
-
-        Args:
-            x: The input tensor of shape (..., codeword_length) or (..., b*codeword_length)
-               where b is a positive integer.
-            *args: Additional positional arguments (unused).
-            **kwargs: Additional keyword arguments (unused).
-
-        Returns:
-            Tuple containing:
-                - Decoded tensor of shape (..., b*k). Has the same shape as the input, with the last
-                  dimension reduced from b*n to b*k, where b is a positive integer.
-                - Syndrome tensor for error detection of shape (..., b*r), where r is the redundancy.
-
-        Raises:
-            ValueError: If the last dimension of the input is not a multiple of n.
-        """
-        # Get the last dimension size
-        last_dim_size = x.shape[-1]
-
-        # Check if the last dimension is a multiple of n
-        if last_dim_size % self._length != 0:
-            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of " f"the code length {self._length}")
-
-        # Extract message using projection (advantage of systematic codes)
-        decoded = self.project_word(x)
-
-        # Calculate syndrome using our optimized systematic method
-        syndrome = self.calculate_syndrome(x)
-
-        return decoded, syndrome
-
-    def _generate_check_matrix(self) -> torch.Tensor:
-        """Generate the parity check matrix from the generator matrix.
-
-        For systematic codes, we can directly construct the check matrix in the appropriate form
-        based on the information set configuration.
-
-        Returns:
-            The parity check matrix
-        """
-        # Get dtype and device from generator matrix instead of using _dtype and _device attributes
-        dtype = self.generator_matrix.dtype
-        device = self.generator_matrix.device
-
-        # Create a check matrix of the proper size
-        H = torch.zeros((self._redundancy, self._length), dtype=dtype, device=device)
-
-        # Check for the specific information set configuration rather than relying on the string flag
-        # For 'left' configuration (information set is [0,1,2,...])
-        if torch.allclose(self.information_set, torch.arange(self._dimension, device=device)):
-            # Left configuration: H = [P^T | I_(n-k)]
-            H[:, : self._dimension] = self.parity_submatrix.T
-            H[:, self._dimension :] = torch.eye(self._redundancy, dtype=dtype, device=device)
-
-        # For 'right' configuration (information set is [n-k, n-k+1, ...])
-        elif torch.allclose(self.information_set, torch.arange(self._length - self._dimension, self._length, device=device)):
-            # Right configuration: H = [I_(n-k) | P^T]
-            H[:, : self._redundancy] = torch.eye(self._redundancy, dtype=dtype, device=device)
-            H[:, self._redundancy :] = self.parity_submatrix.T
-
-        # Fall back to string-based configuration if patterns don't match
-        elif self._info_set_config == "left":
-            # Left configuration: H = [P^T | I_(n-k)]
-            H[:, : self._dimension] = self.parity_submatrix.T
-            H[:, self._dimension :] = torch.eye(self._redundancy, dtype=dtype, device=device)
-
-        elif self._info_set_config == "right":
-            # Right configuration: H = [I_(n-k) | P^T]
-            H[:, : self._redundancy] = torch.eye(self._redundancy, dtype=dtype, device=device)
-            H[:, self._redundancy :] = self.parity_submatrix.T
-
-        # For custom configurations, use the general approach
-        else:
-            # Place identity matrix at parity positions
-            for i in range(self._redundancy):
-                H[i, self.parity_set[i]] = 1.0
-
-            # Place parity submatrix transpose at information positions
-            for j, info_idx in enumerate(self.information_set):
-                H[:, info_idx] = self.parity_submatrix.T[:, j]
-
-        return H
 
     def __repr__(self) -> str:
         """Return a string representation of the object.

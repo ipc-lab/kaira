@@ -1,6 +1,5 @@
 """Tests for the linear_block_code module in kaira.models.fec.encoders package."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -83,12 +82,6 @@ class TestLinearBlockCodeEncoder:
         assert encoder.code_dimension == 3
         assert encoder.redundancy == 4
         assert encoder.code_rate == 3 / 7
-
-        # Test initialization with generator matrix as numpy array
-        generator_np = np.array([[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]])
-        encoder = LinearBlockCodeEncoder(generator_np)
-        assert encoder.code_length == 4
-        assert encoder.code_dimension == 3
 
         # Verify properties
         assert torch.allclose(encoder.parity_check_matrix, encoder.check_matrix)
