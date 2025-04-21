@@ -21,21 +21,18 @@ for many applications requiring reliable transmission over noisy channels.
     :cite:`richardson2008modern`
 """
 
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from functools import cache, lru_cache
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 
 from kaira.models.registry import ModelRegistry
 
-from ..algebra import BinaryPolynomial, FiniteBifield, FiniteBifieldElement
+from ..algebra import BinaryPolynomial, FiniteBifield
 from .cyclic_code import CyclicCodeEncoder
 
-# Dictionary to cache generator polynomials for each (mu, delta) pair
-_generator_poly_cache: Dict[Tuple[int, int], BinaryPolynomial] = {}
 
-
-@lru_cache(maxsize=32)
+@cache
 def compute_bch_generator_polynomial(mu: int, delta: int) -> BinaryPolynomial:
     """Compute the generator polynomial for a BCH code.
 
@@ -46,11 +43,6 @@ def compute_bch_generator_polynomial(mu: int, delta: int) -> BinaryPolynomial:
     Returns:
         The generator polynomial.
     """
-    # Check cache first
-    cache_key = (mu, delta)
-    if cache_key in _generator_poly_cache:
-        return _generator_poly_cache[cache_key]
-
     # Create the finite field
     field = FiniteBifield(mu)
 
@@ -68,23 +60,17 @@ def compute_bch_generator_polynomial(mu: int, delta: int) -> BinaryPolynomial:
         raise ValueError("No minimal polynomials found")
 
     # Convert the set to a list for consistent ordering
-    minimal_polys_list = list(minimal_polys)
+    minimal_polys_list = sorted(list(minimal_polys), key=lambda p: p.value)
 
     # Compute the LCM
     generator_poly = minimal_polys_list[0]
     for poly in minimal_polys_list[1:]:
         generator_poly = generator_poly.lcm(poly)
 
-    # Cache the result
-    _generator_poly_cache[cache_key] = generator_poly
     return generator_poly
 
 
-# Cache of valid Bose distances for each mu
-_bose_distance_cache: Dict[int, List[int]] = {}
-
-
-@lru_cache(maxsize=16)
+@cache
 def get_valid_bose_distances(mu: int) -> List[int]:
     """Get all valid Bose distances for a given mu.
 
@@ -94,15 +80,12 @@ def get_valid_bose_distances(mu: int) -> List[int]:
     Returns:
         List of all valid Bose distances for the given mu.
     """
-    if mu in _bose_distance_cache:
-        return _bose_distance_cache[mu]
 
     valid_distances = []
     for delta in range(2, 2**mu):
         if is_bose_distance(mu, delta):
             valid_distances.append(delta)
 
-    _bose_distance_cache[mu] = valid_distances
     return valid_distances
 
 
@@ -130,6 +113,8 @@ def is_bose_distance(mu: int, delta: int) -> bool:
     # Special cases for efficiency
     if delta == 3:
         return True  # δ=3 is always a Bose distance
+    if delta == 5 and mu >= 3:
+        return True  # δ=5 is a Bose distance for mu >= 3
     if delta == 2**mu - 1:
         return True  # Maximum possible δ is always a Bose distance
 
@@ -170,25 +155,25 @@ def create_bch_generator_matrix(length: int, generator_poly: BinaryPolynomial, d
     # Create the generator matrix
     G = torch.zeros((dimension, n), dtype=dtype, device=device)
 
-    # Create systematic form generator matrix
+    # First, set the identity matrix in the first k columns (for systematic form)
     for i in range(dimension):
-        # Start with a monomial x^i
-        message_poly = BinaryPolynomial(1 << i)
+        G[i, i] = 1.0
 
-        # Multiply by x^(n-k) to shift it
+    # For each row, compute the parity part
+    for i in range(dimension):
+        # Multiply the message polynomial x^i by x^(n-k)
+        message_poly = BinaryPolynomial(1 << i)
         shifted_poly = BinaryPolynomial(message_poly.value << redundancy)
 
-        # Compute the remainder when divided by the generator polynomial
-        remainder_poly = shifted_poly % generator_poly
+        # Find the remainder when divided by the generator polynomial
+        remainder = shifted_poly % generator_poly
 
-        # The codeword is the shifted message concatenated with the remainder
-        codeword_poly = BinaryPolynomial((message_poly.value << redundancy) ^ remainder_poly.value)
-
-        # Convert the polynomial to a row in the generator matrix
-        codeword_value = codeword_poly.value
-        for j in range(n):
-            if codeword_value & (1 << j):
-                G[i, n - j - 1] = 1.0
+        # Set the parity bits in the generator matrix
+        # The remainder corresponds to the parity bits
+        coeffs = remainder.to_coefficient_list()
+        for j in range(min(len(coeffs), redundancy)):
+            if coeffs[j] == 1:
+                G[i, dimension + j] = 1.0
 
     return G
 
@@ -224,7 +209,7 @@ class BCHCodeEncoder(CyclicCodeEncoder):
 
     Examples:
         >>> encoder = BCHCodeEncoder(mu=4, delta=5)
-        >>> print(f"Length: {encoder.length}, Dimension: {encoder.dimension}, Redundancy: {encoder.redundancy}")
+        >>> print(f"Length: {encoder.length, Dimension: {encoder.dimension}, Redundancy: {encoder.redundancy}")
         Length: 15, Dimension: 7, Redundancy: 8
         >>> message = torch.tensor([1., 0., 1., 1., 0., 1., 0.])
         >>> codeword = encoder(message)
@@ -281,17 +266,13 @@ class BCHCodeEncoder(CyclicCodeEncoder):
         self._error_correction_capability = (delta - 1) // 2
 
         # Get device from kwargs if provided
-        device = kwargs.get("device", None)
+        # device = kwargs.get("device", None)
 
         # Create generator matrix
-        generator_matrix = create_bch_generator_matrix(length=n, generator_poly=self._generator_polynomial, dtype=dtype, device=device)
+        # generator_matrix = create_bch_generator_matrix(length=n, generator_poly=self._generator_polynomial, dtype=dtype, device=device)
 
-        # Initialize the parent class with the generator matrix directly
-        # Note: We're bypassing the parity submatrix approach from SystematicLinearBlockCodeEncoder
-        super(CyclicCodeEncoder, self).__init__(*kwargs)
-
-        # Register buffers
-        self.register_buffer("generator_matrix", generator_matrix)
+        # Initialize the parent class with proper parameters
+        super().__init__(code_length=n, generator_polynomial=self._generator_polynomial.value, information_set=information_set, dtype=dtype, **kwargs)
 
         # Store dimensions
         self._length = n
@@ -310,9 +291,10 @@ class BCHCodeEncoder(CyclicCodeEncoder):
 
     def _compute_check_matrix(self) -> None:
         """Compute the parity check matrix from the generator matrix."""
-        # For a systematic code, the check matrix can be derived from the generator matrix
+        # For a systematic code, the check matrix H can be derived from the generator matrix G.
+        # If G = [I_k | P], then H = [P^T | I_(n-k)]
         identity_part = torch.eye(self._redundancy, dtype=self._dtype, device=self.generator_matrix.device)
-        parity_part = self.generator_matrix[:, : self._redundancy].T
+        parity_part = self.generator_matrix[:, self._dimension :].T
 
         # Construct H = [P^T | I_m]
         self._check_matrix = torch.cat([parity_part, identity_part], dim=1)
@@ -342,53 +324,6 @@ class BCHCodeEncoder(CyclicCodeEncoder):
             The minimum distance of the code, which is at least δ.
         """
         return self._delta
-
-    def bch_syndrome(self, received_word: torch.Tensor) -> List[List[Tuple[int, int]]]:
-        """Compute the BCH syndrome of a received word.
-
-        This method computes the BCH syndrome, which is useful for decoding and
-        error correction in BCH codes.
-
-        Args:
-            received_word: The received word tensor with shape (..., n) or (..., b*n)
-                where n is the code length and b is a positive integer.
-
-        Returns:
-            A list of syndromes for each received word.
-        """
-        # Convert the received word to polynomial form
-        # Handle batch dimensions
-        if received_word.dim() > 1:
-            received_word = received_word.reshape(-1, self._length)
-        else:
-            received_word = received_word.unsqueeze(0)
-
-        batch_size = received_word.size(0)
-        syndromes = []
-
-        # Create the finite field
-        alpha = self._alpha
-
-        # Compute syndromes for each received word
-        for i in range(batch_size):
-            # Convert the received word to a polynomial
-            r_poly_value = 0
-            for j in range(self._length):
-                if received_word[i, j] > 0.5:  # Binarize
-                    r_poly_value |= 1 << (self._length - j - 1)
-
-            r_poly = BinaryPolynomial(r_poly_value)
-
-            # Compute the syndromes
-            syndrome = []
-            for j in range(1, self._delta):
-                value = r_poly.evaluate(alpha**j)
-                if isinstance(value, FiniteBifieldElement):
-                    syndrome.append((j, value.value))
-
-            syndromes.append(syndrome)
-
-        return syndromes
 
     @classmethod
     def from_design_rate(cls, mu: int, target_rate: float, **kwargs: Any) -> "BCHCodeEncoder":

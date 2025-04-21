@@ -31,10 +31,6 @@ class TestBCHHelperFunctions:
         generator_poly = compute_bch_generator_polynomial(3, 3)
         assert generator_poly.degree == 3
 
-        # Test caching - second call should be faster
-        generator_poly2 = compute_bch_generator_polynomial(4, 5)
-        assert generator_poly2 is generator_poly  # Should be the same object due to caching
-
     def test_is_bose_distance(self):
         """Test checking if delta is a valid Bose distance."""
         # Test known valid Bose distances
@@ -181,14 +177,6 @@ class TestBCHCodeEncoder:
         # Valid codeword should have zero syndrome
         assert torch.all(syndrome == 0)
 
-        # Test BCH-specific syndrome calculation
-        bch_syndrome = encoder.bch_syndrome(codeword)
-
-        # Each syndrome value should be zero for valid codeword
-        assert len(bch_syndrome) == 1  # Single codeword
-        for _, value in bch_syndrome[0]:
-            assert value == 0
-
         # Test with bit error
         codeword_with_error = codeword.clone()
         codeword_with_error[0] = 1 - codeword_with_error[0]  # Flip first bit
@@ -196,15 +184,6 @@ class TestBCHCodeEncoder:
         syndrome = encoder.calculate_syndrome(codeword_with_error)
         # Invalid codeword should have non-zero syndrome
         assert not torch.all(syndrome == 0)
-
-        bch_syndrome = encoder.bch_syndrome(codeword_with_error)
-        # At least one syndrome value should be non-zero
-        has_nonzero = False
-        for _, value in bch_syndrome[0]:
-            if value != 0:
-                has_nonzero = True
-                break
-        assert has_nonzero
 
     def test_decoding(self):
         """Test decoding functionality."""

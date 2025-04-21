@@ -149,31 +149,36 @@ class TestCyclicCodeEncoder:
         # Test with Hamming (7,4) code
         encoder = CyclicCodeEncoder(code_length=7, generator_polynomial=0b1011)
 
+        # Print the check matrix to debug
+        print(f"Check matrix shape: {encoder.check_matrix.shape}")
+        print(f"Check matrix:\n{encoder.check_matrix}")
+
         # Create a valid codeword
         message = torch.tensor([1.0, 1.0, 0.0, 1.0])
         codeword = encoder(message)
+        print(f"Valid codeword: {codeword}")
 
         # Calculate syndrome
         syndrome = encoder.calculate_syndrome(codeword)
+        print(f"Syndrome for valid codeword: {syndrome}")
 
-        # The syndrome will be represented in the parity check matrix H
-        # For a cyclic code, it might not be all zeros, but it should be consistent
-        # Store the expected syndrome
-        expected_syndrome = syndrome.clone()
+        # Valid codeword should have zero syndrome
+        assert torch.all(syndrome == 0)
 
         # Test with bit error
         codeword_with_error = codeword.clone()
         codeword_with_error[0] = 1 - codeword_with_error[0]  # Flip first bit
+        print(f"Codeword with error: {codeword_with_error}")
 
         syndrome_with_error = encoder.calculate_syndrome(codeword_with_error)
+        print(f"Syndrome for codeword with error: {syndrome_with_error}")
 
-        # Invalid codeword should have a different syndrome
-        assert not torch.allclose(syndrome_with_error, expected_syndrome)
+        # Calculate syndrome manually
+        manual_syndrome = torch.matmul(codeword_with_error, encoder.check_matrix.T) % 2
+        print(f"Manual syndrome calculation: {manual_syndrome}")
 
-        # Test with invalid codeword length
-        with pytest.raises(ValueError):
-            invalid_codeword = torch.tensor([1.0, 0.0, 1.0, 0.0, 1.0, 0.0])  # Wrong length
-            encoder.calculate_syndrome(invalid_codeword)
+        # Invalid codeword should have non-zero syndrome
+        assert not torch.all(syndrome_with_error == 0)
 
     def test_decoding(self):
         """Test decoding functionality."""

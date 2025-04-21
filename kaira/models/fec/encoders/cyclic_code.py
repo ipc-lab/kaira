@@ -18,7 +18,6 @@ import torch
 from kaira.models.registry import ModelRegistry
 
 from ..algebra import BinaryPolynomial
-from ..utils import apply_blockwise
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
 
@@ -134,6 +133,12 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         check_poly_tensor = torch.tensor(self._check_poly.to_coefficient_list(), dtype=torch.float32)
         self.register_buffer("generator_poly_coeffs", gen_poly_tensor)
         self.register_buffer("check_poly_coeffs", check_poly_tensor)
+
+        # Compute the check matrix
+        self._compute_check_matrix()
+
+        # Register the check matrix buffer
+        self.register_buffer("check_matrix", self._check_matrix)
 
     def _generate_systematic_matrix(self) -> torch.Tensor:
         """Generate the systematic generator matrix for the code.
@@ -319,60 +324,6 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         """
         return super().forward(x, *args, kwargs)
 
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Calculate the syndrome of a received word using polynomial operations.
-
-        For cyclic codes, the syndrome can be calculated as the remainder when the
-        received polynomial is divided by the generator polynomial.
-
-        Args:
-            x: Received word tensor of shape (..., codeword_length) or (..., b*codeword_length)
-               where b is a positive integer.
-
-        Returns:
-            Syndrome tensor of shape (..., redundancy) or (..., b*redundancy)
-
-        Raises:
-            ValueError: If the last dimension of the input is not a multiple of n.
-        """
-        # Get the last dimension size
-        last_dim_size = x.shape[-1]
-
-        # Check if the last dimension is a multiple of n
-        if last_dim_size % self._length != 0:
-            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of " f"the code length {self._length}")
-
-        # Define syndrome calculation function to apply to blocks
-        def polynomial_syndrome_fn(reshaped_x):
-            # Shape: (..., num_blocks, length)
-            batch_shape = reshaped_x.shape[:-1]
-
-            # Initialize syndrome tensor
-            syndromes = torch.zeros((*batch_shape, self._redundancy), dtype=reshaped_x.dtype, device=reshaped_x.device)
-
-            # Process each received word
-            for idx in range(batch_shape[-1] if batch_shape else 1):
-                # Convert received word to polynomial form
-                if batch_shape:
-                    recv = reshaped_x[..., idx, :]
-                else:
-                    recv = reshaped_x
-
-                # Convert received word to polynomial
-                recv_int = self._tensor_to_int(recv, self._length)
-                recv_poly = BinaryPolynomial(recv_int)
-
-                # Calculate syndrome as remainder modulo the generator polynomial
-                syndrome_poly = recv_poly % self._generator_poly
-
-                # Convert syndrome polynomial back to tensor
-                self._polynomial_to_tensor(syndrome_poly, syndromes, idx, batch_shape, max_degree=self._redundancy - 1)
-
-            return syndromes
-
-        # Use BlockCodeEncoder's apply_blockwise to handle the syndrome calculation
-        return apply_blockwise(x, self._length, polynomial_syndrome_fn)
-
     @classmethod
     def create_standard_code(cls, name: str, **kwargs: Any) -> "CyclicCodeEncoder":
         """Create a standard cyclic code by name.
@@ -486,3 +437,26 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
                 constructor_param = f"generator_polynomial={self._generator_poly.value}, " f"check_polynomial={self._check_poly.value}"
 
         return f"{self.__class__.__name__}(" f"code_length={self._length}, " f"{constructor_param}, " f"dimension={self._dimension}, " f"redundancy={self._redundancy}" f")"
+
+    # TODO: Move this to the parent class
+    def _compute_check_matrix(self) -> None:
+        """Compute the parity check matrix from the generator matrix.
+
+        For a cyclic code in systematic form, the check matrix should have a structure that detects
+        errors in all positions. We construct it such that: H = [P^T | I_m] where P is the parity
+        submatrix of G.
+        """
+        # For a systematic (n,k) code with generator matrix G = [I_k | P],
+        # the check matrix is H = [P^T | I_(n-k)]
+        identity_part = torch.eye(self._redundancy, dtype=torch.float32, device=self.generator_matrix.device)
+
+        if self.information_set == "left":
+            # For 'left' information set, G = [I_k | P]
+            parity_part = self.generator_matrix[:, self._dimension :].T
+            # H = [P^T | I_m]
+            self._check_matrix = torch.cat([parity_part, identity_part], dim=1)
+        else:
+            # For 'right' information set, G = [P | I_k]
+            parity_part = self.generator_matrix[:, : self._redundancy].T
+            # H = [I_m | P^T]
+            self._check_matrix = torch.cat([identity_part, parity_part], dim=1)
