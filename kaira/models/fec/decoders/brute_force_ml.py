@@ -15,13 +15,12 @@ grows exponentially with the code dimension, making it practical only for small 
 :cite:`proakis2008digital`
 """
 
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import torch
 
 from kaira.models.fec.encoders.base import BaseBlockCodeEncoder
 
-from ..utils import apply_blockwise
 from .base import BaseBlockDecoder
 
 
@@ -108,11 +107,14 @@ class BruteForceMLDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
         """
         super().__init__(encoder, *args, **kwargs)
 
+        # Initialize attributes as Optional to satisfy mypy
+        self._codebook: Optional[torch.Tensor] = None
+        self._message_map: Optional[torch.Tensor] = None
+
         if precompute_codebook:
-            self._codebook, self._message_map = self._generate_codebook()
-        else:
-            self._codebook = None
-            self._message_map = None
+            codebook, message_map = self._generate_codebook()
+            self._codebook = codebook
+            self._message_map = message_map
 
     def _generate_codebook(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Generate all possible codewords for the code.
@@ -138,17 +140,20 @@ class BruteForceMLDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
         k = self.code_dimension
         n = self.code_length
 
+        # Determine the appropriate dtype based on the encoder
+        encoder_dtype = next(self.encoder.parameters(), torch.zeros(1)).dtype
+
         # Generate all possible messages (2^k)
         num_messages = 2**k
-        messages = torch.zeros((num_messages, k), dtype=torch.int)
+        messages = torch.zeros((num_messages, k), dtype=encoder_dtype)
 
         # Fill in binary representations
         for i in range(num_messages):
             for j in range(k):
-                messages[i, k - j - 1] = (i >> j) & 1
+                messages[i, k - j - 1] = float((i >> j) & 1)  # Cast to float to match encoder dtype
 
         # Encode all messages to get codewords
-        codewords = torch.zeros((num_messages, n), dtype=torch.int)
+        codewords = torch.zeros((num_messages, n), dtype=encoder_dtype)
         for i in range(num_messages):
             codewords[i] = self.encoder(messages[i].unsqueeze(0)).squeeze(0)
 
@@ -175,7 +180,13 @@ class BruteForceMLDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
             >>> self._hamming_distance(x, y)
             tensor(2)
         """
-        return torch.sum((x != y).to(torch.int), dim=-1)
+        # Cast to same type if needed and ensure comparison works correctly
+        if x.dtype != y.dtype:
+            x = x.to(y.dtype)
+
+        # Count differences elementwise and sum them along the last dimension
+        diff = (x != y).to(x.dtype)
+        return torch.sum(diff, dim=-1)
 
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Decode received codewords using maximum likelihood decoding.
@@ -216,42 +227,94 @@ class BruteForceMLDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
         if L % self.code_length != 0:
             raise ValueError(f"Last dimension ({L}) must be divisible by code length ({self.code_length})")
 
-        # Process blockwise
-        def decode_block(r_block):
-            batch_size = r_block.shape[0]
-            decoded = torch.zeros(batch_size, self.code_dimension, dtype=received.dtype, device=received.device)
-            errors = torch.zeros_like(r_block)
-
-            # Generate codebook if needed
-            if self._codebook is None:
-                codebook, message_map = self._generate_codebook()
+        # Non-batched processing
+        if not leading_dims:  # If received is just a single vector
+            received = received.unsqueeze(0)  # Add batch dimension
+            result = self._decode_batch(received, return_errors)
+            # Remove batch dimension from result
+            if return_errors:
+                decoded, errors = result  # type: ignore[misc]  # We know this is a tuple when return_errors=True
+                return decoded.squeeze(0), errors.squeeze(0)
             else:
-                codebook = self._codebook
-                message_map = self._message_map
+                # We know result is a tensor here, not a tuple
+                return result.squeeze(0)  # type: ignore[union-attr]
 
-            # Move codebook to same device as received
-            codebook = codebook.to(received.device)
-            message_map = message_map.to(received.device)
+        # For batched inputs, reshape to handle multiple blocks if needed
+        if L == self.code_length:  # Simple case: each row is a single codeword
+            return self._decode_batch(received, return_errors)
+        else:
+            # Complex case: each row contains multiple codewords
+            # Reshape to (..., L/n, n)
+            blocks_per_row = L // self.code_length
+            reshaped = received.view(*leading_dims, blocks_per_row, self.code_length)
 
-            for i in range(batch_size):
-                # Get the current received word
-                r = r_block[i]
+            # Combine batch dimensions for processing
+            combined_shape = (-1, self.code_length)
+            flattened = reshaped.reshape(*combined_shape)
 
-                # Compute Hamming distance to all codewords
-                distances = self._hamming_distance(r.unsqueeze(0).expand(codebook.shape[0], -1), codebook)
+            # Decode the combined batch
+            if return_errors:
+                batch_result = self._decode_batch(flattened, return_errors)
+                decoded, errors = batch_result  # type: ignore[misc]  # We know this is a tuple
+                # Reshape back to original structure
+                decoded = decoded.view(*leading_dims, blocks_per_row, self.code_dimension)
+                errors = errors.view(*leading_dims, blocks_per_row, self.code_length)
+                # Flatten the block dimension
+                return decoded.reshape(*leading_dims, -1), errors.reshape(*leading_dims, -1)
+            else:
+                # We know the result is a tensor here
+                decoded = self._decode_batch(flattened, return_errors)  # type: ignore[assignment]
+                # Reshape back to original structure
+                decoded = decoded.view(*leading_dims, blocks_per_row, self.code_dimension)  # type: ignore[union-attr]
+                # Flatten the block dimension
+                return decoded.reshape(*leading_dims, -1)  # type: ignore[union-attr]
 
-                # Find the closest codeword (maximum likelihood)
-                min_idx = torch.argmin(distances)
-                closest_codeword = codebook[min_idx]
+    def _decode_batch(self, received_batch: torch.Tensor, return_errors: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        """Decode a batch of received words.
 
-                # Compute the error pattern
-                error_pattern = (r != closest_codeword).to(torch.int)
-                errors[i] = error_pattern
+        Args:
+            received_batch: Tensor with shape (batch_size, code_length)
+            return_errors: Whether to return the error pattern
 
-                # Get the corresponding message
-                decoded[i] = message_map[min_idx]
+        Returns:
+            Either:
+            - Decoded tensor with shape (batch_size, code_dimension)
+            - Tuple of (decoded tensor, error pattern tensor) if return_errors=True
+        """
+        batch_size = received_batch.shape[0]
+        decoded = torch.zeros(batch_size, self.code_dimension, dtype=received_batch.dtype, device=received_batch.device)
+        errors = torch.zeros_like(received_batch)
 
-            return (decoded, errors) if return_errors else decoded
+        # Generate codebook if needed
+        if self._codebook is None or self._message_map is None:
+            temp_codebook, temp_message_map = self._generate_codebook()
+            codebook = temp_codebook
+            message_map = temp_message_map
+        else:
+            # We know these are not None at this point
+            codebook = self._codebook
+            message_map = self._message_map
 
-        # Apply decoding blockwise
-        return apply_blockwise(received, self.code_length, decode_block)
+        # Move codebook to same device as received
+        codebook = codebook.to(received_batch.device)
+        message_map = message_map.to(received_batch.device)
+
+        for i in range(batch_size):
+            # Get the current received word
+            r = received_batch[i]
+
+            # Compute Hamming distance to all codewords
+            distances = self._hamming_distance(r.unsqueeze(0).expand(codebook.shape[0], -1), codebook)
+
+            # Find the closest codeword (maximum likelihood)
+            min_idx = torch.argmin(distances)
+            closest_codeword = codebook[min_idx]
+
+            # Compute the error pattern
+            error_pattern = (r != closest_codeword).to(torch.int)
+            errors[i] = error_pattern
+
+            # Get the corresponding message
+            decoded[i] = message_map[min_idx]
+
+        return (decoded, errors) if return_errors else decoded

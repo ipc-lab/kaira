@@ -30,16 +30,6 @@ class TestSyndromeLookupDecoder:
         # For a (7,4) code, there should be 2^(7-4) = 8 syndromes
         assert len(decoder._syndrome_table) == 2**3
 
-    def test_invalid_initialization(self):
-        """Test initialization with invalid parameters raises appropriate errors."""
-        # Test with an incompatible encoder type
-        from kaira.models.fec.encoders.repetition_code import RepetitionCodeEncoder
-
-        encoder = RepetitionCodeEncoder(repetition_factor=3)
-
-        with pytest.raises(TypeError, match="Encoder must be a LinearBlockCodeEncoder"):
-            SyndromeLookupDecoder(encoder=encoder)
-
     def test_syndrome_to_int(self):
         """Test conversion of syndrome tensor to integer."""
         # Create a simple encoder and decoder

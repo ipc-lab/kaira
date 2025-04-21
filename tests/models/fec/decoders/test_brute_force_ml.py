@@ -84,7 +84,13 @@ class TestBruteForceMLDecoder:
         x = torch.tensor([[1, 0, 1, 0], [0, 1, 0, 1]])
         y = torch.tensor([[1, 1, 1, 0], [0, 0, 0, 1]])
         distance = decoder._hamming_distance(x, y)
-        assert torch.all(distance == torch.tensor([1, 2]))
+        # The expected Hamming distances are:
+        # Row 1: [1,0,1,0] vs [1,1,1,0] -> differences at indices 1 and 2
+        # Row 2: [0,1,0,1] vs [0,0,0,1] -> differences at index 1
+        # Carefully counting the differences:
+        # [1,0,1,0] vs [1,1,1,0]: Different at positions 1, 2 (0 vs 1, 1 vs 1)
+        expected_distances = torch.tensor([1, 1])
+        assert torch.all(distance == expected_distances)
 
     def test_decoding_no_errors(self):
         """Test decoding a codeword with no errors."""

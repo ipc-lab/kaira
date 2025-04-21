@@ -115,6 +115,29 @@ class BaseBlockCodeEncoder(BaseModel, ABC):
         """
         return self._dimension / self._length
 
+    def extract_message(self, codeword: torch.Tensor) -> torch.Tensor:
+        """Extract the message bits from a codeword.
+
+        By default, this calls inverse_encode and returns just the decoded message.
+        Subclasses can override this method to provide more efficient implementations.
+
+        Args:
+            codeword: Codeword tensor with shape (..., n) where n is the code length
+
+        Returns:
+            Extracted message tensor with shape (..., k) where k is the code dimension
+
+        Note:
+            This implementation assumes the inverse_encode method can handle a single
+            codeword correctly. Specific code types may override this with more
+            efficient implementations.
+        """
+        # Use inverse_encode and discard the syndrome information if returned
+        result = self.inverse_encode(codeword)
+        if isinstance(result, tuple):
+            return result[0]
+        return result
+
     @abstractmethod
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply the encoding operation to the input tensor.

@@ -21,7 +21,6 @@ import torch
 
 from kaira.models.fec.encoders.base import BaseBlockCodeEncoder
 
-from ..utils import apply_blockwise
 from .base import BaseBlockDecoder
 
 
@@ -145,43 +144,75 @@ class WagnerSoftDecisionDecoder(BaseBlockDecoder[BaseBlockCodeEncoder]):
         if L % self.code_length != 0:
             raise ValueError(f"Last dimension ({L}) must be divisible by code length ({self.code_length})")
 
-        # Process blockwise
-        def decode_block(r_block):
-            batch_size = r_block.shape[0]
-            decoded = torch.zeros(batch_size, self.code_dimension, dtype=torch.int, device=received.device)
+        # If no batch dimension, add one for consistency
+        if not leading_dims:
+            received = received.unsqueeze(0)
+            added_batch = True
+        else:
+            added_batch = False
 
-            # If return_errors is True, we need to keep track of the original hard decisions
-            original_hard = (r_block < 0).to(torch.int) if return_errors else None
-            final_decisions = torch.zeros_like(r_block) if return_errors else None
+        # Reshape to blocks if there are multiple code blocks
+        num_blocks = received.size(-1) // self.code_length
+        if num_blocks > 1:
+            # Reshape from (..., L) to (..., num_blocks, code_length)
+            received = received.view(*received.size()[:-1], num_blocks, self.code_length)
+        else:
+            # Add block dimension: (..., code_length) to (..., 1, code_length)
+            received = received.unsqueeze(-2)
 
-            for i in range(batch_size):
-                # Get the current received word (soft values)
-                r = r_block[i]
+        # At this point received has shape (..., num_blocks, code_length)
+        # Make hard decisions based on sign
+        hard_decisions = (received < 0).to(torch.int)
 
-                # Make hard decisions based on sign
-                hard_decisions = (r < 0).to(torch.int)
+        # Store original hard decisions if needed for error calculation
+        if return_errors:
+            original_hard = hard_decisions.clone()
 
-                # Check parity (even parity expected)
-                if torch.sum(hard_decisions) % 2 != 0:
-                    # Find the least reliable bit
-                    least_reliable_idx = torch.argmin(torch.abs(r))
+        # Check parity (even parity expected)
+        parity_sums = hard_decisions.sum(dim=-1) % 2
 
-                    # Flip the least reliable bit
-                    hard_decisions[least_reliable_idx] = 1 - hard_decisions[least_reliable_idx]
+        # For blocks with odd parity, find and flip the least reliable bit
+        for indices in torch.nonzero(parity_sums == 1, as_tuple=False):
+            # Get batch and block indices
+            *batch_indices, block_idx = indices.tolist()
 
-                # Store the final decisions if needed
-                if return_errors:
-                    final_decisions[i] = hard_decisions
+            # Find the least reliable bit in this block
+            block_values = received[batch_indices + [block_idx]]
+            least_reliable_idx = torch.argmin(torch.abs(block_values))
 
-                # Extract message bits (assuming systematic form where parity is the last bit)
-                decoded[i] = hard_decisions[: self.code_dimension]
+            # Flip the least reliable bit
+            hard_decisions[batch_indices + [block_idx, least_reliable_idx]] = 1 - hard_decisions[batch_indices + [block_idx, least_reliable_idx]]
 
-            if return_errors:
-                # Calculate the error pattern (difference between our final and initial hard decisions)
-                errors = (final_decisions != original_hard).to(torch.int)
-                return decoded, errors
+        # Extract message bits (assuming systematic form where message bits come first)
+        decoded = hard_decisions[..., : self.code_dimension]
+
+        # Calculate error pattern if required
+        if return_errors:
+            errors = (hard_decisions != original_hard).to(torch.int)
+
+            # Reshape back to original dimensions
+            if num_blocks > 1:
+                errors = errors.reshape(*errors.size()[:-2], -1)
+                decoded = decoded.reshape(*decoded.size()[:-2], -1)
             else:
-                return decoded
+                errors = errors.squeeze(-2)
+                decoded = decoded.squeeze(-2)
 
-        # Apply decoding blockwise
-        return apply_blockwise(received, self.code_length, decode_block)
+            # Remove batch dimension if it was added
+            if added_batch:
+                errors = errors.squeeze(0)
+                decoded = decoded.squeeze(0)
+
+            return decoded, errors
+        else:
+            # Reshape back to original dimensions
+            if num_blocks > 1:
+                decoded = decoded.reshape(*decoded.size()[:-2], -1)
+            else:
+                decoded = decoded.squeeze(-2)
+
+            # Remove batch dimension if it was added
+            if added_batch:
+                decoded = decoded.squeeze(0)
+
+            return decoded

@@ -102,13 +102,31 @@ class SyndromeLookupDecoder(BaseBlockDecoder[LinearBlockCodeEncoder]):
             as it requires exploring a large space of error patterns. The table size is
             2^r where r is the code's redundancy.
         """
-        super().__init__(encoder, *args, **kwargs)
-
+        # Check encoder type before calling super().__init__
         if not isinstance(encoder, LinearBlockCodeEncoder):
             raise TypeError(f"Encoder must be a LinearBlockCodeEncoder, got {type(encoder).__name__}")
 
+        self._validate_encoder_type(encoder)
+
+        super().__init__(encoder, *args, **kwargs)
+
         # Build syndrome table during initialization
         self._syndrome_table = self._build_syndrome_table()
+
+    def _validate_encoder_type(self, encoder: LinearBlockCodeEncoder) -> None:
+        """Validate that the encoder is of the correct type.
+
+        This method exists to support testing and can be overridden in tests.
+
+        Args:
+            encoder: The encoder to validate
+
+        Raises:
+            TypeError: If the encoder is not valid for this decoder
+        """
+        encoder_class_name = encoder.__class__
+        if not issubclass(encoder.__class__, LinearBlockCodeEncoder):
+            raise TypeError(f"Encoder must be a LinearBlockCodeEncoder, got {encoder_class_name.__name__}")
 
     def _build_syndrome_table(self) -> Dict[int, torch.Tensor]:
         """Build the syndrome lookup table for maximum likelihood decoding.
@@ -172,38 +190,34 @@ class SyndromeLookupDecoder(BaseBlockDecoder[LinearBlockCodeEncoder]):
 
         Note:
             The number of patterns generated is binomial(n,weight), which can be
-            very large for moderate values of n and weight. This implementation
-            uses a recursive approach that may not scale well for large codes.
-            For production systems, more efficient combinatorial generation
-            algorithms should be used.
+            very large for moderate values of n and weight.
         """
         if weight == 0:
             return torch.zeros((1, self.code_length), dtype=torch.int)
 
-        # This is a simplified implementation that generates patterns sequentially
-        # For a production system, this should be optimized for large code lengths
-        patterns = []
+        # For weight 1, we can simply create the standard basis vectors
+        if weight == 1:
+            patterns = torch.zeros((self.code_length, self.code_length), dtype=torch.int)
+            for i in range(self.code_length):
+                patterns[i, i] = 1
+            return patterns
 
-        # Helper function for recursive generation
-        def generate_recursive(current: torch.Tensor, ones_left: int, pos: int):
+        # For higher weights, use a combinatorial approach
+        patterns = []
+        current = torch.zeros(self.code_length, dtype=torch.int)
+
+        def generate_recursive(current: torch.Tensor, ones_left: int, start_pos: int):
             if ones_left == 0:
                 patterns.append(current.clone())
                 return
 
-            if pos + ones_left > self.code_length:
-                return
+            # Try each position from start_pos to the end
+            for pos in range(start_pos, self.code_length - ones_left + 1):
+                current[pos] = 1
+                generate_recursive(current, ones_left - 1, pos + 1)
+                current[pos] = 0  # Backtrack
 
-            # Skip this position
-            generate_recursive(current, ones_left, pos + 1)
-
-            # Use this position
-            current[pos] = 1
-            generate_recursive(current, ones_left - 1, pos + 1)
-            current[pos] = 0
-
-        current = torch.zeros(self.code_length, dtype=torch.int)
         generate_recursive(current, weight, 0)
-
         return torch.stack(patterns)
 
     def _syndrome_to_int(self, syndrome: torch.Tensor) -> int:
@@ -221,9 +235,19 @@ class SyndromeLookupDecoder(BaseBlockDecoder[LinearBlockCodeEncoder]):
         Example:
             If syndrome = [1, 0, 1], this returns 5 (binary 101)
         """
+        # Make sure we're dealing with a 1D tensor
+        if syndrome.dim() > 1:
+            if syndrome.size(0) == 1:
+                syndrome = syndrome.squeeze(0)
+            else:
+                raise ValueError(f"Expected 1D syndrome tensor, got shape {syndrome.shape}")
+
+        # Convert to integers for binary operations
+        syndrome = syndrome.int()
+
         result = 0
         for i, bit in enumerate(syndrome):
-            if bit:
+            if bit.item() == 1:
                 result |= 1 << i
         return result
 
@@ -263,7 +287,36 @@ class SyndromeLookupDecoder(BaseBlockDecoder[LinearBlockCodeEncoder]):
         if L % self.code_length != 0:
             raise ValueError(f"Last dimension ({L}) must be divisible by code length ({self.code_length})")
 
-        # Process blockwise
+        # Handle 1D tensor input for single codeword
+        if not leading_dims:  # This is a 1D tensor (a single codeword)
+            # Add batch dimension for processing
+            batched_received = received.unsqueeze(0)
+
+            # Process directly without using apply_blockwise
+            batch_size = 1
+            decoded = torch.zeros(batch_size, self.code_dimension, dtype=received.dtype, device=received.device)
+            errors = torch.zeros_like(batched_received)
+
+            # Calculate syndrome
+            syndrome = self.encoder.calculate_syndrome(received)
+            syndrome_int = self._syndrome_to_int(syndrome)
+
+            # Look up error pattern
+            error_pattern = self._syndrome_table.get(syndrome_int, torch.zeros(self.code_length, dtype=torch.int))
+            errors[0] = error_pattern
+
+            # Correct errors
+            corrected = (received + error_pattern) % 2
+
+            # Extract message bits
+            decoded[0] = self.encoder.extract_message(corrected)
+
+            # Remove batch dimension for output
+            if return_errors:
+                return decoded.squeeze(0), errors.squeeze(0)
+            return decoded.squeeze(0)
+
+        # For tensors with leading dimensions, process blockwise
         def decode_block(r_block):
             batch_size = r_block.shape[0]
             decoded = torch.zeros(batch_size, self.code_dimension, dtype=received.dtype, device=received.device)
@@ -284,10 +337,31 @@ class SyndromeLookupDecoder(BaseBlockDecoder[LinearBlockCodeEncoder]):
                 # Correct errors
                 corrected = (r + error_pattern) % 2
 
-                # Extract message bits (assuming systematic encoder)
+                # Extract message bits
                 decoded[i] = self.encoder.extract_message(corrected)
 
             return (decoded, errors) if return_errors else decoded
 
         # Apply decoding blockwise
-        return apply_blockwise(received, self.code_length, decode_block)
+        result = apply_blockwise(received, self.code_length, decode_block)
+
+        # If we're returning errors and handling multi-block tensors
+        # apply_blockwise will return a tuple that we need to handle specially
+        if return_errors and L > self.code_length:
+            decoded_parts = []
+            error_parts = []
+
+            # Handle batch dimension cases
+            *_, blocks, _ = received.shape
+            for i in range(blocks):
+                decoded, errors = result[:, i]
+                decoded_parts.append(decoded)
+                error_parts.append(errors)
+
+            # Stack the parts along the appropriate dimension
+            decoded_tensor = torch.cat(decoded_parts, dim=-1)
+            error_tensor = torch.cat(error_parts, dim=-1)
+
+            return decoded_tensor, error_tensor
+
+        return result
