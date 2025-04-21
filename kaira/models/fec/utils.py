@@ -131,7 +131,7 @@ def apply_blockwise(x: torch.Tensor, block_size: int, fn: Callable) -> torch.Ten
             a transformed tensor preserving the batch dimensions
 
     Returns:
-        Tensor with transformed blocks
+        Tensor with transformed blocks or tuple of tensors if fn returns a tuple
 
     Raises:
         AssertionError: If the last dimension is not divisible by block_size
@@ -152,5 +152,14 @@ def apply_blockwise(x: torch.Tensor, block_size: int, fn: Callable) -> torch.Ten
     # Apply function along the last dimension (block)
     result = fn(x_reshaped)
 
-    # Flatten the result back to original structure
-    return result.view(*leading_dims, -1)
+    # Check if the result is a tuple (like when return_errors=True)
+    if isinstance(result, tuple):
+        # Process each part of the tuple independently
+        processed_results = []
+        for res_part in result:
+            # Flatten each part back to original structure
+            processed_results.append(res_part.view(*leading_dims, -1))
+        return tuple(processed_results)
+    else:
+        # Flatten the result back to original structure
+        return result.view(*leading_dims, -1)

@@ -13,7 +13,7 @@ class TestReedMullerDecoder:
     def test_initialization(self):
         """Test initialization with valid parameters."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
 
         # Initialize the decoder with default parameters (hard-decision)
         decoder = ReedMullerDecoder(encoder=encoder)
@@ -35,7 +35,7 @@ class TestReedMullerDecoder:
     def test_generate_reed_partitions(self):
         """Test generation of Reed partitions."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder)
 
         # Generate Reed partitions
@@ -51,7 +51,7 @@ class TestReedMullerDecoder:
     def test_decoding_no_errors_hard_decision(self):
         """Test hard-decision decoding with no errors."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder, input_type="hard")
 
         # Create a message and encode it
@@ -71,7 +71,7 @@ class TestReedMullerDecoder:
     def test_decoding_with_errors_hard_decision(self):
         """Test hard-decision decoding with errors."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder, input_type="hard")
 
         # Create a message and encode it
@@ -91,7 +91,7 @@ class TestReedMullerDecoder:
     def test_decoding_soft_decision(self):
         """Test soft-decision decoding."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder, input_type="soft")
 
         # Create a message and encode it
@@ -117,7 +117,7 @@ class TestReedMullerDecoder:
     def test_decoding_with_return_errors(self):
         """Test decoding with return_errors=True."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder)
 
         # Create a message and encode it
@@ -139,7 +139,7 @@ class TestReedMullerDecoder:
     def test_decoding_with_batch_dimension(self):
         """Test decoding with batch dimension."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder)
 
         # Create messages and encode them
@@ -166,7 +166,7 @@ class TestReedMullerDecoder:
     def test_invalid_input_dimensions(self):
         """Test decoding with invalid input dimensions."""
         # Create a Reed-Muller encoder for RM(1,3)
-        encoder = ReedMullerCodeEncoder(r=1, m=3)
+        encoder = ReedMullerCodeEncoder(order=1, length_param=3)
         decoder = ReedMullerDecoder(encoder=encoder)
 
         # Create a received word with invalid length
@@ -180,7 +180,7 @@ class TestReedMullerDecoder:
     def test_multiple_rm_parameters(self):
         """Test with different Reed-Muller code parameters."""
         # Test with RM(0,3) - repetition code
-        encoder_rm03 = ReedMullerCodeEncoder(r=0, m=3)
+        encoder_rm03 = ReedMullerCodeEncoder(order=0, length_param=3)
         decoder_rm03 = ReedMullerDecoder(encoder=encoder_rm03)
 
         # For RM(0,3), dimension = 1, length = 8
@@ -188,7 +188,7 @@ class TestReedMullerDecoder:
         assert encoder_rm03.code_length == 8
 
         # Test with RM(1,4) - first-order code
-        encoder_rm14 = ReedMullerCodeEncoder(r=1, m=4)
+        encoder_rm14 = ReedMullerCodeEncoder(order=1, length_param=4)
         decoder_rm14 = ReedMullerDecoder(encoder=encoder_rm14)
 
         # For RM(1,4), dimension = 5, length = 16

@@ -241,17 +241,19 @@ class ReedMullerDecoder(BaseBlockDecoder[ReedMullerCodeEncoder]):
             errors = torch.zeros_like(r_block) if return_errors else None
 
             for i in range(batch_size):
-                # Get the current received word
-                r = r_block[i]
+                # Get the current received word - ensure it's a 1D tensor
+                if r_block.dim() == 3:  # Handle the case when r_block has shape [batch, 1, code_length]
+                    r = r_block[i, 0, :]
+                else:  # Handle the case when r_block has shape [batch, code_length]
+                    r = r_block[i, :]
 
+                """
                 # Convert to binary for hard decoding or compute hard decisions for soft decoding
                 if self.input_type == "hard":
                     bx = r.clone()
                 else:  # self.input_type == "soft"
                     bx = (r < 0).to(torch.int)
-
-                # Original received bits (for error calculation)
-                # original_bits = bx.clone() if return_errors else None
+                """
 
                 # Decode using Reed algorithm
                 u_hat = torch.zeros(self.code_dimension, dtype=torch.int, device=received.device)
@@ -266,10 +268,20 @@ class ReedMullerDecoder(BaseBlockDecoder[ReedMullerCodeEncoder]):
                         # Calculate checksums for each group in the partition
                         checksums = []
                         for group in partition:
+                            # Ensure the group indices are valid
+                            valid_indices = group[group < r.shape[0]]
+                            if len(valid_indices) == 0:
+                                continue
+
                             # Take relevant positions and compute parity
-                            group_bits = bx[group]
+                            # Use indexing to select elements from the 1D tensor
+                            group_bits = r[valid_indices].to(torch.int)
                             checksum = torch.sum(group_bits) % 2
-                            checksums.append(checksum)
+                            checksums.append(checksum.item())  # Use .item() to convert tensor to scalar
+
+                        # Skip if no valid checksums
+                        if not checksums:
+                            continue
 
                         # Convert to tensor
                         checksums = torch.tensor(checksums, device=received.device)
@@ -284,17 +296,26 @@ class ReedMullerDecoder(BaseBlockDecoder[ReedMullerCodeEncoder]):
                         min_reliabilities = []
 
                         for group in partition:
+                            # Ensure the group indices are valid
+                            valid_indices = group[group < r.shape[0]]
+                            if len(valid_indices) == 0:
+                                continue
+
                             # Take relevant positions
-                            group_bits = bx[group]
-                            group_reliabilities = torch.abs(r[group])
+                            group_bits = (r[valid_indices] < 0).to(torch.int)
+                            group_reliabilities = torch.abs(r[valid_indices])
 
                             # Compute parity of hard decisions
                             checksum = torch.sum(group_bits) % 2
-                            checksums.append(checksum)
+                            checksums.append(checksum.item())  # Use .item() to convert tensor to scalar
 
                             # Find minimum reliability in this group
                             min_reliability = torch.min(group_reliabilities)
-                            min_reliabilities.append(min_reliability)
+                            min_reliabilities.append(min_reliability.item())  # Use .item() to convert tensor to scalar
+
+                        # Skip if no valid checksums
+                        if not checksums:
+                            continue
 
                         # Convert to tensors
                         checksums = torch.tensor(checksums, device=received.device)
@@ -306,18 +327,14 @@ class ReedMullerDecoder(BaseBlockDecoder[ReedMullerCodeEncoder]):
                         # Make decision
                         u_hat[j] = (decision_var < 0).to(torch.int)
 
-                    # Cancel the effect of this bit from the received word
-                    # In a complete implementation, this would use the generator matrix
-                    # bx ^= u_hat[j] * self.encoder.generator_matrix[j]
-
                 # Store the decoded message
                 decoded[i] = u_hat
 
                 # Compute error pattern if needed
                 if return_errors:
                     # Re-encode the message to get the correct codeword
-                    correct_codeword = self.encoder(u_hat.unsqueeze(0)).squeeze(0)
-                    errors[i] = (r.to(torch.int) != correct_codeword).to(torch.int)
+                    correct_codeword = self.encoder(u_hat.float().unsqueeze(0)).squeeze(0)
+                    errors[i] = (r.to(torch.int) != correct_codeword.to(torch.int)).to(torch.int)
 
             return (decoded, errors) if return_errors else decoded
 
