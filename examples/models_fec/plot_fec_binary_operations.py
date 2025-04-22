@@ -75,7 +75,7 @@ print(f"Hamming distance: {dist}")
 # an interactive and informative visualization.
 
 fig = plt.figure(figsize=(12, 8), facecolor=background_color, constrained_layout=True)
-gs = GridSpec(3, 1, height_ratios=[1, 1, 1.5], hspace=0.4)
+gs = GridSpec(3, 1, figure=fig, height_ratios=[1, 1, 1.5], hspace=0.4)
 
 # Plot the first vector
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
@@ -569,11 +569,11 @@ plt.show()
 #
 # Key points:
 # - Hamming distance quantifies differences between binary sequences, which
-#   directly determines error detection and correction capabilities
+# directly determines error detection and correction capabilities
 # - Hamming weight counts the number of 1s in a binary sequence, crucial for
-#   analyzing code properties and error patterns
+# analyzing code properties and error patterns
 # - Binary-integer conversions are essential for implementing FEC algorithms
-#   and working with finite field arithmetic
+# and working with finite field arithmetic
 #
 # These basic operations form the foundation for more advanced FEC techniques
 # like Hamming codes, Reed-Solomon codes, and LDPC codes. The 3D geometric

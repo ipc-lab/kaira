@@ -101,7 +101,7 @@ corrected, syndrome, syndrome_index = hamming_decode(received)
 # Let's visualize the syndrome decoding process with an attractive, informative figure.
 
 fig = plt.figure(figsize=(16, 12))
-gs = GridSpec(4, 3, height_ratios=[1, 1, 1, 1.5], hspace=0.4, wspace=0.3)
+gs = GridSpec(4, 3, figure=fig, height_ratios=[1, 1, 1, 1.5], hspace=0.4, wspace=0.3)
 
 # Step 1: Original message
 ax1 = fig.add_subplot(gs[0, 0])
@@ -269,7 +269,7 @@ hard_errors = np.sum(message != hard_decisions)
 
 # Create a visualization comparing hard and soft decisions
 fig = plt.figure(figsize=(16, 10))
-gs = GridSpec(3, 1, height_ratios=[1, 1, 2], hspace=0.4)
+gs = GridSpec(3, 1, figure=fig, height_ratios=[1, 1, 2], hspace=0.4)
 
 # Original message
 ax1 = fig.add_subplot(gs[0])
@@ -372,7 +372,7 @@ var_beliefs = np.array([0.1, 0.7, 0.3, 0.9, 0.4, 0.8])
 
 # Create a visualization of the LDPC decoding process
 fig = plt.figure(figsize=(16, 10))
-gs = GridSpec(2, 1, height_ratios=[3, 1], hspace=0.4)
+gs = GridSpec(2, 1, figure=fig, height_ratios=[3, 1], hspace=0.4)
 
 # Create the graph visualization
 ax1 = fig.add_subplot(gs[0])
@@ -475,7 +475,7 @@ hard_decisions = (final_llrs > 0).astype(int)
 
 # Create a visualization of the iterative decoding process
 fig = plt.figure(figsize=(16, 12))
-gs = GridSpec(iterations + 2, 1, height_ratios=[1] + [2] * iterations + [1], hspace=0.4)
+gs = GridSpec(iterations + 2, 1, figure=fig, height_ratios=[1] + [2] * iterations + [1], hspace=0.4)
 
 # Initial LLRs from the channel
 ax0 = fig.add_subplot(gs[0])

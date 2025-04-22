@@ -111,7 +111,7 @@ print(f"Number of decoding errors: {decoding_errors}")
 
 # Create a figure with a complex layout
 fig = plt.figure(figsize=(16, 12))
-gs = GridSpec(4, 1, height_ratios=[1, 1.5, 1.5, 1], hspace=0.4)
+gs = GridSpec(4, 1, figure=fig, height_ratios=[1, 1.5, 1.5, 1], hspace=0.4)
 
 # 1. Original data
 ax1 = fig.add_subplot(gs[0])

@@ -75,7 +75,7 @@ print((G @ H.T) % 2)
 # understand their structure and relationship:
 
 fig = plt.figure(figsize=(14, 10), facecolor=background_color)
-gs = GridSpec(2, 1, height_ratios=[1, 1], hspace=0.4)
+gs = GridSpec(2, 1, figure=fig, height_ratios=[1, 1], hspace=0.4)
 
 # Plot the generator matrix G
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
@@ -217,7 +217,7 @@ print(f"Number of errors: {errors.sum().item()}")
 # Let's create a more informative visualization of the encoding and transmission process:
 
 fig = plt.figure(figsize=(14, 8), facecolor=background_color)
-gs = GridSpec(3, 1, height_ratios=[1, 0.5, 1], hspace=0.4)
+gs = GridSpec(3, 1, figure=fig, height_ratios=[1, 0.5, 1], hspace=0.4)
 
 # Plot the original message
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
@@ -323,7 +323,7 @@ plt.show()
 # Now let's visualize the channel transmission and resulting errors:
 
 fig = plt.figure(figsize=(14, 10), facecolor=background_color)
-gs = GridSpec(4, 1, height_ratios=[1, 0.6, 1, 1], hspace=0.4)
+gs = GridSpec(4, 1, figure=fig, height_ratios=[1, 0.6, 1, 1], hspace=0.4)
 
 # Plot the original codeword
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
@@ -482,7 +482,7 @@ print(f"Decoded message: {decoded_message}")
 # Let's create a comprehensive visualization of the syndrome decoding process:
 
 fig = plt.figure(figsize=(16, 14), facecolor=background_color)
-gs = GridSpec(4, 1, height_ratios=[1, 1.2, 0.8, 1], hspace=0.5)
+gs = GridSpec(4, 1, figure=fig, height_ratios=[1, 1.2, 0.8, 1], hspace=0.5)
 
 # Plot the received vector
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
@@ -767,7 +767,7 @@ for case in test_cases:
 
 # Number of test cases to display
 fig = plt.figure(figsize=(16, 4 * len(results)), facecolor=background_color)
-gs = GridSpec(len(results), 3, width_ratios=[3, 3, 2], wspace=0.3, hspace=0.6)
+gs = GridSpec(len(results), 3, figure=fig, width_ratios=[3, 3, 2], wspace=0.3, hspace=0.6)
 
 for i, result in enumerate(results):
     # Get the data for this test case

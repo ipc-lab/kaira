@@ -35,6 +35,13 @@ Examples and Tutorials
         </div>
 
         <div class="category-card">
+            <a href="examples/models_fec/index.html">
+                <h3>Forward Error Correction</h3>
+                <p>Examples demonstrating error correction coding techniques</p>
+            </a>
+        </div>
+
+        <div class="category-card">
             <a href="examples/channels/index.html">
                 <h3>Channels</h3>
                 <p>Explore various communication channel implementations</p>
@@ -90,6 +97,7 @@ Examples and Tutorials
    :hidden:
 
    examples/models/index
+   examples/models_fec/index
    examples/channels/index
    examples/constraints/index
    examples/data/index

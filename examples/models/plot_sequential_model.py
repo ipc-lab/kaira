@@ -158,7 +158,7 @@ for snr in snr_values:
 
 # Create a figure with subplots using GridSpec
 fig = plt.figure(figsize=(15, 10))
-gs = GridSpec(2, 2, height_ratios=[1, 2], width_ratios=[2, 1], figure=fig, hspace=0.3, wspace=0.3)
+gs = GridSpec(2, 2, figure=fig, height_ratios=[1, 2], width_ratios=[2, 1], hspace=0.3, wspace=0.3)
 
 # 1. SNR vs MSE Plot
 ax1 = fig.add_subplot(gs[0, 0])

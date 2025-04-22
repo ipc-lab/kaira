@@ -260,7 +260,7 @@ fec_schemes = [
 
 # Create the visualization
 fig = plt.figure(figsize=(16, 12))
-gs = GridSpec(2, 1, height_ratios=[2, 1.5], hspace=0.3)
+gs = GridSpec(2, 1, height_ratios=[2, 1.5], figure=fig, hspace=0.3)
 
 # First subplot: Overhead impact on throughput
 ax1 = fig.add_subplot(gs[0])
@@ -345,7 +345,7 @@ plt.show()
 
 # Set up the visualization
 fig = plt.figure(figsize=(16, 10))
-gs = GridSpec(2, 2, height_ratios=[1, 3], width_ratios=[1, 1], hspace=0.3, wspace=0.3)
+gs = GridSpec(2, 2, height_ratios=[1, 3], figure=fig, width_ratios=[1, 1], hspace=0.3, wspace=0.3)
 
 # Create two subplots to show different error patterns
 ax_pattern1 = fig.add_subplot(gs[0, 0])

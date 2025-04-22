@@ -264,8 +264,8 @@ print(f"  PAPR: {props_all['papr']:.2f} ({props_all['papr_db']:.2f} dB)")
 print(f"  Peak Amplitude: {props_all['peak_amplitude']:.4f}")
 
 # Create visualization of all constraints
-plt.figure(figsize=(15, 12))
-gs = GridSpec(3, 2)
+fig = plt.figure(figsize=(15, 12))
+gs = GridSpec(3, 2, figure=fig)
 
 # Time domain plots
 plt.subplot(gs[0, :])

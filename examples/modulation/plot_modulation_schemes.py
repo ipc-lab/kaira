@@ -792,7 +792,7 @@ for snr in channel_snr:
 
 # Visualize the results
 fig = plt.figure(figsize=(14, 10))
-gs = GridSpec(3, 1, height_ratios=[1, 1, 1], hspace=0.4)  # Increase hspace for better separation
+gs = GridSpec(3, 1, figure=fig, height_ratios=[1, 1, 1], hspace=0.4)  # Increase hspace for better separation
 
 # Plot 1: Channel SNR variation over time
 ax1 = fig.add_subplot(gs[0])

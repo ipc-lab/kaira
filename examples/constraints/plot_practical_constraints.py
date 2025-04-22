@@ -458,8 +458,8 @@ print(f"  Peak Amplitude: {tx_constrained_props['peak_amplitude']:.4f}")
 # Let's visualize and analyze our transmitter signal before and after constraints.
 
 # Time domain comparison
-plt.figure(figsize=(15, 12))
-gs = GridSpec(4, 2)
+fig = plt.figure(figsize=(15, 12))
+gs = GridSpec(4, 2, figure=fig)
 
 # Plot time domain signals
 t_segment = slice(0, 500)

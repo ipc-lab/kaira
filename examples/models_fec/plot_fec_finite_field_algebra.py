@@ -444,7 +444,7 @@ plt.show()
 # - Reed-Solomon codes leverage finite field properties for powerful error correction
 # - The encoding process involves polynomial operations in the finite field
 # - Syndromes are calculated by evaluating the received polynomial at powers of
-#   a primitive field element
+# a primitive field element
 #
 # These algebraic structures form the foundation for many advanced error correction
 # codes used in storage systems, communication technologies, and digital transmission.

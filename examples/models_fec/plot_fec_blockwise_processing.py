@@ -416,7 +416,7 @@ for i, (corrected, decoded_data, detected_pos) in enumerate(results):
 
 fig = plt.figure(figsize=(15, 12))
 # Modify GridSpec to have more space between subplots
-gs = GridSpec(3, 2, height_ratios=[1, 1, 1.2], width_ratios=[4, 1], hspace=0.6, wspace=0.4, bottom=0.05, top=0.9, left=0.05, right=0.95)
+gs = GridSpec(3, 2, figure=fig, height_ratios=[1, 1, 1.2], width_ratios=[4, 1], hspace=0.6, wspace=0.4, bottom=0.05, top=0.9, left=0.05, right=0.95)
 
 # Create empty lists to store plot objects for animation
 bit_rects: list[Rectangle] = []
@@ -679,11 +679,11 @@ plt.show()
 # Key points:
 # - Block-wise processing is fundamental to many error correction schemes
 # - The `apply_blockwise` function provides a convenient way to apply operations
-#   on blocks of data
+# on blocks of data
 # - We demonstrated several practical applications of block-wise processing:
 # - Simple parity-based error detection
 # - Complex operations that return multiple values
-# q- Implementation of a (7,4) Hamming code for error correction
+# - Implementation of a (7,4) Hamming code for error correction
 #
 # These techniques form the foundation for more advanced error correction codes
 # like BCH, Reed-Solomon, and LDPC codes, which can correct multiple errors per block.
