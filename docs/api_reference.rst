@@ -267,6 +267,8 @@ Components module for Kaira models.
    ConvEncoder
    MLPDecoder
    MLPEncoder
+   Projection
+   ProjectionType
 
 
 Decoders
