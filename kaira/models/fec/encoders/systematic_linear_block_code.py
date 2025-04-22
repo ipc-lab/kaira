@@ -116,9 +116,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
     This implementation follows the standard approach to systematic linear block coding
     described in the error control coding literature :cite:`lin2004error,moon2005error,sklar2001digital`.
 
-    Attributes:
-        information_set (torch.Tensor): Indices of the information positions
-
     Args:
         parity_submatrix (torch.Tensor): The parity submatrix for the code.
         information_set: Either indices of information positions, which must be a k-sublist
@@ -132,8 +129,6 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
             parity_submatrix: The parity submatrix P for the code.
                 Must be a binary matrix of shape (k, m) where k is the message length
                 and m is the redundancy.
-            information_set: Either indices of information positions, which must be a k-sublist
-                of [0...n), or one of the strings 'left' or 'right'. Default is 'left'.
             **kwargs: Variable keyword arguments passed to the base class.
 
         Raises:
@@ -173,7 +168,11 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
 
     @property
     def information_set(self) -> torch.Tensor:
-        """Information set K of the code."""
+        """Either indices of information positions, which must be a k-sublist of [0...n), or one of
+        the strings 'left' or 'right'.
+
+        Default is 'left'.
+        """
         return self._info_set_buffer
 
     @property
@@ -247,7 +246,7 @@ class SystematicLinearBlockCodeEncoder(LinearBlockCodeEncoder):
         # Define systematic encoding function to apply to blocks
         def systematic_encode_fn(reshaped_x):
             # Compute parity bits
-            parity_bits = torch.matmul(reshaped_x, self.parity_submatrix) % 2
+            parity_bits = torch.matmul(reshaped_x, self.parity_submatrix.to(reshaped_x.dtype)) % 2
 
             # Create output tensor of the right shape
             batch_shape = reshaped_x.shape[:-1]

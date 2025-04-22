@@ -182,12 +182,20 @@ class CyclicCodeEncoder(SystematicLinearBlockCodeEncoder):
         Returns:
             A tuple of (quotient, remainder) polynomials
         """
-        if divisor.value == 0:
+        # Check if divisor is zero - handle case when value is a tensor
+        if isinstance(divisor.value, torch.Tensor):
+            if torch.all(divisor.value == 0):
+                raise ValueError("Division by zero polynomial")
+        elif divisor.value == 0:
             raise ValueError("Division by zero polynomial")
 
         # Optimizations
-        if dividend.value == 0:
+        if isinstance(dividend.value, torch.Tensor):
+            if torch.all(dividend.value == 0):
+                return BinaryPolynomial(0), BinaryPolynomial(0)
+        elif dividend.value == 0:
             return BinaryPolynomial(0), BinaryPolynomial(0)
+
         if dividend == divisor:
             return BinaryPolynomial(1), BinaryPolynomial(0)
         if dividend.degree < divisor.degree:
