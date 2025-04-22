@@ -420,22 +420,6 @@ Digital modulation schemes for wireless communications.
    QPSKModulator
 
 
-.. currentmodule:: kaira.modulations
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   binary_array_to_gray
-   binary_to_gray
-   calculate_spectral_efficiency
-   calculate_theoretical_ber
-   gray_array_to_binary
-   gray_to_binary
-   plot_constellation
-
-
 Utils
 ^^^^^
 
@@ -455,6 +439,129 @@ Utility functions for digital modulation schemes.
    gray_array_to_binary
    gray_to_binary
    plot_constellation
+
+
+Losses
+------
+
+Kaira Losses Package.
+
+.. currentmodule:: kaira.losses
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseLoss
+   CompositeLoss
+   LossRegistry
+
+
+Adversarial
+^^^^^^^^^^^
+
+Adversarial Losses module for Kaira.
+
+.. currentmodule:: kaira.losses.adversarial
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   FeatureMatchingLoss
+   HingeLoss
+   LSGANLoss
+   R1GradientPenalty
+   VanillaGANLoss
+   WassersteinGANLoss
+
+
+Audio
+^^^^^
+
+Audio Losses module for Kaira.
+
+.. currentmodule:: kaira.losses.audio
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   AudioContrastiveLoss
+   FeatureMatchingLoss
+   L1AudioLoss
+   LogSTFTMagnitudeLoss
+   MelSpectrogramLoss
+   MultiResolutionSTFTLoss
+   STFTLoss
+   SpectralConvergenceLoss
+
+
+Image
+^^^^^
+
+Losses module for Kaira.
+
+.. currentmodule:: kaira.losses.image
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   CombinedLoss
+   FocalLoss
+   GradientLoss
+   L1Loss
+   LPIPSLoss
+   MSELPIPSLoss
+   MSELoss
+   MSSSIMLoss
+   PSNRLoss
+   SSIMLoss
+   StyleLoss
+   TotalVariationLoss
+   VGGLoss
+
+
+Multimodal
+^^^^^^^^^^
+
+Multimodal Losses module for Kaira.
+
+.. currentmodule:: kaira.losses.multimodal
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   AlignmentLoss
+   CMCLoss
+   ContrastiveLoss
+   InfoNCELoss
+   TripletLoss
+
+
+Text
+^^^^
+
+Text Losses module for Kaira.
+
+.. currentmodule:: kaira.losses.text
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   CosineSimilarityLoss
+   CrossEntropyLoss
+   LabelSmoothingLoss
+   Word2VecLoss
 
 
 Data
@@ -484,3 +591,47 @@ Data utilities for Kaira, including data generation and correlation models.
    create_binary_tensor
    create_uniform_tensor
    load_sample_images
+
+
+Utils
+-----
+
+General utility functions for the Kaira library.
+
+.. currentmodule:: kaira.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   add_noise_for_snr
+   calculate_num_filters_factor_image
+   calculate_snr
+   estimate_signal_power
+   noise_power_to_snr
+   snr_db_to_linear
+   snr_linear_to_db
+   snr_to_noise_power
+   to_tensor
+
+
+Snr
+^^^
+
+Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
+
+.. currentmodule:: kaira.utils.snr
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   add_noise_for_snr
+   calculate_snr
+   estimate_signal_power
+   noise_power_to_snr
+   snr_db_to_linear
+   snr_linear_to_db
+   snr_to_noise_power

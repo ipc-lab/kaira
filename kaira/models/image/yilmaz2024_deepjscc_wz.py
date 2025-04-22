@@ -123,7 +123,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
-    """DeepJSCC-WZ-sm Decoder Module :cite=`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     This lightweight decoder reconstructs the original image from the received noisy representation
     and available side information. It employs a symmetric structure to the encoder
@@ -235,7 +235,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
-    """DeepJSCC-WZ Encoder Module :cite=`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ Encoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The full-size encoder for the DeepJSCC-WZ model that compresses input images
     into a compact latent representation. It includes two parallel encoding paths:
@@ -332,7 +332,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
-    """DeepJSCC-WZ Decoder Module :cite=`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The full-size decoder for the DeepJSCC-WZ model that reconstructs the original image
     from the received noisy representation and side information. It follows a symmetric
@@ -459,7 +459,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
-    """DeepJSCC-WZ Conditional Encoder Module :cite=`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ Conditional Encoder Module :cite:`yilmaz2024deepjsccwz`.
 
     This variant of the DeepJSCC-WZ encoder actively incorporates side information during
     the encoding process. This model is designed for scenarios where side information is available
@@ -592,7 +592,7 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
-    """DeepJSCC-WZ Conditional Decoder Module :cite=`yilmaz2024deepjsccwz`.
+    """DeepJSCC-WZ Conditional Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The decoder counterpart to the conditional encoder, designed to reconstruct images
     from representations created by the conditional encoder. This decoder leverages
