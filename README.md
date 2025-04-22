@@ -56,6 +56,20 @@ Get help and connect with the Kaira community through these channels:
 - [Discussions](https://github.com/ipc-lab/kaira/discussions) -
   General questions and community discussions
 
+# Contributors
+
+<div align="center">
+  <a href="https://github.com/ipc-lab/kaira/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=ipc-lab/kaira" alt="Contributors" />
+  </a>
+</div>
+
+We thank all our contributors for their valuable input and efforts to make Kaira better!
+
+## How to Contribute
+
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for more details on how to get started.
+
 # License
 
 Kaira is distributed under the terms of the [MIT
