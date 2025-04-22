@@ -326,6 +326,9 @@ hoverxref_role_types = {
     "term": "tooltip",
 }
 
+# Add setting to prevent duplicate documentation of enum members
+suppress_warnings = ["autodoc.duplicate_object"]
+
 
 def skip_member(app, what, name, obj, skip, options):
     """Determine whether to skip a member during documentation generation.

@@ -17,25 +17,26 @@ from ..registry import ModelRegistry
 
 
 class ProjectionType(Enum):
-    """Enum for different types of projections.
+    """Enum for different types of projections."""
 
-    Attributes:
-        RADEMACHER: Random binary projection matrix with values {-1, 1}.
-            Suitable for fast computation and memory-efficient implementations.
-        GAUSSIAN: Random projection matrix with values drawn from N(0, 1/out_features).
-            Provides good theoretical guarantees for dimensionality reduction.
-        ORTHOGONAL: Random orthogonal matrix with columns that form an orthonormal basis.
-            Preserves angles and distances better than non-orthogonal projections.
-        COMPLEX_GAUSSIAN: Complex-valued projection with real and imaginary parts from N(0, 1/(2*out_features)).
-            Useful for complex signal processing and wireless communications.
-        COMPLEX_ORTHOGONAL: Complex-valued orthogonal projection with orthonormal columns.
-            Provides optimal preservation of signal characteristics for complex data.
-    """
-
+    #: Random binary projection matrix with values {-1, 1}.
+    #: Suitable for fast computation and memory-efficient implementations.
     RADEMACHER = "rademacher"
+
+    #: Random projection matrix with values drawn from N(0, 1/out_features).
+    #: Provides good theoretical guarantees for dimensionality reduction.
     GAUSSIAN = "gaussian"
+
+    #: Random orthogonal matrix with columns that form an orthonormal basis.
+    #: Preserves angles and distances better than non-orthogonal projections.
     ORTHOGONAL = "orthogonal"
+
+    #: Complex-valued projection with real and imaginary parts from N(0, 1/(2*out_features)).
+    #: Useful for complex signal processing and wireless communications.
     COMPLEX_GAUSSIAN = "complex_gaussian"
+
+    #: Complex-valued orthogonal projection with orthonormal columns.
+    #: Provides optimal preservation of signal characteristics for complex data.
     COMPLEX_ORTHOGONAL = "complex_orthogonal"
 
 

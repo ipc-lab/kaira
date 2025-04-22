@@ -76,6 +76,38 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates complex-valued projections for dimensionality reduction in wireless communications. Shows various projection methods and their application to signal compression.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/components/images/thumb/sphx_glr_plot_complex_projections_thumb.png
+      :alt: Complex Projections for Wireless Communications
+
+    :ref:`sphx_glr_auto_examples_models_components_plot_complex_projections.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Complex Projections for Wireless Communications</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates projection techniques and tests for geometric covering properties in signal space. Shows how projections can be used for efficient signal representation.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/components/images/thumb/sphx_glr_plot_projections_and_cover_tests_thumb.png
+      :alt: Projection Methods and Covering Tests
+
+    :ref:`sphx_glr_auto_examples_models_components_plot_projections_and_cover_tests.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Projection Methods and Covering Tests</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -86,3 +118,5 @@ systems, from traditional channel coding to advanced deep learning-based approac
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_sequential_model
    /auto_examples/models/plot_bourtsoulatze_deepjscc
+   /auto_examples/models/components/plot_complex_projections
+   /auto_examples/models/components/plot_projections_and_cover_tests
