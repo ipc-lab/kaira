@@ -39,7 +39,7 @@ sns.set_palette(sns.color_palette(colors))
 
 # %%
 # Understanding Complex Projections in Communications
-# ---------------------------------------------
+# ----------------------------------------------------
 # Complex projections map high-dimensional complex data to lower-dimensional complex spaces
 # while preserving important properties of the data. In wireless communications, complex
 # projections are useful for:

@@ -80,10 +80,10 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. only:: html
 
-    .. image:: /auto_examples/models/components/images/thumb/sphx_glr_plot_complex_projections_thumb.png
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_complex_projections_thumb.png
       :alt: Complex Projections for Wireless Communications
 
-    :ref:`sphx_glr_auto_examples_models_components_plot_complex_projections.py`
+    :ref:`sphx_glr_auto_examples_models_plot_complex_projections.py`
 
 .. raw:: html
 
@@ -96,10 +96,10 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. only:: html
 
-    .. image:: /auto_examples/models/components/images/thumb/sphx_glr_plot_projections_and_cover_tests_thumb.png
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_projections_and_cover_tests_thumb.png
       :alt: Projection Methods and Covering Tests
 
-    :ref:`sphx_glr_auto_examples_models_components_plot_projections_and_cover_tests.py`
+    :ref:`sphx_glr_auto_examples_models_plot_projections_and_cover_tests.py`
 
 .. raw:: html
 
@@ -118,5 +118,5 @@ systems, from traditional channel coding to advanced deep learning-based approac
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_sequential_model
    /auto_examples/models/plot_bourtsoulatze_deepjscc
-   /auto_examples/models/components/plot_complex_projections
-   /auto_examples/models/components/plot_projections_and_cover_tests
+   /auto_examples/models/plot_complex_projections
+   /auto_examples/models/plot_projections_and_cover_tests
