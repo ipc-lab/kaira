@@ -19,6 +19,10 @@ from .tung2022_deepjscc_q import (
     Tung2022DeepJSCCQDecoder,
     Tung2022DeepJSCCQEncoder,
 )
+from .xie2023_dt_deepjscc import (
+    Xie2023DTDeepJSCCDecoder,
+    Xie2023DTDeepJSCCEncoder,
+)
 from .yilmaz2023_deepjscc_noma import (
     Yilmaz2023DeepJSCCNOMADecoder,
     Yilmaz2023DeepJSCCNOMAEncoder,
@@ -45,6 +49,9 @@ __all__ = [
     "Tung2022DeepJSCCQDecoder",
     "Tung2022DeepJSCCQ2Encoder",
     "Tung2022DeepJSCCQ2Decoder",
+    "Xie2023DTDeepJSCC",
+    "Xie2023DTDeepJSCCEncoder",
+    "Xie2023DTDeepJSCCDecoder",
     "Yilmaz2023DeepJSCCNOMAModel",
     "Yilmaz2023DeepJSCCNOMAEncoder",
     "Yilmaz2023DeepJSCCNOMADecoder",
