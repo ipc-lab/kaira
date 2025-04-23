@@ -544,10 +544,3 @@ if 4 in EXAMPLES_TO_RUN:
 # Print total execution time
 end_time = time.time()
 print(f"\nTotal execution time: {end_time - start_time:.1f} seconds")
-
-# %%
-# References
-# ----------
-# .. bibliography:: references.bib
-#    :style: unsrt
-#    :filter: docname in docnames
