@@ -532,9 +532,7 @@ class CapacityAnalyzer:
         mi = mi / torch.log(torch.tensor(2.0))
 
         # Move result back to original device
-        mi = mi.to(self.device)
-
-        return torch.tensor(mi, device=self.device)
+        return mi.clone().detach().to(self.device)
 
     def modulation_capacity(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], num_symbols: int = 10000, monte_carlo: bool = True, estimation_method: str = "histogram") -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute capacity of a modulation scheme over a specified channel.
