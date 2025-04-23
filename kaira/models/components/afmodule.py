@@ -96,14 +96,39 @@ class AFModule(BaseModel):
 
         # Apply the mask according to input dimensions and actual channels
         if input_dims == 4:
-            # Reshape mask to match the actual number of channels in the input tensor
-            mask = mask[:, :actual_channels]
-            mask = mask.view(-1, actual_channels, 1, 1)
+            # Reshape mask to match the number of channels in the original AFModule config
+            mask = mask.view(-1, mask.shape[1], 1, 1)
+
+            # If input has more channels than the mask, extend the mask
+            if actual_channels > mask.shape[1]:
+                additional_channels = actual_channels - mask.shape[1]
+                extension = torch.ones(batch_size, additional_channels, 1, 1, device=mask.device)
+                mask = torch.cat([mask, extension], dim=1)
+            else:
+                # Trim the mask if needed
+                mask = mask[:, :actual_channels, :, :]
+
         elif input_dims == 3:
-            mask = mask[:, :actual_channels]
-            mask = mask.view(-1, 1, actual_channels)
+            mask = mask.view(-1, 1, mask.shape[1])
+
+            # If input has more channels than the mask, extend the mask
+            if actual_channels > mask.shape[2]:
+                additional_channels = actual_channels - mask.shape[2]
+                extension = torch.ones(batch_size, 1, additional_channels, device=mask.device)
+                mask = torch.cat([mask, extension], dim=2)
+            else:
+                # Trim the mask if needed
+                mask = mask[:, :, :actual_channels]
+
         else:
-            mask = mask[:, :actual_channels]
+            # If input has more features than the mask, extend the mask
+            if actual_channels > mask.shape[1]:
+                additional_channels = actual_channels - mask.shape[1]
+                extension = torch.ones(batch_size, additional_channels, device=mask.device)
+                mask = torch.cat([mask, extension], dim=1)
+            else:
+                # Trim the mask if needed
+                mask = mask[:, :actual_channels]
 
         # Apply mask to the input tensor
         out = mask * input_tensor

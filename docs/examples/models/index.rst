@@ -108,6 +108,22 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates the Attention-Feature Module (AFModule) as an efficient alternative to traditional attention mechanisms. Shows applications in wireless communications with lower computational complexity.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_afmodule_thumb.png
+      :alt: Attention-Feature Module (AFModule) for Efficient Communications
+
+    :ref:`sphx_glr_auto_examples_models_plot_afmodule.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Attention-Feature Module (AFModule) for Efficient Communications</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -120,3 +136,4 @@ systems, from traditional channel coding to advanced deep learning-based approac
    /auto_examples/models/plot_bourtsoulatze_deepjscc
    /auto_examples/models/plot_complex_projections
    /auto_examples/models/plot_projections_and_cover_tests
+   /auto_examples/models/plot_afmodule

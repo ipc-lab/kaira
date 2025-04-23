@@ -59,5 +59,5 @@ plt.show()
 # - Bullet point 3
 #
 # References:
-# - Reference 1
-# - Reference 2
+# - sphinx-bibtex formatted reference :cite:`key1,key2`
+# - Additional resources or links to documentation
