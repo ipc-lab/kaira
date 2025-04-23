@@ -76,6 +76,22 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates Discrete Task-Oriented Deep JSCC (DT-DeepJSCC) for image classification over noisy channels. Shows how a discrete bottleneck improves robustness and task-specific optimization.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_xie2023_dt_deepjscc_thumb.png
+      :alt: Discrete Task-Oriented Deep JSCC Model (Xie 2023)
+
+    :ref:`sphx_glr_auto_examples_models_plot_xie2023_dt_deepjscc.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Discrete Task-Oriented Deep JSCC Model (Xie 2023)</div>
+    </div>
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates complex-valued projections for dimensionality reduction in wireless communications. Shows various projection methods and their application to signal compression.">
 
 .. only:: html
@@ -134,6 +150,7 @@ systems, from traditional channel coding to advanced deep learning-based approac
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_sequential_model
    /auto_examples/models/plot_bourtsoulatze_deepjscc
+   /auto_examples/models/plot_xie2023_dt_deepjscc
    /auto_examples/models/plot_complex_projections
    /auto_examples/models/plot_projections_and_cover_tests
    /auto_examples/models/plot_afmodule
