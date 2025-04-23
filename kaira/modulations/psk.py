@@ -36,6 +36,8 @@ class BPSKModulator(BaseModulator):
         re_part = torch.tensor([1.0, -1.0])
         im_part = torch.tensor([0.0, 0.0])
         self.register_buffer("constellation", torch.complex(re_part, im_part))
+        # Create bit patterns for each constellation point
+        self.register_buffer("bit_patterns", torch.tensor([[0.0], [1.0]]))
         self._bits_per_symbol = 1  # BPSK has 1 bit per symbol
 
     def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
@@ -51,6 +53,24 @@ class BPSKModulator(BaseModulator):
         """
         # Convert binary 0/1 to 1/-1
         return torch.complex(1.0 - 2.0 * x.float(), torch.zeros_like(x.float()))
+
+    def forward_soft(self, x: torch.Tensor, temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Modulate soft bits to BPSK symbols in a differentiable manner.
+
+        Args:
+            x: Input tensor of soft bit probabilities with shape (..., N)
+               Values should be in [0, 1] range, representing P(bit=1)
+            temp: Temperature parameter for soft decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Complex tensor of BPSK symbols with shape (..., N)
+        """
+        # For BPSK, we can directly calculate the expected symbol
+        # P(bit=0) * (+1) + P(bit=1) * (-1) = 1 - 2*P(bit=1)
+        expected_symbol = torch.complex(1.0 - 2.0 * x.float(), torch.zeros_like(x.float()))
+        return expected_symbol
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
         """Plot the BPSK constellation diagram.
@@ -111,6 +131,38 @@ class BPSKDemodulator(BaseDemodulator):
             # LLR = log(P(y|b=0)/P(y|b=1)) = log(exp(-(y-1)²/2σ²)/exp(-(y+1)²/2σ²)) = 2y/σ²
             return -2.0 * y_real / noise_var
 
+    def forward_soft(self, y: torch.Tensor, noise_var: Union[float, torch.Tensor], temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Demodulate BPSK symbols to soft bit probabilities.
+
+        Args:
+            y: Received symbols with shape (..., N)
+            noise_var: Noise variance (required)
+            temp: Temperature parameter for controlling softness of decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Soft bit probabilities with shape (..., N)
+            Values are in [0, 1] range, representing P(bit=1)
+        """
+        # Calculate LLRs
+        llrs = self.forward(y, noise_var, *args, **kwargs)
+
+        # Convert LLRs to probabilities with temperature scaling
+        # P(bit=1) = 1 / (1 + exp(LLR/temp))
+        return torch.sigmoid(-llrs / temp)
+
+    def plot_constellation(self, **kwargs) -> plt.Figure:
+        """Plot the BPSK constellation diagram.
+
+        Args:
+            **kwargs: Additional arguments passed to plot_constellation
+
+        Returns:
+            Matplotlib figure object
+        """
+        return plot_constellation(self.constellation, labels=["0", "1"], title="BPSK Constellation", **kwargs)
+
 
 @ModulationRegistry.register_modulator()
 class QPSKModulator(BaseModulator):
@@ -151,15 +203,13 @@ class QPSKModulator(BaseModulator):
                 [0.0, 1.0],  # Fourth quadrant
                 [1.0, 0.0],  # Second quadrant
                 [1.0, 1.0],  # Third quadrant
-            ],
-            dtype=torch.float,
+            ]
         )
         self.register_buffer("bit_patterns", bit_patterns)
-
         self._bits_per_symbol = 2  # QPSK has 2 bits per symbol
 
     def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Modulate bit pairs to QPSK symbols.
+        """Modulate binary inputs to QPSK symbols.
 
         Args:
             x: Input tensor of bits with shape (..., 2*N)
@@ -169,24 +219,51 @@ class QPSKModulator(BaseModulator):
         Returns:
             Complex tensor of QPSK symbols with shape (..., N)
         """
-        # Ensure input length is even
         batch_shape = x.shape[:-1]
-        bit_len = x.shape[-1]
-        if bit_len % 2 != 0:
-            raise ValueError("Input bit length must be even for QPSK modulation")
+        num_bits = x.shape[-1]
 
-        # Reshape to pairs of bits
-        x_reshaped = x.reshape(*batch_shape, -1, 2)
+        if num_bits % 2 != 0:
+            raise ValueError(f"Number of input bits ({num_bits}) must be even for QPSK modulation")
 
-        # Convert bit pairs to indices using Gray coding pattern
-        indices = x_reshaped[..., 0].to(torch.long) * 2 + x_reshaped[..., 1].to(torch.long)
+        # Reshape to (..., N, 2)
+        x_pairs = x.reshape(*batch_shape, -1, 2)
 
-        # Handle empty tensor case
-        if indices.numel() == 0:
-            return torch.empty((*batch_shape, 0), dtype=torch.complex64, device=x.device)
+        # Map bit pairs to symbol indices
+        indices = x_pairs[..., 0] * 2 + x_pairs[..., 1]  # Convert bit pairs to indices
 
-        # Map indices to symbols
-        return self.constellation[indices]
+        # Map indices to constellation symbols
+        symbols = self.constellation[indices.long()]
+
+        return symbols
+
+    def forward_soft(self, x: torch.Tensor, temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Modulate soft bits to QPSK symbols in a differentiable manner.
+
+        Args:
+            x: Input tensor of soft bit probabilities with shape (..., 2*N)
+               Values should be in [0, 1] range, representing P(bit=1)
+            temp: Temperature parameter for soft decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Complex tensor of QPSK symbols with shape (..., N)
+        """
+        from .differentiable import soft_symbol_mapping
+
+        batch_shape = x.shape[:-1]
+        num_bits = x.shape[-1]
+
+        if num_bits % 2 != 0:
+            raise ValueError(f"Number of input bits ({num_bits}) must be even for QPSK modulation")
+
+        # Reshape to (..., N, 2)
+        x_pairs = x.reshape(*batch_shape, -1, 2)
+
+        # Use differentiable symbol mapping
+        symbols = soft_symbol_mapping(x_pairs, self.constellation, self.bit_patterns)
+
+        return symbols
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
         """Plot the QPSK constellation diagram.
@@ -197,12 +274,7 @@ class QPSKModulator(BaseModulator):
         Returns:
             Matplotlib figure object
         """
-        labels = []
-        for i in range(4):
-            bit_pattern = self.bit_patterns[i]
-            labels.append(f"{int(bit_pattern[0])}{int(bit_pattern[1])}")
-
-        return plot_constellation(self.constellation, labels=labels, title="QPSK Constellation", **kwargs)
+        return plot_constellation(self.constellation, labels=["00", "01", "10", "11"], title="QPSK Constellation", **kwargs)
 
 
 @ModulationRegistry.register_demodulator()
@@ -275,56 +347,60 @@ class QPSKDemodulator(BaseDemodulator):
             llrs = torch.zeros((*batch_shape, symbol_shape, 2), device=y.device)
 
             # For each bit position, compute the LLR using max-log approximation
-            for bit_idx in range(2):
-                # Separate constellation points for bit=0 and bit=1
-                bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
-                bit_1_mask = ~bit_0_mask
+            for bit_idx in range(2):  # QPSK has 2 bits per symbol
+                # Get constellation points corresponding to bit=0 and bit=1
+                bit_0_indices = (self.modulator.bit_patterns[:, bit_idx] == 0).nonzero().squeeze(1)
+                bit_1_indices = (self.modulator.bit_patterns[:, bit_idx] == 1).nonzero().squeeze(1)
 
-                # Get corresponding constellation points
-                const_bit_0 = self.modulator.constellation[bit_0_mask]
-                const_bit_1 = self.modulator.constellation[bit_1_mask]
+                const_bit_0 = self.modulator.constellation[bit_0_indices]  # Points with bit=0
+                const_bit_1 = self.modulator.constellation[bit_1_indices]  # Points with bit=1
 
-                # Calculate minimum distances
-                min_dist_0 = self._min_distance_to_points(y, const_bit_0, noise_var)
-                min_dist_1 = self._min_distance_to_points(y, const_bit_1, noise_var)
+                # Compute min distance to points with bit=0 and bit=1
+                dist_bit_0 = torch.min(
+                    torch.abs(y.unsqueeze(-1) - const_bit_0.unsqueeze(0).unsqueeze(0)),
+                    dim=-1,
+                )[0]
+                dist_bit_1 = torch.min(
+                    torch.abs(y.unsqueeze(-1) - const_bit_1.unsqueeze(0).unsqueeze(0)),
+                    dim=-1,
+                )[0]
 
-                # LLR = log(P(bit=0|y)/P(bit=1|y))
-                llrs[..., bit_idx] = min_dist_1 - min_dist_0
+                # Compute LLR = log(P(y|b=0)/P(y|b=1))
+                # Using max-log approximation: LLR ≈ (min_dist_b1^2 - min_dist_b0^2)/(2*noise_var)
+                llrs[..., bit_idx] = (dist_bit_1**2 - dist_bit_0**2) / (2 * noise_var)
 
-            # Reshape to final sequence
+            # Reshape to final LLR sequence
             return llrs.reshape(*batch_shape, -1)
 
-    def _min_distance_to_points(self, y: torch.Tensor, points: torch.Tensor, noise_var: torch.Tensor) -> torch.Tensor:
-        """Calculate minimum (negative) distance to a set of constellation points.
-
-        Uses max-log approximation for computational efficiency.
+    def forward_soft(self, y: torch.Tensor, noise_var: Union[float, torch.Tensor], temp: float = 1.0, *args, **kwargs) -> torch.Tensor:
+        """Demodulate QPSK symbols to soft bit probabilities in a differentiable manner.
 
         Args:
             y: Received symbols with shape (..., N)
-            points: Constellation points to compare against with shape (M,)
-            noise_var: Noise variance with shape (..., N)
+            noise_var: Noise variance (required)
+            temp: Temperature parameter for controlling softness of decisions
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
 
         Returns:
-            Minimum negative distance for each symbol in y
+            Soft bit probabilities with shape (..., N*2)
+            Values are in [0, 1] range, representing P(bit=1)
         """
         batch_shape = y.shape[:-1]
         symbol_shape = y.shape[-1]
-        num_points = points.shape[0]
 
-        # Reshape inputs for broadcasting
-        y.unsqueeze(-1)  # (..., N, 1)
+        # Get LLRs
+        llrs = self.forward(y, noise_var, *args, **kwargs)
 
-        # Fix the dimension mismatch by directly calculating distances for each point
-        distances = torch.zeros((*batch_shape, symbol_shape, num_points), device=y.device)
+        # Reshape LLRs to (..., N, 2)
+        llrs = llrs.reshape(*batch_shape, symbol_shape, 2)
 
-        for i in range(num_points):
-            point = points[i]
-            # Calculate squared distance between each symbol and this point
-            distances[..., i] = -torch.abs(y - point) ** 2 / noise_var
+        # Convert LLRs to probabilities with temperature scaling
+        # P(bit=1) = 1 / (1 + exp(LLR/temp))
+        probs = torch.sigmoid(-llrs / temp)
 
-        # Return maximum (least negative) value for each symbol
-        max_values, _ = torch.max(distances, dim=-1)
-        return max_values
+        # Reshape to final probability sequence
+        return probs.reshape(*batch_shape, -1)
 
 
 @ModulationRegistry.register_modulator()
