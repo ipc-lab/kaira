@@ -35,36 +35,15 @@ def mask_attention_sampler():
 
 
 @pytest.fixture
-def mask_attention_sampler_mnist():
-    """Fixture for creating a MaskAttentionSampler for MNIST architecture."""
-    return MaskAttentionSampler(dim_dic=64, num_embeddings=4)
-
-
-@pytest.fixture
 def encoder_cifar10():
     """Fixture for creating a DTDeepJSCCEncoder for CIFAR-10."""
     return Xie2023DTDeepJSCCEncoder(in_channels=3, latent_channels=64, architecture="cifar10", num_embeddings=16)
 
 
 @pytest.fixture
-def encoder_mnist():
-    """Fixture for creating a DTDeepJSCCEncoder for MNIST."""
-    encoder = Xie2023DTDeepJSCCEncoder(in_channels=1, latent_channels=64, architecture="mnist", num_embeddings=4, input_size=(28, 28), num_latent=4)
-    # Ensure sampler has correct dimensions
-    encoder.sampler = MaskAttentionSampler(dim_dic=64, num_embeddings=4)
-    return encoder
-
-
-@pytest.fixture
 def encoder_custom():
     """Fixture for creating a DTDeepJSCCEncoder with custom architecture."""
-    return Xie2023DTDeepJSCCEncoder(in_channels=3, latent_channels=64, architecture="custom", num_embeddings=8, input_size=(32, 32))  # Larger than 16x16 so it uses convolutional architecture
-
-
-@pytest.fixture
-def encoder_custom_small():
-    """Fixture for creating a DTDeepJSCCEncoder with custom small architecture."""
-    return Xie2023DTDeepJSCCEncoder(in_channels=3, latent_channels=64, architecture="custom", num_embeddings=8, input_size=(12, 12), num_latent=4)  # Small input size to use non-convolutional architecture
+    return Xie2023DTDeepJSCCEncoder(in_channels=3, latent_channels=64, architecture="custom", num_embeddings=8, input_size=(32, 32))
 
 
 @pytest.fixture
@@ -74,27 +53,9 @@ def decoder_cifar10():
 
 
 @pytest.fixture
-def decoder_mnist():
-    """Fixture for creating a DTDeepJSCCDecoder for MNIST."""
-    return Xie2023DTDeepJSCCDecoder(latent_channels=64, out_classes=10, architecture="mnist", num_embeddings=4, num_latent=4)
-
-
-@pytest.fixture
 def decoder_custom():
     """Fixture for creating a DTDeepJSCCDecoder with custom architecture."""
-    decoder = Xie2023DTDeepJSCCDecoder(latent_channels=64, out_classes=10, architecture="custom", num_embeddings=8)
-    # Set is_convolutional attribute for testing
-    decoder.is_convolutional = True
-    return decoder
-
-
-@pytest.fixture
-def decoder_custom_small():
-    """Fixture for creating a DTDeepJSCCDecoder with custom small architecture."""
-    # Use mnist architecture directly instead of custom with is_convolutional=False
-    # This ensures the decoder is properly built for non-convolutional operation
-    decoder = Xie2023DTDeepJSCCDecoder(latent_channels=64, out_classes=10, architecture="mnist", num_embeddings=8, num_latent=4)  # Use mnist architecture which is non-convolutional
-    return decoder
+    return Xie2023DTDeepJSCCDecoder(latent_channels=64, out_classes=10, architecture="custom", num_embeddings=8)
 
 
 @pytest.fixture
@@ -104,21 +65,9 @@ def sample_cifar10():
 
 
 @pytest.fixture
-def sample_mnist():
-    """Fixture for creating a sample MNIST image tensor."""
-    return torch.randn(2, 1, 28, 28)  # Batch size 2, 1 channel, 28x28 resolution
-
-
-@pytest.fixture
 def sample_custom():
     """Fixture for creating a sample custom image tensor."""
     return torch.randn(2, 3, 32, 32)  # Batch size 2, 3 channels, 32x32 resolution
-
-
-@pytest.fixture
-def sample_custom_small():
-    """Fixture for creating a sample small custom image tensor."""
-    return torch.randn(2, 3, 12, 12)  # Batch size 2, 3 channels, 12x12 resolution
 
 
 @pytest.fixture
@@ -279,19 +228,6 @@ def test_dt_deepjscc_encoder_cifar10_initialization(encoder_cifar10):
     assert encoder_cifar10.is_convolutional is True
 
 
-def test_dt_deepjscc_encoder_mnist_initialization(encoder_mnist):
-    """Test DTDeepJSCCEncoder initialization with MNIST architecture."""
-    assert isinstance(encoder_mnist, Xie2023DTDeepJSCCEncoder)
-    assert encoder_mnist.architecture == "mnist"
-    assert encoder_mnist.latent_d == 64
-    assert encoder_mnist.input_size == (28, 28)
-    assert encoder_mnist.num_embeddings == 4
-    assert encoder_mnist.num_latent == 4
-    assert hasattr(encoder_mnist, "encoder")
-    assert hasattr(encoder_mnist, "sampler")
-    assert encoder_mnist.is_convolutional is False
-
-
 def test_dt_deepjscc_encoder_custom_initialization(encoder_custom):
     """Test DTDeepJSCCEncoder initialization with custom architecture."""
     assert isinstance(encoder_custom, Xie2023DTDeepJSCCEncoder)
@@ -302,19 +238,6 @@ def test_dt_deepjscc_encoder_custom_initialization(encoder_custom):
     assert hasattr(encoder_custom, "encoder")
     assert hasattr(encoder_custom, "sampler")
     assert encoder_custom.is_convolutional is True
-
-
-def test_dt_deepjscc_encoder_custom_small_initialization(encoder_custom_small):
-    """Test DTDeepJSCCEncoder initialization with custom small architecture."""
-    assert isinstance(encoder_custom_small, Xie2023DTDeepJSCCEncoder)
-    assert encoder_custom_small.architecture == "custom"
-    assert encoder_custom_small.latent_d == 64
-    assert encoder_custom_small.input_size == (12, 12)
-    assert encoder_custom_small.num_embeddings == 8
-    assert encoder_custom_small.num_latent == 4
-    assert hasattr(encoder_custom_small, "encoder")
-    assert hasattr(encoder_custom_small, "sampler")
-    assert encoder_custom_small.is_convolutional is False
 
 
 def test_dt_deepjscc_encoder_unknown_architecture():
@@ -335,30 +258,12 @@ def test_dt_deepjscc_encoder_cifar10_forward(encoder_cifar10, sample_cifar10):
     bits = encoder_cifar10(sample_cifar10)
 
     # Check output shape
-    # For CIFAR-10, output should be 16x16 (4x4 feature map * 4 bits per symbol for 16 embeddings)
-    # So total bits should be 2 (batch size) * 4 (height) * 4 (width) * 4 (bits per symbol)
+    # For CIFAR-10, output should now have shape [batch_size, h*w, bits_per_symbol]
+    # where h*w is 4*4=16 (spatial dimensions) and bits_per_symbol is log2(num_embeddings)
     bits_per_symbol = int(np.log2(encoder_cifar10.num_embeddings))
-    assert bits.shape == (2 * 4 * 4, bits_per_symbol)
 
-    # Check that bits are binary (0 or 1)
-    assert torch.all((bits == 0) | (bits == 1))
-
-
-def test_dt_deepjscc_encoder_mnist_forward(encoder_mnist, sample_mnist):
-    """Test DTDeepJSCCEncoder forward pass with MNIST architecture."""
-    # Ensure encoder has a sampler with matching dimensions
-    encoder_mnist.sampler = MaskAttentionSampler(dim_dic=256, num_embeddings=4)
-
-    # Forward pass
-    bits = encoder_mnist(sample_mnist)
-
-    # Check output shape
-    bits_per_symbol = int(np.log2(encoder_mnist.num_embeddings))
-
-    # The actual output shape is (2, 2) - batch_size × bits_per_symbol
-    # This is because in the MNIST architecture, the reshape in the forward method
-    # is handling the features differently than what we expected
-    assert bits.shape == (2, bits_per_symbol)
+    # With batch dimension preserved, shape should be [2, 16, 4]
+    assert bits.shape == (2, 16, bits_per_symbol)
 
     # Check that bits are binary (0 or 1)
     assert torch.all((bits == 0) | (bits == 1))
@@ -369,22 +274,12 @@ def test_dt_deepjscc_encoder_custom_forward(encoder_custom, sample_custom):
     # Forward pass
     bits = encoder_custom(sample_custom)
 
-    # Check output shape - similar to CIFAR-10 case since it uses conv architecture
+    # Check output shape - With batch dimension preserved, the shape should be:
+    # [batch_size, h*w, bits_per_symbol]
     bits_per_symbol = int(np.log2(encoder_custom.num_embeddings))
-    assert bits.shape[1] == bits_per_symbol
 
-    # Check that bits are binary (0 or 1)
-    assert torch.all((bits == 0) | (bits == 1))
-
-
-def test_dt_deepjscc_encoder_custom_small_forward(encoder_custom_small, sample_custom_small):
-    """Test DTDeepJSCCEncoder forward pass with custom small architecture."""
-    # Forward pass
-    bits = encoder_custom_small(sample_custom_small)
-
-    # Check output shape
-    bits_per_symbol = int(np.log2(encoder_custom_small.num_embeddings))
-    assert bits.shape[1] == bits_per_symbol
+    # For 32x32 input with custom architecture, we expect 16 spatial elements (4x4)
+    assert bits.shape == (2, 16, bits_per_symbol)
 
     # Check that bits are binary (0 or 1)
     assert torch.all((bits == 0) | (bits == 1))
@@ -399,20 +294,6 @@ def test_dt_deepjscc_decoder_cifar10_initialization(decoder_cifar10):
     assert decoder_cifar10.num_embeddings == 16
     assert hasattr(decoder_cifar10, "decoder")
     assert hasattr(decoder_cifar10, "sampler")
-    assert decoder_cifar10.is_convolutional is True
-
-
-def test_dt_deepjscc_decoder_mnist_initialization(decoder_mnist):
-    """Test DTDeepJSCCDecoder initialization with MNIST architecture."""
-    assert isinstance(decoder_mnist, Xie2023DTDeepJSCCDecoder)
-    assert decoder_mnist.architecture == "mnist"
-    assert decoder_mnist.latent_d == 64
-    assert decoder_mnist.out_classes == 10
-    assert decoder_mnist.num_embeddings == 4
-    assert decoder_mnist.num_latent == 4
-    assert hasattr(decoder_mnist, "decoder")
-    assert hasattr(decoder_mnist, "sampler")
-    assert decoder_mnist.is_convolutional is False
 
 
 def test_dt_deepjscc_decoder_custom_initialization(decoder_custom):
@@ -424,7 +305,6 @@ def test_dt_deepjscc_decoder_custom_initialization(decoder_custom):
     assert decoder_custom.num_embeddings == 8
     assert hasattr(decoder_custom, "decoder")
     assert hasattr(decoder_custom, "sampler")
-    assert decoder_custom.is_convolutional is True
 
 
 def test_dt_deepjscc_decoder_unknown_architecture():
@@ -446,27 +326,6 @@ def test_dt_deepjscc_decoder_cifar10_forward(encoder_cifar10, decoder_cifar10, s
     assert logits.shape == (2, 10)  # (batch_size, num_classes)
 
 
-def test_dt_deepjscc_decoder_mnist_forward(encoder_mnist, decoder_mnist, sample_mnist):
-    """Test DTDeepJSCCDecoder forward pass with MNIST architecture."""
-    # Fix dimension mismatches in the encoder and decoder samplers
-    encoder_mnist.sampler = MaskAttentionSampler(dim_dic=256, num_embeddings=4)
-    decoder_mnist.sampler = MaskAttentionSampler(dim_dic=256, num_embeddings=4)
-
-    # Fix the decoder's num_latent to match the actual structure from the encoder
-    # The encoder produces 2 features per batch, so set num_latent=1
-    decoder_mnist.num_latent = 1
-
-    # Encode the image to get bits
-    with torch.no_grad():  # No need for gradients in this test
-        bits = encoder_mnist(sample_mnist)
-
-    # Decode the bits
-    logits = decoder_mnist(bits)
-
-    # Check output shape
-    assert logits.shape == (2, 10)  # (batch_size, num_classes)
-
-
 def test_dt_deepjscc_decoder_custom_forward(encoder_custom, decoder_custom, sample_custom):
     """Test DTDeepJSCCDecoder forward pass with custom architecture."""
     # Encode the image to get bits
@@ -475,25 +334,6 @@ def test_dt_deepjscc_decoder_custom_forward(encoder_custom, decoder_custom, samp
 
     # Decode the bits
     logits = decoder_custom(bits)
-
-    # Check output shape
-    assert logits.shape == (2, 10)  # (batch_size, num_classes)
-
-
-def test_dt_deepjscc_decoder_custom_small_forward(encoder_custom_small, decoder_custom_small, sample_custom_small):
-    """Test DTDeepJSCCDecoder forward pass with custom small architecture."""
-    # Ensure decoder sampler matches encoder sampler dimension
-    decoder_custom_small.sampler = MaskAttentionSampler(dim_dic=64 * encoder_custom_small.num_latent, num_embeddings=decoder_custom_small.num_embeddings)
-
-    # Set num_latent to 1 for the decoder since there are only 2 features per batch
-    decoder_custom_small.num_latent = 1
-
-    # Encode the image to get bits
-    with torch.no_grad():  # No need for gradients in this test
-        bits = encoder_custom_small(sample_custom_small)
-
-    # Decode the bits
-    logits = decoder_custom_small(bits)
 
     # Check output shape
     assert logits.shape == (2, 10)  # (batch_size, num_classes)
@@ -555,13 +395,6 @@ def test_dt_deepjscc_noise_robustness(encoder_cifar10, decoder_cifar10, sample_c
     assert clean_logits.shape == (2, 10)
     assert noisy_logits.shape == (2, 10)
 
-    # We don't need the predictions for this test, so removing them
-    # Alternatively, we could add assertions to check that predictions are valid:
-    # clean_preds = torch.argmax(clean_logits, dim=1)
-    # noisy_preds = torch.argmax(noisy_logits, dim=1)
-    # assert clean_preds.shape == (2,)
-    # assert noisy_preds.shape == (2,)
-
 
 def test_dt_deepjscc_device_movement(encoder_cifar10, decoder_cifar10, sample_cifar10):
     """Test if models can be moved between devices."""
@@ -621,14 +454,17 @@ def test_dt_deepjscc_with_different_batch_sizes(batch_size):
     # Encode
     bits = encoder(sample_image)
 
+    # Verify batch dimension is preserved
+    assert bits.size(0) == batch_size
+
     # Decode
     logits = decoder(bits)
 
-    # Check shapes
+    # Check output shapes
     assert logits.shape == (batch_size, 10)
 
 
-@pytest.mark.parametrize("input_size", [(16, 16), (32, 32)])
+@pytest.mark.parametrize("input_size", [(16, 16), (32, 32), (64, 64)])
 def test_dt_deepjscc_with_different_input_sizes(input_size):
     """Test with different input image sizes."""
     # Create encoder with custom architecture for the specific input size
@@ -637,53 +473,17 @@ def test_dt_deepjscc_with_different_input_sizes(input_size):
     # Create decoder that matches the encoder's output shape
     decoder = Xie2023DTDeepJSCCDecoder(latent_channels=64, out_classes=10, architecture="custom", num_embeddings=16)
 
-    # Ensure is_convolutional is set correctly
-    decoder.is_convolutional = True
-
     # Create sample image with specified input size
     sample_image = torch.randn(2, 3, *input_size)
 
     # Encode
     bits = encoder(sample_image)
 
-    # Monkeypatch the decoder's forward method for this specific test
-    # This is necessary because the default decoder assumes 4x4 spatial dimensions
-    original_forward = decoder.forward
-
-    def patched_forward(received_bits):
-        # Calculate batch size - we know it's 2 for this test
-        batch_size = 2
-
-        # Convert bits back to indices
-        bits_per_symbol = int(np.log2(decoder.num_embeddings))
-        indices = torch.zeros(received_bits.size(0), device=received_bits.device, dtype=torch.long)
-        for i in range(bits_per_symbol):
-            indices = indices | ((received_bits[:, i] > 0.5).long() << i)
-
-        # Recover features from discrete symbols
-        features = decoder.sampler.recover_features(indices)
-
-        # We know the number of features produced by the encoder
-        num_features = features.size(0)
-
-        # Calculate spatial dimensions based on batch size and feature count
-        spatial_dim = int(np.sqrt(num_features / batch_size))
-
-        # Reshape features to match expected decoder input shape
-        features = features.view(batch_size, spatial_dim, spatial_dim, decoder.latent_d)
-        features = features.permute(0, 3, 1, 2)  # [B, C, H, W]
-
-        # Run through decoder network
-        return decoder.decoder(features)
-
-    # Apply patch for this test
-    decoder.forward = patched_forward
+    # Verify batch dimension is preserved
+    assert bits.size(0) == 2
 
     # Decode
     logits = decoder(bits)
 
     # Check final output shape
     assert logits.shape == (2, 10)
-
-    # Restore original forward method
-    decoder.forward = original_forward

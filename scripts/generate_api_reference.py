@@ -347,7 +347,7 @@ These abstract classes establish the contract that derived classes must fulfill.
             output.append(module_blocks["functions"])
             output.append("\n")
 
-    return "\n".join(output)
+    return "\n".join(output) + "\n"
 
 
 if __name__ == "__main__":

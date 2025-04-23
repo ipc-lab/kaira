@@ -14,7 +14,7 @@ import torch
 
 from kaira.channels.base import BaseChannel
 from kaira.modulations.base import BaseModulator
-from kaira.utils import snr_db_to_linear
+from kaira.utils.snr import snr_db_to_linear
 
 
 class CapacityAnalyzer:
@@ -288,41 +288,15 @@ class CapacityAnalyzer:
 
         # For parallel processing
         if self.num_processes > 1 and len(snr_db) > 1 and self.device.type == "cpu":
-            # Function to process a single SNR point
-            def process_snr(snr_item):
-                # Create local copies
-                local_modulator = type(modulator)()
-                local_channel = type(channel)()
-
-                # Copy parameters
-                local_modulator.load_state_dict(modulator.state_dict())
-                local_channel.load_state_dict(channel.state_dict())
-
-                # Set SNR
-                if hasattr(local_channel, "snr_db"):
-                    local_channel.snr_db = snr_item
-
-                # Generate random input bits
-                input_bits = torch.randint(0, 2, (num_symbols, bits_per_symbol), dtype=torch.float32)
-
-                # Modulate bits to symbols
-                modulated = local_modulator(input_bits)
-
-                # Normalize modulated signal to have unit energy
-                modulated = modulated / torch.sqrt(torch.mean(torch.abs(modulated) ** 2))
-
-                # Pass through channel
-                received = local_channel(modulated)
-
-                # Calculate mutual information using specified method
-                if estimation_method == "knn":
-                    return self._estimate_mutual_information_knn(modulated, received, k=3, bits_per_symbol=bits_per_symbol).item()
-                else:
-                    return self._estimate_mutual_information(modulated, received, num_bins=num_bins, bits_per_symbol=bits_per_symbol).item()
-
-            # Process SNR points in parallel
+            # Process SNR points in parallel using the class method instead of local function
             with multiprocessing.Pool(self.num_processes) as pool:
-                results = pool.map(process_snr, [snr.item() for snr in snr_db])
+                # Create a partial function with all the fixed arguments except snr_item
+                from functools import partial
+
+                process_func = partial(self._process_snr_for_mutual_information, modulator=modulator, channel=channel, num_symbols=num_symbols, bits_per_symbol=bits_per_symbol, estimation_method=estimation_method, num_bins=num_bins)
+
+                # Use starmap to pass self as first argument
+                results = pool.map(process_func, [snr.item() for snr in snr_db])
 
             # Assign results
             for i, result in enumerate(results):
@@ -406,8 +380,8 @@ class CapacityAnalyzer:
                         break
 
                 if not found:
-                    tx_indices[i] = len(unique_tx)
                     unique_tx.append(tx_val)
+                    tx_indices[i] = len(unique_tx) - 1
 
             num_const_points = len(unique_tx)
 
@@ -1347,3 +1321,116 @@ class CapacityAnalyzer:
         energy_eff = capacity / total_power  # bits/s/W = bits/joule
 
         return snr_db_range, energy_eff
+
+    def _process_snr_for_mutual_information(self, snr_item, modulator, channel, num_symbols, bits_per_symbol, estimation_method, num_bins=100):
+        """Process a single SNR point for mutual information calculation.
+
+        This method is defined at the class level so it can be pickled for multiprocessing.
+
+        Args:
+            snr_item: Single SNR value in dB
+            modulator: Modulation scheme to use
+            channel: Channel model to use
+            num_symbols: Number of symbols to simulate
+            bits_per_symbol: Number of bits per symbol
+            estimation_method: Method for estimating mutual information
+            num_bins: Number of bins for histogram estimation
+
+        Returns:
+            float: Mutual information for this SNR point
+        """
+        # Create local copies of modulators with proper initialization
+        modulator_type = modulator.__class__.__name__
+        if modulator_type == "QAMModulator":
+            # QAMModulator requires 'order' parameter
+            if hasattr(modulator, "order"):
+                order = modulator.order
+            else:
+                # If order is not directly accessible, estimate from bits_per_symbol
+                order = 2**bits_per_symbol
+            local_modulator = type(modulator)(order=order)
+        elif modulator_type == "PSKModulator":
+            # PSKModulator also requires 'order' parameter
+            if hasattr(modulator, "order"):
+                order = modulator.order
+            else:
+                # Estimate from bits_per_symbol
+                order = 2**bits_per_symbol
+            local_modulator = type(modulator)(order=order)
+        else:
+            # Other modulators like BPSK, QPSK might not need specific parameters
+            local_modulator = type(modulator)()
+
+        # Try to copy other modulator parameters
+        try:
+            if hasattr(modulator, "state_dict") and callable(getattr(modulator, "state_dict")):
+                state_dict = modulator.state_dict()
+                local_modulator.load_state_dict(state_dict)
+        except Exception:
+            # Fallback: copy attributes individually
+            for attr_name in dir(modulator):
+                if not attr_name.startswith("_") and not callable(getattr(modulator, attr_name)) and attr_name not in ["order"]:  # Skip 'order' as it's already handled
+                    try:
+                        setattr(local_modulator, attr_name, getattr(modulator, attr_name))
+                    except (AttributeError, RuntimeError):
+                        pass
+
+        # Initialize channel directly with the SNR parameter
+        channel_type = channel.__class__.__name__
+        if channel_type == "AWGNChannel":
+            # For AWGN channel, initialize with explicit SNR
+            local_channel = type(channel)(snr_db=float(snr_item))
+        elif channel_type == "RayleighFadingChannel":
+            # For Rayleigh channel, preserve coherence time but update SNR
+            coherence_time = getattr(channel, "coherence_time", 1)
+            local_channel = type(channel)(coherence_time=coherence_time, snr_db=float(snr_item))
+        elif channel_type == "RicianFadingChannel":
+            # For Rician channel, preserve k_factor and coherence time but update SNR
+            k_factor = getattr(channel, "k_factor", 1)
+            coherence_time = getattr(channel, "coherence_time", 1)
+            local_channel = type(channel)(k_factor=k_factor, coherence_time=coherence_time, snr_db=float(snr_item))
+        else:
+            # For other channel types, create instance and try to copy parameters
+            local_channel = type(channel)()
+            try:
+                # Copy state_dict if available
+                if hasattr(channel, "state_dict") and callable(getattr(channel, "state_dict")):
+                    state_dict = channel.state_dict()
+                    local_channel.load_state_dict(state_dict)
+                # Always explicitly set SNR
+                if hasattr(local_channel, "snr_db"):
+                    local_channel.snr_db = float(snr_item)
+            except Exception:
+                # Fallback: copy attributes individually
+                for attr_name in dir(channel):
+                    if not attr_name.startswith("_") and not callable(getattr(channel, attr_name)) and attr_name not in ["snr_db", "avg_noise_power"]:
+                        try:
+                            setattr(local_channel, attr_name, getattr(channel, attr_name))
+                        except (AttributeError, RuntimeError):
+                            pass
+                # Explicitly set SNR
+                if hasattr(local_channel, "snr_db"):
+                    local_channel.snr_db = float(snr_item)
+                elif hasattr(local_channel, "avg_noise_power"):
+                    # If channel uses avg_noise_power instead of snr_db
+                    linear_snr = 10 ** (float(snr_item) / 10)
+                    # Assuming unit power signal
+                    local_channel.avg_noise_power = 1 / linear_snr
+
+        # Generate random input bits
+        input_bits = torch.randint(0, 2, (num_symbols, bits_per_symbol), dtype=torch.float32)
+
+        # Modulate bits to symbols
+        modulated = local_modulator(input_bits)
+
+        # Normalize modulated signal to have unit energy
+        modulated = modulated / torch.sqrt(torch.mean(torch.abs(modulated) ** 2))
+
+        # Pass through channel
+        received = local_channel(modulated)
+
+        # Calculate mutual information using specified method
+        if estimation_method == "knn":
+            return self._estimate_mutual_information_knn(modulated, received, k=3, bits_per_symbol=bits_per_symbol).item()
+        else:
+            return self._estimate_mutual_information(modulated, received, num_bins=num_bins, bits_per_symbol=bits_per_symbol).item()
