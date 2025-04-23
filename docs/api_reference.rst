@@ -355,6 +355,8 @@ Image model implementations for Kaira.
    Tung2022DeepJSCCQ2Encoder
    Tung2022DeepJSCCQDecoder
    Tung2022DeepJSCCQEncoder
+   Xie2023DTDeepJSCCDecoder
+   Xie2023DTDeepJSCCEncoder
    Yilmaz2023DeepJSCCNOMADecoder
    Yilmaz2023DeepJSCCNOMAEncoder
    Yilmaz2023DeepJSCCNOMAModel
@@ -599,6 +601,16 @@ Utils
 -----
 
 General utility functions for the Kaira library.
+
+.. currentmodule:: kaira.utils
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   CapacityAnalyzer
+
 
 .. currentmodule:: kaira.utils
 

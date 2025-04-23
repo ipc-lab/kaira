@@ -7,6 +7,7 @@ from typing import Any, Union
 import numpy as np
 import torch
 
+from .capacity_analyzer import CapacityAnalyzer
 from .snr import (
     add_noise_for_snr,
     calculate_snr,
@@ -92,6 +93,7 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
 
 
 __all__ = [
+    "CapacityAnalyzer",
     "to_tensor",
     "calculate_num_filters_factor_image",
     "snr_db_to_linear",

@@ -298,7 +298,7 @@ plt.tight_layout()
 
 # %%
 # Visualizing the Modulation, Channel, and Demodulation Pipeline
-# ------------------------------------------------------------
+# ---------------------------------------------------------------
 # Let's visualize the end-to-end communication pipeline with modulation, channel effects, and demodulation
 
 print("\nExploring DT-DeepJSCC Communication Pipeline:")
