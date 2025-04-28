@@ -160,6 +160,7 @@ div.sphx-glr-download-link-note {
     border: 1px solid #e5e7eb !important;
     max-width: 800px !important;
     text-align: center !important;
+    display: none !important;
 }
 
 /* Fix large and inconsistent spacing in gallery links */
