@@ -22,7 +22,7 @@ with open(ver_file, encoding="utf-8") as f:
     VERSION = ".".join(map(str, version_info))
 
 setup(
-    name="kaira",
+    name="pykaira",
     version=VERSION,
     url="https://github.com/ipc-lab/kaira",
     license="MIT",

@@ -20,7 +20,7 @@ The fastest way to install Kaira is directly from PyPI:
 
 .. code-block:: bash
 
-   pip install kaira
+   pip install pykaira
 
 From Source
 ~~~~~~~~~~~
@@ -56,7 +56,7 @@ For a cleaner installation that won't interfere with other Python packages:
    kaira-env\Scripts\activate
 
    # Install Kaira
-   pip install kaira
+   pip install pykaira
 
 System-Specific Notes
 ---------------------
@@ -93,7 +93,7 @@ To install Kaira with GPU support, we recommend following the PyTorch installati
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118  # Example for CUDA 11.8
 
    # Then install Kaira
-   pip install kaira
+   pip install pykaira
 
 For more details on PyTorch GPU configuration, please refer to the `PyTorch documentation <https://pytorch.org/docs/stable/notes/cuda.html>`_.
 
@@ -113,8 +113,8 @@ Troubleshooting
 ---------------
 Common Issues:
 
-- **"ImportError: No module named kaira"**: Make sure your virtual environment is activated or reinstall using ``pip install --force-reinstall kaira``
-- **Permission errors**: Use ``pip install --user kaira`` or create a virtual environment
+- **"ImportError: No module named kaira"**: Make sure your virtual environment is activated or reinstall using ``pip install --force-reinstall pykaira``
+- **Permission errors**: Use ``pip install --user pykaira`` or create a virtual environment
 - **Dependency conflicts**: Try installing in a fresh virtual environment
 - **GPU not detected**: Verify your CUDA installation with ``python -c "import torch; print(torch.cuda.is_available())"``
 
@@ -126,4 +126,4 @@ If you need to remove Kaira:
 
 .. code-block:: bash
 
-   pip uninstall kaira
+   pip uninstall pykaira

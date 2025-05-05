@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 docs/sg_execution_times.rst
 docs/gen_modules
-
+paper*
 # C extensions
 *.so
 

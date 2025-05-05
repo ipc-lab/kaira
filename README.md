@@ -4,7 +4,7 @@
 
 # Kaira - A PyTorch-based toolkit for simulating communication systems
 
-[![Python CI](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml) [![Tests](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) [![Documentation Build Status](https://github.com/ipc-lab/kaira/actions/workflows/docs.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/docs.yml) [![Supported Platforms](https://img.shields.io/badge/platforms-linux--64%2Cosx--64%2Cwin--64-green)](https://github.com/ipc-lab/kaira/) [![ReadTheDocs Status](https://readthedocs.org/projects/kaira/badge/?version=latest)](https://kaira.readthedocs.io/en/latest/?badge=latest) [![PyPI Version](https://img.shields.io/pypi/v/kaira)](https://pypi.org/project/kaira/) [![GitHub Release (Latest)](https://img.shields.io/github/v/release/ipc-lab/kaira)](https://github.com/ipc-lab/kaira/releases) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kaira)](https://github.com/ipc-lab/kaira/) [![License](https://img.shields.io/github/license/ipc-lab/kaira.svg)](https://github.com/ipc-lab/kaira/blob/master/LICENSE) [![Coverage Status](https://codecov.io/gh/ipc-lab/kaira/graph/badge.svg?token=6Z2IYG0E6P)](https://codecov.io/gh/ipc-lab/kaira) [![Dependabot Updates](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates)
+[![Python CI](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml) [![Tests](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) [![Documentation Build Status](https://github.com/ipc-lab/kaira/actions/workflows/docs.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/docs.yml) [![Supported Platforms](https://img.shields.io/badge/platforms-linux--64%2Cosx--64%2Cwin--64-green)](https://github.com/ipc-lab/kaira/) [![ReadTheDocs Status](https://readthedocs.org/projects/kaira/badge/?version=latest)](https://kaira.readthedocs.io/en/latest/?badge=latest) [![PyPI Version](https://img.shields.io/pypi/v/pykaira)](https://pypi.org/project/pykaira/) [![GitHub Release (Latest)](https://img.shields.io/github/v/release/ipc-lab/kaira)](https://github.com/ipc-lab/kaira/releases) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykaira)](https://github.com/ipc-lab/kaira/) [![License](https://img.shields.io/github/license/ipc-lab/kaira.svg)](https://github.com/ipc-lab/kaira/blob/master/LICENSE) [![Coverage Status](https://codecov.io/gh/ipc-lab/kaira/graph/badge.svg?token=6Z2IYG0E6P)](https://codecov.io/gh/ipc-lab/kaira) [![Dependabot Updates](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates)
 
 Kaira is an open-source simulation toolkit for communications research
 built on PyTorch. It provides a modular, user-friendly platform for
@@ -34,14 +34,14 @@ supporting rapid prototyping of novel communication strategies.
 The fastest way to install Kaira is directly from PyPI:
 
 ```bash
-pip install kaira
+pip install pykaira
 ```
 
 # Quick Links
 
 - **GitHub Repository:** <https://github.com/ipc-lab/kaira/>
 - **PyPI Package:**
-  [https://pypi.org/project/kaira](https://pypi.org/project/kaira/)
+  [https://pypi.org/project/pykaira](https://pypi.org/project/pykaira/)
 - **Codecov:** <https://codecov.io/gh/ipc-lab/kaira>
 - **License:** <https://github.com/ipc-lab/kaira/blob/master/LICENSE>
 
