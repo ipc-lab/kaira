@@ -1,9 +1,12 @@
 Introduction
 ============
 
-Kaira is a library for developing and evaluating deep learning-based communication systems.
-It provides a comprehensive toolkit for researchers and engineers working on next-generation
-wireless communication technologies.
+.. warning::
+   Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
+
+Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular,
+user-friendly platform for developing, testing, and benchmarking advanced communications algorithms—including
+deep learning-based approaches such as deep joint source-channel coding (DeepJSCC).
 
 Key Features
 ------------

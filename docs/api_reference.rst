@@ -1,6 +1,9 @@
 Kaira API Reference
 =====================================
 
+.. warning::
+   Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
+
 .. note::
    Kaira version |version| documentation. For older versions, please refer to the version selector above.
 

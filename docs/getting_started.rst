@@ -1,6 +1,9 @@
 Getting Started with Kaira
 ===========================
 
+.. warning::
+   Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
+
 This guide will help you get up and running with Kaira quickly, demonstrating its core capabilities through simple examples.
 
 Installation

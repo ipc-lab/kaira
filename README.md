@@ -14,6 +14,8 @@ source-channel coding (DeepJSCC). Designed to accelerate research and
 innovation, Kaira integrates seamlessly with existing PyTorch projects,
 supporting rapid prototyping of novel communication strategies.
 
+> **Note**: Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
+
 [Documentation](https://kaira.readthedocs.io/en/latest/)
 
 # Features
