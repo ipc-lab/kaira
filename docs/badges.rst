@@ -11,9 +11,6 @@ Kaira - A PyTorch-based toolkit for simulating communication systems
 .. image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
    :target: https://github.com/pre-commit/pre-commit
    :alt: pre-commit
-.. image:: https://github.com/ipc-lab/kaira/actions/workflows/docs.yml/badge.svg
-   :target: https://github.com/ipc-lab/kaira/actions/workflows/docs.yml
-   :alt: Documentation Build Status
 .. image:: https://img.shields.io/badge/platforms-linux--64%2Cosx--64%2Cwin--64-green
    :target: https://github.com/ipc-lab/kaira/
    :alt: Supported Platforms
