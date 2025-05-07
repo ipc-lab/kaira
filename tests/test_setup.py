@@ -77,7 +77,7 @@ def test_setup_contents():
         setup_content = f.read()
 
     # Check for expected keys in setup
-    expected_keys = ['name="kaira"', "version=VERSION", 'url="https://github.com/ipc-lab/kaira"', 'license="MIT"', "install_requires=requirements", 'python_requires=">=3.8"']
+    expected_keys = ['name="pykaira"', "version=VERSION", 'url="https://github.com/ipc-lab/kaira"', 'license="MIT"', "install_requires=requirements", 'python_requires=">=3.8"']
 
     for key in expected_keys:
         assert key in setup_content, f"Expected '{key}' not found in setup.py"
@@ -264,7 +264,9 @@ def test_direct_setup_import(mock_setup):
     setup_path = os.path.join(this_directory, "setup.py")
 
     # Create mocks for the files that will be opened
-    mock_file_contents = {"README.md": "# Mock README\nTest project", "requirements.txt": "torch>=1.7.0\nnumpy>=1.19.0", os.path.join("kaira", "version.py"): '__version_info__ = (0, 1, 0)\n__version__ = ".".join(map(str, __version_info__))'}
+    # Ensure both README.md and README.rst are mocked in case setup.py tries either
+    mock_readme_content = "# Mock README\\nTest project"
+    mock_file_contents = {"README.md": mock_readme_content, "README.rst": mock_readme_content, "requirements.txt": "torch>=1.7.0\\nnumpy>=1.19.0", os.path.join("kaira", "version.py"): '__version_info__ = (0, 1, 0)\\n__version__ = ".".join(map(str, __version_info__))'}  # Added this line
 
     # Load the setup.py as a module with mocked open calls
     with mock.patch("builtins.open") as mock_open:
@@ -294,7 +296,7 @@ def test_direct_setup_import(mock_setup):
 
     # Check some of the setup parameters
     _, kwargs = mock_setup.call_args
-    assert kwargs["name"] == "kaira", "Incorrect package name"
+    assert kwargs["name"] == "pykaira", "Incorrect package name"
     assert kwargs["license"] == "MIT", "Incorrect license"
     assert kwargs["python_requires"] == ">=3.8", "Incorrect Python version requirement"
 
@@ -304,31 +306,43 @@ def test_setup_py_direct_execution():
     this_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     setup_path = os.path.join(this_directory, "setup.py")
 
-    # Create a README.md file temporarily if it doesn't exist
-    readme_path = os.path.join(this_directory, "README.md")
-    readme_created = False
+    # Define paths for README files
+    readme_md_filepath = os.path.join(this_directory, "README.md")
+    readme_rst_filepath = os.path.join(this_directory, "README.rst")
 
-    if not os.path.exists(readme_path):
+    # Original logic for README.md creation if it's missing
+    # Renamed 'readme_created' to 'readme_md_created_by_test' for clarity
+    readme_md_created_by_test = False
+    if not os.path.exists(readme_md_filepath):
         try:
-            # Read from README.rst if it exists
-            readme_rst_path = os.path.join(this_directory, "README.rst")
-            if os.path.exists(readme_rst_path):
-                with open(readme_rst_path, encoding="utf-8") as rst_file:
-                    rst_file.read()
+            # Read from README.rst if it exists (original logic)
+            if os.path.exists(readme_rst_filepath):
+                with open(readme_rst_filepath, encoding="utf-8") as rst_file:
+                    rst_file.read()  # Original test didn't use the content here
 
                 # Create a temporary README.md for testing
-                with open(readme_path, "w", encoding="utf-8") as md_file:
-                    md_file.write("# Temporary README.md for testing\n\n")
-                    md_file.write("This file was created by the test suite.\n")
-                    md_file.write("Content based on README.rst\n\n")
-                readme_created = True
+                with open(readme_md_filepath, "w", encoding="utf-8") as md_file:
+                    md_file.write("# Temporary README.md for testing\\n\\n")
+                    md_file.write("This file was created by the test suite.\\n")
+                    md_file.write("Content based on README.rst\\n\\n")
+                readme_md_created_by_test = True
             else:
                 # Create an empty README.md
-                with open(readme_path, "w", encoding="utf-8") as md_file:
-                    md_file.write("# Temporary README.md for testing\n")
-                readme_created = True
+                with open(readme_md_filepath, "w", encoding="utf-8") as md_file:
+                    md_file.write("# Temporary README.md for testing\\n")
+                readme_md_created_by_test = True
         except Exception as e:
             print(f"Failed to create temporary README.md: {e}")
+
+    # New: Create a temporary README.rst if it doesn't exist, as setup.py might need it
+    readme_rst_created_by_test = False
+    if not os.path.exists(readme_rst_filepath):
+        try:
+            with open(readme_rst_filepath, "w", encoding="utf-8") as rst_file:
+                rst_file.write("Temporary README.rst for testing purposes.\\n")
+            readme_rst_created_by_test = True
+        except Exception as e:
+            print(f"Failed to create temporary README.rst: {e}")
 
     # Try to execute setup.py with a safe command that won't change anything
     try:
@@ -345,11 +359,18 @@ def test_setup_py_direct_execution():
         print(f"Failed to execute setup.py: {e}")
 
     # Clean up temporary README.md if we created it
-    if readme_created:
+    if readme_md_created_by_test:  # Use the renamed variable
         try:
-            os.remove(readme_path)
+            os.remove(readme_md_filepath)  # Use the correct path variable
         except Exception as e:
             print(f"Failed to remove temporary README.md: {e}")
+
+    # New: Clean up temporary README.rst if we created it
+    if readme_rst_created_by_test:
+        try:
+            os.remove(readme_rst_filepath)  # Use the correct path variable
+        except Exception as e:
+            print(f"Failed to remove temporary README.rst: {e}")
 
 
 def test_version_info_not_found_error():
