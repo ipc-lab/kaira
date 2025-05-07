@@ -28,7 +28,10 @@ class SimpleEncoder(BaseModel):
         self.fc = nn.Linear(10, 20)
 
     def forward(self, x, *args, **kwargs):
-        return self.fc(x)
+        continuous_output = self.fc(x)
+        # Convert to binary output as some modulators (e.g., PSKModulator) expect binary inputs
+        binary_output = (continuous_output > 0).float()
+        return binary_output
 
 
 class SimpleDecoder(BaseModel):
@@ -206,10 +209,10 @@ class TestChannelCodeModel:
         # Process the input through the model
         output = model(input_data)
 
-        # Check the output type and value (should be identical with identity components after binary conversion)
+        # Check the output type and value (should be identical to input with identity components)
         assert isinstance(output, torch.Tensor)
-        binary_input_data = (input_data > 0).float()
-        assert torch.allclose(output, binary_input_data)
+        # With identity components, the output should be the same as the input
+        assert torch.allclose(output, input_data)
 
     def test_forward_perfect_channel(self, simple_channel_code_model):
         """Test forward pass with custom components and a perfect channel."""
