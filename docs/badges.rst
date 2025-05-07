@@ -20,13 +20,13 @@ Kaira - A PyTorch-based toolkit for simulating communication systems
 .. image:: https://readthedocs.org/projects/kaira/badge/?version=latest
    :target: https://kaira.readthedocs.io/en/latest/?badge=latest
    :alt: ReadTheDocs Status
-.. image:: https://img.shields.io/pypi/v/kaira
-   :target: https://pypi.org/project/kaira/
+.. image:: https://img.shields.io/pypi/v/pykaira
+   :target: https://pypi.org/project/pykaira/
    :alt: PyPI Version
 .. image:: https://img.shields.io/github/v/release/ipc-lab/kaira
    :target: https://github.com/ipc-lab/kaira/releases
    :alt: GitHub Release (Latest)
-.. image:: https://img.shields.io/pypi/pyversions/kaira
+.. image:: https://img.shields.io/pypi/pyversions/pykaira
    :target: https://github.com/ipc-lab/kaira/
    :alt: PyPI - Python Version
 .. image:: https://img.shields.io/github/license/ipc-lab/kaira.svg
