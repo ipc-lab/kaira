@@ -52,7 +52,7 @@ class BPGCompressor(BaseModel):
             max_bits_per_image: Maximum bits allowed per compressed image. If provided without
                                quality, the compressor will find the highest quality that
                                produces files smaller than this limit.
-            quality: Fixed quality level for BPG compression (0-51, higher is better).
+            quality: Fixed quality level for BPG compression (0-51, lower is better).
                     If provided, this exact quality will be used regardless of resulting file size.
             bpg_encoder_path: Path to the BPG encoder executable
             bpg_decoder_path: Path to the BPG decoder executable
