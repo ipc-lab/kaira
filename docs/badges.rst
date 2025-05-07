@@ -39,6 +39,8 @@ Kaira - A PyTorch-based toolkit for simulating communication systems
    :target: https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates
    :alt: Dependabot Updates
 
-Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced communications algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC). Designed to accelerate research and innovation, Kaira integrates seamlessly with existing PyTorch projects, supporting rapid prototyping of novel communication strategies.
+Build Better Communication Systems with Kaira. Kaira is an open-source toolkit for PyTorch designed to help you simulate and innovate in communication systems. Its name is inspired by Kayra (from Turkic mythology, meaning ‘creator’) and Kairos (a Greek concept for the ‘opportune moment’). This reflects Kaira’s core purpose: to empower engineers and researchers to architect (Kayra) advanced communication models and to ensure messages are transmitted effectively and at the right moment (Kairos). Kaira provides the tools to design, analyze, and optimize complex communication scenarios, making it an essential asset for research and development.
+
+Kaira is built to accelerate your research. Its user-friendly, modular design allows for easy integration with existing PyTorch projects, facilitating rapid prototyping of new communication strategies. This is particularly beneficial for developing and testing advanced techniques, such as Deep Joint Source-Channel Coding (DeepJSCC) and other deep learning-based approaches. Kaira helps you bring your innovative communication concepts to life.
 
 `Documentation <https://kaira.readthedocs.io/en/latest/>`__
