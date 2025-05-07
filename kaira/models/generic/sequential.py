@@ -23,20 +23,11 @@ class SequentialModel(ConfigurableModel):
         """
         super().__init__(*args, **kwargs)
         if steps:
+            # Ensure all initial steps are callable
+            for step in steps:
+                if not callable(step):
+                    raise TypeError(f"All initial steps must be callable, got {type(step)}")
             self.steps = list(steps)
-
-    def add_step(self, step: Callable):
-        """Add a processing step to the model.
-
-        Args:
-            step: A callable function or object that processes input data
-
-        Returns:
-            The model instance for method chaining
-        """
-        if not callable(step):
-            raise TypeError("Step must be callable")
-        return super().add_step(step)
 
     def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute the model sequentially on the input data.

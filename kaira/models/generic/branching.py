@@ -4,46 +4,47 @@ This module provides the BranchingModel class which enables dynamic routing of i
 different processing paths based on runtime conditions.
 """
 
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from ..base import BaseModel
 from ..registry import ModelRegistry
+from .identity import IdentityModel
 
 
 @ModelRegistry.register_model()
 class BranchingModel(BaseModel):
     """Model that routes inputs through different paths based on conditions.
 
-    This model enables conditional processing by maintaining a collection of branches,
-    where each branch consists of:
-    - A condition function that determines if the branch should be taken
-    - A model that processes the input when the branch is taken
+        This model enables conditional processing by maintaining a collection of branches,
+        where each branch consists of:
+        - A condition function that determines if the branch should be taken
+        - A model that processes the input when the branch is taken
 
-    The model also supports a default branch that is taken when no other branch
-    conditions are met.
+        The model also supports a default branch that is taken when no other branch
+        conditions are met.
 
-    Key features:
-    - Dynamic branch selection based on input or state
-    - Multiple independent processing paths
-    - Optional default path for unmatched conditions
-    - Branch conditions can be any callable returning a boolean
-    - Branch models can be any BaseModel instance
+        Key features:
+        - Dynamic branch selection based on input or state
+        - Multiple independent processing paths
+        - Optional default path for unmatched conditions
+        - Branch conditions can be any callable returning a boolean
+        - Branch models can be any BaseModel instance
 
-    Example:
-        >>> model = BranchingModel()
-        >>> # Add branch for small inputs
-        >>> model.add_branch("small",
-        ...                  condition=lambda x: x.shape[-1] < 64,
-        ...                  model=small_processor)
-        >>> # Add branch for large inputs
-        >>> model.add_branch("large",
-        ...                  condition=lambda x: x.shape[-1] >= 64,
-        ...                  model=large_processor)
-        >>> # Process input - automatically selects appropriate branch
-        >>> output = model(input_tensor)
+        Example:
+            >>> model = BranchingModel()
+            >>> # Add branch for small inputs
+            >>> model.add_branch("small",
+            ...                  condition=lambda x: x.shape[-1] < 64,
+            ...                  model=small_processor)
+            >>> # Add branch for large inputs
+    >>> model.add_branch("large",
+            ...                  condition=lambda x: x.shape[-1] >= 64,
+            ...                  model=large_processor)
+            >>> # Process input - automatically selects appropriate branch
+            >>> output = model(input_tensor)
     """
 
-    def __init__(self, condition=None, true_branch=None, false_branch=None):
+    def __init__(self, condition: Optional[Callable[[Any], bool]] = None, true_branch: Optional[BaseModel] = None, false_branch: Optional[BaseModel] = None):
         """Initialize a branching model.
 
         Args:
@@ -52,14 +53,14 @@ class BranchingModel(BaseModel):
             false_branch: Model to use when condition is False
         """
         super().__init__()
-        self.branches = {}  # Dict mapping names to (condition, model) tuples
-        self.default_branch = None
+        self.branches: Dict[str, Tuple[Callable[[Any], bool], BaseModel]] = {}
+        self.default_branch: Optional[BaseModel] = None
 
         # Set up simple binary branching if condition is provided
         if condition is not None:
             # Use identity models if branches not specified
-            true_model = true_branch if true_branch is not None else lambda x: x
-            false_model = false_branch if false_branch is not None else lambda x: x
+            true_model = true_branch if true_branch is not None else IdentityModel()
+            false_model = false_branch if false_branch is not None else IdentityModel()
 
             # Add branches
             self.add_branch("true_branch", condition=condition, model=true_model)

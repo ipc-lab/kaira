@@ -277,7 +277,7 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
                 feedback_channel = AWGNChannel(snr_db=feedback_snr)
 
         # Initialize the parent class with our components
-        super().__init__(encoder=encoder, forward_channel=forward_channel, decoder=decoder, feedback_generator=feedback_generator, feedback_channel=feedback_channel, feedback_processor=feedback_processor, max_iterations=max_iterations)  # Pass args  # Pass kwargs
+        super().__init__(encoder=encoder, forward_channel=forward_channel, decoder=decoder, feedback_generator=feedback_generator, feedback_channel=feedback_channel, feedback_processor=feedback_processor, max_iterations=max_iterations)
 
         # Store additional parameters specific to this model
         self.refinement_layer = refinement_layer
@@ -329,8 +329,6 @@ class DeepJSCCFeedbackModel(FeedbackChannelModel):
         # Process through the forward channel, passing *args, **kwargs
         chn_out = self.forward_channel(chn_in, *args, **kwargs)
 
-        # Calculate average power and channel gain
-        torch.mean(chn_in**2)
         chn_gain = torch.ones_like(chn_in[:, :1, :, :])
 
         # Add feedback noise to channel output, passing *args, **kwargs

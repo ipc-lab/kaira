@@ -14,6 +14,8 @@ class ParallelModel(ConfigurableModel):
     All steps receive the same input data and process independently.
     """
 
+    step_configs: List[Tuple[str, Callable]]  # Renamed from 'steps'
+
     def __init__(self, max_workers: Optional[int] = None, steps: Optional[List[Tuple[str, Callable]]] = None, branches: Optional[List[Callable]] = None, aggregator: Optional[Callable] = None):
         """Initialize the parallel model.
 
@@ -28,11 +30,11 @@ class ParallelModel(ConfigurableModel):
         self.aggregator = aggregator
         self._step_counter = 0  # Counter for auto-naming steps
 
-        # Initialize steps list
+        # Initialize step_configs list
         if steps:
-            self.steps = list(steps)
+            self.step_configs = steps  # Use new attribute name
         else:
-            self.steps = []
+            self.step_configs = []  # Use new attribute name
 
         # Add branches if provided
         if branches:
@@ -58,7 +60,7 @@ class ParallelModel(ConfigurableModel):
         if name is None:
             name = f"step_{self._step_counter}"
             self._step_counter += 1
-        self.steps.append((name, step))
+        self.step_configs.append((name, step))  # Use new attribute name
         return self
 
     def remove_step(self, index: int):
@@ -73,9 +75,9 @@ class ParallelModel(ConfigurableModel):
         Raises:
             IndexError: If the index is out of range
         """
-        if not 0 <= index < len(self.steps):
-            raise IndexError(f"Step index {index} out of range (0-{len(self.steps)-1})")
-        self.steps.pop(index)
+        if not 0 <= index < len(self.step_configs):  # Use new attribute name
+            raise IndexError(f"Step index {index} out of range (0-{len(self.step_configs)-1})")  # Use new attribute name
+        self.step_configs.pop(index)  # Use new attribute name
         return self
 
     def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
@@ -90,14 +92,14 @@ class ParallelModel(ConfigurableModel):
             Dictionary mapping step names to their respective outputs
             or aggregated results if an aggregator is provided
         """
-        if not self.steps:
+        if not self.step_configs:  # Use new attribute name
             return {}
 
         results = {}
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Pass *args and **kwargs to each step submitted to the executor
-            future_to_step = {executor.submit(step, input_data, *args, **kwargs): name for name, step in self.steps}
+            future_to_step = {executor.submit(step_func, input_data, *args, **kwargs): name for name, step_func in self.step_configs}  # Use new attribute name and step_func
 
             for future in as_completed(future_to_step):
                 step_name = future_to_step[future]

@@ -4,7 +4,7 @@ This module contains the ChannelCodeModel, which is a model for channel transmis
 conventional encoding/decoding pipeline.
 """
 
-from typing import Any
+from typing import Any, Callable, List  # Modified import
 
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
@@ -61,51 +61,19 @@ class ChannelCodeModel(SequentialModel):
             **kwargs: Variable keyword arguments passed to the base class.
         """
         # Pass steps as a positional argument
-        super().__init__([encoder, modulator, constraint, channel, demodulator, decoder], *args, **kwargs)
+        # The order of steps in the list defines the execution order.
+        steps_list: List[Callable[..., Any]] = [
+            encoder,
+            modulator,
+            constraint,
+            channel,
+            demodulator,
+            decoder,
+        ]
+        super().__init__(steps_list, *args, **kwargs)
         self.encoder = encoder
         self.modulator = modulator
         self.constraint = constraint
         self.channel = channel
         self.demodulator = demodulator
         self.decoder = decoder
-
-    def forward(self, input_data: Any, *args: Any, **kwargs: Any) -> Any:
-        """Process input through the feedback channel system.
-
-        Performs an iterative transmission process where:
-        1. Transmitter encodes and modulates the input data
-        2. The modulated signal is transmitted over the channel
-        2. Receiver demodulates, decodes and generates the estimate of the input data
-
-        Args:
-            input_data (Any): The input data to transmit
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            Any: The final decoded output
-        """
-
-        # Transmission process
-
-        # Encode the input
-        encoded = self.encoder(input_data, *args, **kwargs)
-
-        encoded = (encoded > 0).float()
-
-        # Modulation of the encoded data
-        modulated = self.modulator(encoded, *args, **kwargs)
-
-        # Apply power constraint
-        constrained = self.constraint(modulated, *args, **kwargs)
-
-        # Transmit through the channel
-        received = self.channel(constrained, *args, **kwargs)
-
-        # Demodulate the received signal
-        demodulated = self.demodulator(received, *args, **kwargs)
-
-        # Decode the demodulated signal
-        decoded = self.decoder(demodulated, *args, **kwargs)
-
-        return decoded

@@ -6,7 +6,7 @@ different model types.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, Callable, List  # Added Callable
 
 from torch import nn
 
@@ -30,7 +30,6 @@ class BaseModel(nn.Module, ABC):
             **kwargs: Variable keyword arguments.
         """
         super().__init__()
-        self.steps: List[Any] = []
 
     @abstractmethod
     def forward(self, *args: Any, **kwargs: Any) -> Any:
@@ -59,7 +58,12 @@ class ConfigurableModel(BaseModel):
     steps during runtime.
     """
 
-    def add_step(self, step: Any) -> "ConfigurableModel":
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Initialize the configurable model."""
+        super().__init__(*args, **kwargs)
+        self.steps: List[Callable] = []  # Added initialization here, changed type to List[Callable]
+
+    def add_step(self, step: Callable) -> "ConfigurableModel":  # Changed step type to Callable
         """Add a processing step to the model.
 
         Args:
@@ -69,6 +73,8 @@ class ConfigurableModel(BaseModel):
         Returns:
             Self for method chaining
         """
+        if not callable(step):  # Added check
+            raise TypeError("Step must be callable")
         self.steps.append(step)
         return self
 
