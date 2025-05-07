@@ -1,5 +1,6 @@
 .. image:: _static/logo.png
     :align: center
+    :width: 300px
 
 ===============================
 
@@ -28,30 +29,11 @@
 ----
 
 Welcome to Kaira's documentation!
-=============================
+==================================
 
 .. warning::
    Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   introduction
-   installation
-   getting_started
-   examples_index
-   api_reference
-   features
-   best_practices
-   faq
-   contributing
-   code_of_conduct
-   changelog
-   license
-   citing
-   references
-   research_storyline
 
 Kaira Documentation
 ==========================================
