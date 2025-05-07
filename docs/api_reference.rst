@@ -1,9 +1,6 @@
 Kaira API Reference
 =====================================
 
-.. warning::
-   Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
-
 .. note::
    Kaira version |version| documentation. For older versions, please refer to the version selector above.
 
@@ -55,6 +52,9 @@ Channels
 
 Channel models for communication systems.
 
+This package provides various channel models for simulating communication systems, including analog
+and digital channels, with support for various noise models, distortions, and fading patterns.
+
 .. currentmodule:: kaira.channels
 
 .. autosummary::
@@ -88,6 +88,34 @@ Constraints
 
 Constraints module for Kaira.
 
+This module contains various constraints that can be applied to transmitted signals in
+wireless communication systems. These constraints ensure signals meet practical requirements
+such as power limitations, hardware capabilities, and regulatory specifications.
+
+Available constraint categories:
+- Base constraint definitions: Abstract base classes for all constraints
+- Power constraints: Control total power, average power, and PAPR
+- Antenna constraints: Manage power distribution across multiple antennas
+- Signal constraints: Handle amplitude limitations and spectral properties
+- Constraint composition: Combine multiple constraints sequentially
+
+The module also provides factory functions for creating common constraint combinations
+and utilities for testing and validating constraint effectiveness.
+
+Example:
+    >>> from kaira.constraints import TotalPowerConstraint, PAPRConstraint
+    >>> from kaira.constraints.utils import combine_constraints
+    >>>
+    >>> # Create individual constraints
+    >>> power_constr = TotalPowerConstraint(total_power=1.0)
+    >>> papr_constr = PAPRConstraint(max_papr=4.0)
+    >>>
+    >>> # Combine constraints into a single operation
+    >>> combined = combine_constraints([power_constr, papr_constr])
+    >>>
+    >>> # Apply to a signal
+    >>> constrained_signal = combined(input_signal)
+
 .. currentmodule:: kaira.constraints
 
 .. autosummary::
@@ -113,6 +141,10 @@ Utils
 
 Utility functions for constraints.
 
+This module provides helper functions for creating, testing, validating, and working with
+constraints in wireless communication systems. These utilities streamline the process of
+configuring common constraint combinations and verifying constraint effectiveness.
+
 .. currentmodule:: kaira.constraints.utils
 
 .. autosummary::
@@ -133,6 +165,8 @@ Metrics
 
 Metrics module for Kaira.
 
+This module contains various metrics for evaluating the performance of communication systems.
+
 .. currentmodule:: kaira.metrics
 
 .. autosummary::
@@ -149,6 +183,8 @@ Image
 ^^^^^
 
 Image metrics module.
+
+This module contains metrics for evaluating image quality.
 
 .. currentmodule:: kaira.metrics.image
 
@@ -170,6 +206,8 @@ Signal
 ^^^^^^
 
 Signal metrics module.
+
+This module contains metrics for evaluating signal processing performance.
 
 .. currentmodule:: kaira.metrics.signal
 
@@ -212,25 +250,18 @@ Models module for Kaira.
    WynerZivModel
 
 
-Binary
-^^^^^^
-
-Binary data communication model implementations for Kaira.
-
-.. currentmodule:: kaira.models.binary
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   Kurmukova2025TransCoder
-
-
 Soft Bit Thresholding
 ^^^^^^^^^^^^^^^^^^^^^
 
 Soft bit thresholding module for binary data processing.
+
+This module provides various thresholding techniques for converting soft bit representations
+(probabilities, LLRs, etc.) to hard decisions. These thresholders can be used with soft decoders or
+as standalone components in signal processing pipelines.
+
+Soft bit processing is crucial in modern communication systems to extract maximum information from
+the received signals. The techniques implemented here are based on established methods in
+communication theory.
 
 .. currentmodule:: kaira.models.binary.soft_bit_thresholding
 
@@ -279,6 +310,33 @@ Decoders
 
 Forward Error Correction (FEC) decoders for Kaira.
 
+This module provides various decoder implementations for forward error correction codes.
+The decoders in this module are designed to work seamlessly with the corresponding encoders
+from the `kaira.models.fec.encoders` module.
+
+Decoders
+--------
+- BlockDecoder: Base class for all block code decoders
+- SyndromeLookupDecoder: Decoder using syndrome lookup tables for efficient error correction
+- BerlekampMasseyDecoder: Implementation of Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes
+- ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
+- WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
+- BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
+
+These decoders can be used to recover original messages from possibly corrupted codewords
+that have been transmitted over noisy channels. Each decoder has specific strengths and
+is optimized for particular types of codes or error patterns.
+
+Examples
+--------
+>>> from kaira.models.fec.encoders import BCHCodeEncoder
+>>> from kaira.models.fec.decoders import BerlekampMasseyDecoder
+>>> encoder = BCHCodeEncoder(15, 7)
+>>> decoder = BerlekampMasseyDecoder(encoder)
+>>> # Example decoding
+>>> received = torch.tensor([1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1])
+>>> decoded = decoder(received)
+
 .. currentmodule:: kaira.models.fec.decoders
 
 .. autosummary::
@@ -298,6 +356,21 @@ Encoders
 ^^^^^^^^
 
 Forward Error Correction encoders for Kaira.
+
+This module provides various encoder implementations for forward error correction, including:
+- Block codes: Fundamental error correction codes that operate on fixed-size blocks
+- Linear block codes: Codes with linear algebraic structure allowing matrix operations
+- Cyclic codes: Special class of linear codes with cyclic shift properties
+- BCH codes: Powerful algebraic codes with precise error-correction capabilities
+- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
+- Hamming codes: Simple single-error-correcting codes with efficient implementation
+- Repetition codes: Basic codes that repeat each bit multiple times
+- Golay codes: Perfect codes with specific error correction properties
+- Single parity-check codes: Simple error detection through parity bit addition
+
+These encoders can be used to add redundancy to data for enabling error detection and correction
+in communication systems, storage devices, and other applications requiring reliable data
+transmission over noisy channels :cite:`lin2004error,moon2005error`.
 
 .. currentmodule:: kaira.models.fec.encoders
 
@@ -323,6 +396,9 @@ Generic
 
 Generic model implementations for Kaira.
 
+This module provides generic model implementations that can be used as building blocks for more
+complex models, such as sequential, parallel, and branching models.
+
 .. currentmodule:: kaira.models.generic
 
 .. autosummary::
@@ -341,6 +417,8 @@ Image
 ^^^^^
 
 Image model implementations for Kaira.
+
+This module provides models specifically designed for image data transmission.
 
 .. currentmodule:: kaira.models.image
 
@@ -392,6 +470,9 @@ Modulations
 -----------
 
 Digital modulation schemes for wireless communications.
+
+This package provides implementations of common digital modulation and demodulation techniques used
+in modern communication systems, including PSK, QAM, PAM, and differential modulation schemes.
 
 .. currentmodule:: kaira.modulations
 
@@ -453,6 +534,8 @@ Losses
 
 Kaira Losses Package.
 
+This package provides various loss functions for different modalities.
+
 .. currentmodule:: kaira.losses
 
 .. autosummary::
@@ -469,6 +552,8 @@ Adversarial
 ^^^^^^^^^^^
 
 Adversarial Losses module for Kaira.
+
+This module contains various adversarial loss functions for GAN-based training.
 
 .. currentmodule:: kaira.losses.adversarial
 
@@ -489,6 +574,8 @@ Audio
 ^^^^^
 
 Audio Losses module for Kaira.
+
+This module contains various loss functions for training audio-based communication systems.
 
 .. currentmodule:: kaira.losses.audio
 
@@ -511,6 +598,10 @@ Image
 ^^^^^
 
 Losses module for Kaira.
+
+This module contains various loss functions for training communication systems, including MSE loss,
+LPIPS loss, and SSIM loss. These loss functions are widely used in image processing and
+computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
 
 .. currentmodule:: kaira.losses.image
 
@@ -539,6 +630,8 @@ Multimodal
 
 Multimodal Losses module for Kaira.
 
+This module contains various loss functions for training multimodal systems.
+
 .. currentmodule:: kaira.losses.multimodal
 
 .. autosummary::
@@ -557,6 +650,8 @@ Text
 ^^^^
 
 Text Losses module for Kaira.
+
+This module contains various loss functions for training text-based systems.
 
 .. currentmodule:: kaira.losses.text
 

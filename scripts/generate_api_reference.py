@@ -264,7 +264,7 @@ These abstract classes establish the contract that derived classes must fulfill.
         section_title = module_name.capitalize()
         section_underline = "-" * len(section_title)
 
-        description = module.__doc__.strip().split("\n\n")[0] if module.__doc__ else f"{section_title} module for Kaira."
+        description = module.__doc__.strip() if module.__doc__ else f"{section_title} module for Kaira."
 
         all_blocks[module_path] = {
             "title": f"{section_title}\n{section_underline}\n\n{description}\n",
@@ -289,7 +289,7 @@ These abstract classes establish the contract that derived classes must fulfill.
                 # Try to get the module docstring
                 try:
                     submodule = importlib.import_module(submodule_path)
-                    description = submodule.__doc__.strip().split("\n\n")[0] if submodule.__doc__ else f"{formatted_name} submodule."
+                    description = submodule.__doc__.strip() if submodule.__doc__ else f"{formatted_name} submodule."
                 except (ImportError, AttributeError):
                     description = f"{formatted_name} submodule."
 
