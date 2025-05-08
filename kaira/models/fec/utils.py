@@ -16,7 +16,7 @@ These functions are optimized for PyTorch operations and support both CPU and GP
     :cite:`moon2005error`
 """
 
-from typing import Callable
+from typing import Callable, Optional
 
 import torch
 
@@ -190,7 +190,7 @@ def sign_to_bin(x):
     return 0.5 * (1 - x)
 
 
-def row_reduction(matrix: torch.Tensor, num_cols: int = None):
+def row_reduction(matrix: torch.Tensor, num_cols: Optional[int] = None):
     """Perform row reduction on a binary matrix using PyTorch.
 
     Args:

@@ -12,15 +12,14 @@ References:
 - T. J. Richardson and R. L. Urbanke, "Modern Coding Theory," 2008.
 """
 
-from typing import Any, Tuple
+from typing import Any
 
 import torch
 
 from kaira.models.registry import ModelRegistry
 
-from ..utils import apply_blockwise, row_reduction
-from .base import BaseBlockCodeEncoder
 from ..encoders.linear_block_code import LinearBlockCodeEncoder
+from ..utils import row_reduction
 
 
 @ModelRegistry.register_model("ldpc_code_encoder")
@@ -72,14 +71,11 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         generator_matrix = self.get_generator_matrix(check_matrix)
 
         # Initialize the base class with dimensions
-        super().__init__(generator_matrix=generator_matrix,
-                         check_matrix=check_matrix)
+        super().__init__(generator_matrix=generator_matrix, check_matrix=check_matrix)
 
     def get_generator_matrix(self, check_matrix_: torch.Tensor) -> torch.Tensor:
         check_matrix = check_matrix_.clone().to(torch.int64).t()
-        check_matrix_eye = torch.cat((check_matrix, torch.eye(check_matrix.shape[0]).to(bool).to(check_matrix.device)),
-                                dim=1)
-        check_matrix_eye, rank = row_reduction(check_matrix_eye,
-                                               num_cols=check_matrix.shape[1])
-        generator_matrix = row_reduction(check_matrix_eye[rank:, check_matrix.shape[1]:])[0]
+        check_matrix_eye = torch.cat((check_matrix, torch.eye(check_matrix.shape[0]).to(bool).to(check_matrix.device)), dim=1)
+        check_matrix_eye, rank = row_reduction(check_matrix_eye, num_cols=check_matrix.shape[1])
+        generator_matrix = row_reduction(check_matrix_eye[rank:, check_matrix.shape[1] :])[0]
         return generator_matrix

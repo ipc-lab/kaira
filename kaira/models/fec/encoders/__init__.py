@@ -22,15 +22,11 @@ from .bch_code import BCHCodeEncoder
 from .cyclic_code import CyclicCodeEncoder
 from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
+from .ldpc_code import LDPCCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
 from .reed_solomon_code import ReedSolomonCodeEncoder
 from .repetition_code import RepetitionCodeEncoder
 from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
-from .ldpc_code import LDPCCodeEncoder
 
-__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder",
-           "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder",
-           "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder",
-           "GolayCodeEncoder", "ReedSolomonCodeEncoder",
-           "SingleParityCheckCodeEncoder"]
+__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]

@@ -30,12 +30,12 @@ Examples
 """
 
 from .base import BaseBlockDecoder
+from .belief_propagation import BeliefPropagationDecoder
 from .berlekamp_massey import BerlekampMasseyDecoder
 from .brute_force_ml import BruteForceMLDecoder
 from .reed_muller_decoder import ReedMullerDecoder
 from .syndrome_lookup import SyndromeLookupDecoder
 from .wagner_soft_decision_decoder import WagnerSoftDecisionDecoder
-from .belief_propagation import BeliefPropagationDecoder
 
 __all__ = [
     "BaseBlockDecoder",
