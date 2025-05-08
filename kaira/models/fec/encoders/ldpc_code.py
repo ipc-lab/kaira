@@ -73,7 +73,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
 
         # Initialize the base class with dimensions
         super().__init__(generator_matrix=generator_matrix,
-                         check_matrix=check_matrix, *args, **kwargs)
+                         check_matrix=check_matrix)
 
     def get_generator_matrix(self, check_matrix_: torch.Tensor) -> torch.Tensor:
         check_matrix = check_matrix_.clone().to(torch.int64).t()
