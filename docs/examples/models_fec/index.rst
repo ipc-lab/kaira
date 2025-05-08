@@ -157,6 +157,22 @@ encoding and decoding algorithms, and practical applications.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Low-Density Parity-Check (LDPC) codes and belief propagation decoding. It simulates a complete communication system using LDPC codes over an AWGN channel and analyzes the error performance at different SNR levels.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_ldpc_simulation_thumb.png
+      :alt: LDPC Coding and Belief Propagation Decoding
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_ldpc_simulation.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">LDPC Coding and Belief Propagation Decoding</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -170,5 +186,6 @@ encoding and decoding algorithms, and practical applications.
    /auto_examples/models_fec/plot_fec_decoding_visualization
    /auto_examples/models_fec/plot_fec_encoders_tutorial
    /auto_examples/models_fec/plot_fec_finite_field_algebra
+   /auto_examples/models_fec/plot_fec_ldpc_simulation
    /auto_examples/models_fec/plot_fec_practical_applications
    /auto_examples/models_fec/plot_fec_syndrome_decoding
