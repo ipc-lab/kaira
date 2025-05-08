@@ -163,3 +163,68 @@ def apply_blockwise(x: torch.Tensor, block_size: int, fn: Callable) -> torch.Ten
     else:
         # Flatten the result back to original structure
         return result.view(*leading_dims, -1)
+
+
+def Tailor_arctanh(vector: torch.Tensor, num_series: int = 105):
+    """
+        Approximate the inverse hyperbolic tangent (arctanh) using a Taylor series expansion.
+
+        Args:
+            vector (torch.Tensor): Input tensor for which the arctanh is to be approximated.
+            num_series (int): Number of terms in the Taylor series to include (default: 105).
+
+        Returns:
+            torch.Tensor: Tensor containing the approximated arctanh values for the input.
+
+        Notes:
+            The Taylor series for arctanh(x) is given by:
+            arctanh(x) = x + (x^3)/3 + (x^5)/5 + (x^7)/7 + ...
+            This function computes the series up to the specified number of terms.
+        """
+    ans = vector
+    for i in range(1, num_series):
+        ans = ans + 1 / (2 * i + 1) * torch.pow(vector, 2 * i + 1)
+    return ans
+
+def sign_to_bin(x):
+    return 0.5 * (1 - x)
+
+def row_reduction(matrix: torch.Tensor, num_cols: int = None):
+    """Perform row reduction on a binary matrix using PyTorch.
+
+    Args:
+        matrix: Binary matrix of shape (m, n) to be row reduced, m <= n.
+        num_cols: Number of columns to consider for row reduction. Defaults to all columns.
+
+    Returns:
+        Tuple containing:
+            - Row-reduced matrix.
+            - Rank of the matrix (number of pivot rows).
+    """
+    device = matrix.device
+    if num_cols is None:
+        num_cols = matrix.shape[1]
+    matrix_row_reduced = matrix.clone()  # Create a copy to avoid modifying the input
+    p = 0  # Pivot row index
+    for j in range(num_cols):
+        # Find the first non-zero element in the current column starting from row p
+        idxs = p + torch.nonzero(matrix_row_reduced[p:, j],
+                                 as_tuple=False).view(-1).to(device)#.squeeze().to(device)
+
+        if idxs.numel() == 0: # If no non-zero element is found, continue to the next column
+            continue
+
+        # Swap the current row with the row containing the first non-zero element
+        idxs = idxs[0]
+        matrix_row_reduced[[p, idxs], :] = matrix_row_reduced[[idxs, p], :]
+
+        # Perform row reduction on all other rows in the current column
+        non_pivot_idxs = torch.nonzero(matrix_row_reduced[:, j], as_tuple=False).view(-1).tolist()
+        non_pivot_idxs.remove(p)
+        matrix_row_reduced[non_pivot_idxs, :] ^= matrix_row_reduced[p, :]
+
+        p += 1  # Move to the next pivot row
+        if p == matrix_row_reduced.shape[0]:  # Stop if all rows have been processed
+            break
+
+    return matrix_row_reduced, p

@@ -66,6 +66,7 @@ class BaseBlockCodeEncoder(BaseModel, ABC):
         self._length = code_length
         self._dimension = code_dimension
         self._redundancy = code_length - code_dimension
+        self.device = kwargs.get("device", "cpu")
 
     @property
     def code_length(self) -> int:
