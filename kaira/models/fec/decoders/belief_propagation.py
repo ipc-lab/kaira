@@ -68,17 +68,18 @@ Examples:
     True
 """
 
-from typing import Any, List, Tuple, Union
+from itertools import combinations
+from operator import itemgetter
+from typing import Any, Tuple, Union
 
 import torch
 
-from kaira.models.fec.encoders.linear_block_code import LinearBlockCodeEncoder
 from kaira.models.fec.encoders.ldpc_code import LDPCCodeEncoder
+from kaira.models.fec.encoders.linear_block_code import LinearBlockCodeEncoder
 
-from ..utils import apply_blockwise, Tailor_arctanh, sign_to_bin
+from ..utils import Taylor_arctanh, apply_blockwise, sign_to_bin
 from .base import BaseBlockDecoder
-from itertools import combinations
-from operator import itemgetter
+
 
 class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LDPCCodeEncoder]]):
     """Belief propagation decoder for linear block codes and LDPC codes.
@@ -151,9 +152,7 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         True
     """
 
-    def __init__(self, encoder: Union[LinearBlockCodeEncoder, LDPCCodeEncoder], bp_iters: int = 10,
-                 arctanh: bool = True, return_soft: bool = False, device: str = "cpu",
-                 *args: Any, **kwargs: Any):
+    def __init__(self, encoder: Union[LinearBlockCodeEncoder, LDPCCodeEncoder], bp_iters: int = 10, arctanh: bool = True, return_soft: bool = False, device: str = "cpu", *args: Any, **kwargs: Any):
         """Initialize the Belief Propagation decoder.
 
         Sets up the decoder with an encoder instance and extracts relevant parameters
@@ -189,8 +188,6 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         self.return_soft = return_soft
 
         self.calc_code_metrics()
-
-
 
     def calc_code_metrics(self):
         self.num_edges = torch.sum(self.H)
@@ -273,7 +270,7 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
     def compute_cv(self, vc: torch.Tensor):
         batch_size, _ = vc.size()
         vc = vc.clamp(-500, 500)
-        tanh_vc = torch.tanh(vc / 2.)
+        tanh_vc = torch.tanh(vc / 2.0)
         cv = []
         for c_group in self.cv_group:
             deg = self.check_degree[c_group[0]].item()
@@ -287,7 +284,7 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
                     ext_ce = torch.cat(ext_ce, dim=0)
                 ext_ce = ext_ce.unsqueeze(0).repeat_interleave(batch_size, dim=0)
 
-                vc_extended = tanh_vc.unsqueeze(1).repeat_interleave(deg*members, dim=1)
+                vc_extended = tanh_vc.unsqueeze(1).repeat_interleave(deg * members, dim=1)
                 vc_extended = vc_extended.gather(2, ext_ce)
                 vc_extended_log2 = torch.log2(vc_extended.to(dtype=torch.complex64) + 1e-10)
                 v_messages = torch.sum(vc_extended_log2, dim=2)
@@ -298,7 +295,7 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
                     v_messages = 2 * torch.arctanh(v_messages)
                 else:
                     v_messages = v_messages_msg.clamp(-1.001, 1.001)
-                    v_messages = 2 * Tailor_arctanh(v_messages)
+                    v_messages = 2 * Taylor_arctanh(v_messages)
                 v_messages = v_messages.clamp(-500, 500)
                 v_messages = v_messages + 1
                 v_messages = v_messages - 1
@@ -333,7 +330,6 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         soft_output += soft_input
         return soft_output
 
-
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Decode received codewords using the Belief Propagation algorithm.
 
@@ -358,7 +354,6 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
 
         Raises:
             ValueError: If the last dimension of received is not a multiple of the code length
-
         """
         self.return_soft = kwargs.get("return_soft", False)
         if self.device != received.device:
@@ -397,6 +392,5 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         *leading_dims, L = received.shape
         if L % self.code_length != 0:
             raise ValueError(f"Last dimension ({L}) must be divisible by code length ({self.code_length})")
-
 
         return apply_blockwise(received, self.code_length, decode_block)
