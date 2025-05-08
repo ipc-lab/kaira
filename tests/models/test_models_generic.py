@@ -177,9 +177,9 @@ class TestParallelModel:
         steps = [("double", DummyModel()), ("identity", lambda x: x)]
         model = ParallelModel(steps=steps)
 
-        assert len(model.steps) == 2
-        assert model.steps[0][0] == "double"
-        assert model.steps[1][0] == "identity"
+        assert len(model.step_configs) == 2
+        assert model.step_configs[0][0] == "double"
+        assert model.step_configs[1][0] == "identity"
 
         input_data = torch.tensor([1.0, 2.0])
         results = model(input_data)
@@ -195,13 +195,13 @@ class TestParallelModel:
         model.add_step(lambda x: x)
         model.add_step(lambda x: x)
 
-        assert model.steps[0][0] == "step_0"
-        assert model.steps[1][0] == "step_1"
+        assert model.step_configs[0][0] == "step_0"
+        assert model.step_configs[1][0] == "step_1"
 
         # Test that auto-naming continues from current count
         model.remove_step(1)
         model.add_step(lambda x: x)
-        assert model.steps[1][0] == "step_2"
+        assert model.step_configs[1][0] == "step_2"
 
     def test_parallel_model_non_callable_step(self):
         """Test adding a non-callable step raises TypeError."""

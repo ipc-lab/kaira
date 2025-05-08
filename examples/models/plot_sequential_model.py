@@ -9,6 +9,8 @@ modules together, similar to PyTorch's nn.Sequential but with additional feature
 communication system modeling.
 """
 
+from typing import cast  # Add import for proper type assertions
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -137,7 +139,8 @@ mse_loss = nn.MSELoss()
 
 for snr in snr_values:
     # Update the channel SNR
-    sequential_model.steps[2].snr_db = snr
+    # Add type casting to inform the typechecker that this component has snr_db attribute
+    cast(AWGNChannel, sequential_model.steps[2]).snr_db = snr
 
     # Pass the data through our model with the current SNR
     with torch.no_grad():
@@ -233,7 +236,8 @@ for name, enc in encoder_variations:
     # Collect errors across SNR values
     variant_errors = []
     for snr in snr_values:
-        model_variant.steps[2].snr_db = snr
+        # Add type casting to inform the typechecker that this component has snr_db attribute
+        cast(AWGNChannel, model_variant.steps[2]).snr_db = snr
         with torch.no_grad():
             output = model_variant(x)
             error = mse_loss(output, x).item()
@@ -273,7 +277,7 @@ plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.12)
 
 # First, let's define a custom snr value for analysis
 analysis_snr = 10.0
-sequential_model.steps[2].snr_db = analysis_snr
+cast(AWGNChannel, sequential_model.steps[2]).snr_db = analysis_snr
 
 # Initialize inputs, will be updated at each stage
 current_input = x.clone()
@@ -578,8 +582,8 @@ input_types = {"Uniform": uniform_data, "Gaussian": gaussian_data, "Sparse": spa
 # Compare model performance on different input types
 performance_data = {}
 test_snr = 10.0
-standard_model.steps[2].snr_db = test_snr
-residual_model.steps[2].snr_db = test_snr
+cast(AWGNChannel, standard_model.steps[2]).snr_db = test_snr
+cast(AWGNChannel, residual_model.steps[2]).snr_db = test_snr
 
 for name, data in input_types.items():
     # Test standard model

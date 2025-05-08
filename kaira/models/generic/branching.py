@@ -15,33 +15,33 @@ from .identity import IdentityModel
 class BranchingModel(BaseModel):
     """Model that routes inputs through different paths based on conditions.
 
-        This model enables conditional processing by maintaining a collection of branches,
-        where each branch consists of:
-        - A condition function that determines if the branch should be taken
-        - A model that processes the input when the branch is taken
+    This model enables conditional processing by maintaining a collection of branches,
+    where each branch consists of:
+    - A condition function that determines if the branch should be taken
+    - A model that processes the input when the branch is taken
 
-        The model also supports a default branch that is taken when no other branch
-        conditions are met.
+    The model also supports a default branch that is taken when no other branch
+    conditions are met.
 
-        Key features:
-        - Dynamic branch selection based on input or state
-        - Multiple independent processing paths
-        - Optional default path for unmatched conditions
-        - Branch conditions can be any callable returning a boolean
-        - Branch models can be any BaseModel instance
+    Key features:
+    - Dynamic branch selection based on input or state
+    - Multiple independent processing paths
+    - Optional default path for unmatched conditions
+    - Branch conditions can be any callable returning a boolean
+    - Branch models can be any BaseModel instance
 
-        Example:
-            >>> model = BranchingModel()
-            >>> # Add branch for small inputs
-            >>> model.add_branch("small",
-            ...                  condition=lambda x: x.shape[-1] < 64,
-            ...                  model=small_processor)
-            >>> # Add branch for large inputs
-    >>> model.add_branch("large",
-            ...                  condition=lambda x: x.shape[-1] >= 64,
-            ...                  model=large_processor)
-            >>> # Process input - automatically selects appropriate branch
-            >>> output = model(input_tensor)
+    Example:
+        >>> model = BranchingModel()
+        >>> # Add branch for small inputs
+        >>> model.add_branch("small",
+        ...                  condition=lambda x: x.shape[-1] < 64,
+        ...                  model=small_processor)
+        >>> # Add branch for large inputs
+        >>> model.add_branch("large",
+        ...                  condition=lambda x: x.shape[-1] >= 64,
+        ...                  model=large_processor)
+        >>> # Process input - automatically selects appropriate branch
+        >>> output = model(input_tensor)
     """
 
     def __init__(self, condition: Optional[Callable[[Any], bool]] = None, true_branch: Optional[BaseModel] = None, false_branch: Optional[BaseModel] = None):
