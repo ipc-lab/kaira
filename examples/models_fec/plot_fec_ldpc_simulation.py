@@ -21,7 +21,7 @@ from kaira.models.fec.encoders import LDPCCodeEncoder
 
 # %%
 # Setting up
-# ----------------------
+# --------------------------------------
 # First, we set a random seed to ensure reproducibility and
 # configure our visualization settings.
 
@@ -34,7 +34,7 @@ sns.set_context("notebook", font_scale=1.2)
 
 # %%
 # LDPC Code Fundamentals
-# ----------------------
+# --------------------------------------
 # LDPC codes are defined by a sparse parity-check matrix H.
 # Here we create a simple parity-check matrix for demonstration.
 
@@ -46,7 +46,7 @@ print(parity_check_matrix)
 
 # %%
 # Visualizing the Parity-Check Matrix
-# -----------------------------------
+# -------------------------------------------------------------------
 # We can visualize the parity-check matrix as a binary grid,
 # which helps illustrate the sparsity pattern essential for LDPC codes.
 
@@ -64,7 +64,7 @@ plt.tight_layout()
 
 # %%
 # Communication System Setup
-# -------------------------
+# -------------------------------------------------
 # We'll set up a complete communication system with an LDPC encoder,
 # an AWGN channel, and a belief propagation decoder.
 
@@ -86,7 +86,7 @@ print(f"Code rate: {message_length/codeword_length:.3f}")
 
 # %%
 # Simulating Communication at Different SNR Levels
-# ----------------------------------------------
+# --------------------------------------------------------------------------------------
 # Let's simulate the transmission of messages over an AWGN channel at various
 # SNR levels and analyze the bit error rate performance.
 
@@ -151,7 +151,7 @@ for bp_iters in iterations_values:
 
 # %%
 # Performance Analysis
-# -------------------
+# -----------------------------------
 # Let's visualize the performance of our LDPC code with different numbers
 # of belief propagation iterations across various SNR levels.
 
@@ -181,7 +181,7 @@ plt.tight_layout()
 
 # %%
 # Single Message Example
-# --------------------
+# ------------------------------------
 # Let's walk through the encoding, transmission, and decoding process
 # for a single message to better understand the flow.
 
@@ -218,7 +218,7 @@ print(f"Decoding {'successful' if success else 'failed'}")
 
 # %%
 # Visualizing the Transmission Process
-# ----------------------------------
+# ------------------------------------------------------------------
 # Let's visualize the transmission process for our single message example.
 
 plt.figure(figsize=(14, 8))
@@ -254,7 +254,7 @@ plt.show()
 
 # %%
 # Conclusion
-# ----------
+# ------------------
 # This example demonstrates how LDPC codes can effectively correct
 # errors introduced by noisy channels. We've shown how the performance
 # improves with increased SNR and more decoding iterations.

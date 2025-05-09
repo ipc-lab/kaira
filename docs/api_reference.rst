@@ -751,5 +751,3 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_db_to_linear
    snr_linear_to_db
    snr_to_noise_power
-
-

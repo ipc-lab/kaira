@@ -190,6 +190,18 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         self.calc_code_metrics()
 
     def calc_code_metrics(self):
+        """Calculate code metrics and prepare the Tanner graph representation.
+
+        This method computes metrics for the code based on the parity check matrix:
+        - Number of edges in the Tanner graph
+        - Variable node degrees
+        - Check node degrees
+        - Number of variable nodes
+        - Number of check nodes
+
+        It also initializes the Tanner graph structure and finds message indices
+        for non-standard codes.
+        """
         self.num_edges = torch.sum(self.H)
         self.var_degree = torch.sum(self.H, dim=0)
         self.check_degree = torch.sum(self.H, dim=1)
@@ -200,6 +212,21 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
             self.idx_mess_t = torch.where(self.G.sum(0) == 1)[0]
 
     def prep_edge_ind(self):
+        """Prepare edge indices and map structures for the Tanner graph.
+
+        This method constructs the Tanner graph representation of the code by:
+        1. Creating edge mappings between variable nodes and check nodes
+        2. Grouping variable nodes and check nodes by their degrees
+        3. Preparing data structures for message passing (extrinsic and marginalization)
+        4. Building indices for efficient tensor operations during decoding
+
+        The method builds several important structures:
+        - lv_ind: List mapping edges to their variable nodes
+        - edge_map: Maps each variable node to its incident edges
+        - cv_map: Maps each check node to its incident edges
+        - marg_ec, ext_ec, ext_ce: Structures for message passing and marginalization
+        - vc_group, cv_group: Groups of variable/check nodes with same degree
+        """
         self.lv_ind = []
         self.edge_map = []
         self.cv_map = [[] for _ in range(self.n_c)]
@@ -261,13 +288,42 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
         self.cv_order[edge_order] = torch.arange(0, self.num_edges, device=self.device).to(torch.int64)
 
     def compute_vc(self, cv: torch.Tensor, soft_input: torch.Tensor) -> torch.Tensor:
+        """Compute variable-to-check (VC) messages in the belief propagation algorithm.
+
+        This method calculates messages sent from variable nodes to check nodes by:
+        1. Reordering the soft input values according to the Tanner graph structure
+        2. Subtracting check-to-variable messages to compute extrinsic information
+
+        Args:
+            cv: Check-to-variable messages tensor of shape [batch_size, num_edges]
+            soft_input: Soft input LLR values of shape [batch_size, code_length]
+
+        Returns:
+            Variable-to-check messages tensor of shape [batch_size, num_edges]
+        """
         batch_size, _ = cv.size()
         lv_ind = self.lv_ind.unsqueeze(0).repeat_interleave(batch_size, dim=0)
         reordered_soft_input = soft_input.gather(1, lv_ind)
         vc = reordered_soft_input - cv
         return vc
 
-    def compute_cv(self, vc: torch.Tensor):
+    def compute_cv(self, vc: torch.Tensor) -> torch.Tensor:
+        """Compute check-to-variable (CV) messages in the belief propagation algorithm.
+
+        This method implements the check node update rule of the sum-product algorithm by:
+        1. Converting variable-to-check messages to tanh domain
+        2. Computing the product of tanh values (implemented as sum in log domain)
+        3. Converting back to LLR domain using arctanh
+
+        The implementation handles numerical stability issues and supports both exact
+        arctanh calculation and Taylor series approximation.
+
+        Args:
+            vc: Variable-to-check messages tensor of shape [batch_size, num_edges]
+
+        Returns:
+            Check-to-variable messages tensor of shape [batch_size, num_edges]
+        """
         batch_size, _ = vc.size()
         vc = vc.clamp(-500, 500)
         tanh_vc = torch.tanh(vc / 2.0)
@@ -276,12 +332,12 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
             deg = self.check_degree[c_group[0]].item()
             members = len(c_group)
             if deg > 1:
-                ext_ce = list(itemgetter(*c_group)(self.ext_ce))
+                ext_ce_list = list(itemgetter(*c_group)(self.ext_ce))
                 if members == 1 and (self.not_ldpc):
-                    len_ten = len(ext_ce)
-                    ext_ce = torch.cat(ext_ce, dim=0).view(len_ten, -1)
+                    len_ten = len(ext_ce_list)
+                    ext_ce = torch.cat(ext_ce_list, dim=0).view(len_ten, -1)
                 else:
-                    ext_ce = torch.cat(ext_ce, dim=0)
+                    ext_ce = torch.cat(ext_ce_list, dim=0)
                 ext_ce = ext_ce.unsqueeze(0).repeat_interleave(batch_size, dim=0)
 
                 vc_extended = tanh_vc.unsqueeze(1).repeat_interleave(deg * members, dim=1)
@@ -301,25 +357,39 @@ class BeliefPropagationDecoder(BaseBlockDecoder[Union[LinearBlockCodeEncoder, LD
                 v_messages = v_messages - 1
 
             else:
-                v_messages = torch.zeros(B, members).to(self.device)
+                v_messages = torch.zeros(batch_size, members).to(self.device)
             cv.append(v_messages)
 
-        cv = torch.cat(cv, dim=-1)
+        cv_tensor = torch.cat(cv, dim=-1)
         new_order = self.cv_order.unsqueeze(0).repeat_interleave(batch_size, dim=0)
-        cv = cv.gather(1, new_order)
-        return cv
+        cv_tensor = cv_tensor.gather(1, new_order)
+        return cv_tensor
 
     def marginalize(self, cv: torch.Tensor, soft_input: torch.Tensor) -> torch.Tensor:
+        """Compute marginal probabilities for each variable node.
+
+        This method performs the final marginalization step in belief propagation by:
+        1. Collecting all check-to-variable messages for each variable node
+        2. Summing these messages to compute the marginal log-likelihood ratio
+        3. Adding the channel soft input to get the posterior LLR
+
+        Args:
+            cv: Check-to-variable messages tensor of shape [batch_size, num_edges]
+            soft_input: Soft input LLR values of shape [batch_size, code_length]
+
+        Returns:
+            Soft output LLR values of shape [batch_size, code_length]
+        """
         batch_size, _ = cv.size()
 
         soft_output = []
         for v_group in self.vc_group:
             members = len(v_group)
-            edges = list(itemgetter(*v_group)(self.marg_ec))
+            edges_list = list(itemgetter(*v_group)(self.marg_ec))
             if members == 1:
-                edges = torch.stack(edges, dim=0).view(1, -1)
+                edges = torch.stack(edges_list, dim=0).view(1, -1)
             else:
-                edges = torch.stack(edges, dim=0)
+                edges = torch.stack(edges_list, dim=0)
             edges = edges.unsqueeze(0).repeat_interleave(batch_size, dim=0)
             cv_extended = cv.unsqueeze(1).repeat_interleave(members, dim=1)
             msg = cv_extended.gather(2, edges)

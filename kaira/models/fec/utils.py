@@ -186,7 +186,22 @@ def Taylor_arctanh(vector: torch.Tensor, num_series: int = 105):
     return ans
 
 
-def sign_to_bin(x):
+def sign_to_bin(x: torch.Tensor) -> torch.Tensor:
+    """Convert sign values (-1/+1) to binary values (1/0).
+
+    This function maps values from the sign domain to the binary domain:
+    - Sign +1 maps to binary 0
+    - Sign -1 maps to binary 1
+
+    It's commonly used in soft-decision decoding to convert LLR sign information
+    to binary codeword bits.
+
+    Args:
+        x: Input tensor with sign values (-1/+1)
+
+    Returns:
+        Tensor with binary values (0/1)
+    """
     return 0.5 * (1 - x)
 
 

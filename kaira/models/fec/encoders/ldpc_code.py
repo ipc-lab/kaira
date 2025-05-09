@@ -74,6 +74,23 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         super().__init__(generator_matrix=generator_matrix, check_matrix=check_matrix)
 
     def get_generator_matrix(self, check_matrix_: torch.Tensor) -> torch.Tensor:
+        """Derive the generator matrix from a parity check matrix.
+
+        This method computes the generator matrix for an LDPC code by:
+        1. Transposing the parity check matrix
+        2. Appending an identity matrix to obtain [H | I]
+        3. Performing Gaussian elimination (row reduction) to obtain [A | B]
+        4. Extracting the generator matrix from the result
+
+        The process ensures that G·Hᵀ = 0, which is the defining property of a valid
+        generator matrix for the code.
+
+        Args:
+            check_matrix_: The parity check matrix of the LDPC code
+
+        Returns:
+            The generator matrix for the LDPC code
+        """
         check_matrix = check_matrix_.clone().to(torch.int64).t()
         check_matrix_eye = torch.cat((check_matrix, torch.eye(check_matrix.shape[0]).to(bool).to(check_matrix.device)), dim=1)
         check_matrix_eye, rank = row_reduction(check_matrix_eye, num_cols=check_matrix.shape[1])
