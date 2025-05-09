@@ -11,11 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Future features and improvements will be listed here
 
-## [0.1.0] - 2025-03-01
+## [0.1.0] - 2025-05-09
 
 ### Added
 
-- Initial release of Kaira framework
+- Initial release of Kaira framework v0.1.0
 - Core modules for wireless communication simulation
 - DeepJSCC implementation
 - Channel models and modulation schemes

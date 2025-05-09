@@ -16,9 +16,21 @@ sys.path.insert(0, os.path.abspath(".."))
 # Check for graphviz installation and configure it
 try:
     import graphviz
+    import shutil
 
     has_graphviz = True
     print(f"Successfully imported Python graphviz package version {graphviz.__version__}")
+
+    # Check if the 'dot' command is available
+    dot_path = shutil.which("dot")
+    if dot_path:
+        print(f"Found graphviz 'dot' command at {dot_path}")
+    else:
+        print("WARNING: graphviz 'dot' command not found in PATH. Setting graphviz_dot to use dot through the graphviz Python package.")
+        # Set graphviz_dot to use the Python package interface
+        import os
+
+        os.environ["GRAPHVIZ_DOT"] = graphviz.backend.dot_command
 except ImportError:
     has_graphviz = False
     print("WARNING: Python graphviz package not found. Inheritance diagrams may not render properly.")

@@ -33,7 +33,7 @@ Args:
     return_soft (bool): Boolean flag to determine whether to return the soft output
     device (str): The device to use for computation (e.g., "cpu" or "cuda"). Defaults to "cpu".
     *args: Additional positional arguments passed to the base class.
-    **kwargs: Additional keyword arguments passed to the base class.
+    **kwargs: Additional keyword arguments passed to the base class.**
 
 Raises:
     TypeError: If the encoder is not an instance of `LinearBlockCodeEncoder` or `LDPCCodeEncoder`.

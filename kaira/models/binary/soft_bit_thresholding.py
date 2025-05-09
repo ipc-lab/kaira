@@ -20,18 +20,24 @@ from ..base import BaseModel
 
 
 class InputType(str, Enum):
-    """Enumeration of supported input types for soft bit thresholders."""
+    """Enumeration of supported input types for soft bit thresholders.
 
-    PROBABILITY = "prob"
-    LLR = "llr"
-    SOFT = "soft"
+    This enum defines the format of input values that soft bit thresholders can accept.
+    """
+
+    PROBABILITY = "prob"  #: Input values are probabilities in the range [0, 1]
+    LLR = "llr"  #: Input values are log-likelihood ratios
+    SOFT = "soft"  #: Input values are in a general soft format
 
 
 class OutputType(str, Enum):
-    """Enumeration of supported output types for soft bit thresholders."""
+    """Enumeration of supported output types for soft bit thresholders.
 
-    HARD = "hard"
-    SOFT = "soft"
+    This enum defines the format of output values that soft bit thresholders can produce.
+    """
+
+    HARD = "hard"  #: Output values are binary decisions (0 or 1)
+    SOFT = "soft"  #: Output values are soft probabilities in the range [0, 1]
 
 
 class SoftBitThresholder(BaseModel):

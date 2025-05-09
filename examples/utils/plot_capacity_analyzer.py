@@ -37,16 +37,16 @@ from kaira.utils import CapacityAnalyzer
 # -----------------------------------------
 
 # NEW: More granular performance control
-PERFORMANCE_MODE = "balanced"  # Options: "ultra_fast", "fast", "balanced", "detailed"
+PERFORMANCE_MODE = "ultra_fast"  # Options: "ultra_fast", "fast", "balanced", "detailed"
 
 # Configure visualization and computation based on performance mode
 if PERFORMANCE_MODE == "ultra_fast":
     VISUALIZATION_QUALITY = "minimal"
     EXAMPLES_TO_RUN = [1]  # Run only the essential example
-    NUM_SYMBOLS = 500
-    NUM_SNR_POINTS = 6
-    NUM_MONTE_CARLO = 200
-    PARALLEL_PROCESSES = 2  # Limit parallelism to reduce overhead on smaller problems
+    NUM_SYMBOLS = 100
+    NUM_SNR_POINTS = 3
+    NUM_MONTE_CARLO = 50
+    PARALLEL_PROCESSES = 1  # Limit parallelism to reduce overhead on smaller problems
 elif PERFORMANCE_MODE == "fast":
     VISUALIZATION_QUALITY = "low"
     EXAMPLES_TO_RUN = [1, 3]  # Only run examples 1 and 3

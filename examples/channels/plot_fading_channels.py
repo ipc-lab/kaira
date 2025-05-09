@@ -251,8 +251,16 @@ for snr_db in snr_range_db:
         detected_indices[(received_real < 0) & (received_imag > 0)] = 2  # -1+1j
         detected_indices[(received_real < 0) & (received_imag < 0)] = 3  # -1-1j
 
+        # Convert to numpy and ensure shapes match
+        original_np = original_indices.numpy()
+
+        # Make sure both arrays have the same length
+        min_length = min(len(detected_indices), len(original_np))
+        detected_indices = detected_indices[:min_length]
+        original_np = original_np[:min_length]
+
         # Calculate error rate
-        errors = detected_indices != original_indices.numpy()
+        errors = detected_indices != original_np
         ser = np.mean(errors)
 
         return ser

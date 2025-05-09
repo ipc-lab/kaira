@@ -74,7 +74,6 @@ repos:
           ]
         exclude: "^tests/"
 
-  # Replace flake8 with ruff (faster and more comprehensive)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.5
     hooks:
@@ -148,6 +147,14 @@ repos:
         args: ["--profile=black"]
       - id: nbqa-ruff # Changed from flake8 to ruff
         args: ["--line-length=299"]
+
+  # Documentation style checker
+  #- repo: https://github.com/pycqa/doc8
+  #  rev: v1.1.1
+  #  hooks:
+  #    - id: doc8
+  #      args: ["--ignore=D001"] # Ignore line length for documentation
+  #      exclude: "docs/_build/|docs/generated/"
 
   # Validate GitHub Actions workflows (new)
   - repo: https://github.com/python-jsonschema/check-jsonschema

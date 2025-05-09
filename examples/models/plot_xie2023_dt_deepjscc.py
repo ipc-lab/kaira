@@ -357,11 +357,21 @@ plt.axis("off")
 
 # Modulated signal (take first few dimensions to visualize)
 modulated_data = results["modulated"][0].cpu().numpy()
-signal_length = min(100, modulated_data.shape[0])
+
+# For stem plot, use only the first dimension if it's multi-dimensional
+if len(modulated_data.shape) > 1:
+    # Extract just the first 16 values from the first dimension
+    plot_data = modulated_data[0, :16]
+    signal_length = len(plot_data)
+else:
+    # If it's already 1D, take first 16 values
+    plot_data = modulated_data[:16]
+    signal_length = len(plot_data)
 
 plt.subplot(2, 2, 2)
-plt.stem(range(signal_length), modulated_data[:signal_length])
-plt.title("Modulated Signal (First 100 symbols)")
+# Use the prepared data directly
+plt.stem(range(signal_length), plot_data)
+plt.title("Modulated Signal (First 16 symbols)")
 plt.xlabel("Symbol Index")
 plt.ylabel("Amplitude")
 plt.grid(True, alpha=0.3)
@@ -369,8 +379,19 @@ plt.grid(True, alpha=0.3)
 # Show received signal (with channel effects)
 received_data = results["received"][0].cpu().numpy()
 
+# For stem plot, use only the first dimension if it's multi-dimensional
+if len(received_data.shape) > 1:
+    # Extract just the first 16 values from the first dimension
+    received_plot_data = received_data[0, :16]
+    received_length = len(received_plot_data)
+else:
+    # If it's already 1D, take first 16 values
+    received_plot_data = received_data[:16]
+    received_length = len(received_plot_data)
+
 plt.subplot(2, 2, 3)
-plt.stem(range(signal_length), received_data[:signal_length], linefmt="r-")
+# Use the prepared data directly
+plt.stem(range(received_length), received_plot_data, linefmt="r-")
 plt.title(f"Received Signal (After {model.channel.__class__.__name__})")
 plt.xlabel("Symbol Index")
 plt.ylabel("Amplitude")
@@ -417,11 +438,20 @@ for i, snr in enumerate(test_snrs):
     # Get actual data size for modulated and received signals
     mod_data = results["modulated"][0].cpu().numpy()
     rec_data = results["received"][0].cpu().numpy()
-    signal_length = min(50, len(mod_data))  # Limit to at most 50 points
+
+    # For stem plot, use only the first dimension if it's multi-dimensional
+    if len(rec_data.shape) > 1:
+        # Extract values from the first dimension
+        rec_plot_data = rec_data[0, :16]
+        signal_length = len(rec_plot_data)
+    else:
+        # If it's already 1D, take first 16 values
+        rec_plot_data = rec_data[:16]
+        signal_length = len(rec_plot_data)
 
     # Show received signal (varies by SNR)
     plt.subplot(1, 4, i + 2)
-    plt.stem(range(signal_length), rec_data[:signal_length], linefmt="r-")
+    plt.stem(range(signal_length), rec_plot_data, linefmt="r-")
     plt.title(f"Received Signal (SNR={snr} dB)")
     plt.xlabel("Symbol Index")
     plt.ylabel("Amplitude")
