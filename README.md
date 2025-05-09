@@ -1,5 +1,5 @@
 <div align="center">
-<img src="docs/_static/logo.png" alt="Kaira Framework Logo" width="300px">
+<img src="https://raw.githubusercontent.com/ipc-lab/kaira/main/docs/_static/logo.png" alt="Kaira Framework Logo" width="300px">
 </div>
 
 # Kaira - A PyTorch-based toolkit for simulating communication systems
