@@ -322,6 +322,7 @@ Decoders
 - ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
 - WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
 - BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
 
 These decoders can be used to recover original messages from possibly corrupted codewords
 that have been transmitted over noisy channels. Each decoder has specific strengths and
@@ -345,6 +346,7 @@ Examples
    :nosignatures:
 
    BaseBlockDecoder
+   BeliefPropagationDecoder
    BerlekampMasseyDecoder
    BruteForceMLDecoder
    ReedMullerDecoder
@@ -360,6 +362,7 @@ Forward Error Correction encoders for Kaira.
 This module provides various encoder implementations for forward error correction, including:
 - Block codes: Fundamental error correction codes that operate on fixed-size blocks
 - Linear block codes: Codes with linear algebraic structure allowing matrix operations
+- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
 - Cyclic codes: Special class of linear codes with cyclic shift properties
 - BCH codes: Powerful algebraic codes with precise error-correction capabilities
 - Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
@@ -384,6 +387,7 @@ transmission over noisy channels :cite:`lin2004error,moon2005error`.
    CyclicCodeEncoder
    GolayCodeEncoder
    HammingCodeEncoder
+   LDPCCodeEncoder
    LinearBlockCodeEncoder
    ReedSolomonCodeEncoder
    RepetitionCodeEncoder

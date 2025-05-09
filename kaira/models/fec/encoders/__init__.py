@@ -3,6 +3,7 @@
 This module provides various encoder implementations for forward error correction, including:
 - Block codes: Fundamental error correction codes that operate on fixed-size blocks
 - Linear block codes: Codes with linear algebraic structure allowing matrix operations
+- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
 - Cyclic codes: Special class of linear codes with cyclic shift properties
 - BCH codes: Powerful algebraic codes with precise error-correction capabilities
 - Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
@@ -21,10 +22,11 @@ from .bch_code import BCHCodeEncoder
 from .cyclic_code import CyclicCodeEncoder
 from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
+from .ldpc_code import LDPCCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
 from .reed_solomon_code import ReedSolomonCodeEncoder
 from .repetition_code import RepetitionCodeEncoder
 from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]
+__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]

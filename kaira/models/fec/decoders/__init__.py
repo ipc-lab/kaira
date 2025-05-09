@@ -12,6 +12,7 @@ Decoders
 - ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
 - WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
 - BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
 
 These decoders can be used to recover original messages from possibly corrupted codewords
 that have been transmitted over noisy channels. Each decoder has specific strengths and
@@ -29,6 +30,7 @@ Examples
 """
 
 from .base import BaseBlockDecoder
+from .belief_propagation import BeliefPropagationDecoder
 from .berlekamp_massey import BerlekampMasseyDecoder
 from .brute_force_ml import BruteForceMLDecoder
 from .reed_muller_decoder import ReedMullerDecoder
@@ -42,4 +44,5 @@ __all__ = [
     "ReedMullerDecoder",
     "WagnerSoftDecisionDecoder",
     "BruteForceMLDecoder",
+    "BeliefPropagationDecoder",
 ]

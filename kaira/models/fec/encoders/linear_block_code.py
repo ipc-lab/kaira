@@ -388,8 +388,12 @@ class LinearBlockCodeEncoder(BaseBlockCodeEncoder):
         # Register buffer for the generator right inverse
         self.register_buffer("generator_right_inverse", self._generator_right_inverse)
 
-        # Compute check matrix for syndrome calculation
-        self._check_matrix = compute_null_space_matrix(generator_matrix)
+        # Compute check matrix for syndrome calculation if it's not predefined
+        if "check_matrix" not in kwargs:
+            self._check_matrix = compute_null_space_matrix(generator_matrix)
+        else:
+            # Use provided check matrix if available
+            self._check_matrix = kwargs["check_matrix"]
 
         # Register buffer for the check matrix
         self.register_buffer("check_matrix", self._check_matrix)
