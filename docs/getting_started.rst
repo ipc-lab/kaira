@@ -13,7 +13,7 @@ Install Kaira using pip:
 
 .. code-block:: bash
 
-    pip install kaira
+    pip install pykaira
 
 Basic Usage
 -----------
