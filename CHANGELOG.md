@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Future features and improvements will be listed here
 
+## [0.1.1] - 2025-05-22
+
+### Changed
+
+- Updated Python version requirement to >=3.10 in setup configuration
+- Fixed installation command in documentation to use 'pykaira' instead of 'kaira'
+
+### Removed
+
+- Removed CircleCI configuration, release drafter settings, and changelog update script
+- Cleaned up build artifacts and enhanced deployment script
+
+### Improved
+
+- Enhanced project metadata and version extraction
+- Refactored deployment script for better reliability
+
 ## [0.1.0] - 2025-05-09
 
 ### Added
