@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed CircleCI configuration, release drafter settings, and changelog update script
 - Cleaned up build artifacts and enhanced deployment script
+- **Note**: Changelog update script removal is intentional - changelog is now maintained manually for better control over release notes
 
 ### Improved
 

@@ -3,6 +3,24 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Function to display usage information
+show_usage() {
+    echo "Usage: $0 [-s] [-f] [-h]"
+    echo ""
+    echo "Deploy Kaira package to PyPI"
+    echo ""
+    echo "Options:"
+    echo "  -s    Skip version check (skip checking if version already exists on PyPI)"
+    echo "  -f    Force deployment (proceed even if version exists, not recommended)"
+    echo "  -h    Show this help message and exit"
+    echo ""
+    echo "Examples:"
+    echo "  $0              # Normal deployment with version check"
+    echo "  $0 -s           # Deploy without checking if version exists"
+    echo "  $0 -f           # Force deploy even if version exists (not recommended)"
+    echo ""
+}
+
 # Function to check if a command exists
 check_command() {
     if ! command -v "$1" &> /dev/null; then
@@ -25,11 +43,12 @@ echo "=== Starting deployment process for Kaira ==="
 SKIP_VERSION_CHECK=0
 FORCE_DEPLOY=0
 
-while getopts "sf" opt; do
+while getopts "sfh" opt; do
   case $opt in
     s) SKIP_VERSION_CHECK=1 ;;
     f) FORCE_DEPLOY=1 ;;
-    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
+    h) show_usage; exit 0 ;;
+    \?) echo "Invalid option: -$OPTARG" >&2; echo "Use -h for help."; exit 1 ;;
   esac
 done
 
@@ -45,6 +64,7 @@ if [ $SKIP_VERSION_CHECK -eq 0 ] && pip install --quiet pykaira=="$VERSION" 2>/d
     if [ $FORCE_DEPLOY -eq 0 ]; then
         echo "To override this check, run the script with -s option to skip version check"
         echo "or -f to force deployment with same version (not recommended)."
+        echo "Use -h for help and more options."
         exit 1
     else
         echo "Warning: Force deployment flag set. Proceeding with deployment of existing version."
