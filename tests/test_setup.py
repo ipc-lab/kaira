@@ -77,7 +77,7 @@ def test_setup_contents():
         setup_content = f.read()
 
     # Check for expected keys in setup
-    expected_keys = ['name="pykaira"', "version=VERSION", 'url="https://github.com/ipc-lab/kaira"', 'license="MIT"', "install_requires=requirements", 'python_requires=">=3.8"']
+    expected_keys = ['name="pykaira"', "version=VERSION", 'url="https://github.com/ipc-lab/kaira"', 'license="MIT"', "install_requires=requirements", 'python_requires=">=3.10"']
 
     for key in expected_keys:
         assert key in setup_content, f"Expected '{key}' not found in setup.py"
@@ -163,7 +163,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     install_requires=requirements,
-    python_requires=">=3.8",
+    python_requires=">=3.10",
 )
 """
 
@@ -180,7 +180,7 @@ setup(
     assert kwargs["url"] == "https://github.com/ipc-lab/kaira"
     assert kwargs["license"] == "MIT"
     assert kwargs["install_requires"] == ["torch>=1.7.0", "numpy>=1.19.0"]
-    assert kwargs["python_requires"] == ">=3.8"
+    assert kwargs["python_requires"] == ">=3.10"
 
 
 def test_setup_py_readme_warning():
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         description="Kaira is a toolbox for simulating wireless communication systems.",
         packages=find_packages(exclude=["tests"]),
         install_requires=requirements,
-        python_requires=">=3.8",
+        python_requires=">=3.10",
     )
 """
     # Create a temporary file and execute it
@@ -298,7 +298,7 @@ def test_direct_setup_import(mock_setup):
     _, kwargs = mock_setup.call_args
     assert kwargs["name"] == "pykaira", "Incorrect package name"
     assert kwargs["license"] == "MIT", "Incorrect license"
-    assert kwargs["python_requires"] == ">=3.8", "Incorrect Python version requirement"
+    assert kwargs["python_requires"] == ">=3.10", "Incorrect Python version requirement"
 
 
 def test_setup_py_direct_execution():

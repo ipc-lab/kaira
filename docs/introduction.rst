@@ -23,7 +23,7 @@ To start using Kaira, install it via pip:
 
 .. code-block:: bash
 
-    pip install kaira
+    pip install pykaira
 
 For comprehensive installation options, dependencies, and platform-specific instructions,
 please refer to our :doc:`installation guide </installation>`.

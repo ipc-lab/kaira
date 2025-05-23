@@ -3,6 +3,24 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Function to display usage information
+show_usage() {
+    echo "Usage: $0 [-s] [-f] [-h]"
+    echo ""
+    echo "Deploy Kaira package to PyPI"
+    echo ""
+    echo "Options:"
+    echo "  -s    Skip version check (skip checking if version already exists on PyPI)"
+    echo "  -f    Force deployment (proceed even if version exists, not recommended)"
+    echo "  -h    Show this help message and exit"
+    echo ""
+    echo "Examples:"
+    echo "  $0              # Normal deployment with version check"
+    echo "  $0 -s           # Deploy without checking if version exists"
+    echo "  $0 -f           # Force deploy even if version exists (not recommended)"
+    echo ""
+}
+
 # Function to check if a command exists
 check_command() {
     if ! command -v "$1" &> /dev/null; then
@@ -21,15 +39,37 @@ pip install --quiet --upgrade setuptools wheel twine
 
 echo "=== Starting deployment process for Kaira ==="
 
-# Extract version from setup.py or another source - adjusted path for script location
-VERSION=$(python3 -c "import re; print(re.search(r'version=[\"\'](.*?)[\"\']', open('../setup.py').read()).group(1))")
+# Parse command line arguments
+SKIP_VERSION_CHECK=0
+FORCE_DEPLOY=0
+
+while getopts "sfh" opt; do
+  case $opt in
+    s) SKIP_VERSION_CHECK=1 ;;
+    f) FORCE_DEPLOY=1 ;;
+    h) show_usage; exit 0 ;;
+    \?) echo "Invalid option: -$OPTARG" >&2; echo "Use -h for help."; exit 1 ;;
+  esac
+done
+
+# Extract version from kaira/version.py which is the source of truth for version number
+VERSION=$(python3 -c "import sys; sys.path.append('..'); from kaira.version import __version__; print(__version__)")
 echo "Preparing to deploy version: $VERSION"
 
-# Check if this version already exists on PyPI
-if pip install --quiet kaira=="$VERSION" 2>/dev/null; then
+# Check if this version already exists on PyPI, unless version check is skipped
+if [ $SKIP_VERSION_CHECK -eq 0 ] && pip install --quiet pykaira=="$VERSION" 2>/dev/null; then
     echo "Error: Version $VERSION already exists on PyPI!"
-    echo "Please update the version number in setup.py before deploying."
-    exit 1
+    echo "Please update the version number in kaira/version.py before deploying."
+
+    if [ $FORCE_DEPLOY -eq 0 ]; then
+        echo "To override this check, run the script with -s option to skip version check"
+        echo "or -f to force deployment with same version (not recommended)."
+        echo "Use -h for help and more options."
+        exit 1
+    else
+        echo "Warning: Force deployment flag set. Proceeding with deployment of existing version."
+        echo "This is not recommended and may cause issues with PyPI!"
+    fi
 fi
 
 # Ask for confirmation before proceeding
@@ -44,6 +84,42 @@ fi
 cd ..
 
 echo "Cleaning previous build artifacts..."
+# More thorough cleaning of Python build artifacts and cache files
+find . -type d -name "__pycache__" -exec rm -rf {} +
+find . -type d -name "*.egg-info" -exec rm -rf {} +
+find . -type d -name ".eggs" -exec rm -rf {} +
+find . -type f -name "*.pyc" -delete
+find . -type f -name "*.pyo" -delete
+find . -type f -name "*.pyd" -delete
+find . -type f -name ".coverage" -delete
+find . -type f -name "coverage.xml" -delete
+find . -type d -name ".pytest_cache" -exec rm -rf {} +
+find . -type d -name ".coverage*" -exec rm -rf {} +
+find . -type d -name "htmlcov" -exec rm -rf {} +
+
+# Clean documentation build artifacts
+echo "Cleaning documentation build artifacts..."
+if [ -d "docs/_build" ]; then
+    echo "Removing docs/_build directory..."
+    rm -rf docs/_build/
+fi
+if [ -d "docs/gen_modules" ]; then
+    echo "Removing docs/gen_modules directory..."
+    rm -rf docs/gen_modules/
+fi
+if [ -d "docs/generated" ]; then
+    echo "Removing docs/generated directory..."
+    rm -rf docs/generated/
+fi
+if [ -d "docs/auto_examples" ]; then
+    echo "Removing docs/auto_examples directory..."
+    rm -rf docs/auto_examples/
+fi
+# Also clean any sphinx-related temporary files
+find docs -name ".DS_Store" -delete
+find docs -name "sg_execution_times.rst" -delete
+
+# Remove build and dist directories
 rm -rf build/ dist/ ./*.egg-info/
 
 echo "Building distribution packages..."
