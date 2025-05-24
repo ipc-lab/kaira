@@ -377,9 +377,9 @@ class TestMultiScaleSSIM:
 
         monkeypatch.setattr(ms_ssim, "forward", mock_forward)
 
-        # Create dummy input tensors
-        preds = torch.randn(2, 3, 64, 64)
-        targets = torch.randn(2, 3, 64, 64)
+        # Create dummy input tensors that are large enough for MS-SSIM
+        preds = torch.randn(2, 3, 256, 256)
+        targets = torch.randn(2, 3, 256, 256)
 
         # Call update with our mocked forward method that returns empty tensor
         ms_ssim.update(preds, targets)

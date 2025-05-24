@@ -14,6 +14,7 @@ from torchvision import models  # type: ignore
 
 from kaira.metrics.image import (
     LearnedPerceptualImagePatchSimilarity,
+    MultiScaleSSIM,
     StructuralSimilarityIndexMeasure,
 )
 
@@ -222,12 +223,7 @@ class MSSSIMLoss(BaseLoss):
             data_range (float): Range of the input data (typically 1.0 or 255).
         """
         super().__init__()
-        # For MS-SSIM, we'll use the same SSIM implementation but apply it at multiple scales
-        # Note: True MS-SSIM requires larger image dimensions, so in tests with small images
-        # we'll fall back to regular SSIM
-        self.data_range = data_range
-        self.kernel_size = kernel_size
-        self.ssim = StructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size)
+        self.ms_ssim = MultiScaleSSIM(kernel_size=kernel_size, data_range=data_range)
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Forward pass through the MSSSIMLoss module.
@@ -243,8 +239,8 @@ class MSSSIMLoss(BaseLoss):
         x_norm = torch.clamp(x, -1.0, 1.0)
         target_norm = torch.clamp(target, -1.0, 1.0)
 
-        # 1 - SSIM because higher SSIM means better similarity (we want to minimize loss)
-        return 1 - self.ssim(x_norm, target_norm)
+        # 1 - MS-SSIM because higher MS-SSIM means better similarity (we want to minimize loss)
+        return 1 - self.ms_ssim(x_norm, target_norm)
 
 
 @LossRegistry.register_loss()
