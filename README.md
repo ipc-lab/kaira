@@ -27,6 +27,14 @@ Kaira is built to accelerate your research. Its user-friendly, modular design al
 5. **Well Documented**: Comes with comprehensive documentation for easy
    understanding.
 
+# Example Code
+
+Here's a simple example showing how to use Kaira's Bourtsoulatze2019 DeepJSCC model:
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/ipc-lab/kaira/refs/heads/main/docs/example_code.png" alt="Kaira Example Code" width="600px">
+</div>
+
 # Installation
 
 The fastest way to install Kaira is directly from PyPI:
