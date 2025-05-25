@@ -7,7 +7,18 @@ seamlessly with existing PyTorch projects, supporting rapid prototyping of novel
 strategies.
 """
 
-from . import benchmarks, channels, constraints, data, losses, metrics, models, modulations, utils
+from . import (
+    benchmarks,
+    channels,
+    constraints,
+    data,
+    hardware,
+    losses,
+    metrics,
+    models,
+    modulations,
+    utils,
+)
 from .version import __version__
 
-__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils"]
+__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils", "hardware"]

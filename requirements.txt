@@ -4,3 +4,6 @@ joblib
 torchvision
 compressai
 torchaudio
+gnuradio>=3.9.0
+scipy
+numpy>=1.19.0
