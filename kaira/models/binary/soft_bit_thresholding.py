@@ -711,7 +711,9 @@ class SoftBitEnsembleThresholder(SoftBitThresholder):
 
         elif self.voting == "weighted":
             # Apply weights to each thresholder's output
-            weighted_votes = (stacked_outputs * self.weights.view(-1, 1, 1)).sum(dim=0)
+            # Dynamically create the correct shape for broadcasting
+            weight_shape = [-1] + [1] * (stacked_outputs.dim() - 1)
+            weighted_votes = (stacked_outputs * self.weights.view(*weight_shape)).sum(dim=0)
             return (weighted_votes >= 0.5).float()
 
         elif self.voting == "any":
