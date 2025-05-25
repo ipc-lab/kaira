@@ -111,6 +111,25 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Benchmark Results
+# Keep the results directory structure but ignore actual benchmark data
+results/
+benchmark_results/
+test_results/
+suite_results/
+final_test_results/
+*_results/
+*.benchmark.json
+*.bench.json
+
+# Allow specific benchmark result patterns to be tracked (optional)
+# Uncomment these lines if you want to track certain benchmark configurations:
+# !results/configs/
+# !results/templates/
+# results/**/*.json
+# results/**/*.csv
+# results/**/*.log
+
 # Various
 .DS_Store
 .todo
