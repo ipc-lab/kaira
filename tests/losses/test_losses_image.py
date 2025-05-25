@@ -26,13 +26,13 @@ from kaira.losses.image import (
 @pytest.fixture
 def sample_images():
     """Fixture for creating sample image tensor."""
-    return torch.rand(2, 3, 32, 32)
+    return torch.rand(2, 3, 192, 192)  # Larger size for MS-SSIM compatibility
 
 
 @pytest.fixture
 def sample_target_images():
     """Fixture for creating sample target image tensor."""
-    return torch.rand(2, 3, 32, 32)
+    return torch.rand(2, 3, 192, 192)  # Larger size for MS-SSIM compatibility
 
 
 def test_mse_loss(sample_images, sample_target_images):

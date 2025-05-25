@@ -227,6 +227,11 @@ class MultiScaleSSIM(BaseMetric):
             return values.mean(), torch.tensor(0.0)
         return values.mean(), values.std()
 
+    @property
+    def data_range(self) -> float:
+        """Get the data range used by the underlying torchmetrics implementation."""
+        return self.ms_ssim.data_range
+
 
 # Alias for backward compatibility
 SSIM = StructuralSimilarityIndexMeasure
