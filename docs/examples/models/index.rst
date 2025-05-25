@@ -140,6 +140,22 @@ systems, from traditional channel coding to advanced deep learning-based approac
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Demonstrates the ChannelAwareBaseModel abstract base class for standardized CSI handling. Shows CSI validation, normalization, feature extraction, and best practices for channel-aware models.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_channel_aware_base_model_thumb.png
+      :alt: ChannelAwareBaseModel for Standardized CSI Handling
+
+    :ref:`sphx_glr_auto_examples_models_plot_channel_aware_base_model.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">ChannelAwareBaseModel for Standardized CSI Handling</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -154,3 +170,4 @@ systems, from traditional channel coding to advanced deep learning-based approac
    /auto_examples/models/plot_complex_projections
    /auto_examples/models/plot_projections_and_cover_tests
    /auto_examples/models/plot_afmodule
+   /auto_examples/models/plot_channel_aware_base_model
