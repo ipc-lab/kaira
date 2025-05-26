@@ -6,7 +6,7 @@ This directory contains examples demonstrating how to use the Kaira benchmarking
 
 ## Examples
 
-### `basic_usage.py`
+### `plot_basic_usage.py`
 
 Demonstrates basic benchmark usage including:
 
@@ -14,7 +14,7 @@ Demonstrates basic benchmark usage including:
 - Creating and running benchmark suites
 - Saving and analyzing results
 
-### `comparison_example.py`
+### `plot_comparison_example.py`
 
 Shows how to compare different approaches:
 
@@ -22,7 +22,7 @@ Shows how to compare different approaches:
 - Parameter sweep functionality
 - Visualization of comparison results
 
-### `demo_new_results_system.py`
+### `plot_demo_new_results_system.py`
 
 Demonstrates the new organized results management system:
 
@@ -42,7 +42,7 @@ Located in `scripts/kaira_benchmark.py`, this provides a complete command-line i
 - Suite management and result organization
 - Integration with the results management system
 
-### `visualization_example.py`
+### `plot_visualization_example.py`
 
 Demonstrates comprehensive benchmark result visualization:
 
@@ -118,10 +118,10 @@ The `BenchmarkConfig` class provides various configuration options:
 
 ```bash
 cd examples/benchmarks
-python basic_usage.py
-python comparison_example.py
-python demo_new_results_system.py
-python visualization_example.py
+python plot_basic_usage.py
+python plot_comparison_example.py
+python plot_demo_new_results_system.py
+python plot_visualization_example.py
 ```
 
 Results will be saved in the `./benchmark_results` directory.

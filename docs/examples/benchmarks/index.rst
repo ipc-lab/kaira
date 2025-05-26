@@ -35,7 +35,7 @@ Examples
 
     <div class="example-grid">
         <div class="example-card">
-            <h3><a href="../../../examples/benchmarks/basic_usage.py">Basic Usage</a></h3>
+            <h3><a href="../../../examples/benchmarks/plot_basic_usage.py">Basic Usage</a></h3>
             <p>Introduction to running benchmarks and saving results</p>
             <ul>
                 <li>Running individual benchmarks (BER simulation, throughput test)</li>
@@ -45,7 +45,7 @@ Examples
         </div>
 
         <div class="example-card">
-            <h3><a href="../../../examples/benchmarks/comparison_example.py">Comparison Example</a></h3>
+            <h3><a href="../../../examples/benchmarks/plot_comparison_example.py">Comparison Example</a></h3>
             <p>Comparing different approaches and configurations</p>
             <ul>
                 <li>Comparing modulation schemes</li>
@@ -55,7 +55,7 @@ Examples
         </div>
 
         <div class="example-card">
-            <h3><a href="../../../examples/benchmarks/demo_new_results_system.py">Results Management System</a></h3>
+            <h3><a href="../../../examples/benchmarks/plot_demo_new_results_system.py">Results Management System</a></h3>
             <p>Comprehensive demonstration of the organized results management</p>
             <ul>
                 <li>Automatic directory structure creation</li>
@@ -78,7 +78,7 @@ Examples
         </div>
 
         <div class="example-card">
-            <h3><a href="../../../examples/benchmarks/visualization_example.py">Visualization Example</a></h3>
+            <h3><a href="../../../examples/benchmarks/plot_visualization_example.py">Visualization Example</a></h3>
             <p>Comprehensive demonstration of benchmark result visualization</p>
             <ul>
                 <li>BER curve plotting and analysis</li>
@@ -145,10 +145,10 @@ For more details, see the :doc:`../../benchmarks` documentation.
     <div class="example-footer">
         <p><strong>Running the Examples:</strong></p>
         <pre><code>cd examples/benchmarks
-python basic_usage.py
-python comparison_example.py
-python demo_new_results_system.py
-python visualization_example.py
+python plot_basic_usage.py
+python plot_comparison_example.py
+python plot_demo_new_results_system.py
+python plot_visualization_example.py
 
 # Or use the CLI tool
 cd ../../scripts
