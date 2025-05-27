@@ -23,12 +23,12 @@ def main():
     print("\n1. Running BER simulation benchmark...")
     ber_benchmark = get_benchmark("ber_simulation")(modulation="bpsk")
 
-    # Configure benchmark
-    config = BenchmarkConfig(snr_range=list(range(-2, 11)), num_bits=50000, verbose=True)
+    # Configure benchmark - use block_length instead of num_bits
+    config = BenchmarkConfig(snr_range=list(range(-2, 11)), block_length=50000, verbose=True)
 
-    # Run benchmark
+    # Run benchmark with num_bits as runtime parameter
     runner = StandardRunner()
-    ber_result = runner.run_benchmark(ber_benchmark, **config.to_dict())
+    ber_result = runner.run_benchmark(ber_benchmark, num_bits=50000, **config.to_dict())
 
     print(f"✓ BER simulation completed in {ber_result.execution_time:.2f}s")
 
@@ -49,7 +49,7 @@ def main():
 
     # Plot throughput results
     print("\n4. Creating throughput visualization...")
-    visualizer.plot_throughput_comparison([throughput_result.metrics], labels=["Standard Implementation"], save_path=str(output_dir / "throughput_comparison.png"))
+    visualizer.plot_throughput_comparison(throughput_result.metrics, save_path=str(output_dir / "throughput_comparison.png"))
     print("✓ Throughput plot saved to visualization_results/throughput_comparison.png")
 
     # Create comparison plot if we have multiple results
@@ -67,12 +67,58 @@ def main():
 
     # Plot comparison
     print("\n6. Creating modulation comparison plot...")
-    visualizer.plot_ber_comparison(comparison_results, labels=[mod.upper() for mod in modulations], save_path=str(output_dir / "modulation_comparison.png"))
+    # Create individual BER plots for each modulation scheme
+    for i, (mod, result_metrics) in enumerate(zip(modulations, comparison_results)):
+        plot_name = f"ber_curve_{mod}.png"
+        visualizer.plot_ber_curve(result_metrics, save_path=str(output_dir / plot_name))
+        print(f"✓ {mod.upper()} BER curve saved to visualization_results/{plot_name}")
+
+    # Create a combined comparison plot manually using matplotlib
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(12, 8))
+    for mod, result_metrics in zip(modulations, comparison_results):
+        snr_range = result_metrics.get("snr_range", [])
+        if "ber_simulated" in result_metrics:
+            plt.semilogy(snr_range, result_metrics["ber_simulated"], "o-", label=f"{mod.upper()} (Simulated)", linewidth=2, markersize=6)
+        if "ber_theoretical" in result_metrics:
+            plt.semilogy(snr_range, result_metrics["ber_theoretical"], "--", label=f"{mod.upper()} (Theoretical)", linewidth=2)
+
+    plt.xlabel("SNR (dB)", fontsize=12)
+    plt.ylabel("Bit Error Rate", fontsize=12)
+    plt.title("Modulation Scheme Comparison", fontsize=14)
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=11)
+    plt.tight_layout()
+    plt.savefig(str(output_dir / "modulation_comparison.png"), dpi=100, bbox_inches="tight")
+    plt.close()
+
     print("✓ Modulation comparison saved to visualization_results/modulation_comparison.png")
 
     # Create summary statistics plot
     print("\n7. Creating performance summary...")
-    visualizer.plot_performance_summary([ber_result, throughput_result], save_path=str(output_dir / "performance_summary.png"))
+    # Create a summary of benchmark results by saving them to a JSON file first
+    import json
+
+    summary_data = {
+        "summary": {"total_benchmarks": 2, "successful_benchmarks": 2, "failed_benchmarks": 0, "total_execution_time": ber_result.execution_time + throughput_result.execution_time, "average_execution_time": (ber_result.execution_time + throughput_result.execution_time) / 2},
+        "benchmark_results": [
+            {"benchmark_name": "BER Simulation (BPSK)", "success": True, "execution_time": ber_result.execution_time, "device": "cpu", **ber_result.metrics},
+            {"benchmark_name": "Throughput Test", "success": True, "execution_time": throughput_result.execution_time, "device": "cpu", **throughput_result.metrics},
+        ],
+    }
+
+    # Save temporary summary file
+    summary_file = output_dir / "temp_summary.json"
+    with open(summary_file, "w") as f:
+        json.dump(summary_data, f, indent=2, default=str)
+
+    # Create benchmark summary plot
+    visualizer.plot_benchmark_summary(str(summary_file), save_path=str(output_dir / "performance_summary.png"))
+
+    # Clean up temporary file
+    summary_file.unlink()
+
     print("✓ Performance summary saved to visualization_results/performance_summary.png")
 
     print("\n" + "=" * 50)

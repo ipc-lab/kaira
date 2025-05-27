@@ -21,12 +21,12 @@ def compare_modulation_schemes():
     # you would have multiple modulation schemes
     benchmarks = [bpsk_benchmark]
 
-    # Configure comparison
-    config = BenchmarkConfig(name="modulation_comparison", snr_range=list(range(-10, 11)), num_bits=50000, verbose=True)
+    # Configure comparison - use block_length instead of num_bits
+    config = BenchmarkConfig(name="modulation_comparison", snr_range=list(range(-10, 11)), block_length=50000, verbose=True)
 
-    # Run comparison
+    # Run comparison with num_bits as runtime parameter
     runner = ComparisonRunner(verbose=True)
-    results = runner.run_comparison(benchmarks, "Modulation Scheme Comparison", **config.to_dict())
+    results = runner.run_comparison(benchmarks, "Modulation Scheme Comparison", num_bits=50000, **config.to_dict())
 
     # Get comparison summary
     summary = runner.get_comparison_summary("Modulation Scheme Comparison")

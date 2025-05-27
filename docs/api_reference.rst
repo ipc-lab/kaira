@@ -751,3 +751,47 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_db_to_linear
    snr_linear_to_db
    snr_to_noise_power
+
+
+Benchmarks
+----------
+
+Kaira Benchmarking System.
+
+This module provides standardized benchmarks for evaluating communication system components and
+deep learning models in Kaira.
+
+.. currentmodule:: kaira.benchmarks
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseBenchmark
+   BenchmarkConfig
+   BenchmarkRegistry
+   BenchmarkResult
+   BenchmarkResultsManager
+   BenchmarkSuite
+   BenchmarkVisualizer
+   ComparisonRunner
+   ParallelRunner
+   ParametricRunner
+   StandardMetrics
+   StandardRunner
+
+
+.. currentmodule:: kaira.benchmarks
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   create_benchmark
+   get_benchmark
+   get_config
+   list_benchmarks
+   list_configs
+   register_benchmark

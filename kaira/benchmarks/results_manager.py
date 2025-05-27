@@ -151,7 +151,17 @@ class BenchmarkResultsManager:
         with open(filepath) as f:
             data = json.load(f)
 
-        return BenchmarkResult(**data)
+        # Filter data to only include parameters that BenchmarkResult constructor accepts
+        valid_params = {"benchmark_id", "name", "description", "metrics", "execution_time", "timestamp", "metadata"}
+        filtered_data = {k: v for k, v in data.items() if k in valid_params}
+
+        # Check if we have all required parameters
+        required_params = {"benchmark_id", "name", "description", "metrics", "execution_time", "timestamp"}
+        missing_params = required_params - set(filtered_data.keys())
+        if missing_params:
+            raise ValueError(f"File {filepath} is not a valid BenchmarkResult file (missing: {missing_params})")
+
+        return BenchmarkResult(**filtered_data)
 
     def list_results(self, category: Optional[str] = None, experiment_name: Optional[str] = None) -> List[Path]:
         """List available benchmark result files.
@@ -161,7 +171,7 @@ class BenchmarkResultsManager:
             experiment_name: Specific experiment to list
 
         Returns:
-            List of result file paths
+            List of result file paths (excludes summary files and comparison reports)
         """
         if category and experiment_name:
             search_dir = self.base_dir / category / experiment_name
@@ -173,7 +183,28 @@ class BenchmarkResultsManager:
         if not search_dir.exists():
             return []
 
-        return list(search_dir.rglob("*.json"))
+        # Get all JSON files but exclude summary files and comparison reports
+        all_json_files = list(search_dir.rglob("*.json"))
+        excluded_files = {"summary.json"}
+        excluded_dirs = {"comparisons", "archives"}
+
+        valid_files = []
+        for f in all_json_files:
+            # Skip if filename is in excluded list
+            if f.name in excluded_files:
+                continue
+
+            # Skip if file is in an excluded directory
+            if any(excluded_dir in f.parts for excluded_dir in excluded_dirs):
+                continue
+
+            # Skip comparison report files (they end with _comparison.json)
+            if f.name.endswith("_comparison.json"):
+                continue
+
+            valid_files.append(f)
+
+        return valid_files
 
     def archive_old_results(self, days_old: int = 30) -> None:
         """Archive benchmark results older than specified days.

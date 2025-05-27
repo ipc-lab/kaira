@@ -4,13 +4,6 @@
 This script shows how to use the improved BenchmarkResultsManager for organizing and managing
 benchmark results.
 """
-
-import sys
-from pathlib import Path
-
-# Add the kaira package to the path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import time
 
 from kaira.benchmarks.base import BaseBenchmark, BenchmarkSuite
@@ -28,8 +21,6 @@ class ExampleBenchmark(BaseBenchmark):
     def setup(self, **kwargs) -> None:
         """Setup benchmark environment."""
         super().setup(**kwargs)
-        # Simulate setup time
-        time.sleep(0.01)
 
     def run(self, **kwargs) -> dict:
         """Run the benchmark and return metrics."""

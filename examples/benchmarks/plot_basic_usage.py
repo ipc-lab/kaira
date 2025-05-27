@@ -21,7 +21,7 @@ def run_ber_benchmark():
     ber_benchmark = create_benchmark("ber_simulation", modulation="bpsk")
 
     # Configure benchmark
-    config = BenchmarkConfig(name="ber_example", snr_range=list(range(-5, 11)), num_bits=100000, verbose=True)
+    config = BenchmarkConfig(name="ber_example", snr_range=list(range(-5, 11)), block_length=100000, verbose=True)
 
     # Run benchmark
     runner = StandardRunner(verbose=True)
@@ -49,12 +49,12 @@ def run_throughput_benchmark():
     # Create benchmark instance
     throughput_benchmark = create_benchmark("throughput_test")
 
-    # Configure benchmark
-    config = BenchmarkConfig(name="throughput_example", payload_sizes=[1000, 10000, 100000], num_trials=5)
+    # Configure benchmark - pass payload_sizes as runtime kwargs instead of config
+    config = BenchmarkConfig(name="throughput_example", num_trials=5)
 
-    # Run benchmark
+    # Run benchmark with payload_sizes as kwargs
     runner = StandardRunner(verbose=True)
-    result = runner.run_benchmark(throughput_benchmark, **config.to_dict())
+    result = runner.run_benchmark(throughput_benchmark, payload_sizes=[1000, 10000, 100000], **config.to_dict())
 
     # Display results
     print("\nThroughput Results:")
@@ -77,11 +77,11 @@ def run_benchmark_suite():
     suite.add_benchmark(create_benchmark("throughput_test"))
     suite.add_benchmark(create_benchmark("latency_test"))
 
-    # Configure and run suite
-    config = BenchmarkConfig(name="suite_example", snr_range=[-5, 0, 5, 10], num_bits=10000, verbose=True)
+    # Configure and run suite - use block_length instead of num_bits
+    config = BenchmarkConfig(name="suite_example", snr_range=[-5, 0, 5, 10], block_length=10000, verbose=True)
 
     runner = StandardRunner(verbose=True)
-    runner.run_suite(suite, **config.to_dict())
+    runner.run_suite(suite, num_bits=10000, **config.to_dict())
 
     # Get summary
     summary = suite.get_summary()

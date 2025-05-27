@@ -3,7 +3,7 @@
 .. _sphx_glr_examples_benchmarks:
 
 Benchmarking Examples
-=====================
+=========================================
 
 This section contains examples demonstrating how to use the Kaira benchmarking system to evaluate communication system performance and machine learning models.
 
@@ -29,7 +29,7 @@ The benchmarking system provides:
     </div>
 
 Examples
---------
+--------------
 
 .. raw:: html
 
@@ -90,7 +90,7 @@ Examples
     </div>
 
 Quick Start
------------
+-----------------
 
 .. code-block:: python
 
@@ -113,7 +113,7 @@ Quick Start
     saved_files = runner.save_all_results(experiment_name="my_experiment")
 
 Available Benchmarks
---------------------
+--------------------------------------
 
 * **ber_simulation**: Bit Error Rate simulation for various modulation schemes
 * **channel_capacity**: Channel capacity calculations
@@ -122,7 +122,7 @@ Available Benchmarks
 * **model_complexity**: Model computational complexity analysis
 
 Results Organization
---------------------
+--------------------------------------
 
 The benchmarking system automatically organizes results in a structured directory layout:
 
