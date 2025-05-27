@@ -29,4 +29,7 @@ from .repetition_code import RepetitionCodeEncoder
 from .single_parity_check_code import SingleParityCheckCodeEncoder
 from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 
-__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder", "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", "SingleParityCheckCodeEncoder"]
+__all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder", 
+           "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", 
+           "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", 
+           "SingleParityCheckCodeEncoder"]
