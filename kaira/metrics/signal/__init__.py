@@ -5,6 +5,7 @@ This module contains metrics for evaluating signal processing performance.
 
 from .ber import BER, BitErrorRate
 from .bler import BLER, FER, SER, BlockErrorRate, FrameErrorRate, SymbolErrorRate
+from .evm import EVM, ErrorVectorMagnitude
 from .snr import SNR, SignalToNoiseRatio
 
 __all__ = [
@@ -18,4 +19,6 @@ __all__ = [
     "FER",
     "SymbolErrorRate",
     "SER",
+    "ErrorVectorMagnitude",
+    "EVM",
 ]
