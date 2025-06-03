@@ -125,7 +125,7 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         if self.load_rank:
             print("Loading rank polar indices as defined in 5G standard...")
             import pandas as pd
-            rank = pd.read_csv('~/kaira/kaira/models/fec/rank_polar.csv', sep=' ', index_col=0)
+            rank = pd.read_csv('kaira/models/fec/rank_polar.csv', sep=' ', index_col=0)
             self.rank = rank.Q.values
             F = np.zeros(self.code_length)
             F[self.rank[self.rank < self.code_length][:self.code_length - self.code_dimension]] = 1
