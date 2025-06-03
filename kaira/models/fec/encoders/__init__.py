@@ -23,6 +23,7 @@ from .cyclic_code import CyclicCodeEncoder
 from .golay_code import GolayCodeEncoder
 from .hamming_code import HammingCodeEncoder
 from .ldpc_code import LDPCCodeEncoder
+from .polar_code import PolarCodeEncoder
 from .linear_block_code import LinearBlockCodeEncoder
 from .reed_solomon_code import ReedSolomonCodeEncoder
 from .repetition_code import RepetitionCodeEncoder
@@ -32,4 +33,4 @@ from .systematic_linear_block_code import SystematicLinearBlockCodeEncoder
 __all__ = ["BaseBlockCodeEncoder", "LinearBlockCodeEncoder", "LDPCCodeEncoder", 
            "SystematicLinearBlockCodeEncoder", "HammingCodeEncoder", "RepetitionCodeEncoder", 
            "CyclicCodeEncoder", "BCHCodeEncoder", "GolayCodeEncoder", "ReedSolomonCodeEncoder", 
-           "SingleParityCheckCodeEncoder"]
+           "SingleParityCheckCodeEncoder", "PolarCodeEncoder"]

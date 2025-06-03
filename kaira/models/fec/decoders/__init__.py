@@ -31,6 +31,8 @@ Examples
 
 from .base import BaseBlockDecoder
 from .belief_propagation import BeliefPropagationDecoder
+from .belief_propagation_polar import BeliefPropagationPolarDecoder
+from .successive_cancellation import SuccessiveCancellationDecoder
 from .berlekamp_massey import BerlekampMasseyDecoder
 from .brute_force_ml import BruteForceMLDecoder
 from .reed_muller_decoder import ReedMullerDecoder
@@ -45,4 +47,6 @@ __all__ = [
     "WagnerSoftDecisionDecoder",
     "BruteForceMLDecoder",
     "BeliefPropagationDecoder",
+    "BeliefPropagationPolarDecoder",
+    "SuccessiveCancellationDecoder"
 ]
