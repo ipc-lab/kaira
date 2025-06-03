@@ -38,15 +38,15 @@ sns.set_context("notebook", font_scale=1.2)
 # LDPC Code Fundamentals
 # --------------------------------------
 # LDPC codes are defined by a sparse parity-check matrix H.
-# Here we will use a LDPC code from RPTU code database with n = 672, k = 448.
+# Here we will use a LDPC code from RPTU code database with code_length = 672, code_dimension = 448.
 
 # Define code parameters
-n = 672  # Codeword length
-k = 448  # Message length
+code_length = 672  # Codeword length
+code_dimension = 448  # Message length
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Load the parity-check matrix from the RPTU database
-encoder = LDPCCodeEncoder(rptu_database=True, n=n, k=k, device=device)
+encoder = LDPCCodeEncoder(rptu_database=True, code_length=code_length, code_dimension=code_dimension, device=device)
 # Print the parity-check matrix
 parity_check_matrix = encoder.check_matrix.clone().cpu()
 

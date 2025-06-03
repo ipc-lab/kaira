@@ -46,8 +46,8 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
 
     Args:
         check_matrix (torch.Tensor): The parity check matrix to define LDPC code.
-            Must be a binary matrix of shape (n - k, n) where k is the message length
-            and n is the codeword length.
+            Must be a binary matrix of shape (code_length - code_dimension, code_length)
+            where code_dimension is the message length and code_length is the codeword length.
         *args: Variable positional arguments passed to the base class.
         **kwargs: Variable keyword arguments passed to the base class.
     """
@@ -57,41 +57,42 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         """Initializes the linear block encoder for LDPC codes.
 
             check_matrix (torch.Tensor, optional): The parity check matrix for encoding. 
-                Should be a binary matrix of shape (n - k, n), where k is the message length 
-                and n is the codeword length. If None and `rptu_database` is True, the matrix 
+                Should be a binary matrix of shape (code_length - code_dimension, code_length), where 
+                code_dimension is the message length and code_length is the codeword length. 
+                If None and `rptu_database` is True, the matrix 
                 will be loaded from the RPTU database.
             rptu_database (bool, optional): If True, loads the check matrix from the RPTU 
                 code database using parameters provided in `kwargs`. Default is False.
             *args: Additional positional arguments passed to the base class.
             **kwargs: Additional keyword arguments. Expected keys when `rptu_database` is True:
-                - n (int): Codeword length.
-                - k (int): Message length.
+                - code_length (int): Codeword length.
+                - code_dimension (int): Message length.
                 - rptu_standart (str, optional): Standard name for the LDPC code. If not provided, 
                     the first available standard is used.
                 - device (str, optional): Device to place the tensors on (e.g., "cpu" or "cuda").
 
         Raises:
-            ValueError: If the requested (n, k) code or standard is not found in the RPTU database.
+            ValueError: If the requested (code_length, code_dimension) code or standard is not found in the RPTU database.
         """
         # Initialize the base class from rptu_database or provided check_matrix
         if rptu_database:
             print("Loading LDPC code from RPTU database...")
             print(EXISTING_CODES['citation'])
             print("------------------------------------")
-            n = kwargs.get("n", None)
-            k = kwargs.get("k", None)
+            code_length = kwargs.get("code_length", None)
+            code_dimension = kwargs.get("code_dimension", None)
             rptu_standart = kwargs.get("rptu_standart", None)
-            if (n, k) in EXISTING_CODES.keys():
-                code_key = (n, k)
+            if (code_length, code_dimension) in EXISTING_CODES.keys():
+                code_key = (code_length, code_dimension)
             else:
                 print(f"Available LDPC codes from rptu database: {EXISTING_CODES.keys()}")
-                raise ValueError(f"LDPC code with (n={n}, k={k}) not found in rptu_database.")
+                raise ValueError(f"LDPC code with (code_length={code_length}, code_dimension={code_dimension}) not found in rptu_database.")
             if rptu_standart is not None:
                 if rptu_standart not in EXISTING_CODES[code_key].keys():
-                    raise ValueError(f"LDPC code with (n={n}, k={k}) and rptu_standart='{rptu_standart}' not found in rptu_database.")
+                    raise ValueError(f"LDPC code with (code_length={code_length}, code_dimension={code_dimension}) and rptu_standart='{rptu_standart}' not found in rptu_database.")
             else:
                 rptu_standart = list(EXISTING_CODES[code_key].keys())[0]  # Default to first available standard
-                print(f"Using default rptu_standart='{rptu_standart}' for (n={n}, k={k}).")
+                print(f"Using default rptu_standart='{rptu_standart}' for (code_length={code_length}, code_dimension={code_dimension}).")
             content = get_code_from_database(EXISTING_CODES[code_key][rptu_standart])
             check_matrix = parse_alist(content) 
         self.device = kwargs.get("device", "cpu")
