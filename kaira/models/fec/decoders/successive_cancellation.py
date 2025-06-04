@@ -185,7 +185,7 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             """Decode a single block of received codeword."""
             # Ensure the received tensor is on the correct device
             B, _, N = received_block.size()
-            assert N == self.code_length, f"Received block size {N} does not match codeword size {self.n}"
+            assert N == self.code_length, f"Received block size {N} does not match codeword size {self.code_length}"
             # Reshape the received block to match the expected input shape
             received_block = received_block.view(-1, N)
             # Decode the block using the recursive decoding method
