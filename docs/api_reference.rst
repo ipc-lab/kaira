@@ -347,9 +347,11 @@ Examples
 
    BaseBlockDecoder
    BeliefPropagationDecoder
+   BeliefPropagationPolarDecoder
    BerlekampMasseyDecoder
    BruteForceMLDecoder
    ReedMullerDecoder
+   SuccessiveCancellationDecoder
    SyndromeLookupDecoder
    WagnerSoftDecisionDecoder
 
@@ -389,6 +391,7 @@ transmission over noisy channels :cite:`lin2004error,moon2005error`.
    HammingCodeEncoder
    LDPCCodeEncoder
    LinearBlockCodeEncoder
+   PolarCodeEncoder
    ReedSolomonCodeEncoder
    RepetitionCodeEncoder
    SingleParityCheckCodeEncoder
