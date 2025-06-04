@@ -1,0 +1,75 @@
+name: Generate API Documentation
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+    branches: [main, master, dev]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  generate-api-docs:
+    runs-on: self-hosted
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Install Kaira in development mode
+        run: |
+          pip install -e .
+
+      - name: Generate API reference documentation
+        run: |
+          python scripts/generate_api_reference.py docs/api_reference.rst
+
+      - name: Check if API reference was generated
+        run: |
+          if [ -f docs/api_reference.rst ]; then
+            echo "✅ API reference documentation generated successfully"
+            echo "File size: $(wc -c < docs/api_reference.rst) bytes"
+            echo "Number of lines: $(wc -l < docs/api_reference.rst)"
+          else
+            echo "❌ API reference documentation was not generated"
+            exit 1
+          fi
+
+      - name: Upload API reference as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-reference-docs
+          path: docs/api_reference.rst
+          retention-days: 7
+
+      - name: Commit and push changes (only on main/master)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          if [ -n "$(git status --porcelain docs/api_reference.rst)" ]; then
+            git add docs/api_reference.rst
+            git commit -m "Auto-update API reference documentation [skip ci]"
+            git push
+            echo "✅ API reference documentation updated and committed"
+          else
+            echo "ℹ️ No changes to API reference documentation"
+          fi
