@@ -1,7 +1,7 @@
 """Polar Code module for forward error correction.
 
 This module provides an implementation of Polar codes for binary data transmission,
-a class of linear block codes widely used in error correction for digital communication. 
+a class of linear block codes widely used in error correction for digital communication.
 Polar codes are known for their channel polarization property, which enables efficient encoding and decoding.
 
 The implementation follows common conventions in coding theory with particular focus
@@ -11,20 +11,20 @@ References:
 - E. Arikan, "Channel Polarization: A Method for Constructing Capacity-Achieving Codes for Symmetric Binary-Input Memoryless Channels," IEEE Transactions on Information Theory, 2008.
 """
 
-from typing import Any
+from typing import Any, Optional
 
-import torch
 import numpy as np
+import torch
 
 from kaira.models.registry import ModelRegistry
 
 from ..encoders.base import BaseBlockCodeEncoder
 from ..utils import apply_blockwise
 
+
 def _index_matrix(N: int) -> np.ndarray:
-    """
-    Returns the index matrix for polar code construction, indicating the bit indices
-    involved in each stage of the polarization process.
+    """Returns the index matrix for polar code construction, indicating the bit indices involved in
+    each stage of the polarization process.
 
     Args:
         N (int): Codeword length (must be a power of 2).
@@ -34,18 +34,20 @@ def _index_matrix(N: int) -> np.ndarray:
     """
     x = np.arange(1, N + 1)
     n = int(np.log2(N))
-    assert 2 ** n == N, "N must be a power of 2"
+    assert 2**n == N, "N must be a power of 2"
     M = np.zeros((N - 1, n), dtype=int)
     for k in range(n):
         step = 2 ** (k + 1)
-        half = 2 ** k
+        half = 2**k
         for i in range(0, N, step):
             if i + half < N:
-                M[i:i + half, n - k - 1] = x[i:i + half]
+                M[i : i + half, n - k - 1] = x[i : i + half]
     return M.T[M.T > 0].reshape(n, N // 2).T
 
+
 def calculate_gm(code_length: int, device: torch.device) -> torch.Tensor:
-    """ Return the generator matrix of the polar code (without interleaving).
+    """Return the generator matrix of the polar code (without interleaving).
+
     Args:
         code_length: Length of the polar code (must be a power of 2)
         device: Device to place the tensor on (CPU or GPU)
@@ -97,10 +99,8 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             Placeholder for syndrome calculation functionality.
     """
 
-    def __init__(self, code_dimension: int, code_length: int,
-                *args: Any, **kwargs: Any):
-        """
-        Initializes the PolarCodeEncoder.
+    def __init__(self, code_dimension: int, code_length: int, *args: Any, **kwargs: Any):
+        """Initializes the PolarCodeEncoder.
 
         Args:
             code_dimension (int): Number of information bits in the Polar code.
@@ -114,10 +114,10 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
                 - load_rank (bool): Whether to load rank-based polar indices as defined in the 5G standard (default: True).
                 - info_indices (np.ndarray): Boolean array indicating positions of information bits (optional).
         """
-        super().__init__(code_length=code_length, code_dimension=code_dimension, *args, **kwargs)
+        super().__init__(code_length, code_dimension, *args, **kwargs)
         self.device = kwargs.get("device", "cpu")
         self.m = int(np.log2(code_length))
-        assert 2 ** self.m == code_length, "n must be a power of 2"
+        assert 2**self.m == code_length, "n must be a power of 2"
         self.polar_i = kwargs.get("polar_i", False)
         self.frozen_zeros = kwargs.get("frozen_zeros", False)
         self.dtype = kwargs.get("dtype", torch.float32)
@@ -125,10 +125,11 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         if self.load_rank:
             print("Loading rank polar indices as defined in 5G standard...")
             import pandas as pd
-            rank = pd.read_csv('kaira/models/fec/rank_polar.csv', sep=' ', index_col=0)
+
+            rank = pd.read_csv("kaira/models/fec/rank_polar.csv", sep=" ", index_col=0)
             self.rank = rank.Q.values
             F = np.zeros(self.code_length)
-            F[self.rank[self.rank < self.code_length][:self.code_length - self.code_dimension]] = 1
+            F[self.rank[self.rank < self.code_length][: self.code_length - self.code_dimension]] = 1
             info_ind = np.where(F == 0)[0]
             self.info_indices = np.zeros(self.code_length)
             self.info_indices[info_ind] = 1
@@ -136,11 +137,10 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         else:
             self.info_indices = kwargs.get("info_indices", None)
 
-        self.mask_dict = None
+        self.mask_dict: Optional[np.ndarray] = None
 
     def get_generator_matrix(self) -> torch.Tensor:
-        """
-        Returns the generator matrix of the Polar code (without interleaving).
+        """Returns the generator matrix of the Polar code (without interleaving).
 
         The generator matrix is used to encode information bits into codewords.
         It is constructed based on the structure of Polar codes.
@@ -150,9 +150,8 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         """
         return calculate_gm(self.code_length, self.device)
 
-    def polar_transform(self, u: torch.Tensor, return_arr: bool=False) -> torch.Tensor:
-        """
-        Applies the Polar transform to the input tensor.
+    def polar_transform(self, u: torch.Tensor, return_arr: bool = False) -> torch.Tensor:
+        """Applies the Polar transform to the input tensor.
 
         The Polar transform is a recursive process that combines and splits bits to achieve channel polarization.
         This method performs the transformation based on the mask dictionary and supports optional permutation.
@@ -173,16 +172,17 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             mask_dict = _index_matrix(self.code_length).T.astype(int) - 1
             self.mask_dict = mask_dict[np.flip(np.arange(self.m))]
 
+        # Ensure mask_dict is properly initialized
+        assert self.mask_dict is not None, "mask_dict should be initialized"
+
         x = u.clone().to(int)
         if return_arr:
             arr_x = [x.clone().reshape(bs, N, 1)]
         for i in range(self.m):
             i_back = self.m - i - 1
             add_k = N // (2 ** (i_back + 1))
-            perm_ind = torch.arange(N).reshape(N // 2 ** (i + 1), 2,
-                                               -1).permute(0, 2, 1).reshape(-1).to(u.device)
-            x[:, self.mask_dict[i]] = torch.bitwise_xor(x[:, self.mask_dict[i]],
-                                                        x[:, self.mask_dict[i] + add_k])
+            perm_ind = torch.arange(N).reshape(N // 2 ** (i + 1), 2, -1).permute(0, 2, 1).reshape(-1).to(u.device)
+            x[:, self.mask_dict[i]] = torch.bitwise_xor(x[:, self.mask_dict[i]], x[:, self.mask_dict[i] + add_k])
             if self.polar_i:
                 x = x[:, perm_ind]
             if return_arr:
@@ -191,21 +191,22 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         if return_arr:
             return arr_x
         return x.reshape(bs, N).to(self.dtype)
-    
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
-        """
-        Encodes the input message using the Polar transformation.
+
+    def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Encodes the input message using the Polar transformation.
 
         Args:
             input (torch.Tensor): Input tensor of shape (batch_size, code_dimension).
+            *args: Additional positional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
 
         Returns:
             torch.Tensor: Encoded codeword of shape (batch_size, code_length).
         """
         # Ensure input is on the correct device
-        input = input.to(self.device)
+        input = x.to(self.device)
         # Check input shape
-        k = input.shape[1]
+        k = x.shape[1]
         assert k == self.code_dimension, f"Input shape mismatch: expected {self.code_dimension}, got {k}"
 
         def encode_fn(x):
@@ -224,13 +225,73 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             return codeword
 
         return apply_blockwise(input, self.code_dimension, encode_fn)
-    
-    def inverse_encode(self, x, *args, **kwargs):
-        pass
-    
-    def calculate_syndrome(self, x):
-        pass
 
-        
+    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Decode a received polar codeword back to the original message.
 
-        
+        This method provides a basic decoding interface for polar codes. For optimal
+        performance, it is recommended to use dedicated polar decoders such as
+        SuccessiveCancellationDecoder or BeliefPropagationPolarDecoder from the
+        decoders module.
+
+        Note:
+            Polar codes require specialized decoding algorithms (successive cancellation,
+            belief propagation, etc.) rather than simple matrix operations. This method
+            serves as a placeholder and should be overridden by specific decoder
+            implementations or use dedicated decoder classes.
+
+        Args:
+            x: Received codeword tensor with shape (..., n) or (..., m*n)
+               where n is the code length and m is some multiple.
+            *args: Additional positional arguments for decoder-specific parameters.
+            **kwargs: Additional keyword arguments for decoder-specific parameters.
+
+        Returns:
+            Decoded message tensor. The exact output depends on the specific
+            decoding algorithm implementation.
+
+        Raises:
+            NotImplementedError: This method is not implemented in the base encoder.
+                                Use dedicated polar decoders for actual decoding.
+
+        See Also:
+            SuccessiveCancellationDecoder: Implements SC decoding for polar codes.
+            BeliefPropagationPolarDecoder: Implements BP decoding for polar codes.
+        """
+        raise NotImplementedError("Polar code decoding is not implemented in the encoder. " "Use SuccessiveCancellationDecoder or BeliefPropagationPolarDecoder " "from kaira.models.fec.decoders for proper polar code decoding.")
+
+    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
+        """Calculate syndrome for polar codes.
+
+        Unlike traditional linear block codes, polar codes do not use conventional
+        syndrome-based decoding. The concept of syndrome is not directly applicable
+        to polar codes due to their unique structure based on channel polarization
+        rather than parity check constraints.
+
+        For polar codes, error detection and correction are typically handled by:
+        - Successive Cancellation (SC) decoding
+        - Belief Propagation (BP) decoding
+        - List decoding variants
+
+        Args:
+            x: Input codeword tensor with shape (..., n) or (..., m*n)
+               where n is the code length and m is some multiple.
+
+        Returns:
+            Syndrome tensor. For polar codes, this is typically not used
+            in the traditional sense.
+
+        Raises:
+            NotImplementedError: Syndrome calculation is not applicable for polar codes
+                                in the traditional linear block code sense.
+
+        Note:
+            If syndrome-like functionality is needed for polar codes, consider using
+            the decoder's internal metrics or implementing custom error detection
+            based on the specific polar code structure and frozen bit patterns.
+
+        See Also:
+            SuccessiveCancellationDecoder: For proper polar code decoding.
+            BeliefPropagationPolarDecoder: For iterative polar code decoding.
+        """
+        raise NotImplementedError("Syndrome calculation is not applicable for polar codes. " "Polar codes use successive cancellation or belief propagation " "decoding instead of syndrome-based methods.")

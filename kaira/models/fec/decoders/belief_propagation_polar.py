@@ -13,15 +13,21 @@ For more details on the Belief Propagation decoding on permuted factor graph, re
  2018 IEEE Wireless Communications and Networking Conference (WCNC).
 """
 
+from typing import Any
 
-from typing import Any, List, Literal, Tuple, Union
-
-import torch
 import numpy as np
+import torch
 
 from kaira.models.fec.encoders.polar_code import PolarCodeEncoder, _index_matrix
 
-from ..utils import apply_blockwise, sign_to_bin, cyclic_perm, stop_criterion, llr_to_bits, sum_product, min_sum
+from ..utils import (
+    apply_blockwise,
+    cyclic_perm,
+    llr_to_bits,
+    min_sum,
+    stop_criterion,
+    sum_product,
+)
 from .base import BaseBlockDecoder
 
 
@@ -81,8 +87,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
     """
 
     def __init__(self, encoder: PolarCodeEncoder, *args: Any, **kwargs: Any):
-        """
-        Initializes the BeliefPropagationPolarDecoder.
+        """Initializes the BeliefPropagationPolarDecoder.
 
         Args:
         encoder (PolarCodeEncoder): The Polar code encoder used for encoding messages.
@@ -96,60 +101,58 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         self.info_indices = encoder.info_indices
         self.frozen_ind = (np.ones(self.code_length) - self.info_indices.astype(int)).astype(bool)
         self.device = encoder.device
-        self.dtype = encoder.dtype  
+        self.dtype = encoder.dtype
         self.polar_i = encoder.polar_i
         if self.polar_i:
-            raise ValueError("Belief Propagation decoder does not support polar_i=True. "
-                             "Please set polar_i=False in the PolarCodeEncoder.")
+            raise ValueError("Belief Propagation decoder does not support polar_i=True. " "Please set polar_i=False in the PolarCodeEncoder.")
         self.frozen_zeros = encoder.frozen_zeros
         self.m = encoder.m  # Number of stages in the polar code
-        self.iteration_num = kwargs.get('bp_iters', 10)  # Number of iterations for decoding
+        self.iteration_num = kwargs.get("bp_iters", 10)  # Number of iterations for decoding
 
-        self.early_stop = kwargs.get('early_stop', False)  # Whether to use early stopping
+        self.early_stop = kwargs.get("early_stop", False)  # Whether to use early stopping
         if self.early_stop:
             self.generator_matrix = encoder.get_generator_matrix()
 
-        self.regime = kwargs.get('regime', 'sum_product')  # Decoding regime: 'sum_product' or 'min_sum'
-        if self.regime not in ['sum_product', 'min_sum']:
+        self.regime = kwargs.get("regime", "sum_product")  # Decoding regime: 'sum_product' or 'min_sum'
+        if self.regime not in ["sum_product", "min_sum"]:
             raise ValueError("Invalid regime. Choose either 'sum_product' or 'min_sum'.")
 
         self.mask_dict = encoder.mask_dict
         if self.mask_dict is None or self.mask_dict.shape[0] != self.m:
             mask_dict = _index_matrix(self.code_length).T.astype(int) - 1
             self.mask_dict = mask_dict[np.flip(np.arange(self.m))]
-        self.clip = kwargs.get('clip', 1000000.0)  # Default clip value for numerical stability
-        self.perm = kwargs.get('perm', None)
-        if self.perm == 'cycle' and not self.early_stop:
-            print("Warning: Cyclic permutation is used, but early stopping is disabled. "
-                  "This may lead to suboptimal performance.")
+        self.clip = kwargs.get("clip", 1000000.0)  # Default clip value for numerical stability
+        self.perm = kwargs.get("perm", None)
+        if self.perm == "cycle" and not self.early_stop:
+            print("Warning: Cyclic permutation is used, but early stopping is disabled. " "This may lead to suboptimal performance.")
         self.get_cyclic_permutations(perm=self.perm)
         self.print_decoder_type()
 
     def print_decoder_type(self):
         """Prints the type of decoder being used, along with its configuration."""
-        print(f"Decoder type: {self.__class__.__name__}, "
-              f"Polar Code Length: {self.code_length}, "
-              f"Polar Code Dimension: {self.code_dimension}, "
-              f"Number of iterations: {self.iteration_num}, "
-              f"Function used during decoding: {self.regime}, "
-              f"Early Stop: {self.early_stop}, "
-              f"Permutations: {self.perm}")
+        print(
+            f"Decoder type: {self.__class__.__name__}, "
+            f"Polar Code Length: {self.code_length}, "
+            f"Polar Code Dimension: {self.code_dimension}, "
+            f"Number of iterations: {self.iteration_num}, "
+            f"Function used during decoding: {self.regime}, "
+            f"Early Stop: {self.early_stop}, "
+            f"Permutations: {self.perm}"
+        )
 
     def get_cyclic_permutations(self, perm=None):
-        """
-        Generates cyclic permutations for decoding.
+        """Generates cyclic permutations for decoding.
 
         Args:
             perm (str or None): Type of permutation ('cycle' or None).
         """
         if perm is None:
             self.permutations = np.arange(self.m).reshape(1, self.m)
-        elif perm == 'cycle':
+        elif perm == "cycle":
             self.permutations = np.array(cyclic_perm(list(np.arange(self.m))))
 
     def checknode(self, y1, y2):
-        """
-        Check node operation for the Belief Propagation Polar Decoder.
+        """Check node operation for the Belief Propagation Polar Decoder.
 
         Args:
             y1 (torch.Tensor): Input message 1.
@@ -158,14 +161,13 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         Returns:
             torch.Tensor: Output message after applying the check node operation.
         """
-        if self.regime == 'sum_product':
+        if self.regime == "sum_product":
             return sum_product(y1, y2)
-        if self.regime == 'min_sum':
+        if self.regime == "min_sum":
             return min_sum(y1, y2)
 
     def update_right(self, R, L, perm):
-        """
-        Updates the right messages in the decoding graph.
+        """Updates the right messages in the decoding graph.
 
         Args:
             R (torch.Tensor): Right message tensor.
@@ -180,17 +182,14 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             i_back = self.m - i - 1
             add_k = self.code_length // (2 ** (i_back + 1))
             if len(mask[i]) > 0:
-                R[:, i + 1, mask[i]] = self.checknode(R[:, i, mask[i]], 
-                                                      L[:, i + 1, mask[i] + add_k] + R[:, i, mask[i] + add_k])
-                R[:, i + 1, mask[i] + add_k] = self.checknode(R[:, i, mask[i]],
-                                                              L[:, i + 1, mask[i]]) + R[:, i, mask[i] + add_k]
+                R[:, i + 1, mask[i]] = self.checknode(R[:, i, mask[i]], L[:, i + 1, mask[i] + add_k] + R[:, i, mask[i] + add_k])
+                R[:, i + 1, mask[i] + add_k] = self.checknode(R[:, i, mask[i]], L[:, i + 1, mask[i]]) + R[:, i, mask[i] + add_k]
         R = R.clip(-self.clip, self.clip)
         self.R_all.append(R)
         return R
 
     def update_left(self, R, L, perm):
-        """
-        Updates the left messages in the decoding graph.
+        """Updates the left messages in the decoding graph.
 
         Args:
             R (torch.Tensor): Right message tensor.
@@ -205,18 +204,15 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             i_back = self.m - i - 1
             add_k = self.code_length // (2 ** (i_back + 1))
             if len(mask[i]) > 0:
-                L[:, i, mask[i]] = self.checknode(L[:, i+1, mask[i]], 
-                                                  L[:, i+1, mask[i] + add_k] + R[:, i, mask[i] + add_k])
-                L[:, i, mask[i] + add_k] = self.checknode(R[:, i, mask[i]],
-                                                          L[:, i+1, mask[i]]) + L[:, i+1, mask[i] + add_k]
+                L[:, i, mask[i]] = self.checknode(L[:, i + 1, mask[i]], L[:, i + 1, mask[i] + add_k] + R[:, i, mask[i] + add_k])
+                L[:, i, mask[i] + add_k] = self.checknode(R[:, i, mask[i]], L[:, i + 1, mask[i]]) + L[:, i + 1, mask[i] + add_k]
 
         L = L.clip(-self.clip, self.clip)
         self.L_all.append(L.detach().clone())
         return L
 
     def _initialize_graph(self, llr):
-        """
-        Initializes the decoding graph.
+        """Initializes the decoding graph.
 
         Args:
             llr (torch.Tensor): Log-likelihood ratio tensor.
@@ -239,8 +235,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         return R, L
 
     def decode_iterative(self, llr: torch.Tensor):
-        """
-        Performs iterative decoding using the Belief Propagation algorithm.
+        """Performs iterative decoding using the Belief Propagation algorithm.
 
         Args:
             llr (torch.Tensor): Log-likelihood ratio tensor of shape (batch_size, N).
@@ -253,7 +248,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         bs = llr.size(0)
         not_satisfied = torch.arange(bs, dtype=torch.long, device=self.device)
         self.ans = []
-        
+
         u_ans = torch.zeros_like(llr).to(self.device)
         x_ans = torch.zeros_like(llr).to(self.device)
 
@@ -265,7 +260,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
                 right[not_satisfied] = self.update_right(right[not_satisfied], left[not_satisfied], p)
 
                 self.ans.append((left[:, -1] + right[:, -1]).view(bs, 1, -1))
-                
+
                 u = left[not_satisfied, 0] + right[not_satisfied, 0]
                 x = left[not_satisfied, -1] + right[not_satisfied, -1]
 
@@ -273,17 +268,14 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
                 u_ans[not_satisfied] = u.view(-1, 1, self.code_length).clone()
                 x_ans[not_satisfied] = x.view(-1, 1, self.code_length).clone()
                 if self.early_stop:
-                    not_satisfied = stop_criterion(llr_to_bits(x), llr_to_bits(u), self.generator_matrix,
-                                                    not_satisfied)
+                    not_satisfied = stop_criterion(llr_to_bits(x), llr_to_bits(u), self.generator_matrix, not_satisfied)
                 if not_satisfied.size(0) == 0:
                     break
 
         return llr_to_bits(torch.sign(u_ans)), llr_to_bits(x_ans)
-    
 
     def forward(self, received: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """
-        Decodes the received codeword using the Belief Propagation algorithm.
+        """Decodes the received codeword using the Belief Propagation algorithm.
 
         Args:
             received (torch.Tensor): Received codeword tensor of shape (batch_size, code_length).
@@ -314,4 +306,3 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
         # Return the estimated message bits
         return apply_blockwise(received, self.code_length, decode_block)
-    

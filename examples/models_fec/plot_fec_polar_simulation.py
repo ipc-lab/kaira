@@ -16,9 +16,9 @@ import torch
 from tqdm import tqdm
 
 from kaira.channels.analog import AWGNChannel
-from kaira.models.fec.decoders import SuccessiveCancellationDecoder, BeliefPropagationPolarDecoder
+from kaira.models.fec.decoders import BeliefPropagationPolarDecoder, SuccessiveCancellationDecoder
 from kaira.models.fec.encoders import PolarCodeEncoder
-from kaira.modulations.psk import BPSKModulator, BPSKDemodulator
+from kaira.modulations.psk import BPSKDemodulator, BPSKModulator
 from kaira.utils import snr_to_noise_power
 
 # %%
@@ -46,8 +46,7 @@ code_dimension = 32  # Message length
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Load the polar code encoder with the specified rank as in 5G standard.
-encoder = PolarCodeEncoder(code_dimension=code_dimension, code_length=code_length, device=device,
-                           polar_i=False, load_rank=True, frozen_zeros=False)
+encoder = PolarCodeEncoder(code_dimension=code_dimension, code_length=code_length, device=device, polar_i=False, load_rank=True, frozen_zeros=False)
 generator_matrix = encoder.get_generator_matrix()
 
 # %%
@@ -57,8 +56,7 @@ generator_matrix = encoder.get_generator_matrix()
 # which helps illustrate the polarization process.
 
 plt.figure(figsize=(16, 6))
-plt.imshow(generator_matrix.cpu().numpy(), aspect="auto",
-           cmap="Greys", interpolation="nearest")
+plt.imshow(generator_matrix.cpu().numpy(), aspect="auto", cmap="Greys", interpolation="nearest")
 plt.colorbar(ticks=[0, 1], label="Connection Value")
 plt.xlabel("Codewords")
 plt.ylabel("Information message")
@@ -81,29 +79,21 @@ print(f"Message length: {code_dimension} bits")
 print(f"Codeword length: {code_length} bits")
 print(f"Code rate: {code_dimension/code_length:.3f}")
 
-encoder = PolarCodeEncoder(code_dimension=code_dimension, code_length=code_length, device=device,
-                           polar_i=False, load_rank=True, frozen_zeros=False)
+encoder = PolarCodeEncoder(code_dimension=code_dimension, code_length=code_length, device=device, polar_i=False, load_rank=True, frozen_zeros=False)
 
-decoder_sc = SuccessiveCancellationDecoder(encoder, regime='sum_product')
+decoder_sc = SuccessiveCancellationDecoder(encoder, regime="sum_product")
 
 decoders_arr = [decoder_sc]
 decoders_names = ["SC"]
 iterations_values = [5, 10, 20, 35]
 for bp_iters in iterations_values:
-    decoder_bp = BeliefPropagationPolarDecoder(encoder, bp_iters=bp_iters,
-                                               early_stop=True,
-                                               regime='sum_product',
-                                               perm=None)
+    decoder_bp = BeliefPropagationPolarDecoder(encoder, bp_iters=bp_iters, early_stop=True, regime="sum_product", perm=None)
     decoders_arr.append(decoder_bp)
     decoders_names.append(f"BP Iter.: {bp_iters}")
 
-decoder_bp = BeliefPropagationPolarDecoder(encoder, bp_iters=5,
-                                           early_stop=True,
-                                           regime='sum_product',
-                                           perm='cycle')
+decoder_bp = BeliefPropagationPolarDecoder(encoder, bp_iters=5, early_stop=True, regime="sum_product", perm="cycle")
 decoders_arr.append(decoder_bp)
 decoders_names.append(f"BP Iter.: {5} and cycle perm.")
-
 
 
 # # %%
@@ -239,7 +229,7 @@ single_received = test_channel(single_bipolar)
 single_demodulated = demodulator(single_received, noise_var=noise_power_test)
 
 # Initialize Successive Cancellation Decoder
-test_decoder = SuccessiveCancellationDecoder(encoder, regime='sum_product')
+test_decoder = SuccessiveCancellationDecoder(encoder, regime="sum_product")
 
 # Decode the received signal
 single_decoded = test_decoder(single_demodulated)

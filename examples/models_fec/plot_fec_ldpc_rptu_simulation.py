@@ -18,7 +18,7 @@ from tqdm import tqdm
 from kaira.channels.analog import AWGNChannel
 from kaira.models.fec.decoders import BeliefPropagationDecoder
 from kaira.models.fec.encoders import LDPCCodeEncoder
-from kaira.modulations.psk import BPSKModulator, BPSKDemodulator
+from kaira.modulations.psk import BPSKDemodulator, BPSKModulator
 from kaira.utils import snr_to_noise_power
 
 # %%
@@ -57,8 +57,7 @@ parity_check_matrix = encoder.check_matrix.clone().cpu()
 # which helps illustrate the sparsity pattern essential for LDPC codes.
 
 plt.figure(figsize=(16, 6))
-plt.imshow(parity_check_matrix, aspect="auto",
-           cmap="Greys", interpolation="nearest")
+plt.imshow(parity_check_matrix, aspect="auto", cmap="Greys", interpolation="nearest")
 plt.colorbar(ticks=[0, 1], label="Connection Value")
 plt.xlabel("Variable Nodes (Bits)")
 plt.ylabel("Check Nodes (Parity Constraints)")

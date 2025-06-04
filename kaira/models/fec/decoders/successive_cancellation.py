@@ -20,17 +20,16 @@ References:
 - E. Arikan, "Channel Polarization: A Method for Constructing Capacity-Achieving Codes for Symmetric Binary-Input Memoryless Channels," IEEE Transactions on Information Theory, 2008.
 """
 
+from typing import Any, Tuple
 
-from typing import Any, List, Literal, Tuple, Union
-
-import torch
 import numpy as np
+import torch
 
 from kaira.models.fec.encoders.polar_code import PolarCodeEncoder
 
-from ..utils import apply_blockwise, sign_to_bin, sum_product, min_sum
+from ..utils import apply_blockwise, min_sum, sign_to_bin, sum_product
 from .base import BaseBlockDecoder
-import torch.nn as nn
+
 
 class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
     """Decoder for Polar code using Successive Cancellation (SC) method.
@@ -55,19 +54,18 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         super().__init__(encoder, *args, **kwargs)
         self.info_indices = encoder.info_indices
         self.device = encoder.device
-        self.dtype = encoder.dtype  
+        self.dtype = encoder.dtype
         self.polar_i = encoder.polar_i
         self.frozen_zeros = encoder.frozen_zeros
         self.m = encoder.m  # Number of stages in the polar code: m = log2(code_length)
-        self.regime = kwargs.get('regime', 'sum_product') # Decoding regime: 'sum_product' or 'min_sum'
-        if self.regime not in ['sum_product', 'min_sum']:
+        self.regime = kwargs.get("regime", "sum_product")  # Decoding regime: 'sum_product' or 'min_sum'
+        if self.regime not in ["sum_product", "min_sum"]:
             raise ValueError("Invalid regime. Choose either 'sum_product' or 'min_sum'.")
 
-        self.clip = kwargs.get('clip', 1000.0)  # Default clip value for numerical stability
+        self.clip = kwargs.get("clip", 1000.0)  # Default clip value for numerical stability
 
     def f2(self, x: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        """
-        Combine two binary vectors using XOR operation.
+        """Combine two binary vectors using XOR operation.
 
         Args:
             x (Tuple[torch.Tensor, torch.Tensor]): Tuple of two binary tensors of shape (batch_size, n).
@@ -79,8 +77,7 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         return torch.cat([torch.remainder(x1 + x2, 2), x2], dim=1)
 
     def checknode(self, y: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        """
-        Check node operation (sum-product or min-sum) for Successive Cancellation decoding.
+        """Check node operation (sum-product or min-sum) for Successive Cancellation decoding.
 
         Args:
             y (Tuple[torch.Tensor, torch.Tensor]): Tuple of two tensors representing the received codeword.
@@ -89,14 +86,13 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             torch.Tensor: Processed tensor after check node operation.
         """
         y1, y2 = y
-        if self.regime == 'sum_product':
+        if self.regime == "sum_product":
             return (sum_product(y1, y2)).clip(-self.clip, self.clip)
-        if self.regime == 'min_sum':
+        if self.regime == "min_sum":
             return (min_sum(y1, y2)).clip(-self.clip, self.clip)
-    
+
     def bitnode(self, y: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        """
-        Bit node operation for Successive Cancellation decoding.
+        """Bit node operation for Successive Cancellation decoding.
 
         Args:
             y (Tuple[torch.Tensor, torch.Tensor, torch.Tensor]): Tuple containing:
@@ -109,11 +105,9 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         """
         y1, y2, x = y
         return y2 + (1 - 2 * x) * y1
-    
-    def decode_recursive(self, y: torch.Tensor, info_indices: np.array,
-                        *args: Any, **kwargs: Any) -> torch.Tensor:
-        """
-        Decodes the received codeword using the Successive Cancellation algorithm.
+
+    def decode_recursive(self, y: torch.Tensor, info_indices: np.array, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Decodes the received codeword using the Successive Cancellation algorithm.
 
         This method recursively processes the received codeword to estimate the transmitted message bits. It splits the input
         into even and odd positions, applies check node and bit node operations, and combines the results using the Polar code structure.
@@ -143,20 +137,19 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             return x, x.clone(), llr.reshape(-1, 1).clone()
 
         if not self.polar_i:
-            even_pos = torch.arange(0, N//2).reshape(-1).to(self.device)
-            odd_pos = torch.arange(N//2, N).reshape(-1).to(self.device)
+            even_pos = torch.arange(0, N // 2).reshape(-1).to(self.device)
+            odd_pos = torch.arange(N // 2, N).reshape(-1).to(self.device)
         else:
             even_pos = torch.arange(0, N, 2).reshape(-1).to(self.device)
             odd_pos = torch.arange(1, N, 2).reshape(-1).to(self.device)
 
         y_even, y_odd = y[:, even_pos], y[:, odd_pos]
 
-
         y1 = self.checknode((y_even, y_odd))
-        u1, x1, _ = self.decode_recursive(y1, info_indices[:N//2])
+        u1, x1, _ = self.decode_recursive(y1, info_indices[: N // 2])
 
         y2 = self.bitnode((y_even, y_odd, x1))
-        u2, x2, _ = self.decode_recursive(y2, info_indices[N//2:])
+        u2, x2, _ = self.decode_recursive(y2, info_indices[N // 2 :])
 
         u = torch.cat([u1, u2], dim=1)
         y_final = torch.cat([y1, y2], dim=1)
@@ -165,11 +158,9 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             perm = torch.arange(N).reshape(2, -1).T.reshape(-1)
             x = x[:, perm]
         return u, x, y_final
-    
-    def forward(self, received: torch.Tensor, return_for_loss=False,
-                *args: Any, **kwargs: Any) -> torch.Tensor:
-        """
-        Decode the received codeword using Successive Cancellation algorithm.
+
+    def forward(self, received: torch.Tensor, return_for_loss=False, *args: Any, **kwargs: Any) -> torch.Tensor:
+        """Decode the received codeword using Successive Cancellation algorithm.
 
         Args:
             received (torch.Tensor): Received codeword tensor of shape (batch_size, n).
@@ -207,4 +198,3 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
         # Return the estimated message bits
         return apply_blockwise(received, self.code_length, decode_block)
-    

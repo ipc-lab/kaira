@@ -19,8 +19,8 @@ import torch
 from kaira.models.registry import ModelRegistry
 
 from ..encoders.linear_block_code import LinearBlockCodeEncoder
+from ..rptu_database import CITATION, EXISTING_CODES, get_code_from_database, parse_alist
 from ..utils import row_reduction
-from ..rptu_database import EXISTING_CODES, get_code_from_database, parse_alist
 
 
 @ModelRegistry.register_model("ldpc_code_encoder")
@@ -52,22 +52,21 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         **kwargs: Variable keyword arguments passed to the base class.
     """
 
-    def __init__(self, check_matrix: torch.Tensor=None, rptu_database: bool=False,
-                                  *args: Any, **kwargs: Any):
+    def __init__(self, check_matrix: torch.Tensor = None, rptu_database: bool = False, *args: Any, **kwargs: Any):
         """Initializes the linear block encoder for LDPC codes.
 
-            check_matrix (torch.Tensor, optional): The parity check matrix for encoding. 
-                Should be a binary matrix of shape (code_length - code_dimension, code_length), where 
-                code_dimension is the message length and code_length is the codeword length. 
-                If None and `rptu_database` is True, the matrix 
+            check_matrix (torch.Tensor, optional): The parity check matrix for encoding.
+                Should be a binary matrix of shape (code_length - code_dimension, code_length), where
+                code_dimension is the message length and code_length is the codeword length.
+                If None and `rptu_database` is True, the matrix
                 will be loaded from the RPTU database.
-            rptu_database (bool, optional): If True, loads the check matrix from the RPTU 
+            rptu_database (bool, optional): If True, loads the check matrix from the RPTU
                 code database using parameters provided in `kwargs`. Default is False.
             *args: Additional positional arguments passed to the base class.
             **kwargs: Additional keyword arguments. Expected keys when `rptu_database` is True:
                 - code_length (int): Codeword length.
                 - code_dimension (int): Message length.
-                - rptu_standart (str, optional): Standard name for the LDPC code. If not provided, 
+                - rptu_standart (str, optional): Standard name for the LDPC code. If not provided,
                     the first available standard is used.
                 - device (str, optional): Device to place the tensors on (e.g., "cpu" or "cuda").
 
@@ -77,7 +76,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         # Initialize the base class from rptu_database or provided check_matrix
         if rptu_database:
             print("Loading LDPC code from RPTU database...")
-            print(EXISTING_CODES['citation'])
+            print(CITATION)
             print("------------------------------------")
             code_length = kwargs.get("code_length", None)
             code_dimension = kwargs.get("code_dimension", None)
@@ -94,7 +93,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
                 rptu_standart = list(EXISTING_CODES[code_key].keys())[0]  # Default to first available standard
                 print(f"Using default rptu_standart='{rptu_standart}' for (code_length={code_length}, code_dimension={code_dimension}).")
             content = get_code_from_database(EXISTING_CODES[code_key][rptu_standart])
-            check_matrix = parse_alist(content) 
+            check_matrix = parse_alist(content)
         self.device = kwargs.get("device", "cpu")
         # Ensure generator matrix is a torch tensor
         if not isinstance(check_matrix, torch.Tensor):
@@ -105,8 +104,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         generator_matrix = self.get_generator_matrix(check_matrix)
 
         # Initialize the base class with dimensions
-        super().__init__(generator_matrix=generator_matrix, 
-                         check_matrix=check_matrix)
+        super().__init__(generator_matrix=generator_matrix, check_matrix=check_matrix)
 
     def get_generator_matrix(self, check_matrix_: torch.Tensor) -> torch.Tensor:
         """Derive the generator matrix from a parity check matrix.

@@ -23,7 +23,7 @@ class BPSKModulator(BaseModulator):
 
     constellation: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, complex_output: bool=False, *args, **kwargs) -> None:
+    def __init__(self, complex_output: bool = False, *args, **kwargs) -> None:
         """Initialize the BPSK modulator.
 
         Args:
