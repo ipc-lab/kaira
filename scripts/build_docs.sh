@@ -7,6 +7,10 @@ cd "$(dirname "$0")/.." || exit
 echo "Generating API reference documentation..."
 python scripts/generate_api_reference.py docs/api_reference.rst
 
+# Generate the changelog documentation from CHANGELOG.md
+echo "Generating changelog documentation..."
+python scripts/generate_changelog.py
+
 # Move to the docs directory
 cd docs || exit
 

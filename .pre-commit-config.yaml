@@ -169,3 +169,19 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  # Local hooks for project automation
+  - repo: local
+    hooks:
+      - id: generate-changelog
+        name: Generate changelog.rst from CHANGELOG.md
+        entry: python scripts/generate_changelog.py
+        language: system
+        files: ^CHANGELOG\.md$
+        pass_filenames: false
+      - id: generate-api-reference
+        name: Generate API reference documentation
+        entry: python scripts/generate_api_reference.py docs/api_reference.rst
+        language: system
+        files: ^kaira/.*\.py$
+        pass_filenames: false

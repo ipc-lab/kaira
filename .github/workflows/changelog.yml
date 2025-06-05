@@ -1,0 +1,60 @@
+name: Update Changelog Documentation
+
+on:
+  push:
+    branches: [main, master, dev]
+    paths:
+      - "CHANGELOG.md"
+  pull_request:
+    branches: [main, master, dev]
+    paths:
+      - "CHANGELOG.md"
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Generate changelog.rst from CHANGELOG.md
+        run: |
+          python scripts/generate_changelog.py
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain docs/changelog.rst)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/changelog.rst
+          git commit -m "docs: auto-update changelog.rst from CHANGELOG.md"
+          git push
+
+      - name: Create comment on PR
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📄 This PR modifies CHANGELOG.md. The corresponding changelog.rst will be automatically updated when merged.'
+            })

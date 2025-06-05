@@ -220,6 +220,8 @@ This module contains metrics for evaluating signal processing performance.
    BLER
    BitErrorRate
    BlockErrorRate
+   EVM
+   ErrorVectorMagnitude
    FER
    FrameErrorRate
    SER
