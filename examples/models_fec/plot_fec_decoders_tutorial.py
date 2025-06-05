@@ -48,10 +48,10 @@ torch.manual_seed(42)
 np.random.seed(42)
 
 # %%
-# Helper Functions
+# ====== Functions
 # ---------------------------
 #
-# Let's define some helper functions to display decoder information and visualize
+# Let's define some ====== functions to display decoder information and visualize
 # the error correction process.
 
 
@@ -125,7 +125,7 @@ def introduce_errors(codeword: torch.Tensor, error_positions: list[int] | None =
 
 # %%
 # Introduction to FEC Decoding
-# ====================================================
+# -----------------------------------------------------------------------------------
 #
 # Forward Error Correction (FEC) allows receivers to correct errors in transmitted data
 # without requesting retransmission. This is achieved by adding redundancy during encoding.
@@ -138,7 +138,7 @@ print("The decoder's job is to exploit this redundancy to recover the original m
 
 # %%
 # Part 1: Basic FEC Decoding Concepts
-# ================================================================
+# -----------------------------------------------------------------------------------
 #
 # Let's start with basic decoding approaches for simple codes.
 
@@ -227,7 +227,7 @@ print("However, with soft information and the Wagner decoder, we can make error 
 
 # %%
 # Part 2: Hard-Decision vs. Soft-Decision Decoding
-# ===========================================================================================
+# -----------------------------------------------------------------------------------
 #
 # Now we'll explore the difference between hard-decision and soft-decision decoding.
 
@@ -279,7 +279,7 @@ print("- Better performance in Gaussian noise channels (AWGN)")
 
 # %%
 # Part 3: Syndrome-Based Decoding
-# ======================================================
+# -----------------------------------------------------------------------------------
 #
 # Syndrome-based decoding is a common technique for linear block codes.
 
@@ -341,7 +341,7 @@ visualize_error_correction(message, codeword, received_2_errors, decoded_2_error
 
 # %%
 # Part 4: Advanced Algebraic Decoders
-# ===============================================================
+# -----------------------------------------------------------------------------------
 #
 # More powerful codes require more sophisticated decoding algorithms.
 
@@ -417,7 +417,7 @@ print("- Widely used in digital communications, data storage, and satellite syst
 
 # %%
 # Part 5: Maximum Likelihood Decoding
-# ===============================================================
+# -----------------------------------------------------------------------------------
 #
 # Maximum likelihood decoding finds the most likely transmitted codeword.
 
@@ -465,7 +465,7 @@ print("- Only practical for small codes")
 
 # %%
 # Part 6: Performance Evaluation
-# =====================================================
+# -----------------------------------------------------------------------------------
 #
 # Let's compare the performance of different decoders in noisy channels.
 

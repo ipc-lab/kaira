@@ -81,22 +81,6 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         rank (np.ndarray): Rank-based indices for frozen bits (loaded if `load_rank` is True).
         info_indices (np.ndarray): Boolean array indicating positions of information bits.
         mask_dict (np.ndarray): Mask dictionary for the Polar code structure.
-
-    Methods:
-        __init__(code_dimension, code_length, *args, **kwargs):
-            Initializes the PolarCodeEncoder with the specified parameters.
-
-        polar_transform(u, return_arr=False):
-            Applies the Polar transform to the input tensor.
-
-        forward(input):
-            Encodes the input message using the Polar transformation.
-
-        inverse_encode(x, *args, **kwargs):
-            Placeholder for inverse encoding functionality.
-
-        calculate_syndrome(x):
-            Placeholder for syndrome calculation functionality.
     """
 
     def __init__(self, code_dimension: int, code_length: int, *args: Any, **kwargs: Any):
@@ -107,6 +91,7 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             code_length (int): Total length of the Polar codeword (must be a power of 2).
             *args (Any): Variable positional arguments passed to the base class.
             **kwargs (Any): Variable keyword arguments for additional configuration, including:
+
                 - device (str): Device on which the encoder operates (default: 'cpu').
                 - polar_i (bool): Whether to apply permutation during the Polar transform (default: False).
                 - frozen_zeros (bool): Whether frozen bits are initialized to zeros (default: False).
@@ -126,9 +111,15 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         self.load_rank = kwargs.get("load_rank", True)
         if self.load_rank:
             print("Loading rank polar indices as defined in 5G standard...")
+            import os
+
             import pandas as pd
 
-            rank = pd.read_csv("kaira/models/fec/rank_polar.csv", sep=" ", index_col=0)
+            # Get the directory of this module file
+            module_dir = os.path.dirname(os.path.abspath(__file__))
+            # Construct path to the CSV file relative to this module
+            csv_path = os.path.join(module_dir, "..", "rank_polar.csv")
+            rank = pd.read_csv(csv_path, sep=" ", index_col=0)
             self.rank = rank.Q.values
             F = np.zeros(self.code_length)
             F[self.rank[self.rank < self.code_length][: self.code_length - self.code_dimension]] = 1
@@ -239,73 +230,3 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             return codeword
 
         return apply_blockwise(input, self.code_dimension, encode_fn)
-
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
-        """Decode a received polar codeword back to the original message.
-
-        This method provides a basic decoding interface for polar codes. For optimal
-        performance, it is recommended to use dedicated polar decoders such as
-        SuccessiveCancellationDecoder or BeliefPropagationPolarDecoder from the
-        decoders module.
-
-        Note:
-            Polar codes require specialized decoding algorithms (successive cancellation,
-            belief propagation, etc.) rather than simple matrix operations. This method
-            serves as a placeholder and should be overridden by specific decoder
-            implementations or use dedicated decoder classes.
-
-        Args:
-            x: Received codeword tensor with shape (..., n) or (..., m*n)
-               where n is the code length and m is some multiple.
-            *args: Additional positional arguments for decoder-specific parameters.
-            **kwargs: Additional keyword arguments for decoder-specific parameters.
-
-        Returns:
-            Decoded message tensor. The exact output depends on the specific
-            decoding algorithm implementation.
-
-        Raises:
-            NotImplementedError: This method is not implemented in the base encoder.
-                                Use dedicated polar decoders for actual decoding.
-
-        See Also:
-            SuccessiveCancellationDecoder: Implements SC decoding for polar codes.
-            BeliefPropagationPolarDecoder: Implements BP decoding for polar codes.
-        """
-        raise NotImplementedError("Polar code decoding is not implemented in the encoder. " "Use SuccessiveCancellationDecoder or BeliefPropagationPolarDecoder " "from kaira.models.fec.decoders for proper polar code decoding.")
-
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Calculate syndrome for polar codes.
-
-        Unlike traditional linear block codes, polar codes do not use conventional
-        syndrome-based decoding. The concept of syndrome is not directly applicable
-        to polar codes due to their unique structure based on channel polarization
-        rather than parity check constraints.
-
-        For polar codes, error detection and correction are typically handled by:
-        - Successive Cancellation (SC) decoding
-        - Belief Propagation (BP) decoding
-        - List decoding variants
-
-        Args:
-            x: Input codeword tensor with shape (..., n) or (..., m*n)
-               where n is the code length and m is some multiple.
-
-        Returns:
-            Syndrome tensor. For polar codes, this is typically not used
-            in the traditional sense.
-
-        Raises:
-            NotImplementedError: Syndrome calculation is not applicable for polar codes
-                                in the traditional linear block code sense.
-
-        Note:
-            If syndrome-like functionality is needed for polar codes, consider using
-            the decoder's internal metrics or implementing custom error detection
-            based on the specific polar code structure and frozen bit patterns.
-
-        See Also:
-            SuccessiveCancellationDecoder: For proper polar code decoding.
-            BeliefPropagationPolarDecoder: For iterative polar code decoding.
-        """
-        raise NotImplementedError("Syndrome calculation is not applicable for polar codes. " "Polar codes use successive cancellation or belief propagation " "decoding instead of syndrome-based methods.")

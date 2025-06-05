@@ -33,6 +33,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
     a linear block code system.
 
     The encoder applies the formula: c = mG, where:
+
     - c is the codeword
     - m is the message
     - G is the generator matrix
@@ -43,18 +44,12 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
     Attributes:
         generator_matrix (torch.Tensor): The generator matrix G of the code
         check_matrix (torch.Tensor): The parity check matrix H
-
-    Args:
-        check_matrix (torch.Tensor): The parity check matrix to define LDPC code.
-            Must be a binary matrix of shape (code_length - code_dimension, code_length)
-            where code_dimension is the message length and code_length is the codeword length.
-        *args: Variable positional arguments passed to the base class.
-        **kwargs: Variable keyword arguments passed to the base class.
     """
 
     def __init__(self, check_matrix: torch.Tensor = None, rptu_database: bool = False, *args: Any, **kwargs: Any):
         """Initializes the linear block encoder for LDPC codes.
 
+        Args:
             check_matrix (torch.Tensor, optional): The parity check matrix for encoding.
                 Should be a binary matrix of shape (code_length - code_dimension, code_length), where
                 code_dimension is the message length and code_length is the codeword length.
@@ -67,7 +62,7 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
                 - code_length (int): Codeword length.
                 - code_dimension (int): Message length.
                 - rptu_standart (str, optional): Standard name for the LDPC code. If not provided,
-                    the first available standard is used.
+                the first available standard is used.
                 - device (str, optional): Device to place the tensors on (e.g., "cpu" or "cuda").
 
         Raises:

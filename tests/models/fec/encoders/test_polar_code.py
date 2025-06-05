@@ -195,34 +195,6 @@ class TestPolarCodeEncoder:
         assert G.shape == (4, 4)  # Full generator matrix shape is (N, N)
         assert G.dtype == torch.float32
 
-    def test_get_syndrome_matrix(self):
-        """Test getting syndrome matrix placeholder."""
-        encoder = PolarCodeEncoder(2, 4)
-
-        # Polar codes don't use syndrome matrices, so this should raise NotImplementedError
-        with pytest.raises(NotImplementedError):
-            encoder.calculate_syndrome(torch.tensor([[1, 0, 1, 0]], dtype=torch.float32))
-
-    def test_inverse_encode_placeholder(self):
-        """Test inverse encode placeholder method."""
-        encoder = PolarCodeEncoder(2, 4)
-
-        x = torch.tensor([[1, 0, 1, 0]], dtype=torch.float32)
-
-        # Should raise NotImplementedError
-        with pytest.raises(NotImplementedError):
-            encoder.inverse_encode(x)
-
-    def test_calculate_syndrome_placeholder(self):
-        """Test calculate syndrome placeholder method."""
-        encoder = PolarCodeEncoder(2, 4)
-
-        x = torch.tensor([[1, 0, 1, 0]], dtype=torch.float32)
-
-        # Should raise NotImplementedError
-        with pytest.raises(NotImplementedError):
-            encoder.calculate_syndrome(x)
-
     def test_device_consistency(self):
         """Test that all tensors are on the correct device."""
         device = torch.device("cpu")

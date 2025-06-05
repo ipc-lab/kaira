@@ -1,6 +1,6 @@
 """Tests for the base encoder classes in kaira.models.fec.encoders package."""
 
-from typing import Any, Tuple, Union
+from typing import Any
 
 import pytest
 import torch
@@ -17,14 +17,6 @@ class MinimalBlockCodeEncoder(BaseBlockCodeEncoder):
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Implement abstract method."""
         return x
-
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """Implement abstract method."""
-        return x
-
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Implement abstract method."""
-        return torch.zeros(x.shape[:-1] + (1,))
 
 
 class IncompleteBlockCodeEncoder(BaseBlockCodeEncoder):

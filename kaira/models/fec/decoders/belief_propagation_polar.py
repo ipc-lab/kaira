@@ -56,34 +56,6 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         permutations (np.ndarray): Array of cyclic permutations.
         R_all (list): List of R matrices for each iteration.
         L_all (list): List of L matrices for each iteration.
-
-    Methods:
-        __init__(encoder, *args, **kwargs):
-            Initializes the BeliefPropagationPolarDecoder.
-
-        print_decoder_type():
-            Prints the type of decoder being used, along with its configuration.
-
-        get_cyclic_permutations(perm=None):
-            Generates cyclic permutations of the factor graph for decoding.
-
-        checknode(y1, y2):
-            Performs the check node operation for the Belief Propagation Polar Decoder.
-
-        update_right(R, L, perm):
-            Updates the right messages in the decoding graph.
-
-        update_left(R, L, perm):
-            Updates the left messages in the decoding graph.
-
-        _initialize_graph(llr):
-            Initializes the decoding graph.
-
-        decode_iterative(llr):
-            Performsiterative decoding using the Belief Propagation algorithm.
-
-        forward(received, *args, **kwargs):
-            Decodes the received codeword using the Belief Propagation algorithm.
     """
 
     def __init__(self, encoder: PolarCodeEncoder, *args: Any, **kwargs: Any):

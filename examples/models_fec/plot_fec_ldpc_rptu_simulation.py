@@ -1,9 +1,9 @@
 """
 ====================================================================
-LDPC Coding and Belief Propagation Decoding
+LDPC Coding and Belief Propagation Decoding via RPTU Database
 ====================================================================
 
-This example demonstrates Low-Density Parity-Check (LDPC) codes and
+This example demonstrates Low-Density Parity-Check (LDPC) codes (via RPTU database) and
 belief propagation decoding. We'll simulate a complete communication
 system using LDPC codes over an AWGN channel and analyze the error
 performance at different SNR levels.

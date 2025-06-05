@@ -1,7 +1,7 @@
 """
-====================================================================
+=========================================================================
 Polar Coding and Decoding: Successive Cancellation and Belief Propagation
-====================================================================
+=========================================================================
 
 This example demonstrates Polar codes with
 successive cancellation and belief propagation decoding. We'll simulate

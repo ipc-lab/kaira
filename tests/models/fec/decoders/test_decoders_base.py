@@ -16,14 +16,6 @@ class MinimalBlockCodeEncoder(BaseBlockCodeEncoder):
         """Implement abstract method."""
         return x
 
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """Implement abstract method."""
-        return x
-
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Implement abstract method."""
-        return torch.zeros(x.shape[:-1] + (1,))
-
 
 class MinimalBlockDecoder(BaseBlockDecoder[MinimalBlockCodeEncoder]):
     """Minimal implementation of BaseBlockDecoder for testing purposes."""
