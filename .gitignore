@@ -7,6 +7,10 @@ docs/gen_modules
 paper*
 # C extensions
 *.so
+results
+examples/benchmarks/example_results
+examples/benchmarks/benchmark_results
+examples/benchmarks/visualization_results
 
 # Distribution / packaging
 .Python

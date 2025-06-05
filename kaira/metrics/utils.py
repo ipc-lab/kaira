@@ -115,7 +115,13 @@ def visualize_metrics_comparison(
         plt.title(title)
         plt.xticks(bar_indices, common_metrics, rotation=45)
 
-    plt.legend()
+    # Only show legend if there are labels to display and actual artists exist
+    # Check if there are any artists with labels before creating legend
+    ax = plt.gca()
+    handles, labels_legend = ax.get_legend_handles_labels()
+    if handles and labels_legend:
+        plt.legend()
+
     plt.tight_layout()
 
     if save_path:

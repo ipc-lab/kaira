@@ -31,18 +31,12 @@ Examples
 
 from .base import BaseBlockDecoder
 from .belief_propagation import BeliefPropagationDecoder
+from .belief_propagation_polar import BeliefPropagationPolarDecoder
 from .berlekamp_massey import BerlekampMasseyDecoder
 from .brute_force_ml import BruteForceMLDecoder
 from .reed_muller_decoder import ReedMullerDecoder
+from .successive_cancellation import SuccessiveCancellationDecoder
 from .syndrome_lookup import SyndromeLookupDecoder
 from .wagner_soft_decision_decoder import WagnerSoftDecisionDecoder
 
-__all__ = [
-    "BaseBlockDecoder",
-    "SyndromeLookupDecoder",
-    "BerlekampMasseyDecoder",
-    "ReedMullerDecoder",
-    "WagnerSoftDecisionDecoder",
-    "BruteForceMLDecoder",
-    "BeliefPropagationDecoder",
-]
+__all__ = ["BaseBlockDecoder", "SyndromeLookupDecoder", "BerlekampMasseyDecoder", "ReedMullerDecoder", "WagnerSoftDecisionDecoder", "BruteForceMLDecoder", "BeliefPropagationDecoder", "BeliefPropagationPolarDecoder", "SuccessiveCancellationDecoder"]

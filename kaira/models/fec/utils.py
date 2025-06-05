@@ -243,3 +243,101 @@ def row_reduction(matrix: torch.Tensor, num_cols: Optional[int] = None):
             break
 
     return matrix_row_reduced, p
+
+
+def reorder_from_idx(idx, a):
+    """Reorder a list or tensor by moving the first idx elements to the end.
+
+    Args:
+        idx: Index to reorder from.
+        a: List or tensor to reorder.
+    Returns:
+        Reordered list or tensor.
+    """
+    return a[idx:] + a[:idx]
+
+
+def cyclic_perm(a):
+    """Cyclically permute a list or tensor by moving the first element to the end.
+
+    Args:
+        a: List or tensor to cyclically permute.
+    Returns:
+        Cyclically permuted list or tensor.
+    """
+    return [reorder_from_idx(i, a) for i in range(len(a))]
+
+
+def stop_criterion(x, u, code_gm, not_satisfied):
+    """Check if the estimated codeword matches the original codeword.
+
+    Args:
+        x: Original codeword tensor of shape (batch_size, N)
+        u: Input tensor of shape (batch_size, k)
+        code_gm: Generator matrix of the polar code
+        not_satisfied: Indices of codewords that have not been satisfied yet
+    Returns:
+        new_indices: Indices of codewords that still need to be checked
+    """
+    x_est = torch.matmul(u, code_gm) % 2
+    not_equal = ~torch.all(x == x_est, dim=1)
+    new_indices = not_satisfied[not_equal]
+    return new_indices
+
+
+def llr_to_bits(x):
+    """Convert log-likelihood ratios (LLR) to binary values.
+
+    This function maps LLR values to binary values using the following logic:
+    - If LLR > 0, the bit is 0
+    - If LLR < 0, the bit is 1
+    Args:
+        x: Input tensor containing LLR values
+    Returns:
+        torch.Tensor: Binary tensor where:
+        - 0 represents LLR > 0
+        - 1 represents LLR < 0
+    """
+    return torch.round(torch.sigmoid(-x))
+
+
+def min_sum(x, y):
+    """The approximation used in the message passing algorithm.
+
+    This function computes the minimum of the absolute values of two tensors,
+    scaled by the signs of the original tensors. It is used in the sum-product
+    algorithm for decoding polar codes.
+    Args:
+        x: First tensor of shape (..., N)
+        y: Second tensor of shape (..., N)
+    Returns:
+        torch.Tensor: Tensor containing the minimum values scaled by the signs,
+        with shape (..., N)
+    Examples:
+        >>> import torch
+        >>> x = torch.tensor([0.5, 1.0, -1.5])
+        >>> y = torch.tensor([-0.5, 2.0, -2.0])
+        >>> min_sum(x, y)
+        tensor([-0.5000,  1.0000,  1.5000])
+    """
+    return torch.sign(x) * torch.sign(y) * torch.min(torch.abs(x), torch.abs(y))
+
+
+def sum_product(x, y):
+    """Calculate the sum-product of two tensors.
+
+    This function computes the sum-product of two tensors using the formula:
+        sum_prod(x, y) = 2 * arctanh(tanh(x/2) * tanh(y/2))
+    Args:
+        x: First tensor of shape (..., N)
+        y: Second tensor of shape (..., N)
+    Returns:
+        torch.Tensor: Tensor containing the sum-product values, with shape (..., N)
+    Examples:
+        >>> import torch
+        >>> x = torch.tensor([0.5, 1.0, -1.5])
+        >>> y = torch.tensor([-0.5, 2.0, -2.0])
+        >>> sum_prod(x, y)
+        tensor([-0.1201,  0.7353,  1.0557])
+    """
+    return 2 * torch.arctanh(torch.tanh(x / 2) * torch.tanh(y / 2))

@@ -83,7 +83,7 @@ def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str)
 
 # %%
 # Part 1: Basic Block Codes
-# ==================================================
+# ------------------------------------------------
 #
 # Let's start with the simplest FEC codes: repetition codes and single parity check codes.
 
@@ -129,7 +129,7 @@ print(f"Parity bit: {codeword[-1].int().item()}")  # Should be 1 to make even pa
 
 # %%
 # Part 2: Linear Block Codes
-# ==================================================
+# ------------------------------------------------
 #
 # Linear block codes are more sophisticated and offer better error correction
 # capabilities while maintaining good code rates.
@@ -178,7 +178,7 @@ print(f"Encoded codeword: {codeword.int().tolist()}")
 
 # %%
 # Part 3: Cyclic Codes and BCH Codes
-# ===============================================================
+# ------------------------------------------------
 #
 # Cyclic codes have the property that any cyclic shift of a codeword is also a codeword.
 # BCH codes are a class of cyclic codes with excellent error correction capabilities.
@@ -230,7 +230,7 @@ print(f"Encoded codeword: {codeword.int().tolist()}")
 
 # %%
 # Part 4: Reed-Solomon Codes
-# ==================================================
+# ------------------------------------------------
 #
 # Reed-Solomon codes are particularly good at correcting burst errors.
 
@@ -259,7 +259,7 @@ print(f"RS can correct up to {rs_encoder.error_correction_capability} symbol err
 
 # %%
 # Part 5: Advanced Features
-# ===========================================
+# ------------------------------------------------
 #
 # Now let's explore some advanced features of FEC codes.
 
@@ -309,7 +309,7 @@ for i in range(len(messages)):
 
 # %%
 # Part 6: Performance Evaluation
-# =====================================================
+# ------------------------------------------------
 #
 # Finally, let's compare the performance characteristics of different codes.
 

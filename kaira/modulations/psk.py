@@ -23,16 +23,18 @@ class BPSKModulator(BaseModulator):
 
     constellation: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, complex_output: bool = True, *args, **kwargs) -> None:
         """Initialize the BPSK modulator.
 
         Args:
+            complex_output: Whether to output complex values (default: True for consistency with other PSK modulators)
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
 
         # Define constellation points
+        self.complex_output = complex_output
         re_part = torch.tensor([1.0, -1.0])
         im_part = torch.tensor([0.0, 0.0])
         self.register_buffer("constellation", torch.complex(re_part, im_part))
@@ -50,7 +52,10 @@ class BPSKModulator(BaseModulator):
             Complex tensor of BPSK symbols with shape (..., N)
         """
         # Convert binary 0/1 to 1/-1
-        return torch.complex(1.0 - 2.0 * x.float(), torch.zeros_like(x.float()))
+        if self.complex_output:
+            return torch.complex(1.0 - 2.0 * x.float(), torch.zeros_like(x.float()))
+        else:
+            return 1.0 - 2.0 * x.float()
 
     def plot_constellation(self, **kwargs) -> plt.Figure:
         """Plot the BPSK constellation diagram.
@@ -109,7 +114,7 @@ class BPSKDemodulator(BaseDemodulator):
             # Soft decision: LLR calculation
             # Negative LLR means bit 1 is more likely, positive means bit 0 is more likely
             # LLR = log(P(y|b=0)/P(y|b=1)) = log(exp(-(y-1)²/2σ²)/exp(-(y+1)²/2σ²)) = 2y/σ²
-            return -2.0 * y_real / noise_var
+            return 2.0 * y_real / noise_var
 
 
 @ModulationRegistry.register_modulator()

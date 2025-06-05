@@ -342,8 +342,13 @@ hoverxref_role_types = {
     "term": "tooltip",
 }
 
-# Add setting to prevent duplicate documentation of enum members
-suppress_warnings = ["autodoc.duplicate_object"]
+suppress_warnings = [
+    "autodoc.duplicate_object",
+]
+# Commented out # Add setting to prevent duplicate documentation of enum members
+# "app.add_directive", "app.add_role", "app.add_generic_role", "app.add_transform",
+# "app.add_post_transform", "app.add_domain", "app.add_builder", "misc.highlighting_failure",
+# "autosummary", "autosectionlabel.*",
 
 
 def skip_member(app, what, name, obj, skip, options):

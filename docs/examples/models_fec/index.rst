@@ -173,6 +173,70 @@ encoding and decoding algorithms, and practical applications.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example provides advanced visualizations of LDPC codes including enhanced Tanner graphs, belief propagation animation with message passing visualization, and comprehensive performance comparisons between different decoders.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_ldpc_advanced_visualization_thumb.png
+      :alt: Advanced LDPC Code Visualizations
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_ldpc_advanced_visualization.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Advanced LDPC Code Visualizations</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates LDPC codes with RPTU (Regularized Polar Turbo) simulation, showing advanced error correction techniques and performance analysis in challenging channel conditions.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_ldpc_rptu_simulation_thumb.png
+      :alt: LDPC RPTU Simulation
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_ldpc_rptu_simulation.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">LDPC RPTU Simulation</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Polar codes and successive cancellation decoding. It simulates a complete communication system using Polar codes over an AWGN channel and analyzes the error performance at different SNR levels.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_polar_simulation_thumb.png
+      :alt: Polar Coding and Successive Cancellation Decoding
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_polar_simulation.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Polar Coding and Successive Cancellation Decoding</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example provides advanced visualizations of Polar codes including channel polarization process visualization, successive cancellation decoding step-by-step demonstrations, and comprehensive performance analysis.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_polar_advanced_visualization_thumb.png
+      :alt: Advanced Polar Code Visualizations
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_polar_advanced_visualization.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Advanced Polar Code Visualizations</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -187,5 +251,9 @@ encoding and decoding algorithms, and practical applications.
    /auto_examples/models_fec/plot_fec_encoders_tutorial
    /auto_examples/models_fec/plot_fec_finite_field_algebra
    /auto_examples/models_fec/plot_fec_ldpc_simulation
+   /auto_examples/models_fec/plot_fec_ldpc_advanced_visualization
+   /auto_examples/models_fec/plot_fec_ldpc_rptu_simulation
+   /auto_examples/models_fec/plot_fec_polar_simulation
+   /auto_examples/models_fec/plot_fec_polar_advanced_visualization
    /auto_examples/models_fec/plot_fec_practical_applications
    /auto_examples/models_fec/plot_fec_syndrome_decoding

@@ -16,6 +16,11 @@ class MockBlockCodeEncoder(BaseBlockCodeEncoder):
 
     def forward(self, x, *args, **kwargs):
         """Mock implementation of forward method."""
+        # Check if the last dimension is a multiple of k
+        last_dim_size = x.shape[-1]
+        if last_dim_size % self.code_dimension != 0:
+            raise ValueError(f"Last dimension size {last_dim_size} must be a multiple of the code dimension {self.code_dimension}")
+
         # Simple mock encoding: repeat each bit to achieve the desired code length
         k = self.code_dimension
         n = self.code_length
@@ -33,39 +38,28 @@ class MockBlockCodeEncoder(BaseBlockCodeEncoder):
         new_shape[-1] = new_shape[-1] * repeat_factor
         return encoded.reshape(*new_shape)
 
-    def inverse_encode(self, x, *args, **kwargs):
-        """Mock implementation of inverse_encode method."""
-        # Simple mock decoding: take every nth bit
-        k = self.code_dimension
-        n = self.code_length
-        ratio = n // k
-
-        # Reshape to expose the dimension to downsample
-        orig_shape = x.shape
-        x_reshaped = x.reshape(-1, n)
-
-        # Take every ratio-th element
-        decoded = x_reshaped[:, ::ratio]
-
-        # Reshape back to match original dimensions, but with reduced last dim
-        new_shape = list(orig_shape)
-        new_shape[-1] = new_shape[-1] // ratio
-        return decoded.reshape(*new_shape)
-
-    def calculate_syndrome(self, x):
-        """Mock implementation of calculate_syndrome method."""
-        # For the mock encoder, we define the syndrome as the sum of bits mod 2
-        # This is not a realistic syndrome calculation, just a placeholder for testing
-        return torch.sum(x, dim=-1) % 2
-
 
 class MockBlockDecoder(BaseBlockDecoder):
     """Mock implementation of BaseBlockDecoder for testing."""
 
     def forward(self, received, *args, **kwargs):
         """Mock implementation of forward method."""
-        # Simple mock decoding: delegate to the encoder's inverse_encode method
-        return self.encoder.inverse_encode(received, *args, **kwargs)
+        # Simple mock decoding: take every nth bit (similar to the old inverse_encode)
+        k = self.encoder.code_dimension
+        n = self.encoder.code_length
+        ratio = n // k
+
+        # Reshape to expose the dimension to downsample
+        orig_shape = received.shape
+        received_reshaped = received.reshape(-1, n)
+
+        # Take every ratio-th element
+        decoded = received_reshaped[:, ::ratio]
+
+        # Reshape back to match original dimensions, but with reduced last dim
+        new_shape = list(orig_shape)
+        new_shape[-1] = new_shape[-1] // ratio
+        return decoded.reshape(*new_shape)
 
 
 class TestBaseBlockCodeEncoder:
@@ -125,40 +119,24 @@ class TestBaseBlockCodeEncoder:
         encoded = encoder.forward(x)
         assert encoded.shape == torch.Size([12])  # 2 codewords of 6 bits each
 
-    def test_inverse_encode(self):
-        """Test inverse_encode method of MockBlockCodeEncoder."""
+    def test_extract_message(self):
+        """Test extract_message method of MockBlockCodeEncoder."""
         encoder = MockBlockCodeEncoder(code_length=6, code_dimension=3)
 
         # Test with a single codeword
         x = torch.tensor([1, 1, 0, 0, 1, 1])
-        decoded = encoder.inverse_encode(x)
-        assert decoded.shape == torch.Size([3])
-        assert torch.all(decoded == torch.tensor([1, 0, 1]))
+        # Since this mock doesn't implement inverse_encode, extract_message should fail
+        with pytest.raises(AttributeError):
+            encoder.extract_message(x)
 
-        # Test with batch dimension
-        x = torch.tensor([[1, 1, 0, 0, 1, 1], [0, 0, 1, 1, 0, 0]])
-        decoded = encoder.inverse_encode(x)
-        assert decoded.shape == torch.Size([2, 3])
-        assert torch.all(decoded == torch.tensor([[1, 0, 1], [0, 1, 0]]))
-
-    def test_calculate_syndrome(self):
-        """Test calculate_syndrome method of MockBlockCodeEncoder."""
+    def test_forward_error_handling(self):
+        """Test error handling in forward method."""
         encoder = MockBlockCodeEncoder(code_length=6, code_dimension=3)
 
-        # Test with valid codeword (sum should be even for this mock implementation)
-        x = torch.tensor([1, 1, 0, 0, 1, 1])  # Sum = 4, syndrome = 0
-        syndrome = encoder.calculate_syndrome(x)
-        assert syndrome.item() == 0
-
-        # Test with invalid codeword (sum should be odd)
-        x = torch.tensor([1, 1, 1, 0, 1, 1])  # Sum = 5, syndrome = 1
-        syndrome = encoder.calculate_syndrome(x)
-        assert syndrome.item() == 1
-
-        # Test with batch dimension
-        x = torch.tensor([[1, 1, 0, 0, 1, 1], [1, 1, 1, 0, 1, 1]])
-        syndromes = encoder.calculate_syndrome(x)
-        assert torch.all(syndromes == torch.tensor([0, 1]))
+        # Test with invalid input size (not multiple of code_dimension)
+        x = torch.tensor([1, 0])  # Size 2, but need multiple of 3
+        with pytest.raises(ValueError, match="must be a multiple of the code dimension"):
+            encoder.forward(x)
 
 
 class TestBaseBlockDecoder:
