@@ -59,8 +59,7 @@ jobs:
           path: docs/api_reference.rst
           retention-days: 7
 
-      - name: Commit and push changes (only on main/master)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
