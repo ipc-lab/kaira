@@ -461,7 +461,7 @@ plt.show()
 
 # %%
 # Why BER Doesn't Always Decrease with More Iterations: Theoretical Analysis
-# =========================================================================
+# ============================================================================
 
 print("\n" + "=" * 70)
 print("WHY BER DOESN'T ALWAYS DECREASE WITH MORE ITERATIONS")
