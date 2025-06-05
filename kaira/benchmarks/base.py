@@ -8,7 +8,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
 import torch
 
 
@@ -151,14 +150,13 @@ class CommunicationBenchmark(BaseBenchmark):
             snr_range: SNR range for testing (dB)
         """
         super().__init__(name, description)
-        self.snr_range = snr_range or np.arange(-10, 15, 1).tolist()
+        self.snr_range = snr_range or torch.arange(-10, 15, 1).tolist()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def setup(self, **kwargs) -> None:
         """Setup communication benchmark environment."""
         super().setup(**kwargs)
         # Set random seeds for reproducibility
-        np.random.seed(kwargs.get("seed", 42))
         torch.manual_seed(kwargs.get("seed", 42))
         if torch.cuda.is_available():
             torch.cuda.manual_seed(kwargs.get("seed", 42))

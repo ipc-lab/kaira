@@ -3,7 +3,6 @@
 import time
 from typing import Any, Dict, Optional
 
-import numpy as np
 import torch
 
 from .base import CommunicationBenchmark
@@ -69,15 +68,15 @@ class BERSimulationBenchmark(CommunicationBenchmark):
         self.num_bits = kwargs.get("num_bits", 100000)
         self.batch_size = kwargs.get("batch_size", 10000)
 
-    def _generate_bits(self, num_bits: int) -> np.ndarray:
+    def _generate_bits(self, num_bits: int) -> torch.Tensor:
         """Generate random bits."""
-        return np.random.randint(0, 2, num_bits)
+        return torch.randint(0, 2, (num_bits,), device=self.device)
 
-    def _modulate_bpsk(self, bits: np.ndarray) -> np.ndarray:
+    def _modulate_bpsk(self, bits: torch.Tensor) -> torch.Tensor:
         """BPSK modulation: maps bits 0->-1, 1->+1."""
-        return 2 * bits - 1
+        return 2 * bits.float() - 1
 
-    def _add_awgn(self, symbols: np.ndarray, snr_db: float) -> np.ndarray:
+    def _add_awgn(self, symbols: torch.Tensor, snr_db: float) -> torch.Tensor:
         """Add Additive White Gaussian Noise to symbols.
 
         Args:
@@ -89,10 +88,13 @@ class BERSimulationBenchmark(CommunicationBenchmark):
         """
         snr_linear = 10 ** (snr_db / 10)
         noise_power = 1 / snr_linear
-        noise = np.sqrt(noise_power / 2) * (np.random.randn(len(symbols)) + 1j * np.random.randn(len(symbols)))
+        noise = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * (
+            torch.randn(len(symbols), device=self.device) + 
+            1j * torch.randn(len(symbols), device=self.device)
+        )
         return symbols + noise.real  # Take real part for BPSK
 
-    def _demodulate_bpsk(self, received: np.ndarray) -> np.ndarray:
+    def _demodulate_bpsk(self, received: torch.Tensor) -> torch.Tensor:
         """BPSK demodulation using threshold detection.
 
         Args:
@@ -101,7 +103,7 @@ class BERSimulationBenchmark(CommunicationBenchmark):
         Returns:
             Decoded bits (0 or 1)
         """
-        return (received > 0).astype(int)
+        return (received > 0).int()
 
     def run(self, **kwargs) -> Dict[str, Any]:
         """Run BER simulation benchmark."""
@@ -136,10 +138,10 @@ class BERSimulationBenchmark(CommunicationBenchmark):
                 from scipy.special import erfc  # type: ignore[import-untyped]
 
                 snr_linear = 10 ** (snr_db / 10)
-                theo_ber = 0.5 * erfc(np.sqrt(snr_linear))
+                theo_ber = 0.5 * erfc(torch.sqrt(torch.tensor(snr_linear, device=self.device)).cpu().numpy())
                 theoretical_ber.append(theo_ber)
 
-        return {"success": True, "snr_range": self.snr_range, "ber_simulated": ber_results, "ber_theoretical": theoretical_ber, "modulation": self.modulation, "num_bits": self.num_bits, "rmse": np.sqrt(np.mean((np.array(ber_results) - np.array(theoretical_ber)) ** 2))}
+        return {"success": True, "snr_range": self.snr_range, "ber_simulated": ber_results, "ber_theoretical": theoretical_ber, "modulation": self.modulation, "num_bits": self.num_bits, "rmse": torch.sqrt(torch.mean((torch.tensor(ber_results) - torch.tensor(theoretical_ber)) ** 2)).item()}
 
 
 @register_benchmark("throughput_test")
@@ -173,15 +175,18 @@ class ThroughputBenchmark(CommunicationBenchmark):
 
             for _ in range(self.num_trials):
                 # Generate payload
-                payload = np.random.randint(0, 2, payload_size)
+                payload = torch.randint(0, 2, (payload_size,), device=self.device)
 
                 # Measure transmission time
                 start_time = time.time()
 
                 # Simulate processing (encoding, modulation, etc.)
-                processed = payload.copy()
+                processed = payload.clone()
+                kernel = torch.tensor([1, 1], dtype=torch.float32, device=self.device)
                 for _ in range(10):  # Simulate some processing
-                    processed = np.convolve(processed, [1, 1], mode="same")[:payload_size]
+                    processed = torch.nn.functional.conv1d(processed.float().unsqueeze(0).unsqueeze(0), 
+                                                         kernel.unsqueeze(0).unsqueeze(0), 
+                                                         padding=0).squeeze()[:payload_size].int()
 
                 end_time = time.time()
 
@@ -190,7 +195,10 @@ class ThroughputBenchmark(CommunicationBenchmark):
                 throughput = StandardMetrics.throughput(payload_size, transmission_time)
                 throughputs.append(throughput)
 
-            throughput_results[payload_size] = {"mean": np.mean(throughputs), "std": np.std(throughputs), "min": np.min(throughputs), "max": np.max(throughputs)}
+            throughput_results[payload_size] = {"mean": torch.tensor(throughputs).mean().item(), 
+                                              "std": torch.tensor(throughputs).std().item(), 
+                                              "min": torch.tensor(throughputs).min().item(), 
+                                              "max": torch.tensor(throughputs).max().item()}
 
         return {"success": True, "payload_sizes": self.payload_sizes, "throughput_results": throughput_results, "peak_throughput": max(result["max"] for result in throughput_results.values())}
 
@@ -223,21 +231,21 @@ class LatencyBenchmark(CommunicationBenchmark):
 
         for _ in range(self.num_measurements):
             # Generate packet
-            packet = np.random.randint(0, 2, self.packet_size)
+            packet = torch.randint(0, 2, (self.packet_size,), device=self.device)
 
             # Measure processing latency
             start_time = time.perf_counter()
 
             # Simulate packet processing
-            processed = packet.copy()
-            processed = np.roll(processed, 1)  # Simulate minimal processing
+            processed = packet.clone()
+            processed = torch.roll(processed, 1)  # Simulate minimal processing
 
             end_time = time.perf_counter()
 
             latency = (end_time - start_time) * 1000  # Convert to milliseconds
             latencies.append(latency)
 
-        latency_stats = StandardMetrics.latency_statistics(np.array(latencies))
+        latency_stats = StandardMetrics.latency_statistics(torch.tensor(latencies))
 
         return {"success": True, "num_measurements": self.num_measurements, "packet_size": self.packet_size, **latency_stats}
 
@@ -301,7 +309,7 @@ class ModelComplexityBenchmark(CommunicationBenchmark):
 
                 inference_times.append((end_time - start_time) * 1000)  # ms
 
-        latency_stats = StandardMetrics.latency_statistics(np.array(inference_times))
+        latency_stats = StandardMetrics.latency_statistics(torch.tensor(inference_times))
 
         return {"success": True, "model_complexity": complexity, "inference_latency_ms": latency_stats, "throughput_samples_per_second": batch_size / (latency_stats["mean_latency"] / 1000), "batch_size": batch_size, "device": str(self.device)}
 
@@ -319,7 +327,7 @@ class QAMBERBenchmark(CommunicationBenchmark):
         """
         super().__init__(name=f"{constellation_size}-QAM BER", description=f"Benchmark BER performance for {constellation_size}-QAM modulation")
         self.constellation_size = constellation_size
-        self.bits_per_symbol = int(np.log2(constellation_size))
+        self.bits_per_symbol = int(torch.log2(torch.tensor(constellation_size)).item())
 
     def setup(self, **kwargs):
         """Setup benchmark parameters.
@@ -343,26 +351,26 @@ class QAMBERBenchmark(CommunicationBenchmark):
         Raises:
             ValueError: If constellation size is not a perfect square
         """
-        sqrt_M = int(np.sqrt(self.constellation_size))
+        sqrt_M = int(torch.sqrt(torch.tensor(self.constellation_size)).item())
         if sqrt_M**2 != self.constellation_size:
             raise ValueError("Constellation size must be a perfect square")
 
         # Create constellation
-        real_levels = np.arange(-sqrt_M + 1, sqrt_M, 2)
-        imag_levels = np.arange(-sqrt_M + 1, sqrt_M, 2)
+        real_levels = torch.arange(-sqrt_M + 1, sqrt_M, 2, dtype=torch.float32)
+        imag_levels = torch.arange(-sqrt_M + 1, sqrt_M, 2, dtype=torch.float32)
 
         constellation = []
         for i in real_levels:
             for q in imag_levels:
-                constellation.append(complex(i, q))
+                constellation.append(complex(i.item(), q.item()))
 
-        self.constellation = np.array(constellation)
+        self.constellation = torch.tensor(constellation, dtype=torch.complex64, device=self.device)
 
         # Normalize average power to 1
-        avg_power = np.mean(np.abs(self.constellation) ** 2)
-        self.constellation = self.constellation / np.sqrt(avg_power)
+        avg_power = torch.mean(torch.abs(self.constellation) ** 2)
+        self.constellation = self.constellation / torch.sqrt(avg_power)
 
-    def _bits_to_symbols(self, bits: np.ndarray) -> np.ndarray:
+    def _bits_to_symbols(self, bits: torch.Tensor) -> torch.Tensor:
         """Convert bits to QAM symbols.
 
         Groups bits into symbols based on bits_per_symbol and maps them
@@ -383,14 +391,14 @@ class QAMBERBenchmark(CommunicationBenchmark):
         for bit_group in bits_grouped:
             decimal_val = 0
             for i, bit in enumerate(bit_group):
-                decimal_val += bit * (2 ** (self.bits_per_symbol - 1 - i))
+                decimal_val += bit.item() * (2 ** (self.bits_per_symbol - 1 - i))
             indices.append(decimal_val)
-        indices = np.array(indices)
+        indices = torch.tensor(indices, dtype=torch.long, device=self.device)
 
         # Map to constellation
         return self.constellation[indices]
 
-    def _symbols_to_bits(self, symbols: np.ndarray) -> np.ndarray:
+    def _symbols_to_bits(self, symbols: torch.Tensor) -> torch.Tensor:
         """Convert received symbols to bits using minimum distance decoding.
 
         Finds the closest constellation point for each received symbol
@@ -403,21 +411,21 @@ class QAMBERBenchmark(CommunicationBenchmark):
             Decoded bit array
         """
         # Find closest constellation point for each symbol
-        distances = np.abs(symbols[:, np.newaxis] - self.constellation[np.newaxis, :])
-        indices = np.argmin(distances, axis=1)
+        distances = torch.abs(symbols[:, None] - self.constellation[None, :])
+        indices = torch.argmin(distances, dim=1)
 
         # Convert indices to bits manually
         bits = []
         for idx in indices:
             bit_array = []
             for i in range(self.bits_per_symbol):
-                bit = (idx >> (self.bits_per_symbol - 1 - i)) & 1
+                bit = (idx.item() >> (self.bits_per_symbol - 1 - i)) & 1
                 bit_array.append(bit)
             bits.extend(bit_array)
 
-        return np.array(bits)
+        return torch.tensor(bits, dtype=torch.int32, device=self.device)
 
-    def _add_awgn(self, symbols: np.ndarray, snr_db: float) -> np.ndarray:
+    def _add_awgn(self, symbols: torch.Tensor, snr_db: float) -> torch.Tensor:
         """Add Additive White Gaussian Noise to complex symbols.
 
         Args:
@@ -430,8 +438,8 @@ class QAMBERBenchmark(CommunicationBenchmark):
         snr_linear = 10 ** (snr_db / 10)
         noise_power = 1 / snr_linear
 
-        noise_real = np.sqrt(noise_power / 2) * np.random.randn(len(symbols))
-        noise_imag = np.sqrt(noise_power / 2) * np.random.randn(len(symbols))
+        noise_real = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(symbols), device=self.device)
+        noise_imag = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(symbols), device=self.device)
         noise = noise_real + 1j * noise_imag
 
         return symbols + noise
@@ -443,7 +451,7 @@ class QAMBERBenchmark(CommunicationBenchmark):
         for snr_db in self.snr_range:
             # Generate random bits
             num_bits = self.num_symbols * self.bits_per_symbol
-            bits = np.random.randint(0, 2, num_bits)
+            bits = torch.randint(0, 2, (num_bits,), device=self.device)
 
             # Modulate to QAM symbols
             symbols = self._bits_to_symbols(bits)
@@ -460,7 +468,7 @@ class QAMBERBenchmark(CommunicationBenchmark):
             ber = StandardMetrics.bit_error_rate(bits[:min_len], decoded_bits[:min_len])
             ber_results.append(ber)
 
-        return {"success": True, "snr_range": self.snr_range, "ber_results": ber_results, "constellation_size": self.constellation_size, "bits_per_symbol": self.bits_per_symbol, "num_symbols": self.num_symbols, "average_ber": np.mean(ber_results)}
+        return {"success": True, "snr_range": self.snr_range, "ber_results": ber_results, "constellation_size": self.constellation_size, "bits_per_symbol": self.bits_per_symbol, "num_symbols": self.num_symbols, "average_ber": torch.tensor(ber_results).mean().item()}
 
 
 @register_benchmark("ofdm_performance")
@@ -491,12 +499,12 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
 
         # QPSK constellation
         if self.modulation.lower() == "qpsk":
-            self.constellation = np.array([1 + 1j, -1 + 1j, 1 - 1j, -1 - 1j]) / np.sqrt(2)
+            self.constellation = torch.tensor([1 + 1j, -1 + 1j, 1 - 1j, -1 - 1j], dtype=torch.complex64, device=self.device) / torch.sqrt(torch.tensor(2.0, device=self.device))
             self.bits_per_symbol = 2
         else:
             raise NotImplementedError(f"Modulation {self.modulation} not implemented")
 
-    def _generate_ofdm_symbol(self, data_bits: np.ndarray) -> np.ndarray:
+    def _generate_ofdm_symbol(self, data_bits: torch.Tensor) -> torch.Tensor:
         """Generate OFDM symbol from data bits.
 
         Modulates data bits, performs IFFT, and adds cyclic prefix.
@@ -510,29 +518,33 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
         # Group bits for modulation
         bits_grouped = data_bits.reshape(-1, self.bits_per_symbol)
 
-        # QPSK modulation
-        indices = np.packbits(bits_grouped, axis=1, bitorder="big").squeeze()
-        if indices.ndim == 0:
-            indices = np.array([indices])
+        # QPSK modulation - convert bits to indices manually
+        indices = []
+        for bit_group in bits_grouped:
+            decimal_val = 0
+            for i, bit in enumerate(bit_group):
+                decimal_val += bit.item() * (2 ** (self.bits_per_symbol - 1 - i))
+            indices.append(decimal_val)
+        indices = torch.tensor(indices, dtype=torch.long, device=self.device)
 
         modulated = self.constellation[indices % len(self.constellation)]
 
         # Pad or truncate to fit subcarriers
         if len(modulated) < self.num_subcarriers:
-            modulated = np.pad(modulated, (0, self.num_subcarriers - len(modulated)))
+            modulated = torch.nn.functional.pad(modulated, (0, self.num_subcarriers - len(modulated)))
         elif len(modulated) > self.num_subcarriers:
             modulated = modulated[: self.num_subcarriers]
 
         # IFFT
-        time_domain = np.fft.ifft(modulated, self.num_subcarriers)
+        time_domain = torch.fft.ifft(modulated, self.num_subcarriers)
 
         # Add cyclic prefix
         cp = time_domain[-self.cp_length :]
-        ofdm_symbol = np.concatenate([cp, time_domain])
+        ofdm_symbol = torch.cat([cp, time_domain])
 
         return ofdm_symbol
 
-    def _demodulate_ofdm_symbol(self, received_symbol: np.ndarray) -> np.ndarray:
+    def _demodulate_ofdm_symbol(self, received_symbol: torch.Tensor) -> torch.Tensor:
         """Demodulate OFDM symbol to bits.
 
         Removes cyclic prefix, performs FFT, and demodulates subcarriers.
@@ -547,21 +559,25 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
         time_domain = received_symbol[self.cp_length :]
 
         # FFT
-        freq_domain = np.fft.fft(time_domain, self.num_subcarriers)
+        freq_domain = torch.fft.fft(time_domain, self.num_subcarriers)
 
         # Demodulate QPSK (minimum distance)
-        distances = np.abs(freq_domain[:, np.newaxis] - self.constellation[np.newaxis, :])
-        indices = np.argmin(distances, axis=1)
+        distances = torch.abs(freq_domain[:, None] - self.constellation[None, :])
+        indices = torch.argmin(distances, dim=1)
 
         # Convert to bits
         bits = []
         for idx in indices:
-            bit_array = np.unpackbits(np.array([idx], dtype=np.uint8), bitorder="big")
-            bits.extend(bit_array[-self.bits_per_symbol :])
+            bit_array = []
+            idx_val = idx.item()
+            for i in range(self.bits_per_symbol):
+                bit = (idx_val >> (self.bits_per_symbol - 1 - i)) & 1
+                bit_array.append(bit)
+            bits.extend(bit_array)
 
-        return np.array(bits)
+        return torch.tensor(bits, dtype=torch.int32, device=self.device)
 
-    def _add_channel_effects(self, ofdm_symbol: np.ndarray, snr_db: float) -> np.ndarray:
+    def _add_channel_effects(self, ofdm_symbol: torch.Tensor, snr_db: float) -> torch.Tensor:
         """Add channel effects including AWGN and optional multipath.
 
         Args:
@@ -575,16 +591,16 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
         snr_linear = 10 ** (snr_db / 10)
         noise_power = 1 / snr_linear
 
-        noise_real = np.sqrt(noise_power / 2) * np.random.randn(len(ofdm_symbol))
-        noise_imag = np.sqrt(noise_power / 2) * np.random.randn(len(ofdm_symbol))
+        noise_real = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(ofdm_symbol), device=self.device)
+        noise_imag = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(ofdm_symbol), device=self.device)
         noise = noise_real + 1j * noise_imag
 
         # Simple multipath (optional)
         multipath_enabled = False  # Can be enabled for more realistic simulation
         if multipath_enabled:
             # Simple 2-tap channel
-            h = np.array([1.0, 0.3 * np.exp(1j * np.pi / 4)])
-            ofdm_symbol = np.convolve(ofdm_symbol, h, mode="same")
+            h = torch.tensor([1.0, 0.3 * torch.exp(1j * torch.tensor(torch.pi / 4, device=self.device))], dtype=torch.complex64, device=self.device)
+            ofdm_symbol = torch.nn.functional.conv1d(ofdm_symbol.unsqueeze(0).unsqueeze(0), h.unsqueeze(0).unsqueeze(0)).squeeze()
 
         return ofdm_symbol + noise
 
@@ -600,7 +616,7 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
 
             for _ in range(self.num_symbols):
                 # Generate random data bits
-                data_bits = np.random.randint(0, 2, self.num_subcarriers * self.bits_per_symbol)
+                data_bits = torch.randint(0, 2, (self.num_subcarriers * self.bits_per_symbol,), device=self.device)
 
                 # Generate OFDM symbol
                 ofdm_symbol = self._generate_ofdm_symbol(data_bits)
@@ -613,7 +629,7 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
 
                 # Count errors
                 min_len = min(len(data_bits), len(decoded_bits))
-                errors = np.sum(data_bits[:min_len] != decoded_bits[:min_len])
+                errors = torch.sum(data_bits[:min_len] != decoded_bits[:min_len]).item()
                 total_errors += errors
                 total_bits += min_len
 
@@ -638,7 +654,7 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
             "modulation": self.modulation,
             "num_symbols": self.num_symbols,
             "spectral_efficiency": self.bits_per_symbol,
-            "average_ber": np.mean(ber_results),
+            "average_ber": torch.tensor(ber_results).mean().item(),
             "peak_throughput": max(throughput_results),
         }
 
@@ -673,7 +689,7 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
         else:
             raise NotImplementedError(f"Code type {self.code_type} not implemented")
 
-    def _encode_repetition(self, bits: np.ndarray) -> np.ndarray:
+    def _encode_repetition(self, bits: torch.Tensor) -> torch.Tensor:
         """Repetition encoder that repeats each bit multiple times.
 
         Args:
@@ -682,9 +698,9 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
         Returns:
             Encoded bits with repetition
         """
-        return np.repeat(bits, self.repetition_factor)
+        return torch.repeat_interleave(bits, self.repetition_factor)
 
-    def _decode_repetition(self, received: np.ndarray) -> np.ndarray:
+    def _decode_repetition(self, received: torch.Tensor) -> torch.Tensor:
         """Repetition decoder using majority voting.
 
         Groups received bits and uses majority vote to decide
@@ -700,7 +716,7 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
         received_grouped = received.reshape(-1, self.repetition_factor)
 
         # Majority vote
-        decoded = (np.sum(received_grouped, axis=1) > self.repetition_factor / 2).astype(int)
+        decoded = (torch.sum(received_grouped, dim=1) > self.repetition_factor / 2).int()
 
         return decoded
 
@@ -712,15 +728,15 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
 
         for snr_db in self.snr_range:
             # Generate random bits
-            info_bits = np.random.randint(0, 2, self.num_bits)
+            info_bits = torch.randint(0, 2, (self.num_bits,), device=self.device)
 
             # Uncoded transmission
-            uncoded_symbols = 2 * info_bits - 1  # BPSK
+            uncoded_symbols = 2 * info_bits.float() - 1  # BPSK
             snr_linear = 10 ** (snr_db / 10)
             noise_power = 1 / snr_linear
-            noise = np.sqrt(noise_power / 2) * np.random.randn(len(uncoded_symbols))
+            noise = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(uncoded_symbols), device=self.device)
             uncoded_received = uncoded_symbols + noise
-            uncoded_decoded = (uncoded_received > 0).astype(int)
+            uncoded_decoded = (uncoded_received > 0).int()
             ber_unc = StandardMetrics.bit_error_rate(info_bits, uncoded_decoded)
             ber_uncoded.append(ber_unc)
 
@@ -731,12 +747,12 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
                 raise NotImplementedError(f"Code type {self.code_type} not implemented")
 
             # Transmit coded bits
-            coded_symbols = 2 * coded_bits - 1  # BPSK
-            coded_noise = np.sqrt(noise_power / 2) * np.random.randn(len(coded_symbols))
+            coded_symbols = 2 * coded_bits.float() - 1  # BPSK
+            coded_noise = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * torch.randn(len(coded_symbols), device=self.device)
             coded_received = coded_symbols + coded_noise
 
             # Hard decision
-            coded_hard = (coded_received > 0).astype(int)
+            coded_hard = (coded_received > 0).int()
 
             # Decode
             if self.code_type == "repetition":
@@ -750,7 +766,10 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
             ber_coded.append(ber_cod)
 
             # Calculate coding gain
-            gain = 10 * np.log10(ber_unc / ber_cod) if ber_cod > 0 else float("inf")
+            gain = 10 * torch.log10(torch.tensor(ber_unc / ber_cod)).item() if ber_cod > 0 else float("inf")
             coding_gain.append(gain)
 
-        return {"success": True, "snr_range": self.snr_range, "ber_uncoded": ber_uncoded, "ber_coded": ber_coded, "coding_gain_db": coding_gain, "code_type": self.code_type, "code_rate": self.code_rate, "average_coding_gain": np.mean([g for g in coding_gain if np.isfinite(g)])}
+        finite_gains = [g for g in coding_gain if torch.isfinite(torch.tensor(g))]
+        avg_gain = torch.tensor(finite_gains).mean().item() if finite_gains else 0.0
+        
+        return {"success": True, "snr_range": self.snr_range, "ber_uncoded": ber_uncoded, "ber_coded": ber_coded, "coding_gain_db": coding_gain, "code_type": self.code_type, "code_rate": self.code_rate, "average_coding_gain": avg_gain}

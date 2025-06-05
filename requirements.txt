@@ -5,3 +5,4 @@ torchvision
 compressai
 torchaudio
 seaborn
+numpy

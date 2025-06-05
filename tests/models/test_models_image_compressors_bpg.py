@@ -11,6 +11,21 @@ from torchvision import transforms
 from kaira.models.image.compressors.bpg import BPGCompressor
 
 
+def _is_bpg_available():
+    """Check if BPG tools are available on the system."""
+    try:
+        subprocess.run(["bpgenc", "--help"], capture_output=True, check=True)  # nosec B603
+        subprocess.run(["bpgdec", "--help"], capture_output=True, check=True)  # nosec B603
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+# Skip tests if BPG tools are not available
+bpg_available = _is_bpg_available()
+skip_if_no_bpg = pytest.mark.skipif(not bpg_available, reason="BPG tools (bpgenc/bpgdec) not available")
+
+
 @pytest.fixture
 def sample_image():
     """Fixture that provides a sample image tensor for testing."""
@@ -28,6 +43,7 @@ def bpg_compressor():
         yield compressor
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_initialization():
     """Test BPGCompressor initialization with valid parameters."""
     compressor = BPGCompressor(quality=30)
@@ -40,6 +56,7 @@ def test_bpg_compressor_initialization():
     assert compressor.max_bits_per_image == 1000
 
 
+@skip_if_no_bpg
 def test_validate_executable_path():
     """Test validation of executable paths."""
     # Valid paths should not raise an error
@@ -57,6 +74,7 @@ def test_validate_executable_path():
         BPGCompressor(quality=30, bpg_encoder_path="bpgenc$(whoami)")
 
 
+@skip_if_no_bpg
 def test_safe_subprocess_run(bpg_compressor):
     """Test safe subprocess execution."""
     with patch("subprocess.run") as mock_run:
@@ -75,6 +93,7 @@ def test_safe_subprocess_run(bpg_compressor):
         mock_run.assert_called_with(["echo", "test"], shell=False, capture_output=True)
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_forward(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass."""
     # Ensure return_bits is False for this test
@@ -89,6 +108,7 @@ def test_bpg_compressor_forward(sample_image, bpg_compressor):
         assert output.shape == sample_image.shape
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_forward_with_bits(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with bits per image."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
@@ -102,6 +122,7 @@ def test_bpg_compressor_forward_with_bits(sample_image, bpg_compressor):
         assert len(bits_per_image) == 1
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_forward_with_compressed_data(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with compressed data."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
@@ -118,6 +139,7 @@ def test_bpg_compressor_forward_with_compressed_data(sample_image, bpg_compresso
         assert isinstance(compressed_data[0], bytes)
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_forward_with_bits_and_compressed_data(sample_image, bpg_compressor):
     """Test BPGCompressor forward pass with both bits and compressed data."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
@@ -134,6 +156,7 @@ def test_bpg_compressor_forward_with_bits_and_compressed_data(sample_image, bpg_
         assert len(compressed_data) == 1
 
 
+@skip_if_no_bpg
 def test_bpg_compressor_forward_exception_handling(sample_image):
     """Test BPGCompressor forward pass with subprocess exceptions."""
     with patch("subprocess.run") as mock_run:
@@ -144,6 +167,7 @@ def test_bpg_compressor_forward_exception_handling(sample_image):
             BPGCompressor(quality=30)
 
 
+@skip_if_no_bpg
 def test_parallel_forward_bpg(bpg_compressor):
     """Test parallel_forward_bpg method with quality mode."""
     with patch.object(bpg_compressor, "compress_with_quality") as mock_compress:
@@ -156,6 +180,7 @@ def test_parallel_forward_bpg(bpg_compressor):
         assert torch.all(result == torch.ones(3, 32, 32))
 
 
+@skip_if_no_bpg
 def test_parallel_forward_bpg_target_size(sample_image):
     """Test parallel_forward_bpg method with target size mode."""
     with patch("subprocess.run") as mock_run:
@@ -173,6 +198,7 @@ def test_parallel_forward_bpg_target_size(sample_image):
             assert torch.all(result == torch.ones(3, 32, 32))
 
 
+@skip_if_no_bpg
 def test_setup_temp_paths(bpg_compressor):
     """Test _setup_temp_paths method."""
     with patch("tempfile.mkdtemp") as mock_mkdtemp:
@@ -189,6 +215,7 @@ def test_setup_temp_paths(bpg_compressor):
             assert paths["best_output"] == "/tmp/test_dir/best_123_test-uuid.png"  # nosec B108
 
 
+@skip_if_no_bpg
 def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
     """Test compress_with_quality with failed encoding."""
     with patch("subprocess.run") as mock_run:
@@ -228,6 +255,7 @@ def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
                 assert info["bits"] == 0
 
 
+@skip_if_no_bpg
 def test_compress_with_quality_failed_decoding(bpg_compressor, sample_image):
     """Test compress_with_quality with failed decoding."""
     with patch("subprocess.run") as mock_run, patch("os.path.getsize") as mock_getsize:
@@ -246,6 +274,7 @@ def test_compress_with_quality_failed_decoding(bpg_compressor, sample_image):
                 assert info["bits"] == 0
 
 
+@skip_if_no_bpg
 def test_compress_with_quality_success(bpg_compressor, sample_image):
     """Test compress_with_quality with successful compression."""
     with patch("subprocess.run") as mock_run, patch("os.path.getsize") as mock_getsize:
@@ -277,6 +306,7 @@ def test_compress_with_quality_success(bpg_compressor, sample_image):
                     assert torch.all(result == torch.ones(3, 32, 32))
 
 
+@skip_if_no_bpg
 def test_compress_with_target_size_binary_search(bpg_compressor, sample_image):
     """Test compress_with_target_size binary search algorithm."""
     with patch("subprocess.run") as mock_run, patch("os.path.getsize") as mock_getsize:
