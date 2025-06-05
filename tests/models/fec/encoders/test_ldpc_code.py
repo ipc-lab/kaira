@@ -56,7 +56,7 @@ class TestLDPCCodeEncoder:
     def test_initialization_invalid_inputs(self):
         """Test initialization with invalid inputs."""
         # Test with no check_matrix provided and rptu_database=False
-        with pytest.raises(RuntimeError, match="Could not infer dtype of NoneType"):
+        with pytest.raises(ValueError, match="Either a valid `check_matrix` must be provided or `rptu_database` must be set to True"):
             LDPCCodeEncoder()
 
         # Test with invalid database parameters
