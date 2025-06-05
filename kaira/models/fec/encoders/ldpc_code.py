@@ -68,6 +68,9 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
         Raises:
             ValueError: If the requested (code_length, code_dimension) code or standard is not found in the RPTU database.
         """
+        # Validate input parameters
+        if not rptu_database and check_matrix is None:
+            raise ValueError("Either a valid `check_matrix` must be provided or `rptu_database` must be set to True.")
         # Initialize the base class from rptu_database or provided check_matrix
         if rptu_database:
             print("Loading LDPC code from RPTU database...")
