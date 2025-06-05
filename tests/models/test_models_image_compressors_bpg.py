@@ -196,9 +196,17 @@ def test_compress_with_quality_failed_encoding(bpg_compressor, sample_image):
         mock_run.return_value.stderr = "Encoding error"
 
         # Create a comprehensive mock for file operations
-        with patch("tempfile.mkdtemp") as mock_mkdtemp, patch("shutil.rmtree"), patch("torchvision.utils.save_image"), patch("builtins.open", mock_open(read_data=b"test")), patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=100), patch(
-            "os.makedirs", return_value=None
-        ), patch("os.rename"), patch("os.remove"):
+        with (
+            patch("tempfile.mkdtemp") as mock_mkdtemp,
+            patch("shutil.rmtree"),
+            patch("torchvision.utils.save_image"),
+            patch("builtins.open", mock_open(read_data=b"test")),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.getsize", return_value=100),
+            patch("os.makedirs", return_value=None),
+            patch("os.rename"),
+            patch("os.remove"),
+        ):
             # Mock directory path and create any parent directories
             mock_mkdtemp.return_value = "/tmp/mock_dir"  # nosec B108
 
