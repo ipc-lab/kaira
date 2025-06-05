@@ -137,19 +137,60 @@ def parse_alist(file_content: str) -> torch.Tensor:
 
     Returns:
         torch.Tensor: The parity-check matrix H of shape (m, n) as a torch tensor.
+
+    Raises:
+        ValueError: If the file format is invalid or contains malformed numbers.
+        IndexError: If the file doesn't have enough lines.
     """
     lines = file_content.splitlines()
 
-    n, m = map(int, lines[0].split())
+    # Check if we have enough lines for basic format
+    if len(lines) < 4:
+        raise IndexError("Insufficient lines in alist file")
+
+    try:
+        n, m = map(int, lines[0].split())
+    except (ValueError, IndexError):
+        raise ValueError("Invalid format for matrix dimensions")
+
+    # Check if we have enough lines for the column indices
+    if len(lines) < 4 + n:
+        raise IndexError("Insufficient lines for column indices")
+
     # Skip unused weight information (lines 1-3)
 
     # The next n lines are the column indices
     col_indices = lines[4 : 4 + n]
+    # The next m lines are the row indices
+    row_indices = lines[4 + n : 4 + n + m]
 
     H = torch.zeros((m, n), dtype=torch.int64)
+
+    # Process column indices
     for col, line in enumerate(col_indices):
-        for idx in map(int, line.split()):
-            if idx > 0:
-                H[idx - 1, col] = 1  # Convert 1-based to 0-based
+        try:
+            indices = list(map(int, line.split()))
+        except ValueError:
+            raise ValueError(f"Invalid number format in column {col}")
+
+        for idx in indices:
+            if idx > 0:  # Skip padding zeros
+                row_idx = idx - 1  # Convert 1-based to 0-based
+                if row_idx < m:  # Only use valid row indices
+                    H[row_idx, col] = 1
+
+    # Process row indices for verification and completeness
+    for row, line in enumerate(row_indices):
+        try:
+            indices = list(map(int, line.split()))
+        except ValueError:
+            raise ValueError(f"Invalid number format in row {row}")
+
+        for idx in indices:
+            if idx > 0:  # Skip padding zeros
+                col_idx = idx - 1  # Convert 1-based to 0-based
+                if col_idx < n:  # Only use valid column indices
+                    if H[row, col_idx] != 1:
+                        raise ValueError(f"Row {row} references column {col_idx} which is not set to 1")
 
     return H

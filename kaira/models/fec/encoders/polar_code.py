@@ -112,7 +112,9 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
                 - frozen_zeros (bool): Whether frozen bits are initialized to zeros (default: False).
                 - dtype (torch.dtype): Data type used for computations (default: torch.float32).
                 - load_rank (bool): Whether to load rank-based polar indices as defined in the 5G standard (default: True).
-                - info_indices (np.ndarray): Boolean array indicating positions of information bits (optional).
+                - info_indices (np.ndarray): Boolean array indicating positions of information bits.
+                  Required when load_rank=False. Must have length equal to code_length and exactly
+                  code_dimension True values.
         """
         super().__init__(code_length, code_dimension, *args, **kwargs)
         self.device = kwargs.get("device", "cpu")
@@ -135,7 +137,19 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             self.info_indices[info_ind] = 1
             self.info_indices = self.info_indices.astype(bool)
         else:
-            self.info_indices = kwargs.get("info_indices", None)
+            # When load_rank=False, info_indices must be provided
+            info_indices = kwargs.get("info_indices", None)
+            if info_indices is None:
+                raise ValueError("When load_rank=False, info_indices must be provided as a boolean array " "indicating the positions of information bits. The array should have length " f"equal to code_length ({self.code_length}) and exactly {self.code_dimension} " "True values.")
+
+            # Validate info_indices
+            info_indices = np.asarray(info_indices, dtype=bool)
+            if len(info_indices) != self.code_length:
+                raise ValueError(f"info_indices must have length {self.code_length}, got {len(info_indices)}")
+            if np.sum(info_indices) != self.code_dimension:
+                raise ValueError(f"info_indices must have exactly {self.code_dimension} True values, " f"got {np.sum(info_indices)}")
+
+            self.info_indices = info_indices
 
         self.mask_dict: Optional[np.ndarray] = None
 

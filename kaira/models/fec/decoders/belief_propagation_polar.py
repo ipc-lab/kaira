@@ -265,8 +265,8 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
                 x = left[not_satisfied, -1] + right[not_satisfied, -1]
 
                 not_satisfied_list[i] = not_satisfied.clone()
-                u_ans[not_satisfied] = u.view(-1, 1, self.code_length).clone()
-                x_ans[not_satisfied] = x.view(-1, 1, self.code_length).clone()
+                u_ans[not_satisfied] = u.clone()
+                x_ans[not_satisfied] = x.clone()
                 if self.early_stop:
                     not_satisfied = stop_criterion(llr_to_bits(x), llr_to_bits(u), self.generator_matrix, not_satisfied)
                 if not_satisfied.size(0) == 0:
@@ -298,11 +298,11 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             # Ensure the received tensor is on the correct device
             B, _, N = received_block.size()
             assert N == self.code_length, f"Received block size {N} does not match codeword size {self.code_length}"
-            # Reshape the received block to match the expected input shape
-            received_block = received_block.view(-1, 1, N)
+            # Reshape the received block to 2D as expected by decode_iterative
+            received_block = received_block.view(B, N)
             # Decode the block using the iterative decoding method
             u, _ = self.decode_iterative(received_block)
-            return u.reshape(-1, N)[:, self.info_indices]
+            return u[:, self.info_indices]
 
         # Return the estimated message bits
         return apply_blockwise(received, self.code_length, decode_block)
