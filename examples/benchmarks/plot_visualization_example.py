@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Benchmark Visualization Example
-
+"""
+=================================
+Benchmark Visualization Example
 =================================
 
 This example demonstrates comprehensive benchmark result visualization in Kaira,
