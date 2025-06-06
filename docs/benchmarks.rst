@@ -239,8 +239,8 @@ Loading and Analysis
 
     # Create comparison reports
     comparison_path = results_manager.create_comparison_report(
-        result_paths[:3],
-        "algorithm_comparison"
+    result_paths[:3],
+    "algorithm_comparison"
     )
 
 
