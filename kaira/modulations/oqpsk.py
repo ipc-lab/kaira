@@ -2,8 +2,7 @@
 
 from typing import Optional, Union
 
-import matplotlib.pyplot as plt  # type: ignore  # type: ignore
-import numpy as np
+import matplotlib.pyplot as plt  # type: ignore
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -33,7 +32,7 @@ class OQPSKModulator(BaseModulator):
         """
         super().__init__(*args, **kwargs)
         self.normalize = normalize
-        self._normalization = 1 / np.sqrt(2) if normalize else 1.0
+        self._normalization = 1 / (2**0.5) if normalize else 1.0
 
         # OQPSK constellation (same as QPSK but with offset timing)
         re_part = torch.tensor([1.0, 1.0, -1.0, -1.0], dtype=torch.float) * self._normalization
@@ -133,7 +132,7 @@ class OQPSKDemodulator(BaseDemodulator):
         """
         super().__init__(*args, **kwargs)
         self.normalize = normalize
-        self._normalization = 1 / np.sqrt(2) if normalize else 1.0
+        self._normalization = 1 / (2**0.5) if normalize else 1.0
 
         self._bits_per_symbol = 2  # OQPSK has 2 bits per symbol
 

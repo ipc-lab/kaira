@@ -5,8 +5,8 @@ import tempfile
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
+import torch
 
 from kaira.benchmarks import (
     BenchmarkRegistry,
@@ -31,7 +31,7 @@ class TestQAMBenchmark:
         benchmark = create_benchmark("qam_ber", constellation_size=16)
 
         # Run with minimal parameters for speed
-        results = runner.run_benchmark(benchmark, snr_range=np.arange(0, 10, 5).tolist(), num_symbols=1000)
+        results = runner.run_benchmark(benchmark, snr_range=torch.arange(0, 10, 5).tolist(), num_symbols=1000)
 
         assert results.metrics["success"]
         assert "ber_results" in results.metrics
@@ -78,7 +78,7 @@ class TestOFDMBenchmark:
 
         benchmark = create_benchmark("ofdm_performance", num_subcarriers=64, cp_length=16)
 
-        results = runner.run_benchmark(benchmark, snr_range=np.arange(0, 15, 5).tolist(), num_symbols=100, modulation="qpsk")
+        results = runner.run_benchmark(benchmark, snr_range=torch.arange(0, 15, 5).tolist(), num_symbols=100, modulation="qpsk")
 
         assert results.metrics["success"]
         assert "ber_results" in results.metrics
@@ -125,7 +125,7 @@ class TestChannelCodingBenchmark:
 
         benchmark = create_benchmark("channel_coding", code_type="repetition", code_rate=1 / 3)  # 3-repetition code
 
-        results = runner.run_benchmark(benchmark, snr_range=np.arange(-5, 5, 5).tolist(), num_bits=1000)
+        results = runner.run_benchmark(benchmark, snr_range=torch.arange(-5, 5, 5).tolist(), num_bits=1000)
 
         assert results.metrics["success"]
         assert "ber_uncoded" in results.metrics
@@ -157,7 +157,7 @@ class TestChannelCodingBenchmark:
         # At low SNR, repetition codes should provide gain
         # Check individual gains rather than average to be more flexible
         gains = results.metrics["coding_gain_db"]
-        finite_gains = [g for g in gains if np.isfinite(g)]
+        finite_gains = [g for g in gains if torch.isfinite(torch.tensor(g)).item()]
         assert len(finite_gains) > 0, "Should have at least some finite coding gains"
 
         # At least one SNR point should show positive gain
@@ -175,9 +175,9 @@ class TestBenchmarkVisualization:
     @pytest.fixture
     def sample_ber_results(self):
         """Create sample BER results for testing."""
-        snr_range = np.arange(0, 10, 2)
-        ber_simulated = 0.5 * np.exp(-snr_range / 2)  # Synthetic BER curve
-        ber_theoretical = 0.5 * np.exp(-snr_range / 2.2)  # Slightly different
+        snr_range = torch.arange(0, 10, 2)
+        ber_simulated = 0.5 * torch.exp(-snr_range / 2)  # Synthetic BER curve
+        ber_theoretical = 0.5 * torch.exp(-snr_range / 2.2)  # Slightly different
 
         return {"benchmark_name": "Test BER Benchmark", "snr_range": snr_range.tolist(), "ber_simulated": ber_simulated.tolist(), "ber_theoretical": ber_theoretical.tolist(), "rmse": 0.001}
 
@@ -213,8 +213,8 @@ class TestBenchmarkVisualization:
     def test_plot_constellation(self, visualizer):
         """Test constellation diagram plotting."""
         # Create sample constellation
-        constellation = np.array([1 + 1j, -1 + 1j, 1 - 1j, -1 - 1j]) / np.sqrt(2)
-        received = constellation + 0.1 * (np.random.randn(4) + 1j * np.random.randn(4))
+        constellation = torch.tensor([1 + 1j, -1 + 1j, 1 - 1j, -1 - 1j]) / torch.sqrt(torch.tensor(2.0))
+        received = constellation + 0.1 * (torch.randn(4) + 1j * torch.randn(4))
 
         with tempfile.TemporaryDirectory() as temp_dir:
             save_path = Path(temp_dir) / "constellation_test.png"

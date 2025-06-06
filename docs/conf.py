@@ -26,11 +26,7 @@ try:
     if dot_path:
         print(f"Found graphviz 'dot' command at {dot_path}")
     else:
-        print("WARNING: graphviz 'dot' command not found in PATH. Setting graphviz_dot to use dot through the graphviz Python package.")
-        # Set graphviz_dot to use the Python package interface
-        import os
-
-        os.environ["GRAPHVIZ_DOT"] = graphviz.backend.dot_command
+        print("WARNING: graphviz 'dot' command not found in PATH. Continuing without graphviz dot command.")
 except ImportError:
     has_graphviz = False
     print("WARNING: Python graphviz package not found. Inheritance diagrams may not render properly.")
@@ -325,7 +321,6 @@ master_doc = "index"
 # -- Options for intersphinx extension ---------------------------------------
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable", None),
     "torch": ("https://pytorch.org/docs/stable", None),
     "torchmetrics": ("https://torchmetrics.readthedocs.io/en/stable/", None),
 }

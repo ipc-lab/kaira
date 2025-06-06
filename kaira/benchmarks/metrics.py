@@ -2,7 +2,6 @@
 
 from typing import Any, Dict, Union
 
-import numpy as np
 import torch
 from scipy import stats
 
@@ -11,24 +10,24 @@ class StandardMetrics:
     """Collection of standard metrics for communication system evaluation."""
 
     @staticmethod
-    def bit_error_rate(transmitted: Union[np.ndarray, torch.Tensor], received: Union[np.ndarray, torch.Tensor]) -> float:
+    def bit_error_rate(transmitted: Union[torch.Tensor, torch.Tensor], received: Union[torch.Tensor, torch.Tensor]) -> float:
         """Calculate Bit Error Rate (BER)."""
-        if isinstance(transmitted, torch.Tensor):
-            transmitted = transmitted.detach().cpu().numpy()
-        if isinstance(received, torch.Tensor):
-            received = received.detach().cpu().numpy()
+        if not isinstance(transmitted, torch.Tensor):
+            transmitted = torch.tensor(transmitted)
+        if not isinstance(received, torch.Tensor):
+            received = torch.tensor(received)
 
-        errors = np.sum(transmitted != received)
-        total_bits = transmitted.size
+        errors = torch.sum(transmitted != received)
+        total_bits = transmitted.numel()
         return float(errors / total_bits)
 
     @staticmethod
-    def block_error_rate(transmitted: Union[np.ndarray, torch.Tensor], received: Union[np.ndarray, torch.Tensor], block_size: int) -> float:
+    def block_error_rate(transmitted: Union[torch.Tensor, torch.Tensor], received: Union[torch.Tensor, torch.Tensor], block_size: int) -> float:
         """Calculate Block Error Rate (BLER)."""
-        if isinstance(transmitted, torch.Tensor):
-            transmitted = transmitted.detach().cpu().numpy()
-        if isinstance(received, torch.Tensor):
-            received = received.detach().cpu().numpy()
+        if not isinstance(transmitted, torch.Tensor):
+            transmitted = torch.tensor(transmitted)
+        if not isinstance(received, torch.Tensor):
+            received = torch.tensor(received)
 
         # Reshape into blocks
         n_blocks = len(transmitted) // block_size
@@ -36,54 +35,76 @@ class StandardMetrics:
         received_blocks = received[: n_blocks * block_size].reshape(-1, block_size)
 
         # Count block errors
-        block_errors = np.sum(np.any(transmitted_blocks != received_blocks, axis=1))
+        block_errors = torch.sum(torch.any(transmitted_blocks != received_blocks, dim=1))
         return float(block_errors / n_blocks)
 
     @staticmethod
-    def signal_to_noise_ratio(signal: Union[np.ndarray, torch.Tensor], noise: Union[np.ndarray, torch.Tensor]) -> float:
+    def signal_to_noise_ratio(signal: Union[torch.Tensor, torch.Tensor], noise: Union[torch.Tensor, torch.Tensor]) -> float:
         """Calculate Signal-to-Noise Ratio (SNR) in dB."""
-        if isinstance(signal, torch.Tensor):
-            signal = signal.detach().cpu().numpy()
-        if isinstance(noise, torch.Tensor):
-            noise = noise.detach().cpu().numpy()
+        if not isinstance(signal, torch.Tensor):
+            signal = torch.tensor(signal)
+        if not isinstance(noise, torch.Tensor):
+            noise = torch.tensor(noise)
 
-        signal_power = np.mean(np.abs(signal) ** 2)
-        noise_power = np.mean(np.abs(noise) ** 2)
+        signal_power = torch.mean(torch.abs(signal) ** 2)
+        noise_power = torch.mean(torch.abs(noise) ** 2)
 
         if noise_power == 0:
             return float("inf")
 
         snr_linear = signal_power / noise_power
-        return float(10 * np.log10(snr_linear))
+        return float(10 * torch.log10(snr_linear))
 
     @staticmethod
-    def mutual_information(x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor], bins: int = 50) -> float:
+    def mutual_information(x: Union[torch.Tensor, torch.Tensor], y: Union[torch.Tensor, torch.Tensor], bins: int = 50) -> float:
         """Estimate mutual information between two variables."""
-        if isinstance(x, torch.Tensor):
-            x = x.detach().cpu().numpy()
-        if isinstance(y, torch.Tensor):
-            y = y.detach().cpu().numpy()
+        if not isinstance(x, torch.Tensor):
+            x = torch.tensor(x)
+        if not isinstance(y, torch.Tensor):
+            y = torch.tensor(y)
 
-        # Flatten arrays
+        # Flatten tensors
         x = x.flatten()
         y = y.flatten()
 
-        # Calculate histograms
-        xy = np.histogram2d(x, y, bins=bins)[0]
-        x_hist = np.histogram(x, bins=bins)[0]
-        y_hist = np.histogram(y, bins=bins)[0]
+        # Calculate histograms using torch operations
+        # Get min/max values for binning
+        x_min, x_max = torch.min(x), torch.max(x)
+        y_min, y_max = torch.min(y), torch.max(y)
 
-        # Normalize to get probabilities
-        xy = xy / np.sum(xy)
-        x_hist = x_hist / np.sum(x_hist)
-        y_hist = y_hist / np.sum(y_hist)
+        # Create bin edges
+        x_edges = torch.linspace(x_min, x_max, bins + 1)
+        y_edges = torch.linspace(y_min, y_max, bins + 1)
+
+        # Create 2D histogram manually
+        xy = torch.zeros(bins, bins, dtype=torch.float32)
+        x_hist = torch.zeros(bins, dtype=torch.float32)
+        y_hist = torch.zeros(bins, dtype=torch.float32)
+
+        # Compute bin indices
+        x_indices = torch.searchsorted(x_edges[1:], x, right=False)
+        y_indices = torch.searchsorted(y_edges[1:], y, right=False)
+
+        # Clamp indices to valid range
+        x_indices = torch.clamp(x_indices, 0, bins - 1)
+        y_indices = torch.clamp(y_indices, 0, bins - 1)
+
+        # Fill histograms
+        for i in range(len(x)):
+            xy[x_indices[i], y_indices[i]] += 1
+            x_hist[x_indices[i]] += 1
+            y_hist[y_indices[i]] += 1
+
+        xy = xy / torch.sum(xy)
+        x_hist = x_hist / torch.sum(x_hist)
+        y_hist = y_hist / torch.sum(y_hist)
 
         # Calculate mutual information
         mi = 0.0
         for i in range(bins):
             for j in range(bins):
                 if xy[i, j] > 0 and x_hist[i] > 0 and y_hist[j] > 0:
-                    mi += xy[i, j] * np.log2(xy[i, j] / (x_hist[i] * y_hist[j]))
+                    mi += xy[i, j] * torch.log2(xy[i, j] / (x_hist[i] * y_hist[j]))
 
         return float(mi)
 
@@ -95,19 +116,19 @@ class StandardMetrics:
         return float(bits_transmitted / time_elapsed)
 
     @staticmethod
-    def latency_statistics(latencies: Union[np.ndarray, torch.Tensor]) -> Dict[str, float]:
+    def latency_statistics(latencies: Union[torch.Tensor, torch.Tensor]) -> Dict[str, float]:
         """Calculate latency statistics."""
-        if isinstance(latencies, torch.Tensor):
-            latencies = latencies.detach().cpu().numpy()
+        if not isinstance(latencies, torch.Tensor):
+            latencies = torch.tensor(latencies)
 
         return {
-            "mean_latency": float(np.mean(latencies)),
-            "median_latency": float(np.median(latencies)),
-            "min_latency": float(np.min(latencies)),
-            "max_latency": float(np.max(latencies)),
-            "std_latency": float(np.std(latencies)),
-            "p95_latency": float(np.percentile(latencies, 95)),
-            "p99_latency": float(np.percentile(latencies, 99)),
+            "mean_latency": float(torch.mean(latencies)),
+            "median_latency": float(torch.median(latencies)),
+            "min_latency": float(torch.min(latencies)),
+            "max_latency": float(torch.max(latencies)),
+            "std_latency": float(torch.std(latencies)),
+            "p95_latency": float(torch.quantile(latencies, 0.95)),
+            "p99_latency": float(torch.quantile(latencies, 0.99)),
         }
 
     @staticmethod
@@ -128,17 +149,19 @@ class StandardMetrics:
     def channel_capacity(snr_db: float, bandwidth: float = 1.0) -> float:
         """Calculate Shannon channel capacity."""
         snr_linear = 10 ** (snr_db / 10)
-        capacity = bandwidth * np.log2(1 + snr_linear)
+        capacity = bandwidth * torch.log2(torch.tensor(1 + snr_linear))
         return float(capacity)
 
     @staticmethod
-    def confidence_interval(data: Union[np.ndarray, torch.Tensor], confidence: float = 0.95) -> tuple:
+    def confidence_interval(data: Union[torch.Tensor, torch.Tensor], confidence: float = 0.95) -> tuple:
         """Calculate confidence interval for data."""
-        if isinstance(data, torch.Tensor):
-            data = data.detach().cpu().numpy()
+        if not isinstance(data, torch.Tensor):
+            data = torch.tensor(data)
 
-        mean = np.mean(data)
-        sem = stats.sem(data)
-        interval = sem * stats.t.ppf((1 + confidence) / 2, len(data) - 1)
+        # Convert to numpy for scipy stats
+        data_np = data.detach().cpu().numpy()
+        mean = torch.mean(data)
+        sem = torch.std(data, correction=1) / torch.sqrt(torch.tensor(len(data), dtype=torch.float))
+        interval = sem * stats.t.ppf((1 + confidence) / 2, len(data_np) - 1)
 
         return float(mean - interval), float(mean + interval)

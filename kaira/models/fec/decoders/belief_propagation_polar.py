@@ -15,7 +15,6 @@ For more details on the Belief Propagation decoding on permuted factor graph, re
 
 from typing import Any
 
-import numpy as np
 import torch
 
 from kaira.models.fec.encoders.polar_code import PolarCodeEncoder, _index_matrix
@@ -40,20 +39,20 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
     Attributes:
         encoder (PolarCodeEncoder): The Polar code encoder used for encoding messages.
-        info_indices (np.ndarray): Indices of information bits in the Polar code.
-        frozen_ind (np.ndarray): Boolean array indicating frozen bits.
+        info_indices (torch.Tensor): Indices of information bits in the Polar code.
+        frozen_ind (torch.Tensor): Boolean array indicating frozen bits.
         device (torch.device): Device on which the decoder operates (e.g., CPU or GPU).
         dtype (torch.dtype): Data type used for computations.
         polar_i (bool): Indicates whether polar_i is enabled in the encoder.
         frozen_zeros (bool): Indicates whether frozen bits are initialized to zeros.
         m (int): Number of stages in the Polar code.
         iteration_num (int): Number of iterations for decoding.
-        mask_dict (np.ndarray): Mask dictionary for the Polar code structure.
+        mask_dict (torch.Tensor): Mask dictionary for the Polar code structure.
         early_stop (bool): Whether to use early stopping during decoding.
         regime (str): Decoding regime ('sum_product' or 'min_sum').
         clip (float): Clipping value for numerical stability.
         perm (str or None): Type of permutation of the factor graph used ('cycle' or None).
-        permutations (np.ndarray): Array of cyclic permutations.
+        permutations (torch.Tensor): Array of cyclic permutations.
         R_all (list): List of R matrices for each iteration.
         L_all (list): List of L matrices for each iteration.
     """
@@ -71,7 +70,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         """
         super().__init__(encoder, *args, **kwargs)
         self.info_indices = encoder.info_indices
-        self.frozen_ind = (np.ones(self.code_length) - self.info_indices.astype(int)).astype(bool)
+        self.frozen_ind = (torch.ones(self.code_length) - self.info_indices.int()).bool()
         self.device = encoder.device
         self.dtype = encoder.dtype
         self.polar_i = encoder.polar_i
@@ -91,8 +90,8 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
         self.mask_dict = encoder.mask_dict
         if self.mask_dict is None or self.mask_dict.shape[0] != self.m:
-            mask_dict = _index_matrix(self.code_length).T.astype(int) - 1
-            self.mask_dict = mask_dict[np.flip(np.arange(self.m))]
+            mask_dict = _index_matrix(self.code_length).T.int() - 1
+            self.mask_dict = mask_dict[torch.flip(torch.arange(self.m), [0])]
         self.clip = kwargs.get("clip", 1000000.0)  # Default clip value for numerical stability
         self.perm = kwargs.get("perm", None)
         if self.perm == "cycle" and not self.early_stop:
@@ -119,9 +118,9 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
             perm (str or None): Type of permutation ('cycle' or None).
         """
         if perm is None:
-            self.permutations = np.arange(self.m).reshape(1, self.m)
+            self.permutations = torch.arange(self.m).reshape(1, self.m)
         elif perm == "cycle":
-            self.permutations = np.array(cyclic_perm(list(np.arange(self.m))))
+            self.permutations = torch.tensor(cyclic_perm(list(torch.arange(self.m))))
 
     def checknode(self, y1, y2):
         """Check node operation for the Belief Propagation Polar Decoder.
@@ -144,7 +143,7 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         Args:
             R (torch.Tensor): Right message tensor.
             L (torch.Tensor): Left message tensor.
-            perm (np.ndarray): Permutation array.
+            perm (torch.Tensor): Permutation array.
 
         Returns:
             torch.Tensor: Updated right message tensor.
@@ -166,13 +165,13 @@ class BeliefPropagationPolarDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         Args:
             R (torch.Tensor): Right message tensor.
             L (torch.Tensor): Left message tensor.
-            perm (np.ndarray): Permutation array.
+            perm (torch.Tensor): Permutation array.
 
         Returns:
             torch.Tensor: Updated left message tensor.
         """
         mask = self.mask_dict
-        for i in np.flip(perm):
+        for i in torch.flip(perm, [0]):
             i_back = self.m - i - 1
             add_k = self.code_length // (2 ** (i_back + 1))
             if len(mask[i]) > 0:

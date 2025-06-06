@@ -16,11 +16,34 @@ orthogonal complement of the all-ones vector :cite:`richardson2008modern`.
 from typing import Any
 
 import torch
-from scipy.special import comb
 
 from kaira.models.registry import ModelRegistry
 
 from .linear_block_code import LinearBlockCodeEncoder
+
+
+def _binomial_coefficient(n: int, k: int) -> int:
+    """Calculate binomial coefficient (n choose k) using PyTorch.
+
+    Args:
+        n: Total number of items
+        k: Number of items to choose
+
+    Returns:
+        Binomial coefficient n choose k
+    """
+    if k > n or k < 0:
+        return 0
+    if k == 0 or k == n:
+        return 1
+
+    # Use the multiplicative formula to avoid overflow
+    # C(n,k) = n! / (k! * (n-k)!) = (n * (n-1) * ... * (n-k+1)) / (k * (k-1) * ... * 1)
+    k = min(k, n - k)  # Take advantage of symmetry
+    result = 1
+    for i in range(k):
+        result = result * (n - i) // (i + 1)
+    return result
 
 
 @ModelRegistry.register_model("repetition_encoder")
@@ -98,11 +121,11 @@ class RepetitionCodeEncoder(LinearBlockCodeEncoder):
 
         # Fill in the distribution values
         for w in range((n + 1) // 2):
-            distribution[w] = int(comb(n, w))
+            distribution[w] = _binomial_coefficient(n, w)
 
         # Special case when n is even
         if n % 2 == 0:
-            distribution[n // 2] = int(comb(n, n // 2) // 2)
+            distribution[n // 2] = _binomial_coefficient(n, n // 2) // 2
 
         return distribution
 

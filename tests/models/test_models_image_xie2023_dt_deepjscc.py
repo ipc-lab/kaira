@@ -1,5 +1,4 @@
 # tests/models/test_models_image_xie2023_dt_deepjscc.py
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn
@@ -260,7 +259,7 @@ def test_dt_deepjscc_encoder_cifar10_forward(encoder_cifar10, sample_cifar10):
     # Check output shape
     # For CIFAR-10, output should now have shape [batch_size, h*w, bits_per_symbol]
     # where h*w is 4*4=16 (spatial dimensions) and bits_per_symbol is log2(num_embeddings)
-    bits_per_symbol = int(np.log2(encoder_cifar10.num_embeddings))
+    bits_per_symbol = int(torch.log2(torch.tensor(encoder_cifar10.num_embeddings, dtype=torch.float32)).item())
 
     # With batch dimension preserved, shape should be [2, 16, 4]
     assert bits.shape == (2, 16, bits_per_symbol)
@@ -276,7 +275,7 @@ def test_dt_deepjscc_encoder_custom_forward(encoder_custom, sample_custom):
 
     # Check output shape - With batch dimension preserved, the shape should be:
     # [batch_size, h*w, bits_per_symbol]
-    bits_per_symbol = int(np.log2(encoder_custom.num_embeddings))
+    bits_per_symbol = int(torch.log2(torch.tensor(encoder_custom.num_embeddings, dtype=torch.float32)).item())
 
     # For 32x32 input with custom architecture, we expect 16 spatial elements (4x4)
     assert bits.shape == (2, 16, bits_per_symbol)

@@ -1,6 +1,5 @@
 """Tests for the polar_code module in kaira.models.fec.encoders package."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -18,16 +17,16 @@ class TestPolarCodeHelperFunctions:
         """Test generating index matrix for polar code construction."""
         # Test with N=4
         result = _index_matrix(4)
-        expected = np.array([[1, 1], [2, 3]])
+        expected = torch.tensor([[1, 1], [2, 3]])
         assert result.shape == (2, 2)
-        np.testing.assert_array_equal(result, expected)
+        assert torch.equal(result, expected)
 
         # Test with N=8
         result = _index_matrix(8)
         assert result.shape == (4, 3)
         # Check that all values are in valid range
-        assert np.all(result >= 1)
-        assert np.all(result <= 8)
+        assert torch.all(result >= 1)
+        assert torch.all(result <= 8)
 
     def test_index_matrix_invalid_input(self):
         """Test index matrix with invalid input."""
@@ -76,7 +75,7 @@ class TestPolarCodeEncoder:
     def test_initialization_with_custom_params(self):
         """Test initialization with custom parameters."""
         # Provide valid info_indices when load_rank=False
-        info_indices = np.array([False, False, False, False, False, True, True, True])
+        info_indices = torch.tensor([False, False, False, False, False, True, True, True])
         encoder = PolarCodeEncoder(code_dimension=3, code_length=8, device="cpu", dtype=torch.float64, polar_i=True, frozen_zeros=False, load_rank=False, info_indices=info_indices)
 
         assert encoder.code_dimension == 3
@@ -86,7 +85,7 @@ class TestPolarCodeEncoder:
         assert encoder.polar_i
         assert not encoder.frozen_zeros
         assert not encoder.load_rank
-        np.testing.assert_array_equal(encoder.info_indices, info_indices)
+        assert torch.equal(encoder.info_indices, info_indices)
 
     def test_initialization_invalid_code_length(self):
         """Test initialization with invalid code length."""
@@ -105,23 +104,23 @@ class TestPolarCodeEncoder:
         """Test initialization fails with invalid info_indices."""
         # Wrong length
         with pytest.raises(ValueError, match="info_indices must have length 4"):
-            PolarCodeEncoder(2, 4, load_rank=False, info_indices=np.array([True, True]))
+            PolarCodeEncoder(2, 4, load_rank=False, info_indices=torch.tensor([True, True]))
 
         # Wrong number of True values
         with pytest.raises(ValueError, match="info_indices must have exactly 2 True values"):
-            PolarCodeEncoder(2, 4, load_rank=False, info_indices=np.array([True, True, True, False]))
+            PolarCodeEncoder(2, 4, load_rank=False, info_indices=torch.tensor([True, True, True, False]))
 
     def test_info_indices_generation(self):
         """Test generation of information bit indices."""
-        encoder = PolarCodeEncoder(2, 4, load_rank=False, info_indices=np.array([False, False, True, True]))
+        encoder = PolarCodeEncoder(2, 4, load_rank=False, info_indices=torch.tensor([False, False, True, True]))
 
         # Check that info_indices is a boolean array
-        assert isinstance(encoder.info_indices, np.ndarray)
-        assert encoder.info_indices.dtype == bool
+        assert isinstance(encoder.info_indices, torch.Tensor)
+        assert encoder.info_indices.dtype == torch.bool
         assert len(encoder.info_indices) == 4
 
         # Should have exactly 2 True values (code_dimension)
-        assert np.sum(encoder.info_indices) == 2
+        assert torch.sum(encoder.info_indices) == 2
 
     def test_polar_transform_basic(self):
         """Test basic polar transform functionality."""
@@ -215,7 +214,7 @@ class TestPolarCodeEncoder:
         encoder_ones = PolarCodeEncoder(2, 4, frozen_zeros=False)
 
         # Both should have same info_indices
-        np.testing.assert_array_equal(encoder_zeros.info_indices, encoder_ones.info_indices)
+        assert torch.equal(encoder_zeros.info_indices, encoder_ones.info_indices)
 
         # But may behave differently in encoding
         input_msg = torch.tensor([[1, 0]], dtype=torch.float32)
@@ -229,7 +228,7 @@ class TestPolarCodeEncoder:
         encoder = PolarCodeEncoder(2, 4)
 
         if encoder.mask_dict is not None:
-            assert isinstance(encoder.mask_dict, np.ndarray)
+            assert isinstance(encoder.mask_dict, torch.Tensor)
             assert encoder.mask_dict.shape[0] == encoder.m
 
     def test_rank_loading(self):
@@ -238,14 +237,14 @@ class TestPolarCodeEncoder:
         encoder_rank = PolarCodeEncoder(2, 4, load_rank=True)
 
         # Test with load_rank=False - need to provide info_indices manually
-        info_indices = np.array([False, False, True, True])  # Example indices
+        info_indices = torch.tensor([False, False, True, True])  # Example indices
         encoder_no_rank = PolarCodeEncoder(2, 4, load_rank=False, info_indices=info_indices)
 
         # Both should have valid info_indices
         assert len(encoder_rank.info_indices) == 4
         assert len(encoder_no_rank.info_indices) == 4
-        assert np.sum(encoder_rank.info_indices) == 2
-        assert np.sum(encoder_no_rank.info_indices) == 2
+        assert torch.sum(encoder_rank.info_indices) == 2
+        assert torch.sum(encoder_no_rank.info_indices) == 2
 
     def test_encoding_deterministic(self):
         """Test that encoding is deterministic."""

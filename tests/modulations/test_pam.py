@@ -1,6 +1,5 @@
 """Comprehensive tests for PAM modulation schemes."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -45,7 +44,7 @@ def test_pam_modulator_initialization(order):
     assert mod.order == order
     assert mod.gray_coding is True
     assert mod.normalize is True
-    assert mod.bits_per_symbol == int(np.log2(order))
+    assert mod.bits_per_symbol == int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
     # With binary coding
     mod = PAMModulator(order=order, gray_coding=False)
@@ -72,7 +71,7 @@ def test_pam_demodulator_initialization(order):
     assert demod.order == order
     assert demod.gray_coding is True
     assert demod.normalize is True
-    assert demod.bits_per_symbol == int(np.log2(order))
+    assert demod.bits_per_symbol == int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
     # Check modulator reference
     assert demod.modulator.order == order
@@ -363,7 +362,7 @@ def test_pam_soft_demodulation(order, device):
 
     # Add noise
     noise_var = 0.1
-    noisy_symbols = symbols + torch.complex(torch.randn_like(symbols.real) * np.sqrt(noise_var), torch.zeros_like(symbols.imag))
+    noisy_symbols = symbols + torch.complex(torch.randn_like(symbols.real) * torch.sqrt(torch.tensor(noise_var)), torch.zeros_like(symbols.imag))
 
     # Soft demodulation
     llrs = demod(noisy_symbols, noise_var=noise_var)
@@ -457,7 +456,7 @@ def test_pam_modulation_demodulation_loop():
     torch.manual_seed(42)
 
     for order in [2, 4, 8, 16]:
-        bits_per_symbol = int(np.log2(order))
+        bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
         # Create modulator and demodulator with SAME parameters
         mod = PAMModulator(order=order, gray_coding=True, normalize=True)
@@ -520,7 +519,7 @@ def test_pam_modulation_demodulation_consistency(order, device):
 def test_pam_different_orders(M):
     """Test PAM modulation and demodulation with different constellation orders."""
     # Create random bit sequence
-    n_bits = int(100 * np.log2(M))
+    n_bits = int(100 * torch.log2(torch.tensor(M, dtype=torch.float)).item())
     bits = torch.randint(0, 2, (n_bits,)).float()
 
     # Initialize modulator and demodulator
@@ -531,7 +530,7 @@ def test_pam_different_orders(M):
     symbols = modulator(bits)
 
     # Check output shape (M-PAM: log2(M) bits per symbol)
-    expected_n_symbols = n_bits // int(np.log2(M))
+    expected_n_symbols = n_bits // int(torch.log2(torch.tensor(M, dtype=torch.float)).item())
     assert symbols.shape == torch.Size([expected_n_symbols])
 
     # Demodulate symbols

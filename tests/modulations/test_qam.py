@@ -1,6 +1,5 @@
 """Comprehensive tests for QAM modulation schemes."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -44,7 +43,7 @@ def test_qam_modulator_initialization(order):
     assert mod.order == order
     assert mod.gray_coding is True
     assert mod.normalize is True
-    assert mod.bits_per_symbol == int(np.log2(order))
+    assert mod.bits_per_symbol == int(torch.log2(torch.tensor(order)).item())
 
     # With binary coding
     mod = QAMModulator(order=order, gray_coding=False)
@@ -81,7 +80,7 @@ def test_qam_demodulator_initialization(order):
     assert demod.order == order
     assert demod.gray_coding is True
     assert demod.normalize is True
-    assert demod.bits_per_symbol == int(np.log2(order))
+    assert demod.bits_per_symbol == int(torch.log2(torch.tensor(order)).item())
 
     # Check modulator reference
     assert demod.modulator.order == order
@@ -471,7 +470,7 @@ def test_qam_soft_demodulation(order, device):
 
     # Add noise
     noise_var = 0.1
-    noisy_symbols = symbols + torch.complex(torch.randn_like(symbols.real) * np.sqrt(noise_var), torch.randn_like(symbols.imag) * np.sqrt(noise_var))
+    noisy_symbols = symbols + torch.complex(torch.randn_like(symbols.real) * torch.sqrt(torch.tensor(noise_var)), torch.randn_like(symbols.imag) * torch.sqrt(torch.tensor(noise_var)))
 
     # Soft demodulation
     llrs = demod(noisy_symbols, noise_var=noise_var)
@@ -574,7 +573,7 @@ def test_qam_modulation_demodulation_loop():
     torch.manual_seed(42)
 
     for order in [4, 16, 64]:  # Test different QAM orders
-        bits_per_symbol = int(np.log2(order))
+        bits_per_symbol = int(torch.log2(torch.tensor(order)).item())
 
         # Create modulator and demodulator with same parameters
         mod = QAMModulator(order=order, gray_coding=True, normalize=True)

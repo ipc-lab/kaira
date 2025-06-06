@@ -3,7 +3,6 @@
 from typing import Literal, Optional, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -142,7 +141,7 @@ class QPSKModulator(BaseModulator):
         """
         super().__init__(*args, **kwargs)
         self.normalize = normalize
-        self._normalization = 1 / np.sqrt(2) if normalize else 1.0
+        self._normalization = 1 / (2**0.5) if normalize else 1.0
 
         # QPSK mapping table with Gray coding
         re_part = torch.tensor([1.0, 1.0, -1.0, -1.0], dtype=torch.float) * self._normalization
@@ -227,7 +226,7 @@ class QPSKDemodulator(BaseDemodulator):
         """
         super().__init__(*args, **kwargs)
         self.normalize = normalize
-        self._normalization = 1 / np.sqrt(2) if normalize else 1.0
+        self._normalization = 1 / (2**0.5) if normalize else 1.0
 
         # Create modulator to access constellation
         self.modulator = QPSKModulator(normalize)
@@ -365,14 +364,14 @@ class PSKModulator(BaseModulator):
             # Validate order is a power of 2
             if not (self.order > 0 and (self.order & (self.order - 1) == 0)):
                 raise ValueError(f"Custom constellation length must be a power of 2, got {self.order}")
-            self._bits_per_symbol: int = int(np.log2(self.order))
+            self._bits_per_symbol: int = int(torch.log2(torch.tensor(self.order, dtype=torch.float)).item())
         else:
             # Validate order is a power of 2
             if not (order > 0 and (order & (order - 1) == 0)):
                 raise ValueError(f"PSK order must be a power of 2, got {order}")
 
             self.order = order
-            self._bits_per_symbol = int(np.log2(order))
+            self._bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
             # Create standard PSK constellation
             self._create_constellation()
@@ -381,7 +380,7 @@ class PSKModulator(BaseModulator):
         """Create the PSK constellation mapping."""
         # Generate points evenly spaced around the unit circle
         # Standard convention: first point at angle 0 (real axis)
-        angles = torch.arange(0, self.order) * (2 * np.pi / self.order)
+        angles = torch.arange(0, self.order) * (2 * torch.pi / self.order)
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
         constellation = torch.complex(re_part, im_part)
@@ -525,7 +524,7 @@ class PSKDemodulator(BaseDemodulator):
         super().__init__(*args, **kwargs)
         self.order = order
         self.gray_coding = gray_coding
-        self._bits_per_symbol: int = int(np.log2(order))
+        self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
         # Create modulator to access constellation
         self.modulator = PSKModulator(order, gray_coding)
@@ -598,7 +597,9 @@ class PSKDemodulator(BaseDemodulator):
                 const_bit_1 = constellation[bit_1_mask]
 
                 # Process each symbol individually for clearer computation
-                for b_idx in np.ndindex(batch_shape):
+                import itertools
+
+                for b_idx in itertools.product(*[range(dim) for dim in batch_shape]):
                     for s_idx in range(symbol_shape):
                         # Get the received symbol
                         if batch_shape:

@@ -8,7 +8,6 @@ This file contains all tests for power related constraints including:
 Tests cover basic functionality, complex inputs, edge cases, and advanced scenarios.
 """
 
-import numpy as np
 import pytest
 import torch
 
@@ -345,7 +344,7 @@ def test_power_constraints_on_batched_data(multi_dimensional_signal):
     # Test that constraints are applied across all dimensions except batch
 
     batch_size = multi_dimensional_signal.shape[0]
-    total_elements_per_batch = np.prod(multi_dimensional_signal.shape[1:])
+    total_elements_per_batch = torch.prod(torch.tensor(multi_dimensional_signal.shape[1:]))
     power = 2.0
 
     # Apply total power constraint

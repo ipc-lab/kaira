@@ -1,6 +1,5 @@
 """Tests for the successive_cancellation module in kaira.models.fec.decoders package."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -24,7 +23,7 @@ class TestSuccessiveCancellationDecoder:
         assert decoder.encoder is self.encoder
         assert decoder.code_dimension == self.code_dimension
         assert decoder.code_length == self.code_length
-        assert np.array_equal(decoder.info_indices, self.encoder.info_indices)
+        assert torch.equal(decoder.info_indices, self.encoder.info_indices)
         assert decoder.device == self.encoder.device
         assert decoder.dtype == self.encoder.dtype
         assert decoder.polar_i == self.encoder.polar_i
@@ -294,7 +293,7 @@ class TestSuccessiveCancellationDecoder:
         assert decoded.shape == (2, self.code_dimension)
 
         # Verify that the number of info indices matches code dimension
-        assert np.sum(decoder.info_indices) == self.code_dimension
+        assert torch.sum(decoder.info_indices) == self.code_dimension
 
     def test_different_dtypes(self):
         """Test with different data types."""

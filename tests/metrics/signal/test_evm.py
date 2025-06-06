@@ -1,6 +1,5 @@
 """Tests for Error Vector Magnitude (EVM) metric."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -129,7 +128,6 @@ class TestEVM:
         metric = ErrorVectorMagnitude()
 
         # Create signal with known properties
-        np.random.seed(42)
         torch.manual_seed(42)
 
         transmitted = torch.tensor([1.0 + 0.0j, 0.0 + 1.0j, -1.0 + 0.0j, 0.0 - 1.0j] * 10, dtype=torch.complex64)

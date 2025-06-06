@@ -7,7 +7,7 @@ of Polar codes for efficient decoding.
 
 Attributes:
     encoder (PolarCodeEncoder): The Polar code encoder used for encoding messages.
-    info_indices (np.ndarray): Indices of information bits in the Polar code.
+    info_indices (torch.Tensor): Indices of information bits in the Polar code.
     device (torch.device): Device on which the decoder operates (e.g., CPU or GPU).
     dtype (torch.dtype): Data type used for computations.
     polar_i (bool): Indicates whether polar_i is enabled in the encoder.
@@ -22,7 +22,6 @@ References:
 
 from typing import Any, Tuple
 
-import numpy as np
 import torch
 
 from kaira.models.fec.encoders.polar_code import PolarCodeEncoder
@@ -40,7 +39,7 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
     Attributes:
         encoder (PolarCodeEncoder): The Polar code encoder used for encoding messages.
-        info_indices (np.ndarray): Indices of information bits in the Polar code.
+        info_indices (torch.Tensor): Indices of information bits in the Polar code.
         device (torch.device): Device on which the decoder operates (e.g., CPU or GPU).
         dtype (torch.dtype): Data type used for computations.
         polar_i (bool): Indicates whether polar_i is enabled in the encoder.
@@ -106,7 +105,7 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
         y1, y2, x = y
         return y2 + (1 - 2 * x) * y1
 
-    def decode_recursive(self, y: torch.Tensor, info_indices: np.array, *args: Any, **kwargs: Any) -> torch.Tensor:
+    def decode_recursive(self, y: torch.Tensor, info_indices: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Decodes the received codeword using the Successive Cancellation algorithm.
 
         This method recursively processes the received codeword to estimate the transmitted message bits. It splits the input
@@ -114,7 +113,7 @@ class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
 
         Args:
             y (torch.Tensor): Received codeword tensor of shape (batch_size, code_length).
-            info_indices (np.array): Boolean array indicating positions of information bits.
+            info_indices (torch.Tensor): Boolean array indicating positions of information bits.
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

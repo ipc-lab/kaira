@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 from kaira.channels import AWGNChannel, LaplacianChannel, PhaseNoiseChannel
@@ -23,7 +22,7 @@ def test_awgn_channel_noise_addition():
     signal_power = torch.mean(input_signal**2).item()
     noise_power = torch.mean((output_signal - input_signal) ** 2).item()
     measured_snr = signal_power / noise_power
-    measured_snr_db = 10 * np.log10(measured_snr)
+    measured_snr_db = 10 * torch.log10(torch.tensor(measured_snr))
 
     # Check that measured SNR is close to expected SNR
     assert abs(measured_snr_db - snr_db) < 1.0  # Allow for some statistical variation
@@ -44,24 +43,24 @@ def test_laplacian_channel_distribution():
     output_signal = channel(input_signal)
     noise = output_signal  # Since input is zero, output is just noise
 
-    # Convert to numpy for statistics
-    noise_np = noise.detach().cpu().numpy().flatten()
+    # Convert to torch for statistics
+    noise_torch = noise.flatten()
 
     # Check properties of Laplacian distribution
     # 1. Mean should be close to 0
-    assert abs(np.mean(noise_np)) < 0.1
+    assert abs(torch.mean(noise_torch).item()) < 0.1
 
     # 2. Variance should be close to 2*scale^2
     expected_variance = 2 * scale**2
     # Allow more tolerance due to sampling variability
-    assert abs(np.var(noise_np) - expected_variance) < 1.5
+    assert abs(torch.var(noise_torch).item() - expected_variance) < 1.5
 
 
 def test_phase_noise_channel_distribution():
     """Test that PhaseNoiseChannel adds the expected amount of phase noise."""
     # Create a complex input signal with unit magnitude
     batch_size = 1000
-    theta = torch.linspace(0, 2 * np.pi, batch_size).unsqueeze(1)
+    theta = torch.linspace(0, 2 * torch.pi, batch_size).unsqueeze(1)
     input_signal = torch.complex(torch.cos(theta), torch.sin(theta))
 
     # Set phase noise standard deviation
@@ -76,7 +75,7 @@ def test_phase_noise_channel_distribution():
     # Calculate phase difference
     input_phase = torch.angle(input_signal)
     output_phase = torch.angle(output_signal)
-    phase_diff = torch.remainder(output_phase - input_phase + np.pi, 2 * np.pi) - np.pi
+    phase_diff = torch.remainder(output_phase - input_phase + torch.pi, 2 * torch.pi) - torch.pi
 
     # Check statistics of phase noise
     measured_std = torch.std(phase_diff).item()

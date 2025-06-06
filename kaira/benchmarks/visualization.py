@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
+import torch
 
 # Set style
 plt.style.use("seaborn-v0_8")
@@ -95,7 +95,7 @@ class BenchmarkVisualizer:
                 mean_throughputs.append(stats["mean"])
                 std_throughputs.append(stats["std"])
 
-            x_pos = np.arange(len(payload_sizes))
+            x_pos = torch.arange(len(payload_sizes))
             bars = ax.bar(x_pos, mean_throughputs, yerr=std_throughputs, capsize=5, alpha=0.7, edgecolor="black")
 
             ax.set_xlabel("Payload Size (bits)", fontsize=12)
@@ -106,7 +106,7 @@ class BenchmarkVisualizer:
             ax.grid(True, alpha=0.3)
 
             # Color bars based on throughput
-            colors = plt.cm.viridis(np.linspace(0, 1, len(bars)))
+            colors = plt.cm.viridis(torch.linspace(0, 1, len(bars)))
             for bar, color in zip(bars, colors):
                 bar.set_color(color)
 
@@ -185,7 +185,7 @@ class BenchmarkVisualizer:
 
         return fig
 
-    def plot_constellation(self, constellation: np.ndarray, received_symbols: Optional[np.ndarray] = None, save_path: Optional[str] = None) -> plt.Figure:
+    def plot_constellation(self, constellation: torch.Tensor, received_symbols: Optional[torch.Tensor] = None, save_path: Optional[str] = None) -> plt.Figure:
         """Plot constellation diagram.
 
         Args:
@@ -205,7 +205,7 @@ class BenchmarkVisualizer:
         if received_symbols is not None:
             # Subsample if too many points
             if len(received_symbols) > 1000:
-                indices = np.random.choice(len(received_symbols), 1000, replace=False)
+                indices = torch.randperm(len(received_symbols))[:1000]
                 received_symbols = received_symbols[indices]
 
             ax.scatter(received_symbols.real, received_symbols.imag, c="blue", s=20, alpha=0.6, label="Received")
@@ -240,9 +240,11 @@ class BenchmarkVisualizer:
         coding_gain = results.get("coding_gain_db", [])
 
         # Filter out infinite values
-        finite_mask = np.isfinite(coding_gain)
-        snr_finite = np.array(snr_range)[finite_mask]
-        gain_finite = np.array(coding_gain)[finite_mask]
+        coding_gain_tensor = torch.tensor(coding_gain) if not isinstance(coding_gain, torch.Tensor) else coding_gain
+        finite_mask = torch.isfinite(coding_gain_tensor)
+        snr_range_tensor = torch.tensor(snr_range) if not isinstance(snr_range, torch.Tensor) else snr_range
+        snr_finite = snr_range_tensor[finite_mask]
+        gain_finite = coding_gain_tensor[finite_mask]
 
         ax.plot(snr_finite, gain_finite, "o-", linewidth=2, markersize=6)
         ax.set_xlabel("SNR (dB)", fontsize=12)
@@ -298,7 +300,7 @@ class BenchmarkVisualizer:
 
         # Color bars by execution time
         if execution_times:
-            colors = plt.cm.plasma(np.linspace(0, 1, len(bars)))
+            colors = plt.cm.plasma(torch.linspace(0, 1, len(bars)))
             for bar, color in zip(bars, colors):
                 bar.set_color(color)
 

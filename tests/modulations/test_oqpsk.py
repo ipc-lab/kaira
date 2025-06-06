@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 
@@ -30,7 +29,7 @@ def test_oqpsk_modulator():
     # With OQPSK, the quadrature component is delayed by half a symbol
     # The first quadrature bit is set to 0.0 (from _delayed_quad)
     # The subsequent quadrature bits are from the input, but shifted
-    norm = 1 / np.sqrt(2)
+    norm = 1 / torch.sqrt(torch.tensor(2.0))
     expected = torch.complex(torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype), torch.tensor([0.0, norm, -norm, norm], dtype=symbols.imag.dtype))
 
     assert torch.allclose(symbols, expected)
@@ -75,7 +74,7 @@ def test_oqpsk_demodulator_hard():
 
 def test_oqpsk_demodulator_soft():
     """Test OQPSK soft demodulation (LLR calculation)."""
-    norm = 1 / np.sqrt(2)
+    norm = 1 / torch.sqrt(torch.tensor(2.0))
     symbols = torch.complex(torch.tensor([0.7, 0.8, -0.7, -0.8]) * norm, torch.tensor([0.6, -0.7, 0.8, -0.6]) * norm)
     noise_var = 0.5
     demodulator = OQPSKDemodulator()

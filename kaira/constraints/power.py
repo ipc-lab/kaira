@@ -159,7 +159,10 @@ class AveragePowerConstraint(BaseConstraint):
         """
         super().__init__(*args, **kwargs)
         self.average_power = average_power
-        self.power_avg_factor = torch.sqrt(torch.tensor(self.average_power))
+        if isinstance(average_power, torch.Tensor):
+            self.power_avg_factor = torch.sqrt(average_power.detach().clone())
+        else:
+            self.power_avg_factor = torch.sqrt(torch.tensor(average_power, dtype=torch.float32))
 
     def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Apply the average power constraint to the input tensor.

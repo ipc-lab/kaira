@@ -13,7 +13,6 @@ References:
 
 from typing import Any, Optional
 
-import numpy as np
 import torch
 
 from kaira.models.registry import ModelRegistry
@@ -22,7 +21,7 @@ from ..encoders.base import BaseBlockCodeEncoder
 from ..utils import apply_blockwise
 
 
-def _index_matrix(N: int) -> np.ndarray:
+def _index_matrix(N: int) -> torch.Tensor:
     """Returns the index matrix for polar code construction, indicating the bit indices involved in
     each stage of the polarization process.
 
@@ -30,12 +29,12 @@ def _index_matrix(N: int) -> np.ndarray:
         N (int): Codeword length (must be a power of 2).
 
     Returns:
-        np.ndarray: Index matrix of shape (N // 2, n), where n = log2(N).
+        torch.Tensor: Index matrix of shape (N // 2, n), where n = log2(N).
     """
-    x = np.arange(1, N + 1)
-    n = int(np.log2(N))
+    x = torch.arange(1, N + 1)
+    n = int(torch.log2(torch.tensor(N, dtype=torch.float32)).item())
     assert 2**n == N, "N must be a power of 2"
-    M = np.zeros((N - 1, n), dtype=int)
+    M = torch.zeros((N - 1, n), dtype=torch.int32)
     for k in range(n):
         step = 2 ** (k + 1)
         half = 2**k
@@ -54,11 +53,11 @@ def calculate_gm(code_length: int, device: torch.device) -> torch.Tensor:
     Returns:
         torch.Tensor: Generator matrix of the polar code of shape (N, N)
     """
-    factor_graph = np.array([[1, 0], [1, 1]])
-    n_factor = factor_graph.copy()
-    for _ in range(int(np.log2(code_length)) - 1):
-        n_factor = np.kron(n_factor, factor_graph)
-    return torch.tensor(n_factor).to(device=device).float()
+    factor_graph = torch.tensor([[1, 0], [1, 1]], dtype=torch.float32)
+    n_factor = factor_graph.clone()
+    for _ in range(int(torch.log2(torch.tensor(code_length, dtype=torch.float32)).item()) - 1):
+        n_factor = torch.kron(n_factor, factor_graph)
+    return n_factor.to(device=device)
 
 
 @ModelRegistry.register_model("polar_code_encoder")
@@ -78,9 +77,9 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         frozen_zeros (bool): Specifies whether frozen bits are initialized to zeros.
         dtype (torch.dtype): Data type used for computations (e.g., torch.float32).
         load_rank (bool): Indicates whether to load rank-based polar indices as defined in the 5G standard.
-        rank (np.ndarray): Rank-based indices for frozen bits (loaded if `load_rank` is True).
-        info_indices (np.ndarray): Boolean array indicating positions of information bits.
-        mask_dict (np.ndarray): Mask dictionary for the Polar code structure.
+        rank (torch.Tensor): Rank-based indices for frozen bits (loaded if `load_rank` is True).
+        info_indices (torch.Tensor): Boolean array indicating positions of information bits.
+        mask_dict (torch.Tensor): Mask dictionary for the Polar code structure.
     """
 
     def __init__(self, code_dimension: int, code_length: int, *args: Any, **kwargs: Any):
@@ -97,13 +96,13 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
                 - frozen_zeros (bool): Whether frozen bits are initialized to zeros (default: False).
                 - dtype (torch.dtype): Data type used for computations (default: torch.float32).
                 - load_rank (bool): Whether to load rank-based polar indices as defined in the 5G standard (default: True).
-                - info_indices (np.ndarray): Boolean array indicating positions of information bits.
+                - info_indices (torch.Tensor): Boolean array indicating positions of information bits.
                   Required when load_rank=False. Must have length equal to code_length and exactly
                   code_dimension True values.
         """
         super().__init__(code_length, code_dimension, *args, **kwargs)
         self.device = kwargs.get("device", "cpu")
-        self.m = int(np.log2(code_length))
+        self.m = int(torch.log2(torch.tensor(code_length, dtype=torch.float32)).item())
         assert 2**self.m == code_length, "n must be a power of 2"
         self.polar_i = kwargs.get("polar_i", False)
         self.frozen_zeros = kwargs.get("frozen_zeros", False)
@@ -121,12 +120,11 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             csv_path = os.path.join(module_dir, "..", "rank_polar.csv")
             rank = pd.read_csv(csv_path, sep=" ", index_col=0)
             self.rank = rank.Q.values
-            F = np.zeros(self.code_length)
+            F = torch.zeros(self.code_length)
             F[self.rank[self.rank < self.code_length][: self.code_length - self.code_dimension]] = 1
-            info_ind = np.where(F == 0)[0]
-            self.info_indices = np.zeros(self.code_length)
-            self.info_indices[info_ind] = 1
-            self.info_indices = self.info_indices.astype(bool)
+            info_ind = torch.where(F == 0)[0]
+            self.info_indices = torch.zeros(self.code_length, dtype=torch.bool)
+            self.info_indices[info_ind] = True
         else:
             # When load_rank=False, info_indices must be provided
             info_indices = kwargs.get("info_indices", None)
@@ -134,15 +132,18 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
                 raise ValueError("When load_rank=False, info_indices must be provided as a boolean array " "indicating the positions of information bits. The array should have length " f"equal to code_length ({self.code_length}) and exactly {self.code_dimension} " "True values.")
 
             # Validate info_indices
-            info_indices = np.asarray(info_indices, dtype=bool)
+            if isinstance(info_indices, torch.Tensor):
+                info_indices = info_indices.detach().clone().to(dtype=torch.bool)
+            else:
+                info_indices = torch.tensor(info_indices, dtype=torch.bool)
             if len(info_indices) != self.code_length:
                 raise ValueError(f"info_indices must have length {self.code_length}, got {len(info_indices)}")
-            if np.sum(info_indices) != self.code_dimension:
-                raise ValueError(f"info_indices must have exactly {self.code_dimension} True values, " f"got {np.sum(info_indices)}")
+            if torch.sum(info_indices) != self.code_dimension:
+                raise ValueError(f"info_indices must have exactly {self.code_dimension} True values, " f"got {torch.sum(info_indices)}")
 
             self.info_indices = info_indices
 
-        self.mask_dict: Optional[np.ndarray] = None
+        self.mask_dict: Optional[torch.Tensor] = None
 
     def get_generator_matrix(self) -> torch.Tensor:
         """Returns the generator matrix of the Polar code (without interleaving).
@@ -174,8 +175,12 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
         bs = u.shape[0]
 
         if self.mask_dict is None or self.mask_dict.shape[0] != self.m:
-            mask_dict = _index_matrix(self.code_length).T.astype(int) - 1
-            self.mask_dict = mask_dict[np.flip(np.arange(self.m))]
+            index_matrix = _index_matrix(self.code_length)
+            if isinstance(index_matrix, torch.Tensor):
+                mask_dict = index_matrix.detach().clone().T - 1
+            else:
+                mask_dict = torch.tensor(index_matrix).T - 1
+            self.mask_dict = mask_dict[torch.flip(torch.arange(self.m), [0])]
 
         # Ensure mask_dict is properly initialized
         assert self.mask_dict is not None, "mask_dict should be initialized"

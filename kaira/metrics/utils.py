@@ -3,7 +3,6 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
 from torch import Tensor
 
@@ -81,7 +80,7 @@ def visualize_metrics_comparison(
     # Original implementation for multiple results
     metric_count = len(common_metrics)
     bar_width = 0.8 / len(results_list)
-    bar_indices = np.arange(metric_count)
+    bar_indices = torch.arange(metric_count)
 
     for i, (results, label) in enumerate(zip(results_list, labels)):
         means = []
@@ -160,11 +159,12 @@ def benchmark_metrics(metrics: Dict[str, BaseMetric], preds: Tensor, targets: Te
             torch.cuda.synchronize() if preds.is_cuda else None
             times.append(time.time() - start)
 
+        times_tensor = torch.tensor(times)
         results[name] = {
-            "mean_time": np.mean(times),
-            "std_time": np.std(times),
-            "min_time": np.min(times),
-            "max_time": np.max(times),
+            "mean_time": torch.mean(times_tensor).item(),
+            "std_time": torch.std(times_tensor).item() if len(times) > 1 else 0.0,
+            "min_time": torch.min(times_tensor).item(),
+            "max_time": torch.max(times_tensor).item(),
         }
 
     return results
@@ -185,8 +185,6 @@ def batch_metrics_to_table(
     Returns:
         List[List[str]]: Table data as list of rows
     """
-    import numpy as np
-
     headers = ["Metric", "Mean"]
     if include_std:
         headers.append("Std")
@@ -194,10 +192,10 @@ def batch_metrics_to_table(
     rows = [headers]
 
     for name, values in metrics_dict.items():
-        values_array = np.array(values)
-        row = [name, f"{values_array.mean():.{precision}f}"]
+        values_tensor = torch.tensor(values)
+        row = [name, f"{values_tensor.mean():.{precision}f}"]
         if include_std:
-            row.append(f"{values_array.std():.{precision}f}")
+            row.append(f"{values_tensor.std():.{precision}f}")
         rows.append(row)
 
     return rows
@@ -258,8 +256,6 @@ def summarize_metrics_over_batches(metrics_history: List[Dict[str, Any]]) -> Dic
     Returns:
         Dict[str, Any]: Summary statistics for each metric
     """
-    import numpy as np
-
     # Initialize summary dict
     summary: Dict[str, List[float]] = {}
 
@@ -285,14 +281,14 @@ def summarize_metrics_over_batches(metrics_history: List[Dict[str, Any]]) -> Dic
     # Compute statistics
     result = {}
     for name, values in summary.items():
-        values_array = np.array(values)
+        values_tensor = torch.tensor(values)
         result[name] = {
-            "mean": float(np.mean(values_array)),
-            "std": float(np.std(values_array)),
-            "min": float(np.min(values_array)),
-            "max": float(np.max(values_array)),
-            "median": float(np.median(values_array)),
-            "n_samples": len(values_array),
+            "mean": float(values_tensor.mean()),
+            "std": float(values_tensor.std()),
+            "min": float(values_tensor.min()),
+            "max": float(values_tensor.max()),
+            "median": float(values_tensor.median()),
+            "n_samples": len(values),
         }
 
     return result

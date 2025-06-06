@@ -88,10 +88,7 @@ class BERSimulationBenchmark(CommunicationBenchmark):
         """
         snr_linear = 10 ** (snr_db / 10)
         noise_power = 1 / snr_linear
-        noise = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * (
-            torch.randn(len(symbols), device=self.device) + 
-            1j * torch.randn(len(symbols), device=self.device)
-        )
+        noise = torch.sqrt(torch.tensor(noise_power / 2, device=self.device)) * (torch.randn(len(symbols), device=self.device) + 1j * torch.randn(len(symbols), device=self.device))
         return symbols + noise.real  # Take real part for BPSK
 
     def _demodulate_bpsk(self, received: torch.Tensor) -> torch.Tensor:
@@ -135,10 +132,8 @@ class BERSimulationBenchmark(CommunicationBenchmark):
 
             # Theoretical BER for BPSK
             if self.modulation.lower() == "bpsk":
-                from scipy.special import erfc  # type: ignore[import-untyped]
-
                 snr_linear = 10 ** (snr_db / 10)
-                theo_ber = 0.5 * erfc(torch.sqrt(torch.tensor(snr_linear, device=self.device)).cpu().numpy())
+                theo_ber = 0.5 * torch.special.erfc(torch.sqrt(torch.tensor(snr_linear, device=self.device))).item()
                 theoretical_ber.append(theo_ber)
 
         return {"success": True, "snr_range": self.snr_range, "ber_simulated": ber_results, "ber_theoretical": theoretical_ber, "modulation": self.modulation, "num_bits": self.num_bits, "rmse": torch.sqrt(torch.mean((torch.tensor(ber_results) - torch.tensor(theoretical_ber)) ** 2)).item()}
@@ -184,9 +179,7 @@ class ThroughputBenchmark(CommunicationBenchmark):
                 processed = payload.clone()
                 kernel = torch.tensor([1, 1], dtype=torch.float32, device=self.device)
                 for _ in range(10):  # Simulate some processing
-                    processed = torch.nn.functional.conv1d(processed.float().unsqueeze(0).unsqueeze(0), 
-                                                         kernel.unsqueeze(0).unsqueeze(0), 
-                                                         padding=0).squeeze()[:payload_size].int()
+                    processed = torch.nn.functional.conv1d(processed.float().unsqueeze(0).unsqueeze(0), kernel.unsqueeze(0).unsqueeze(0), padding=0).squeeze()[:payload_size].int()
 
                 end_time = time.time()
 
@@ -195,10 +188,7 @@ class ThroughputBenchmark(CommunicationBenchmark):
                 throughput = StandardMetrics.throughput(payload_size, transmission_time)
                 throughputs.append(throughput)
 
-            throughput_results[payload_size] = {"mean": torch.tensor(throughputs).mean().item(), 
-                                              "std": torch.tensor(throughputs).std().item(), 
-                                              "min": torch.tensor(throughputs).min().item(), 
-                                              "max": torch.tensor(throughputs).max().item()}
+            throughput_results[payload_size] = {"mean": torch.tensor(throughputs).mean().item(), "std": torch.tensor(throughputs).std().item(), "min": torch.tensor(throughputs).min().item(), "max": torch.tensor(throughputs).max().item()}
 
         return {"success": True, "payload_sizes": self.payload_sizes, "throughput_results": throughput_results, "peak_throughput": max(result["max"] for result in throughput_results.values())}
 
@@ -519,15 +509,15 @@ class OFDMPerformanceBenchmark(CommunicationBenchmark):
         bits_grouped = data_bits.reshape(-1, self.bits_per_symbol)
 
         # QPSK modulation - convert bits to indices manually
-        indices = []
+        indices: list[int] = []
         for bit_group in bits_grouped:
             decimal_val = 0
             for i, bit in enumerate(bit_group):
                 decimal_val += bit.item() * (2 ** (self.bits_per_symbol - 1 - i))
             indices.append(decimal_val)
-        indices = torch.tensor(indices, dtype=torch.long, device=self.device)
+        indices_tensor = torch.tensor(indices, dtype=torch.long, device=self.device)
 
-        modulated = self.constellation[indices % len(self.constellation)]
+        modulated = self.constellation[indices_tensor % len(self.constellation)]
 
         # Pad or truncate to fit subcarriers
         if len(modulated) < self.num_subcarriers:
@@ -771,5 +761,5 @@ class ChannelCodingBenchmark(CommunicationBenchmark):
 
         finite_gains = [g for g in coding_gain if torch.isfinite(torch.tensor(g))]
         avg_gain = torch.tensor(finite_gains).mean().item() if finite_gains else 0.0
-        
+
         return {"success": True, "snr_range": self.snr_range, "ber_uncoded": ber_uncoded, "ber_coded": ber_coded, "coding_gain_db": coding_gain, "code_type": self.code_type, "code_rate": self.code_rate, "average_coding_gain": avg_gain}

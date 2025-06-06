@@ -2,7 +2,6 @@
 
 import math
 
-import numpy as np
 import pytest
 import torch
 
@@ -56,7 +55,7 @@ class TestAWGNChannel:
         # Check noise variance (should be close to noise_power)
         noise = output - random_tensor
         measured_variance = torch.var(noise).item()
-        assert np.isclose(measured_variance, noise_power, rtol=0.3)  # Increased tolerance for randomness
+        assert abs(measured_variance - noise_power) < 0.3 * noise_power  # Increased tolerance for randomness
 
     def test_forward_with_snr(self, random_tensor):
         snr_db = 10.0
@@ -72,7 +71,7 @@ class TestAWGNChannel:
         # Check noise variance
         noise = output - x
         measured_noise_power = torch.mean(noise**2).item()
-        assert np.isclose(measured_noise_power, expected_noise_power, rtol=0.3)
+        assert abs(measured_noise_power - expected_noise_power) < 0.3 * expected_noise_power
 
     def test_complex_input(self, complex_tensor):
         channel = AWGNChannel(avg_noise_power=0.1)
@@ -89,7 +88,7 @@ class TestAWGNChannel:
         # Check noise variance for complex (should be noise_power)
         noise = output - complex_tensor
         measured_variance = torch.mean(torch.abs(noise) ** 2).item()
-        assert np.isclose(measured_variance, 0.1, rtol=0.3)
+        assert abs(measured_variance - 0.1) < 0.3 * 0.1
 
     def test_pregenerated_noise(self, random_tensor):
         channel = AWGNChannel(avg_noise_power=0.1)  # Noise power doesn't matter here
@@ -144,7 +143,7 @@ class TestLaplacianChannel:
         expected_variance = 2 * (scale**2)
         noise = output - random_tensor
         measured_variance = torch.var(noise).item()
-        assert np.isclose(measured_variance, expected_variance, rtol=0.3)
+        assert abs(measured_variance - expected_variance) < 0.3 * expected_variance
 
     def test_forward_with_noise_power(self, random_tensor):
         """Test forward pass with noise power specification."""
@@ -155,7 +154,7 @@ class TestLaplacianChannel:
         # Check noise variance
         noise = output - random_tensor
         measured_variance = torch.var(noise).item()
-        assert np.isclose(measured_variance, noise_power, rtol=0.3)
+        assert abs(measured_variance - noise_power) < 0.3 * noise_power
 
     def test_complex_input(self, complex_tensor):
         """Test with complex input."""
@@ -192,7 +191,7 @@ class TestLaplacianChannel:
         measured_noise_power = torch.mean(noise**2).item()
 
         # Noise power should be close to the expected value
-        assert np.isclose(measured_noise_power, expected_noise_power, rtol=0.3)
+        assert abs(measured_noise_power - expected_noise_power) < 0.3 * expected_noise_power
 
 
 class TestPhaseNoiseChannel:
@@ -639,7 +638,7 @@ class TestNonlinearChannel:
         # Check noise variance
         noise = output - random_tensor
         measured_variance = torch.var(noise).item()
-        assert np.isclose(measured_variance, 0.1, rtol=0.2)
+        assert abs(measured_variance - 0.1) < 0.2 * 0.1
 
 
 def test_perfect_channel(random_tensor, complex_tensor):

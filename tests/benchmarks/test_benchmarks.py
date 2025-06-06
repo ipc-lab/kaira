@@ -4,7 +4,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
@@ -63,7 +62,7 @@ class SimpleBenchmark(BaseBenchmark):
         self.setup_called = True
 
     def run(self, **kwargs):
-        return {"success": True, "test_metric": kwargs.get("test_value", 42), "random_value": np.random.random()}
+        return {"success": True, "test_metric": kwargs.get("test_value", 42), "random_value": torch.rand(1).item()}
 
     def teardown(self):
         super().teardown()
@@ -116,30 +115,30 @@ class TestStandardMetrics:
 
     def test_bit_error_rate(self):
         """Test BER calculation."""
-        transmitted = np.array([0, 1, 0, 1, 0, 1])
-        received = np.array([0, 1, 1, 1, 0, 0])  # 2 errors out of 6 bits
+        transmitted = torch.tensor([0, 1, 0, 1, 0, 1])
+        received = torch.tensor([0, 1, 1, 1, 0, 0])  # 2 errors out of 6 bits
 
         ber = StandardMetrics.bit_error_rate(transmitted, received)
-        assert abs(ber - 2 / 6) < 1e-10
+        assert abs(ber - 2 / 6) < 1e-6
 
         # Test with torch tensors
-        transmitted_torch = torch.tensor(transmitted)
-        received_torch = torch.tensor(received)
+        transmitted_torch = transmitted.detach().clone() if isinstance(transmitted, torch.Tensor) else torch.tensor(transmitted)
+        received_torch = received.detach().clone() if isinstance(received, torch.Tensor) else torch.tensor(received)
         ber_torch = StandardMetrics.bit_error_rate(transmitted_torch, received_torch)
-        assert abs(ber_torch - 2 / 6) < 1e-10
+        assert abs(ber_torch - 2 / 6) < 1e-6
 
     def test_block_error_rate(self):
         """Test BLER calculation."""
-        transmitted = np.array([0, 1, 0, 1, 0, 1, 1, 0])  # 8 bits
-        received = np.array([0, 1, 1, 1, 0, 1, 1, 1])  # Error in first and last block
+        transmitted = torch.tensor([0, 1, 0, 1, 0, 1, 1, 0])  # 8 bits
+        received = torch.tensor([0, 1, 1, 1, 0, 1, 1, 1])  # Error in first and last block
 
         bler = StandardMetrics.block_error_rate(transmitted, received, block_size=4)
         assert abs(bler - 2 / 2) < 1e-10  # Both blocks have errors
 
     def test_signal_to_noise_ratio(self):
         """Test SNR calculation."""
-        signal = np.array([1.0, 2.0, 3.0])
-        noise = np.array([0.1, 0.1, 0.1])
+        signal = torch.tensor([1.0, 2.0, 3.0])
+        noise = torch.tensor([0.1, 0.1, 0.1])
 
         snr = StandardMetrics.signal_to_noise_ratio(signal, noise)
         assert snr > 0  # Should be positive for this case
@@ -155,7 +154,7 @@ class TestStandardMetrics:
 
     def test_latency_statistics(self):
         """Test latency statistics."""
-        latencies = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        latencies = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
 
         stats = StandardMetrics.latency_statistics(latencies)
 
@@ -177,7 +176,7 @@ class TestStandardMetrics:
 
     def test_confidence_interval(self):
         """Test confidence interval calculation."""
-        data = np.random.normal(0, 1, 100)
+        data = torch.randn(100)
 
         lower, upper = StandardMetrics.confidence_interval(data, confidence=0.95)
 

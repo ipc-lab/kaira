@@ -1,5 +1,4 @@
 # tests/test_constraints_signal.py
-import numpy as np
 import pytest
 import torch
 
@@ -68,7 +67,7 @@ def test_spectral_mask_constraint():
     t = torch.linspace(0, duration, n_samples, dtype=torch.float32)
 
     # Create a signal with strong components at 50Hz and 200Hz
-    signal = torch.sin(2 * np.pi * 50 * t) + 0.5 * torch.sin(2 * np.pi * 200 * t)
+    signal = torch.sin(2 * torch.pi * 50 * t) + 0.5 * torch.sin(2 * torch.pi * 200 * t)
 
     # Create a spectral mask that limits components above 100Hz
     # Frequency bins: full spectrum for fft (not rfft)

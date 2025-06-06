@@ -1,6 +1,5 @@
 """Tests for the belief_propagation_polar module in kaira.models.fec.decoders package."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -16,7 +15,7 @@ class TestBeliefPropagationPolarDecoder:
         self.code_dimension = 2
         self.code_length = 4
         # Create info_indices: boolean array of length 4 with exactly 2 True values
-        info_indices = np.array([True, True, False, False])
+        info_indices = torch.tensor([True, True, False, False])
         self.encoder = PolarCodeEncoder(self.code_dimension, self.code_length, polar_i=False, load_rank=False, info_indices=info_indices)  # BP decoder doesn't support polar_i=True
 
     def test_initialization_basic(self):
@@ -26,7 +25,7 @@ class TestBeliefPropagationPolarDecoder:
         assert decoder.encoder is self.encoder
         assert decoder.code_dimension == self.code_dimension
         assert decoder.code_length == self.code_length
-        assert np.array_equal(decoder.info_indices, self.encoder.info_indices)
+        assert torch.equal(decoder.info_indices, self.encoder.info_indices)
         assert decoder.device == self.encoder.device
         assert decoder.dtype == self.encoder.dtype
         assert not decoder.polar_i
@@ -76,8 +75,8 @@ class TestBeliefPropagationPolarDecoder:
         """Test cyclic permutations with perm=None."""
         decoder = BeliefPropagationPolarDecoder(self.encoder, perm=None)
 
-        expected = np.arange(decoder.m).reshape(1, decoder.m)
-        np.testing.assert_array_equal(decoder.permutations, expected)
+        expected = torch.arange(decoder.m).reshape(1, decoder.m)
+        assert torch.equal(decoder.permutations, expected)
 
     def test_get_cyclic_permutations_cycle(self):
         """Test cyclic permutations with perm='cycle'."""
@@ -141,7 +140,7 @@ class TestBeliefPropagationPolarDecoder:
         llr = torch.randn(batch_size, self.code_length)
         R, L = decoder._initialize_graph(llr)
 
-        perm = np.arange(decoder.m)
+        perm = torch.arange(decoder.m)
         R_updated = decoder.update_right(R, L, perm)
 
         assert R_updated.shape == R.shape
@@ -156,7 +155,7 @@ class TestBeliefPropagationPolarDecoder:
         llr = torch.randn(batch_size, self.code_length)
         R, L = decoder._initialize_graph(llr)
 
-        perm = np.arange(decoder.m)
+        perm = torch.arange(decoder.m)
         L_updated = decoder.update_left(R, L, perm)
 
         assert L_updated.shape == L.shape
@@ -233,7 +232,7 @@ class TestBeliefPropagationPolarDecoder:
         R, L = decoder._initialize_graph(llr)
 
         # Perform one update
-        perm = np.arange(decoder.m)
+        perm = torch.arange(decoder.m)
         R_updated = decoder.update_right(R, L, perm)
 
         # Check that values are clipped
@@ -302,7 +301,7 @@ class TestBeliefPropagationPolarDecoder:
 
         # Frozen bits should be initialized differently
         frozen_idx = decoder_zeros.frozen_ind
-        if np.any(frozen_idx):
+        if torch.any(frozen_idx):
             assert not torch.allclose(R_zeros[:, 0, frozen_idx], R_ones[:, 0, frozen_idx])
 
     def test_early_stop_warning(self, capsys):
@@ -315,7 +314,7 @@ class TestBeliefPropagationPolarDecoder:
     def test_larger_code(self):
         """Test with larger polar code."""
         # Create info_indices: boolean array of length 8 with exactly 4 True values
-        large_info_indices = np.array([True, True, True, True, False, False, False, False])
+        large_info_indices = torch.tensor([True, True, True, True, False, False, False, False])
         large_encoder = PolarCodeEncoder(4, 8, polar_i=False, load_rank=False, info_indices=large_info_indices)
         decoder = BeliefPropagationPolarDecoder(large_encoder, bp_iters=2)
 
