@@ -23,7 +23,7 @@ class ErrorVectorMagnitude(BaseMetric):
     errors in the received signal. Lower EVM values indicate better signal quality.
 
     EVM is calculated as:
-    EVM(%) = sqrt(E[|error_vector|^2] / E[|reference_vector|^2]) * 100
+    EVM(%) = sqrt(E[||error_vector||^2] / E[||reference_vector||^2]) * 100
 
     where error_vector = received_signal - reference_signal
 

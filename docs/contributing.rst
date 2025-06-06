@@ -36,10 +36,10 @@ To start contributing to Kaira:
 6. Engage with the community and help others
 7. Share your experiences and feedback
 
+.. _development-workflow:
+
 Development Workflow
 ------------------------
-
-.. _development-workflow:
 
 1. **Setting up your environment:**
 
