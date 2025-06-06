@@ -39,7 +39,7 @@ def run_ber_benchmark():
     plt.show()
 
     print(f"Benchmark completed in {result.execution_time:.2f} seconds")
-    print(f"RMSE between simulated and theoretical: {result.metrics['rmse']:.6f}")
+    print("RMSE between simulated and theoretical: {:.6f}".format(result.metrics["rmse"]))
 
 
 def run_throughput_benchmark():
@@ -59,9 +59,9 @@ def run_throughput_benchmark():
     # Display results
     print("\nThroughput Results:")
     for size, stats in result.metrics["throughput_results"].items():
-        print(f"  Payload size {size}: {stats['mean']:.2f} ± {stats['std']:.2f} bits/s")
+        print("  Payload size {}: {:.2f} ± {:.2f} bits/s".format(size, stats["mean"], stats["std"]))
 
-    print(f"Peak throughput: {result.metrics['peak_throughput']:.2f} bits/s")
+    print("Peak throughput: {:.2f} bits/s".format(result.metrics["peak_throughput"]))
 
 
 def run_benchmark_suite():
@@ -86,15 +86,15 @@ def run_benchmark_suite():
     # Get summary
     summary = suite.get_summary()
     print("\nSuite Summary:")
-    print(f"  Total benchmarks: {summary['total_benchmarks']}")
-    print(f"  Successful: {summary['successful']}")
-    print(f"  Failed: {summary['failed']}")
-    print(f"  Total execution time: {summary['total_execution_time']:.2f}s")
+    print("  Total benchmarks: {}".format(summary["total_benchmarks"]))
+    print("  Successful: {}".format(summary["successful"]))
+    print("  Failed: {}".format(summary["failed"]))
+    print("  Total execution time: {:.2f}s".format(summary["total_execution_time"]))
 
     # Save results
     output_dir = Path("./benchmark_results")
     suite.save_results(output_dir)
-    print(f"\nResults saved to: {output_dir}")
+    print("\nResults saved to:", output_dir)
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ def demonstrate_basic_usage():
     # Save the result
     saved_path = results_manager.save_benchmark_result(result, category="benchmarks", experiment_name="demo_experiment")
 
-    print(f"Saved benchmark result to: {saved_path}")
+    print("Saved benchmark result to:", saved_path)
 
     # List available results
     results = results_manager.list_results(category="benchmarks")
@@ -94,11 +94,11 @@ def demonstrate_comparison_and_analysis(results_manager):
     if len(all_results) >= 2:
         # Create a comparison report
         comparison_path = results_manager.create_comparison_report(all_results[:3], "demo_comparison")  # Compare first 3 results
-        print(f"Created comparison report: {comparison_path}")
+        print("Created comparison report:", comparison_path)
 
         # Load and display a result
         sample_result = results_manager.load_benchmark_result(all_results[0])
-        print(f"\nSample result: {sample_result.name}")
+        print("\nSample result:", sample_result.name)
         print(f"  Execution time: {sample_result.execution_time:.3f}s")
         print(f"  Key metrics: {sample_result.metrics}")
 
@@ -157,7 +157,7 @@ def main():
         print("\nCheck the 'example_results' directory to see the organized structure.")
 
     except Exception as e:
-        print(f"Error during demonstration: {e}")
+        print("Error during demonstration:", e)
         import traceback
 
         traceback.print_exc()

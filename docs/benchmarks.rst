@@ -48,7 +48,7 @@ Traditional usage (still supported)::
     result.save("benchmark_result.json")
 
 Available Benchmarks
--------------------
+-----------------------
 
 Standard Communication Benchmarks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +99,7 @@ Custom Configuration::
     )
 
 Benchmark Execution
-------------------
+-----------------------
 
 Sequential Execution::
 
@@ -129,10 +129,10 @@ Comparison and Analysis::
     )
 
 Metrics and Analysis
--------------------
+-----------------------
 
 Standard Metrics
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 The ``StandardMetrics`` class provides common communication system metrics:
 
@@ -154,12 +154,12 @@ Example::
     capacity = StandardMetrics.channel_capacity(snr_db=10.0)
 
 Results Management
------------------
+-------------------------
 
 Kaira provides an organized results management system that automatically structures benchmark results in a clean directory hierarchy.
 
 Results Directory Structure
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The benchmark system creates the following directory structure::
 
@@ -178,7 +178,7 @@ The benchmark system creates the following directory structure::
     └── summaries/         # Summary reports
 
 Using the Results Manager
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The new results management system provides automated organization::
 
@@ -197,7 +197,7 @@ The new results management system provides automated organization::
     # my_results/benchmarks/my_experiment/benchmark_name_timestamp_id.json
 
 Manual Results Management
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also manage results manually::
 
@@ -227,13 +227,13 @@ You can also manage results manually::
     result = results_manager.load_benchmark_result(result_path)
 
 Loading and Analysis
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # Load results using the results manager
     results_manager = BenchmarkResultsManager()
     result_paths = results_manager.list_results(category="benchmarks")
 
-    for path in result_paths:
+        for path in result_paths:
         result = results_manager.load_benchmark_result(path)
         print(f"Result: {result.name}, Time: {result.execution_time:.2f}s")
 
@@ -243,8 +243,9 @@ Loading and Analysis
         "algorithm_comparison"
     )
 
+
 Results Maintenance
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The system includes maintenance features for long-term management::
 
@@ -255,7 +256,7 @@ The system includes maintenance features for long-term management::
     results_manager.cleanup_empty_directories()
 
 Command Line Interface
----------------------
+------------------------------
 
 The ``kaira-benchmark`` CLI tool provides easy access to benchmarks::
 
@@ -309,7 +310,7 @@ See the ``examples/benchmarks/`` directory for comprehensive examples:
 - ``demo_new_results_system.py``: New results management system demonstration
 
 Results Management Example
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``demo_new_results_system.py`` example demonstrates the complete workflow::
 
@@ -333,3 +334,4 @@ API Reference
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:

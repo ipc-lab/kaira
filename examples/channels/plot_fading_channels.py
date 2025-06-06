@@ -282,7 +282,7 @@ plt.semilogy(snr_range_db, fading_ser, "rs-", linewidth=2, label="Rayleigh Fadin
 # Add theoretical curves using Kaira's calculate_theoretical_ber function
 snr_theory = np.linspace(0, 25, 100)
 # For QPSK - use Kaira's built-in function - Fix parameter order
-awgn_theory_ser = calculate_theoretical_ber(snr_theory, "qpsk") * 2  # Convert BER to SER (approx)
+awgn_theory_ser = calculate_theoretical_ber(torch.tensor(snr_theory), "qpsk") * 2  # Convert BER to SER (approx)
 
 # For Rayleigh fading, we still need to use the formula since it's not in Kaira yet
 snr_linear = 10 ** (snr_theory / 10)

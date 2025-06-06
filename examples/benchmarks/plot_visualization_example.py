@@ -123,7 +123,7 @@ def main():
 
     print("\n" + "=" * 50)
     print("✅ Visualization example completed successfully!")
-    print(f"📁 All plots saved to: {output_dir.absolute()}")
+    print("📁 All plots saved to:", output_dir.absolute())
     print("\nGenerated visualizations:")
     print("  • ber_curve.png - BER vs SNR curve")
     print("  • throughput_comparison.png - Throughput performance")

@@ -257,7 +257,7 @@ plt.show()
 
 # %%
 # Integration with Channels
-# ------------------------
+# ---------------------------------
 # Demonstrate how to extract and use CSI from channel outputs.
 
 print("\n=== Integration with Channels ===")
@@ -294,7 +294,7 @@ if hasattr(fading_channel, "snr_db"):
 
 # %%
 # Best Practices Summary
-# ---------------------
+# ---------------------------
 print("\n=== Best Practices for ChannelAwareBaseModel ===")
 print(
     """
