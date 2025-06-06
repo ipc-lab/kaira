@@ -173,6 +173,13 @@ repos:
   # Local hooks for project automation
   - repo: local
     hooks:
+      - id: install-requirements
+        name: Install requirements.txt
+        entry: pip install -r requirements.txt
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages: [pre-commit]
       - id: generate-changelog
         name: Generate changelog.rst from CHANGELOG.md
         entry: python scripts/generate_changelog.py
@@ -184,4 +191,10 @@ repos:
         entry: python scripts/generate_api_reference.py docs/api_reference.rst
         language: system
         files: ^kaira/.*\.py$
+        pass_filenames: false
+      - id: generate-example-indices
+        name: Generate example gallery index files
+        entry: python scripts/generate_example_indices.py
+        language: system
+        files: ^examples/.*\.py$
         pass_filenames: false

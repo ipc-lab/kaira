@@ -11,6 +11,10 @@ python scripts/generate_api_reference.py docs/api_reference.rst
 echo "Generating changelog documentation..."
 python scripts/generate_changelog.py
 
+# Generate example gallery index files automatically
+echo "Generating example gallery index files..."
+python scripts/generate_example_indices.py
+
 # Move to the docs directory
 cd docs || exit
 
