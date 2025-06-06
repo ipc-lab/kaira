@@ -18,7 +18,7 @@ Benchmarking tools and performance comparisons for different algorithms, models,
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_basic_usage_thumb.png
       :alt: Example: Basic benchmark usage with Kaira
 
-    :ref:`sphx_glr_auto_examples_benchmarks_plot_basic_usage.py`
+    :ref:`Example: Basic benchmark usage with Kaira <sphx_glr_auto_examples_benchmarks_plot_basic_usage.py>`
 
 .. raw:: html
 
@@ -34,7 +34,7 @@ Benchmarking tools and performance comparisons for different algorithms, models,
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_comparison_example_thumb.png
       :alt: Example: Comparing different modulation schemes
 
-    :ref:`sphx_glr_auto_examples_benchmarks_plot_comparison_example.py`
+    :ref:`Example: Comparing different modulation schemes <sphx_glr_auto_examples_benchmarks_plot_comparison_example.py>`
 
 .. raw:: html
 
@@ -50,7 +50,7 @@ Benchmarking tools and performance comparisons for different algorithms, models,
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_demo_new_results_system_thumb.png
       :alt: Example script demonstrating the new benchmark results management system.
 
-    :ref:`sphx_glr_auto_examples_benchmarks_plot_demo_new_results_system.py`
+    :ref:`Example script demonstrating the new benchmark results management system. <sphx_glr_auto_examples_benchmarks_plot_demo_new_results_system.py>`
 
 .. raw:: html
 
@@ -66,7 +66,7 @@ Benchmarking tools and performance comparisons for different algorithms, models,
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_visualization_example_thumb.png
       :alt: Visualization Example for Kaira Benchmarks.
 
-    :ref:`sphx_glr_auto_examples_benchmarks_plot_visualization_example.py`
+    :ref:`Visualization Example for Kaira Benchmarks. <sphx_glr_auto_examples_benchmarks_plot_visualization_example.py>`
 
 .. raw:: html
 
