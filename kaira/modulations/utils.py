@@ -223,6 +223,8 @@ def calculate_theoretical_ber(snr_db: Union[float, List[float], torch.Tensor], m
         snr_tensor = snr_db.float()
     elif isinstance(snr_db, float):
         snr_tensor = torch.tensor([snr_db], dtype=torch.float32, device=original_device)
+    else:
+        raise ValueError(f"Unsupported type for snr_db: {type(snr_db)}")
 
     # Convert SNR from dB to linear scale
     snr = 10 ** (snr_tensor / 10)
