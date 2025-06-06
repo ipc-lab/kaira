@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Example script demonstrating the new benchmark results management system.
+"""
+===========================================
+New Results Management System Demo
+===========================================
 
-This script shows how to use the improved BenchmarkResultsManager for organizing and managing
-benchmark results.
+This example demonstrates the new organized results management system in Kaira,
+showcasing automatic directory structuring, experiment naming, suite management,
+result comparison, and maintenance features.
 """
 import time
 

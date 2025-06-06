@@ -1,8 +1,11 @@
 """
-Example: Basic benchmark usage with Kaira
+==========================
+Basic Benchmark Usage
+==========================
 
-This example demonstrates how to use the Kaira benchmarking system
-to evaluate communication system performance.
+This example demonstrates the basic usage of the Kaira benchmarking system,
+including running individual benchmarks, creating and running benchmark suites,
+and saving/analyzing results.
 """
 
 from pathlib import Path

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Visualization Example for Kaira Benchmarks.
+"""Benchmark Visualization Example
 
-This example demonstrates how to create visualizations of benchmark results using the
-BenchmarkVisualizer class.
+=================================
+
+This example demonstrates comprehensive benchmark result visualization in Kaira,
+including BER curve plotting, throughput performance, modulation comparisons,
+and performance summary generation.
 """
 
 from pathlib import Path

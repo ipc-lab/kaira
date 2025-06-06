@@ -11,66 +11,66 @@ Benchmarking tools and performance comparisons for different algorithms, models,
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the Kaira benchmarking system to evaluate communication system performance.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the basic usage of the Kaira benchmarking system, including running individual benchmarks, creating and running benchmark suites, and saving/analyzing results.">
 
 .. only:: html
 
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_basic_usage_thumb.png
-      :alt: Example: Basic benchmark usage with Kaira
+      :alt: Basic Benchmark Usage
 
-    :ref:`Example: Basic benchmark usage with Kaira <sphx_glr_auto_examples_benchmarks_plot_basic_usage.py>`
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_basic_usage.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Example: Basic benchmark usage with Kaira</div>
+      <div class="sphx-glr-thumbnail-title">Basic Benchmark Usage</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the benchmarking system to compare the performance of different modulation schemes.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the Kaira benchmarking system to compare the performance of different approaches, such as various modulation schemes, using parameter sweeps and result visualization.">
 
 .. only:: html
 
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_comparison_example_thumb.png
-      :alt: Example: Comparing different modulation schemes
+      :alt: Benchmark Comparison Example
 
-    :ref:`Example: Comparing different modulation schemes <sphx_glr_auto_examples_benchmarks_plot_comparison_example.py>`
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_comparison_example.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Example: Comparing different modulation schemes</div>
+      <div class="sphx-glr-thumbnail-title">Benchmark Comparison Example</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This script shows how to use the improved BenchmarkResultsManager for organizing and managing benchmark results.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the new organized results management system in Kaira, showcasing automatic directory structuring, experiment naming, suite management, result comparison, and maintenance features.">
 
 .. only:: html
 
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_demo_new_results_system_thumb.png
-      :alt: Example script demonstrating the new benchmark results management system.
+      :alt: New Results Management System Demo
 
-    :ref:`Example script demonstrating the new benchmark results management system. <sphx_glr_auto_examples_benchmarks_plot_demo_new_results_system.py>`
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_demo_new_results_system.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Example script demonstrating the new benchmark results management system.</div>
+      <div class="sphx-glr-thumbnail-title">New Results Management System Demo</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to create visualizations of benchmark results using the BenchmarkVisualizer class.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates comprehensive benchmark result visualization in Kaira, including BER curve plotting, throughput performance, modulation comparisons, and performance summary generation.">
 
 .. only:: html
 
     .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_visualization_example_thumb.png
-      :alt: Visualization Example for Kaira Benchmarks.
+      :alt: Benchmark Visualization Example
 
-    :ref:`Visualization Example for Kaira Benchmarks. <sphx_glr_auto_examples_benchmarks_plot_visualization_example.py>`
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_visualization_example.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Visualization Example for Kaira Benchmarks.</div>
+      <div class="sphx-glr-thumbnail-title">Benchmark Visualization Example</div>
     </div>
 
 .. raw:: html

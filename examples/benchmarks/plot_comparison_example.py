@@ -1,8 +1,11 @@
 """
-Example: Comparing different modulation schemes
+======================================
+Benchmark Comparison Example
+======================================
 
-This example demonstrates how to use the benchmarking system to compare
-the performance of different modulation schemes.
+This example demonstrates how to use the Kaira benchmarking system
+to compare the performance of different approaches, such as various
+modulation schemes, using parameter sweeps and result visualization.
 """
 
 import matplotlib.pyplot as plt
