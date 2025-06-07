@@ -199,6 +199,8 @@ jobs:
           else
             echo "ℹ️ No existing auto_examples found in releases, will build from scratch"
           fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Get last successful workflow commit
         id: last-success
