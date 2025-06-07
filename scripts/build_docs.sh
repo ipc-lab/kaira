@@ -3,6 +3,10 @@
 # Move to the project root directory
 cd "$(dirname "$0")/.." || exit
 
+# Download auto_examples if needed (for ReadTheDocs and other CI environments)
+echo "Downloading auto_examples if needed..."
+python scripts/download_auto_examples.py
+
 # Generate the API reference documentation automatically
 echo "Generating API reference documentation..."
 python scripts/generate_api_reference.py docs/api_reference.rst

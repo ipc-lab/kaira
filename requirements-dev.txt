@@ -19,3 +19,4 @@ coverage>=7.0.0
 seaborn
 ipython
 scikit-learn
+requests

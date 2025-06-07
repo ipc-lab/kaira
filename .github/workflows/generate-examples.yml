@@ -1,0 +1,82 @@
+name: Generate Auto Examples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  generate-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"] # Use a single version for example generation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Generate auto_examples using sphinx-gallery
+        run: |
+          cd docs
+          # Clean any existing auto_examples
+          rm -rf auto_examples
+          # Use sphinx-build to generate only the gallery
+          sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=True -D sphinx_gallery_conf.download_all_examples=True . _build/html -v
+
+      - name: Verify auto_examples generation
+        run: |
+          if [ -d "docs/auto_examples" ]; then
+            echo "auto_examples directory created successfully"
+            find docs/auto_examples -type f -name "*.py" | head -10
+            echo "Total Python files: $(find docs/auto_examples -name "*.py" | wc -l)"
+            echo "Total image files: $(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l)"
+          else
+            echo "ERROR: auto_examples directory was not created"
+            exit 1
+          fi
+
+      - name: Create auto_examples archive
+        run: |
+          cd docs
+          # Create a zip archive of the auto_examples directory
+          zip -r auto_examples.zip auto_examples/
+          echo "Archive created: $(ls -lh auto_examples.zip)"
+
+      - name: Upload auto_examples as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto_examples
+          path: docs/auto_examples.zip
+          retention-days: 30
+
+      - name: Upload auto_examples to release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: docs/auto_examples.zip
+          asset_name: auto_examples.zip
+          asset_content_type: application/zip

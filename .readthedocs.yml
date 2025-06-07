@@ -12,6 +12,13 @@ build:
     python: "3.10"
   apt_packages:
     - graphviz # Install the graphviz system package
+  jobs:
+    pre_build:
+      # Pre-build step: Download auto_examples if needed
+      - python scripts/download_auto_examples.py
+    post_build:
+      # Post-build cleanup if needed
+      - echo "Documentation build completed"
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

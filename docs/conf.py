@@ -400,4 +400,46 @@ def setup(app):
         app: The Sphinx application object.
     """
     app.connect("autodoc-skip-member", skip_member)
-    app.add_config_value("current_date", get_current_date(), "env")
+
+    # Add config value only if it doesn't exist
+    try:
+        app.add_config_value("current_date", get_current_date(), "env")
+    except AttributeError:  # More specific exception
+        pass  # Config value already exists
+
+    # Download auto_examples before building if needed
+    app.connect("config-inited", download_auto_examples_if_needed)
+
+
+def download_auto_examples_if_needed(app, config):
+    """Download auto_examples if needed during Sphinx build."""
+    import subprocess  # nosec B404 - subprocess is needed for legitimate script execution
+    import sys
+    from pathlib import Path
+
+    # Get the project root directory
+    docs_dir = Path(app.srcdir).resolve()
+    project_root = docs_dir.parent
+    # Ensure download_script is a string representation of the path
+    download_script = str(project_root / "scripts" / "download_auto_examples.py")
+    python_executable = str(sys.executable)  # Ensure python executable is a string
+
+    if Path(download_script).exists():
+        try:
+            print("[Sphinx] Running auto_examples download script...")
+            # Ensure all parts of the command are strings
+            # Validate that we're only executing our own script with trusted python executable
+            if not Path(download_script).is_file() or not Path(python_executable).is_file():
+                raise ValueError("Invalid script or python executable path")
+            command = [python_executable, download_script]
+            result = subprocess.run(command, capture_output=True, text=True, cwd=str(project_root), check=False)  # nosec B603 - controlled execution of our own script
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            if result.returncode != 0:
+                print(f"[Sphinx] Warning: auto_examples download script failed with code {result.returncode}")
+        except Exception as e:
+            print(f"[Sphinx] Warning: Could not run auto_examples download script: {e}")
+    else:
+        print(f"[Sphinx] Warning: Download script not found at {download_script}")
