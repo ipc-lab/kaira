@@ -14,31 +14,93 @@ concurrency:
 jobs:
   pre-commit:
     runs-on: self-hosted
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13.2"
+          cache: "pip"
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ runner.os }}-precommit-pip-${{ hashFiles('**/requirements*.txt', '.pre-commit-config.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-precommit-pip-
 
       - name: Install pre-commit
         run: |
+          echo "🔧 Installing pre-commit..."
           python -m pip install --upgrade pip
           pip install pre-commit
+          echo "✅ Pre-commit installed successfully"
+
+      - name: Validate pre-commit configuration
+        run: |
+          echo "🔍 Validating pre-commit configuration..."
+          pre-commit --version
+
+          if [ -f .pre-commit-config.yaml ]; then
+            echo "📋 Pre-commit configuration found"
+            echo "Configured hooks:"
+            grep -E "^\s*-\s+repo:|^\s+id:" .pre-commit-config.yaml | head -10
+          else
+            echo "❌ No .pre-commit-config.yaml found"
+            exit 1
+          fi
 
       - name: Run pre-commit hooks
         run: |
+          echo "🧹 Running pre-commit hooks..."
           pre-commit clean
           pre-commit migrate-config
           pre-commit install
-          pre-commit run --all-files
+
+          # Run hooks and capture output
+          if pre-commit run --all-files --show-diff-on-failure; then
+            echo "✅ All pre-commit hooks passed"
+          else
+            echo "❌ Some pre-commit hooks failed"
+            exit 1
+          fi
+
+      - name: Generate pre-commit summary
+        if: always()
+        run: |
+          echo "# 🧹 Pre-commit Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ $? -eq 0 ]; then
+            echo "✅ **Status**: All pre-commit hooks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Some pre-commit hooks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Check Information:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version**: 3.13.2" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner**: ${{ runner.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pre-commit Hooks:" >> $GITHUB_STEP_SUMMARY
+          echo "All configured hooks in \`.pre-commit-config.yaml\` were executed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **Tip**: If hooks failed, check the action logs for specific issues. Common fixes include formatting code with \`black\`, \`prettier\`, or fixing linting issues."

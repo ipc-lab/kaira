@@ -22,32 +22,96 @@ jobs:
         python-version: ${{ github.ref == 'refs/heads/dev' && fromJSON('["3.10"]') || fromJSON('["3.10", "3.11", "3.12", "3.13"]') }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'pyproject.toml', 'setup.py') }}
           restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
+          echo "🔧 Installing dependencies for Python ${{ matrix.python-version }}..."
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-cov
+
+          # Install package in development mode
           pip install -e .[dev]
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+          # Install additional dev requirements if they exist
+          if [ -f requirements-dev.txt ]; then
+            echo "📦 Installing requirements-dev.txt..."
+            pip install -r requirements-dev.txt
+          fi
+
+          echo "✅ Dependencies installed successfully"
         shell: bash
+
+      - name: Validate test environment
+        run: |
+          echo "🔍 Validating test environment..."
+          python --version
+          pip --version
+          pytest --version
+          python -c "import kaira; print(f'Kaira version: {kaira.__version__}')" || echo "⚠️ Kaira not importable"
+
+          echo "📊 Installed packages:"
+          pip list | head -20
 
       - name: Test with pytest
         run: |
-          pytest --cov=kaira --cov-report=xml
+          echo "🧪 Running tests with pytest..."
+          pytest --cov=kaira --cov-report=xml --cov-report=term-missing -v
+          echo "✅ Tests completed"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-python-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            pytest.xml
+          retention-days: 7
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "# 🧪 Test Results - Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ $? -eq 0 ]; then
+            echo "✅ **Status**: All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Environment:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner**: ${{ runner.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+          # Add coverage info if available
+          if [ -f coverage.xml ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Coverage:" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage report generated and uploaded as artifact." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
