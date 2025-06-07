@@ -331,7 +331,7 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
 
         # Create temporary file
         with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
-            tmp_path = tmp_file.name
+            tmp_path = Path(tmp_file.name)
 
         # Download the file
         if requests:
@@ -370,40 +370,88 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
             file_list = zip_ref.namelist()
             log_message(f"Archive contains {len(file_list)} files")
 
-            # Find the auto_examples directory in the archive
-            auto_examples_prefix = None
-            for file_path in file_list:
-                if "auto_examples/" in file_path:
-                    # Get the prefix before auto_examples
-                    parts = file_path.split("auto_examples/")
-                    if len(parts) >= 2:
-                        auto_examples_prefix = parts[0] + "auto_examples/"
-                        break
+            # Debug: Log first few files to understand structure
+            for i, file_path in enumerate(file_list[:10]):  # Show first 10 files
+                log_message(f"File {i+1}: {file_path}")
+            if len(file_list) > 10:
+                log_message(f"... and {len(file_list) - 10} more files")
 
-            if auto_examples_prefix:
-                log_message(f"Found auto_examples with prefix: {auto_examples_prefix}")
+            # Check if this is a GitHub artifact containing auto_examples.zip
+            if len(file_list) == 1 and file_list[0] == "auto_examples.zip":
+                log_message("Found nested auto_examples.zip - extracting inner archive")
 
-                # Extract only auto_examples files
-                for file_path in file_list:
-                    if file_path.startswith(auto_examples_prefix):
-                        # Calculate relative path within auto_examples
-                        relative_path = file_path[len(auto_examples_prefix) :]
-                        if relative_path:  # Skip the auto_examples/ directory itself
-                            target_file_path = target_dir / "auto_examples" / relative_path
-                            target_file_path.parent.mkdir(parents=True, exist_ok=True)
+                # Extract the nested zip file to a temporary location
+                with zip_ref.open("auto_examples.zip") as nested_zip_data:
+                    nested_tmp_path = tmp_path.with_name(tmp_path.name + "_nested.zip")
+                    with open(nested_tmp_path, "wb") as f:
+                        shutil.copyfileobj(nested_zip_data, f)
 
-                            # Extract the file
-                            with zip_ref.open(file_path) as source:
-                                with open(target_file_path, "wb") as target:
-                                    shutil.copyfileobj(source, target)
+                # Now extract from the nested zip
+                with zipfile.ZipFile(nested_tmp_path, "r") as nested_zip_ref:
+                    nested_file_list = nested_zip_ref.namelist()
+                    log_message(f"Nested archive contains {len(nested_file_list)} files")
 
-                log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
+                    # Extract auto_examples files from nested archive
+                    auto_examples_extracted = False
+                    for file_path in nested_file_list:
+                        if file_path.startswith("auto_examples/"):
+                            # Calculate relative path within auto_examples
+                            relative_path = file_path[len("auto_examples/") :]
+                            if relative_path:  # Skip the auto_examples/ directory itself
+                                target_file_path = target_dir / "auto_examples" / relative_path
+                                target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                                # Extract the file
+                                with nested_zip_ref.open(file_path) as source:
+                                    with open(target_file_path, "wb") as target:
+                                        shutil.copyfileobj(source, target)
+                                auto_examples_extracted = True
+
+                    if auto_examples_extracted:
+                        log_message(f"Successfully extracted auto_examples from nested archive to {target_dir / 'auto_examples'}")
+                    else:
+                        log_message("ERROR: No auto_examples/ files found in nested archive")
+                        return False
+
+                # Clean up temporary nested file
+                nested_tmp_path.unlink()
+
             else:
-                log_message("Could not find auto_examples directory in archive")
-                return False
+                # Original logic for direct archive structure
+                # Find the auto_examples directory in the archive
+                auto_examples_prefix = None
+                for file_path in file_list:
+                    if "auto_examples/" in file_path:
+                        # Get the prefix before auto_examples
+                        parts = file_path.split("auto_examples/")
+                        if len(parts) >= 2:
+                            auto_examples_prefix = parts[0] + "auto_examples/"
+                            break
+
+                if auto_examples_prefix:
+                    log_message(f"Found auto_examples with prefix: {auto_examples_prefix}")
+
+                    # Extract only auto_examples files
+                    for file_path in file_list:
+                        if file_path.startswith(auto_examples_prefix):
+                            # Calculate relative path within auto_examples
+                            relative_path = file_path[len(auto_examples_prefix) :]
+                            if relative_path:  # Skip the auto_examples/ directory itself
+                                target_file_path = target_dir / "auto_examples" / relative_path
+                                target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                                # Extract the file
+                                with zip_ref.open(file_path) as source:
+                                    with open(target_file_path, "wb") as target:
+                                        shutil.copyfileobj(source, target)
+
+                    log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
+                else:
+                    log_message("Could not find auto_examples directory in archive")
+                    return False
 
         # Clean up temporary file
-        os.unlink(tmp_path)
+        tmp_path.unlink()
         return True
 
     except Exception as e:
