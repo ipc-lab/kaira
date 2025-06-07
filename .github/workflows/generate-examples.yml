@@ -279,16 +279,33 @@ jobs:
           changed_count="${{ steps.changed-examples.outputs.changed_count }}"
           total_examples=$(find ../examples -name "*.py" | wc -l)
 
-          if [ "$changed_count" -gt 0 ]; then
+          if [ "$changed_count" -gt 0 ] && [ -d "auto_examples" ]; then
             echo "🔄 Generating auto_examples (incremental build)"
             echo "Changed files: $changed_count out of $total_examples total"
-          else
-            echo "🔄 Generating auto_examples (full build - no base found or force rebuild)"
-          fi
 
-          # Use sphinx-build to generate the gallery
-          # It will automatically detect what needs to be built based on existing files
-          sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=True -D sphinx_gallery_conf.download_all_examples=True . _build/html -v
+            # Use the incremental build script
+            changed_files="${{ steps.changed-examples.outputs.changed_files }}"
+            echo "Running incremental build for: $changed_files"
+
+            python ../scripts/build_incremental_examples.py \
+              --changed-files "$changed_files" \
+              --docs-dir . \
+              --fallback-full-build
+
+          else
+            echo "🔄 Generating auto_examples (full build)"
+            if [ "$changed_count" -eq 0 ]; then
+              echo "Reason: No changed files detected"
+            else
+              echo "Reason: No existing auto_examples base found"
+            fi
+
+            # Use sphinx-build to generate the complete gallery
+            sphinx-build -b html \
+              -D sphinx_gallery_conf.plot_gallery=True \
+              -D sphinx_gallery_conf.download_all_examples=True \
+              . _build/html -v
+          fi
 
       - name: Verify auto_examples generation
         run: |
