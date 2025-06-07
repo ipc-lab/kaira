@@ -20,6 +20,11 @@ on:
   release:
     types: [published]
 
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Job to detect changes and set up conditions
   detect-changes:

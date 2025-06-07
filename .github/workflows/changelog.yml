@@ -10,6 +10,11 @@ on:
     paths:
       - "CHANGELOG.md"
 
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-changelog:
     runs-on: ubuntu-latest

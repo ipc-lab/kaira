@@ -12,6 +12,11 @@ on:
       - "kaira/**/*.py"
       - "scripts/generate_api_reference.py"
 
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-api-reference:
     runs-on: ubuntu-latest

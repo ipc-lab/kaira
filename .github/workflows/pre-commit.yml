@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master, main, dev]
 
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre-commit:
     runs-on: self-hosted
