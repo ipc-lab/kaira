@@ -3,20 +3,93 @@ name: Generate Auto Examples
 on:
   push:
     branches: [main, dev]
+    paths:
+      - "examples/**"
+      - "docs/conf.py"
+      - "scripts/download_auto_examples.py"
+      - "scripts/auto_examples_config.ini"
+      - "requirements*.txt"
+      - ".github/workflows/generate-examples.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "examples/**"
+      - "docs/conf.py"
+      - "scripts/download_auto_examples.py"
+      - "scripts/auto_examples_config.ini"
+      - "requirements*.txt"
+      - ".github/workflows/generate-examples.yml"
   release:
     types: [published]
 
 jobs:
+  # Job to detect changes and set up conditions
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      examples-changed: ${{ steps.changes.outputs.examples }}
+      force-build: ${{ steps.check-force.outputs.force }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for proper change detection
+
+      - name: Detect changes in example-related files
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            examples:
+              - 'examples/**'
+              - 'docs/conf.py'
+              - 'scripts/download_auto_examples.py'
+              - 'scripts/auto_examples_config.ini'
+              - 'requirements*.txt'
+              - '.github/workflows/generate-examples.yml'
+
+      - name: Check for force build conditions
+        id: check-force
+        run: |
+          # Always build on releases
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Release event"
+          # Always build on main branch pushes (for consistency)
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Push to main branch"
+          # Check for [rebuild-examples] in commit message
+          elif echo "${{ github.event.head_commit.message }}" | grep -q "\[rebuild-examples\]"; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Rebuild examples requested in commit message"
+          else
+            echo "force=false" >> $GITHUB_OUTPUT
+            echo "No force build conditions met"
+          fi
+
   generate-examples:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.examples-changed == 'true' || needs.detect-changes.outputs.force-build == 'true'
     strategy:
       matrix:
         python-version: ["3.11"] # Use a single version for example generation
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Log build reason
+        run: |
+          echo "=== Auto-Examples Build Information ==="
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
+          if [ "${{ needs.detect-changes.outputs.examples-changed }}" = "true" ]; then
+            echo "Reason: Example-related files changed"
+          fi
+          if [ "${{ needs.detect-changes.outputs.force-build }}" = "true" ]; then
+            echo "Reason: Force build condition met"
+          fi
+          echo "======================================"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -36,23 +109,146 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Generate auto_examples using sphinx-gallery
+      - name: Download latest auto_examples
+        run: |
+          echo "🔽 Downloading latest auto_examples as base..."
+          python scripts/download_auto_examples.py
+          if [ -d "docs/auto_examples" ]; then
+            echo "✅ Downloaded existing auto_examples"
+            echo "Files: $(find docs/auto_examples -name "*.py" | wc -l) Python files"
+            echo "Images: $(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l) image files"
+            echo "Size: $(du -sh docs/auto_examples | cut -f1)"
+          else
+            echo "ℹ️ No existing auto_examples found, will build from scratch"
+          fi
+
+      - name: Detect changed example files
+        id: changed-examples
+        run: |
+          echo "🔍 Detecting changed example files..."
+
+          # Get list of changed files in examples directory
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, compare against the base branch
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+            changed_files=$(git diff --name-only $base_sha...$head_sha | grep '^examples/.*\.py$' || true)
+          else
+            # For pushes, compare against previous commit
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              changed_files=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep '^examples/.*\.py$' || true)
+            else
+              # First commit or force push, consider all files changed
+              changed_files=$(find examples -name "*.py" -type f)
+            fi
+          fi
+
+          if [ -z "$changed_files" ]; then
+            echo "No example files changed"
+            echo "changed_count=0" >> $GITHUB_OUTPUT
+            echo "changed_files=" >> $GITHUB_OUTPUT
+          else
+            echo "Changed example files:"
+            echo "$changed_files"
+            echo "changed_count=$(echo "$changed_files" | wc -l)" >> $GITHUB_OUTPUT
+            # Store changed files (newlines replaced with spaces for GitHub Actions)
+            echo "changed_files=$(echo "$changed_files" | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Remove generated files for changed examples
+        if: steps.changed-examples.outputs.changed_count > 0
+        run: |
+          echo "🗑️ Removing generated files for changed examples..."
+          changed_files="${{ steps.changed-examples.outputs.changed_files }}"
+
+          for example_file in $changed_files; do
+            if [ -f "$example_file" ]; then
+              # Convert examples/category/plot_example.py to auto_examples/category/plot_example.py
+              auto_example_file=$(echo "$example_file" | sed 's|^examples/|docs/auto_examples/|')
+              auto_example_dir=$(dirname "$auto_example_file")
+              auto_example_base=$(basename "$auto_example_file" .py)
+
+              echo "  Processing: $example_file"
+              echo "    -> Auto example: $auto_example_file"
+
+              if [ -d "$auto_example_dir" ]; then
+                # Remove the main Python file
+                if [ -f "$auto_example_file" ]; then
+                  rm -f "$auto_example_file"
+                  echo "    ✅ Removed: $auto_example_file"
+                fi
+
+                # Remove associated files (images, notebooks, etc.)
+                rm -f "${auto_example_dir}/${auto_example_base}"*.png
+                rm -f "${auto_example_dir}/${auto_example_base}"*.jpg
+                rm -f "${auto_example_dir}/${auto_example_base}"*.svg
+                rm -f "${auto_example_dir}/${auto_example_base}"*.ipynb
+                rm -f "${auto_example_dir}/${auto_example_base}"*.zip
+
+                echo "    ✅ Removed associated files for: $auto_example_base"
+              else
+                echo "    ℹ️ Auto examples directory doesn't exist yet: $auto_example_dir"
+              fi
+            fi
+          done
+
+          echo "🎯 Removed generated files for ${{ steps.changed-examples.outputs.changed_count }} changed examples"
+
+      - name: Generate auto_examples (incremental)
         run: |
           cd docs
-          # Clean any existing auto_examples
-          rm -rf auto_examples
-          # Use sphinx-build to generate only the gallery
+          changed_count="${{ steps.changed-examples.outputs.changed_count }}"
+          total_examples=$(find ../examples -name "*.py" | wc -l)
+
+          if [ "$changed_count" -gt 0 ]; then
+            echo "🔄 Generating auto_examples (incremental build)"
+            echo "Changed files: $changed_count out of $total_examples total"
+          else
+            echo "🔄 Generating auto_examples (full build - no base found or force rebuild)"
+          fi
+
+          # Use sphinx-build to generate the gallery
+          # It will automatically detect what needs to be built based on existing files
           sphinx-build -b html -D sphinx_gallery_conf.plot_gallery=True -D sphinx_gallery_conf.download_all_examples=True . _build/html -v
 
       - name: Verify auto_examples generation
         run: |
           if [ -d "docs/auto_examples" ]; then
-            echo "auto_examples directory created successfully"
+            echo "✅ auto_examples directory exists"
+
+            # Show first few generated files
+            echo "📄 Sample generated files:"
             find docs/auto_examples -type f -name "*.py" | head -10
-            echo "Total Python files: $(find docs/auto_examples -name "*.py" | wc -l)"
-            echo "Total image files: $(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l)"
+
+            # Statistics
+            python_files=$(find docs/auto_examples -name "*.py" | wc -l)
+            image_files=$(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l)
+            notebook_files=$(find docs/auto_examples -name "*.ipynb" | wc -l)
+            total_size=$(du -sh docs/auto_examples | cut -f1)
+
+            echo "📊 Generation Statistics:"
+            echo "  - Python files: $python_files"
+            echo "  - Image files: $image_files"
+            echo "  - Notebook files: $notebook_files"
+            echo "  - Total size: $total_size"
+
+            # Show what was actually built vs reused
+            changed_count="${{ steps.changed-examples.outputs.changed_count }}"
+            total_examples=$(find examples -name "*.py" | wc -l)
+
+            if [ "$changed_count" -gt 0 ] && [ "$changed_count" -lt "$total_examples" ]; then
+              reused_count=$((total_examples - changed_count))
+              echo "🎯 Incremental Build Summary:"
+              echo "  - Rebuilt: $changed_count examples"
+              echo "  - Reused: $reused_count examples"
+              # Calculate percentage without bc dependency
+              efficiency_percent=$((reused_count * 100 / total_examples))
+              echo "  - Efficiency: ${efficiency_percent}% reused"
+            else
+              echo "🔄 Full Build: Generated all examples"
+            fi
           else
-            echo "ERROR: auto_examples directory was not created"
+            echo "❌ ERROR: auto_examples directory was not created"
             exit 1
           fi
 
@@ -61,12 +257,31 @@ jobs:
           cd docs
           # Create a zip archive of the auto_examples directory
           zip -r auto_examples.zip auto_examples/
-          echo "Archive created: $(ls -lh auto_examples.zip)"
+          archive_size=$(ls -lh auto_examples.zip | awk '{print $5}')
+
+          # Add build metadata to the archive
+          changed_count="${{ steps.changed-examples.outputs.changed_count }}"
+          total_examples=$(find ../examples -name "*.py" | wc -l)
+
+          echo "📦 Archive Information:"
+          echo "  - File: auto_examples.zip"
+          echo "  - Size: $archive_size"
+          echo "  - Total examples: $total_examples"
+
+          if [ "$changed_count" -gt 0 ] && [ "$changed_count" -lt "$total_examples" ]; then
+            reused_count=$((total_examples - changed_count))
+            echo "  - Build type: Incremental ($changed_count rebuilt, $reused_count reused)"
+          else
+            echo "  - Build type: Full build"
+          fi
+
+          echo "  - Commit: ${{ github.sha }}"
+          echo "  - Event: ${{ github.event_name }}"
 
       - name: Upload auto_examples as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: auto_examples
+          name: auto_examples-${{ github.sha }}-incremental
           path: docs/auto_examples.zip
           retention-days: 30
 
@@ -80,3 +295,30 @@ jobs:
           asset_path: docs/auto_examples.zip
           asset_name: auto_examples.zip
           asset_content_type: application/zip
+
+  # Job to report when examples are skipped
+  skip-examples:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.examples-changed == 'false' && needs.detect-changes.outputs.force-build == 'false'
+    steps:
+      - name: Report skip reason
+        run: |
+          echo "⏭️ Skipping auto-examples generation"
+          echo "Reason: No changes detected in example-related files"
+          echo ""
+          echo "🔍 Files monitored for changes:"
+          echo "  - examples/**"
+          echo "  - docs/conf.py"
+          echo "  - scripts/download_auto_examples.py"
+          echo "  - scripts/auto_examples_config.ini"
+          echo "  - requirements*.txt"
+          echo "  - .github/workflows/generate-examples.yml"
+          echo ""
+          echo "💡 When changes are detected, the workflow will:"
+          echo "  1. Download latest auto_examples as base"
+          echo "  2. Remove generated files for changed examples only"
+          echo "  3. Rebuild only the changed examples (incremental build)"
+          echo "  4. Upload the updated auto_examples archive"
+          echo ""
+          echo "🚀 To force rebuild, include '[rebuild-examples]' in commit message"
