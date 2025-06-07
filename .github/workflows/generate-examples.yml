@@ -75,14 +75,21 @@ jobs:
               AFTER_SHA="${{ github.sha }}"
               echo "Comparing push: $BEFORE_SHA..$AFTER_SHA"
 
-              # Check if any monitored paths have changes
-              for path in "${PATHS[@]}"; do
-                if git diff --name-only "$BEFORE_SHA..$AFTER_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
-                  echo "Changes detected in: $path"
-                  EXAMPLES_CHANGED="true"
-                  break
-                fi
-              done
+              # Check if both commits exist before trying to diff
+              if git cat-file -e "$BEFORE_SHA" 2>/dev/null && git cat-file -e "$AFTER_SHA" 2>/dev/null; then
+                # Check if any monitored paths have changes
+                for path in "${PATHS[@]}"; do
+                  if git diff --name-only "$BEFORE_SHA..$AFTER_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
+                    echo "Changes detected in: $path"
+                    EXAMPLES_CHANGED="true"
+                    break
+                  fi
+                done
+              else
+                echo "⚠️ Previous commit $BEFORE_SHA not accessible (likely force push or shallow clone)"
+                echo "Treating as changed to ensure examples are updated"
+                EXAMPLES_CHANGED="true"
+              fi
             else
               # First commit or force push, consider as changed
               echo "First commit or force push detected"
@@ -127,6 +134,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history to ensure we have all commits for comparison
 
       - name: Log build reason
         run: |
@@ -182,13 +191,33 @@ jobs:
             # For PRs, compare against the base branch
             base_sha="${{ github.event.pull_request.base.sha }}"
             head_sha="${{ github.event.pull_request.head.sha }}"
-            changed_files=$(git diff --name-only $base_sha...$head_sha | grep '^examples/.*\.py$' || true)
+            echo "Comparing PR: $base_sha..$head_sha"
+
+            # Check if both commits exist before trying to diff
+            if git cat-file -e "$base_sha" 2>/dev/null && git cat-file -e "$head_sha" 2>/dev/null; then
+              changed_files=$(git diff --name-only $base_sha...$head_sha | grep '^examples/.*\.py$' || true)
+            else
+              echo "⚠️ PR base or head commit not accessible, treating all examples as changed"
+              changed_files=$(find examples -name "*.py" -type f)
+            fi
           else
             # For pushes, compare against previous commit
             if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
-              changed_files=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep '^examples/.*\.py$' || true)
+              before_sha="${{ github.event.before }}"
+              after_sha="${{ github.sha }}"
+              echo "Comparing push: $before_sha..$after_sha"
+
+              # Check if both commits exist before trying to diff
+              if git cat-file -e "$before_sha" 2>/dev/null && git cat-file -e "$after_sha" 2>/dev/null; then
+                changed_files=$(git diff --name-only "$before_sha..$after_sha" | grep '^examples/.*\.py$' || true)
+              else
+                echo "⚠️ Previous commit $before_sha not accessible (likely force push or shallow clone)"
+                echo "Treating all example files as changed to ensure consistency"
+                changed_files=$(find examples -name "*.py" -type f)
+              fi
             else
               # First commit or force push, consider all files changed
+              echo "First commit detected, treating all example files as changed"
               changed_files=$(find examples -name "*.py" -type f)
             fi
           fi
