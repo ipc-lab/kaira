@@ -338,13 +338,31 @@ def extract_auto_examples(zip_ref, file_list, target_dir):
             log_message(f"Warning: Could not fully remove existing directory: {e}")
             return False
 
-    # Extract auto_examples files
+    # Extract auto_examples files, but skip problematic files
     auto_examples_extracted = False
     successful_extractions = 0
     failed_extractions = 0
+    skipped_files = 0
+
+    # Files to skip - these are build artifacts that shouldn't be transferred
+    skip_patterns = [
+        "searchindex",  # sphinx-gallery search database (environment-specific)
+        ".doctrees",  # sphinx doctree cache
+        ".buildinfo",  # sphinx build info
+        "__pycache__",  # python cache
+        ".pyc",  # compiled python files
+        ".tmp",  # temporary files
+    ]
 
     for file_path in file_list:
         if file_path.startswith("auto_examples/"):
+            # Check if file should be skipped
+            should_skip = any(pattern in file_path for pattern in skip_patterns)
+
+            if should_skip:
+                skipped_files += 1
+                continue
+
             try:
                 zip_ref.extract(file_path, target_dir)
                 auto_examples_extracted = True
@@ -354,7 +372,7 @@ def extract_auto_examples(zip_ref, file_list, target_dir):
                 failed_extractions += 1
                 continue
 
-    log_message(f"Extraction summary: {successful_extractions} successful, {failed_extractions} failed")
+    log_message(f"Extraction summary: {successful_extractions} successful, {failed_extractions} failed, {skipped_files} skipped")
 
     if auto_examples_extracted:
         log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
