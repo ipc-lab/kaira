@@ -486,7 +486,27 @@ def generate_placeholder_examples(target_dir: Path) -> None:
     log_message("Generating placeholder auto_examples...")
 
     auto_examples_dir = target_dir / "auto_examples"
-    auto_examples_dir.mkdir(exist_ok=True)
+
+    # Clean up any existing auto_examples directory to avoid conflicts
+    if auto_examples_dir.exists():
+        try:
+            import shutil
+
+            log_message(f"Removing existing auto_examples directory: {auto_examples_dir}")
+            shutil.rmtree(auto_examples_dir)
+        except OSError as e:
+            log_message(f"Warning: Could not remove existing auto_examples directory: {e}")
+            # Continue anyway, we'll handle individual directory conflicts below
+
+    # Use try-except for more robust directory creation
+    try:
+        auto_examples_dir.mkdir(exist_ok=True)
+    except (FileExistsError, OSError) as e:
+        if auto_examples_dir.exists() and auto_examples_dir.is_dir():
+            log_message(f"auto_examples directory already exists: {e}")
+        else:
+            log_message(f"Warning: Could not create auto_examples directory: {e}")
+            return
 
     # Category descriptions from the ExampleIndexGenerator
     category_descriptions = {
@@ -505,19 +525,35 @@ def generate_placeholder_examples(target_dir: Path) -> None:
     # Create placeholder directories based on the examples structure
     for category, description in category_descriptions.items():
         category_dir = auto_examples_dir / category
-        category_dir.mkdir(exist_ok=True)
+
+        # More robust directory creation with better error handling
+        try:
+            category_dir.mkdir(exist_ok=True)
+        except (FileExistsError, OSError) as e:
+            if category_dir.exists() and category_dir.is_dir():
+                log_message(f"Category directory {category} already exists: {e}")
+            else:
+                log_message(f"Warning: Could not create category directory {category}: {e}")
+                continue
 
         # Create images/thumb directory for thumbnails
         images_dir = category_dir / "images" / "thumb"
-        images_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            images_dir.mkdir(parents=True, exist_ok=True)
+        except (FileExistsError, OSError) as e:
+            if images_dir.exists() and images_dir.is_dir():
+                log_message(f"Images directory for {category} already exists: {e}")
+            else:
+                log_message(f"Warning: Could not create images directory for {category}: {e}")
 
         # Create a placeholder index file with proper sphinx-gallery structure
         index_file = category_dir / "index.rst"
         title = category.replace("_", " ").title()
 
-        with open(index_file, "w") as f:
-            f.write(
-                f""":orphan:
+        try:
+            with open(index_file, "w") as f:
+                f.write(
+                    f""":orphan:
 
 {title}
 {'=' * len(title)}
@@ -570,13 +606,17 @@ def generate_placeholder_examples(target_dir: Path) -> None:
     </div>
 
 """
-            )
+                )
+        except OSError as e:
+            log_message(f"Warning: Could not create index file for {category}: {e}")
+            continue
 
     # Create a main index file that matches the expected location
     main_index = auto_examples_dir / "index.rst"
-    with open(main_index, "w") as f:
-        f.write(
-            """:orphan:
+    try:
+        with open(main_index, "w") as f:
+            f.write(
+                """:orphan:
 
 Auto Examples Gallery
 ======================
@@ -602,11 +642,15 @@ Auto Examples Gallery
    :maxdepth: 1
 
 """
-        )
+            )
 
-        # Add toctree entries for all categories
-        for category in category_descriptions.keys():
-            f.write(f"   {category}/index\n")
+            # Add toctree entries for all categories
+            for category in category_descriptions.keys():
+                f.write(f"   {category}/index\n")
+
+    except OSError as e:
+        log_message(f"Warning: Could not create main index file: {e}")
+        return
 
     log_message("Enhanced placeholder auto_examples created with proper gallery structure")
 
