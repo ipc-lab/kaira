@@ -7,6 +7,7 @@ on:
       - "examples/**"
       - "docs/conf.py"
       - "scripts/download_auto_examples.py"
+      - "scripts/build_incremental_examples.py"
       - "requirements*.txt"
       - ".github/workflows/generate-examples.yml"
   pull_request:
@@ -15,6 +16,7 @@ on:
       - "examples/**"
       - "docs/conf.py"
       - "scripts/download_auto_examples.py"
+      - "scripts/build_incremental_examples.py"
       - "requirements*.txt"
       - ".github/workflows/generate-examples.yml"
   release:
@@ -47,6 +49,7 @@ jobs:
             "examples/"
             "docs/conf.py"
             "scripts/download_auto_examples.py"
+            "scripts/build_incremental_examples.py"
             "requirements*.txt"
             ".github/workflows/generate-examples.yml"
           )
@@ -142,6 +145,7 @@ jobs:
           echo "=== Auto-Examples Build Information ==="
           echo "Event: ${{ github.event_name }}"
           echo "Branch: ${{ github.ref }}"
+          echo "Current commit: ${{ github.sha }}"
           if [ "${{ needs.detect-changes.outputs.examples-changed }}" = "true" ]; then
             echo "Reason: Example-related files changed"
           fi
@@ -160,6 +164,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y graphviz
+
+      - name: Install GitHub CLI
+        run: |
+          # Install GitHub CLI for workflow API access
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
 
       - name: Install Python dependencies
         run: |
@@ -180,54 +192,89 @@ jobs:
           else
             echo "ℹ️ No existing auto_examples found, will build from scratch"
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get last successful workflow commit
+        id: last-success
+        run: |
+          echo "🔍 Finding last successful workflow run..."
+
+          # Get the last successful workflow run for this branch/workflow
+          LAST_SUCCESS_SHA=""
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, use the base branch as reference
+            LAST_SUCCESS_SHA="${{ github.event.pull_request.base.sha }}"
+            echo "Using PR base as reference: $LAST_SUCCESS_SHA"
+          else
+            # For pushes, find the last successful run on this branch
+            echo "Searching for last successful workflow run..."
+
+            # Use GitHub CLI to get last successful run
+            LAST_SUCCESS_SHA=$(gh run list \
+              --workflow="generate-examples.yml" \
+              --branch="${{ github.ref_name }}" \
+              --status=completed \
+              --conclusion=success \
+              --limit=10 \
+              --json headSha \
+              --jq '.[0].headSha' 2>/dev/null || echo "")
+
+            if [ -n "$LAST_SUCCESS_SHA" ] && [ "$LAST_SUCCESS_SHA" != "null" ]; then
+              echo "Found last successful run at commit: $LAST_SUCCESS_SHA"
+            else
+              echo "⚠️ No previous successful run found, will compare against previous commit"
+              # Fallback to previous commit comparison
+              if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+                LAST_SUCCESS_SHA="${{ github.event.before }}"
+              else
+                echo "⚠️ No previous commit available, treating all examples as changed"
+                LAST_SUCCESS_SHA=""
+              fi
+            fi
+          fi
+
+          echo "last_success_sha=$LAST_SUCCESS_SHA" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Detect changed example files
         id: changed-examples
         run: |
           echo "🔍 Detecting changed example files..."
 
-          # Get list of changed files in examples directory
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For PRs, compare against the base branch
-            base_sha="${{ github.event.pull_request.base.sha }}"
-            head_sha="${{ github.event.pull_request.head.sha }}"
-            echo "Comparing PR: $base_sha..$head_sha"
+          LAST_SUCCESS_SHA="${{ steps.last-success.outputs.last_success_sha }}"
+          CURRENT_SHA="${{ github.sha }}"
 
-            # Check if both commits exist before trying to diff
-            if git cat-file -e "$base_sha" 2>/dev/null && git cat-file -e "$head_sha" 2>/dev/null; then
-              changed_files=$(git diff --name-only $base_sha...$head_sha | grep '^examples/.*\.py$' || true)
+          if [ -n "$LAST_SUCCESS_SHA" ] && [ "$LAST_SUCCESS_SHA" != "$CURRENT_SHA" ]; then
+            echo "Comparing against last successful workflow: $LAST_SUCCESS_SHA..$CURRENT_SHA"
+
+            # Check if the reference commit exists
+            if git cat-file -e "$LAST_SUCCESS_SHA" 2>/dev/null; then
+              changed_files=$(git diff --name-only "$LAST_SUCCESS_SHA..$CURRENT_SHA" | grep '^examples/.*\.py$' || true)
+              echo "Successfully compared against last successful run"
             else
-              echo "⚠️ PR base or head commit not accessible, treating all examples as changed"
+              echo "⚠️ Last successful commit $LAST_SUCCESS_SHA not accessible in current checkout"
+              echo "This might happen with shallow clones - treating all examples as changed"
               changed_files=$(find examples -name "*.py" -type f)
             fi
           else
-            # For pushes, compare against previous commit
-            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
-              before_sha="${{ github.event.before }}"
-              after_sha="${{ github.sha }}"
-              echo "Comparing push: $before_sha..$after_sha"
-
-              # Check if both commits exist before trying to diff
-              if git cat-file -e "$before_sha" 2>/dev/null && git cat-file -e "$after_sha" 2>/dev/null; then
-                changed_files=$(git diff --name-only "$before_sha..$after_sha" | grep '^examples/.*\.py$' || true)
-              else
-                echo "⚠️ Previous commit $before_sha not accessible (likely force push or shallow clone)"
-                echo "Treating all example files as changed to ensure consistency"
-                changed_files=$(find examples -name "*.py" -type f)
-              fi
+            if [ "$LAST_SUCCESS_SHA" = "$CURRENT_SHA" ]; then
+              echo "ℹ️ Current commit is the same as last successful run - no changes"
+              changed_files=""
             else
-              # First commit or force push, consider all files changed
-              echo "First commit detected, treating all example files as changed"
+              echo "⚠️ No reference commit available - treating all examples as changed"
               changed_files=$(find examples -name "*.py" -type f)
             fi
           fi
 
           if [ -z "$changed_files" ]; then
-            echo "No example files changed"
+            echo "No example files changed since last successful build"
             echo "changed_count=0" >> $GITHUB_OUTPUT
             echo "changed_files=" >> $GITHUB_OUTPUT
           else
-            echo "Changed example files:"
+            echo "Changed example files since last successful build:"
             echo "$changed_files"
             echo "changed_count=$(echo "$changed_files" | wc -l)" >> $GITHUB_OUTPUT
             # Store changed files (newlines replaced with spaces for GitHub Actions)
@@ -407,6 +454,7 @@ jobs:
           echo "  - examples/**"
           echo "  - docs/conf.py"
           echo "  - scripts/download_auto_examples.py"
+          echo "  - scripts/build_incremental_examples.py"
           echo "  - requirements*.txt"
           echo "  - .github/workflows/generate-examples.yml"
           echo ""
