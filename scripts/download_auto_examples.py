@@ -396,8 +396,16 @@ def detect_repository_context() -> dict[str, str | bool]:
         - is_push: Whether we're on a regular commit/push
         - ref_name: The current ref (tag/branch name)
         - strategy: Recommended download strategy
+        - is_github_actions: Whether running in GitHub Actions
     """
-    context: dict[str, str | bool] = {"is_release": False, "is_push": False, "ref_name": "unknown", "strategy": "artifacts_first"}  # default strategy
+    context: dict[str, str | bool] = {"is_release": False, "is_push": False, "ref_name": "unknown", "strategy": "artifacts_first", "is_github_actions": False}  # default strategy
+
+    # Check if we're running in GitHub Actions
+    is_github_actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    context["is_github_actions"] = is_github_actions
+
+    if is_github_actions:
+        log_message("Running in GitHub Actions environment")
 
     # Check GitHub Actions environment variables
     github_event_name = os.environ.get("GITHUB_EVENT_NAME", "")
@@ -513,7 +521,8 @@ def main() -> None:
         if not download_succeeded and config["use_github_artifacts"]:
             github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
             if github_token:
-                log_message("Trying GitHub Actions artifacts (fallback)")
+                token_source = "automatic" if repo_context["is_github_actions"] else "configured"
+                log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
                 artifact_url = check_github_artifacts_for_examples(repo_owner, repo_name, github_token)
                 if artifact_url:
                     success = download_and_extract_examples(artifact_url, docs_dir)
@@ -521,7 +530,10 @@ def main() -> None:
                         log_message("Successfully downloaded auto_examples from GitHub artifact")
                         download_succeeded = True
             else:
-                log_message("No GitHub token available for artifact fallback")
+                if repo_context["is_github_actions"]:
+                    log_message("Warning: No GITHUB_TOKEN available in GitHub Actions (this is unexpected)")
+                else:
+                    log_message("No GitHub token available for artifact fallback")
 
     else:  # artifacts_first strategy
         log_message("Using artifacts-first strategy (detected push/commit)")
@@ -530,7 +542,8 @@ def main() -> None:
         if config["use_github_artifacts"]:
             github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
             if github_token:
-                log_message("Trying GitHub Actions artifacts (primary for push/commit)")
+                token_source = "automatic" if repo_context["is_github_actions"] else "configured"
+                log_message(f"Trying GitHub Actions artifacts (primary for push/commit) - using {token_source} token")
                 artifact_url = check_github_artifacts_for_examples(repo_owner, repo_name, github_token)
                 if artifact_url:
                     success = download_and_extract_examples(artifact_url, docs_dir)
@@ -538,7 +551,10 @@ def main() -> None:
                         log_message("Successfully downloaded auto_examples from GitHub artifact")
                         download_succeeded = True
             else:
-                log_message("No GitHub token available for artifact download")
+                if repo_context["is_github_actions"]:
+                    log_message("Warning: No GITHUB_TOKEN available in GitHub Actions (this is unexpected)")
+                else:
+                    log_message("No GitHub token available for artifact download")
 
         # Try releases as fallback for push/commit
         if not download_succeeded and config["use_github_releases"]:
@@ -570,6 +586,8 @@ def main() -> None:
 
             if is_rtd or is_ci:
                 github_token_available = bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"))
+                is_github_actions = repo_context["is_github_actions"]
+
                 error_msg += f"""
 
 Attempted sources (strategy: {repo_context['strategy']}):
@@ -579,16 +597,30 @@ Attempted sources (strategy: {repo_context['strategy']}):
 
 This will cause the documentation build to fail or be extremely slow.
 
-Solutions:
-1. Set GITHUB_TOKEN environment variable with 'actions:read' scope in RTD settings
-2. Create a GitHub release with auto_examples.zip asset
-3. Ensure workflow artifacts exist and haven't expired
-4. For RTD: Go to Project Settings → Environment Variables → Add GITHUB_TOKEN
+Solutions:"""
 
-GitHub Token Requirements:
+                if is_github_actions:
+                    error_msg += """
+- In GitHub Actions: GITHUB_TOKEN should be automatically available
+- Check workflow permissions in .github/workflows/*.yml:
+  ```yaml
+  permissions:
+    actions: read  # Required for downloading artifacts
+    contents: read
+  ```
+- Verify artifacts exist and haven't expired (30-day retention)
+- Note: Cross-workflow artifact access may require explicit permissions"""
+                else:
+                    error_msg += """
+1. For RTD: Set GITHUB_TOKEN environment variable with 'actions:read' scope
+   - Go to Project Settings → Environment Variables → Add GITHUB_TOKEN
+   - Create token at: GitHub Settings → Developer settings → Personal access tokens
+2. Alternative: Create a GitHub release with auto_examples.zip asset
+3. Ensure workflow artifacts exist and haven't expired (30-day retention)
+
+GitHub Token Requirements for external services:
 - Repository access (public repos: no additional scopes needed)
-- actions:read scope (for downloading workflow artifacts)
-"""
+- actions:read scope (required for downloading workflow artifacts)"""
                 log_message(error_msg)
                 exit(1)
             else:
