@@ -393,6 +393,12 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
                     nested_file_list = nested_zip_ref.namelist()
                     log_message(f"Nested archive contains {len(nested_file_list)} files")
 
+                    # Clear existing auto_examples directory to avoid conflicts
+                    auto_examples_target = target_dir / "auto_examples"
+                    if auto_examples_target.exists():
+                        log_message("Removing existing auto_examples directory to avoid conflicts")
+                        shutil.rmtree(auto_examples_target)
+
                     # Extract auto_examples files from nested archive
                     auto_examples_extracted = False
                     for file_path in nested_file_list:
@@ -401,13 +407,23 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
                             relative_path = file_path[len("auto_examples/") :]
                             if relative_path:  # Skip the auto_examples/ directory itself
                                 target_file_path = target_dir / "auto_examples" / relative_path
-                                target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                                # Create parent directories with more robust error handling
+                                try:
+                                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
+                                except OSError as e:
+                                    log_message(f"Warning: Could not create directory {target_file_path.parent}: {e}")
+                                    # Try to continue anyway
 
                                 # Extract the file
-                                with nested_zip_ref.open(file_path) as source:
-                                    with open(target_file_path, "wb") as target:
-                                        shutil.copyfileobj(source, target)
-                                auto_examples_extracted = True
+                                try:
+                                    with nested_zip_ref.open(file_path) as source:
+                                        with open(target_file_path, "wb") as target:
+                                            shutil.copyfileobj(source, target)
+                                    auto_examples_extracted = True
+                                except OSError as e:
+                                    log_message(f"Warning: Could not extract file {file_path}: {e}")
+                                    # Continue with other files
 
                     if auto_examples_extracted:
                         log_message(f"Successfully extracted auto_examples from nested archive to {target_dir / 'auto_examples'}")
@@ -440,12 +456,22 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
                             relative_path = file_path[len(auto_examples_prefix) :]
                             if relative_path:  # Skip the auto_examples/ directory itself
                                 target_file_path = target_dir / "auto_examples" / relative_path
-                                target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                                # Create parent directories with robust error handling
+                                try:
+                                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
+                                except OSError as e:
+                                    log_message(f"Warning: Could not create directory {target_file_path.parent}: {e}")
+                                    continue
 
                                 # Extract the file
-                                with zip_ref.open(file_path) as source:
-                                    with open(target_file_path, "wb") as target:
-                                        shutil.copyfileobj(source, target)
+                                try:
+                                    with zip_ref.open(file_path) as source:
+                                        with open(target_file_path, "wb") as target:
+                                            shutil.copyfileobj(source, target)
+                                except OSError as e:
+                                    log_message(f"Warning: Could not extract file {file_path}: {e}")
+                                    continue
 
                     log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
                 else:
@@ -457,6 +483,16 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
         return True
 
     except Exception as e:
+        # Clean up temporary files if they exist
+        try:
+            if "tmp_path" in locals() and tmp_path.exists():
+                tmp_path.unlink()
+            if "nested_tmp_path" in locals() and nested_tmp_path.exists():
+                nested_tmp_path.unlink()
+        except Exception as cleanup_error:
+            log_message(f"Warning: Failed to clean up temporary files: {cleanup_error}")
+            # Continue execution despite cleanup failure
+
         # Handle specific authentication errors for GitHub artifacts
         if requests and hasattr(e, "response") and e.response is not None:
             if e.response.status_code == 403:
