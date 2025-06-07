@@ -26,6 +26,7 @@ on:
 permissions:
   actions: read # Required for downloading workflow artifacts
   contents: read # Required for checking out repository
+  pull-requests: read # Required for PR operations
   id-token: write # Required for uploading artifacts
 
 # Cancel previous runs if a new push happens
@@ -189,6 +190,9 @@ jobs:
       - name: Download latest auto_examples
         run: |
           echo "🔽 Downloading latest auto_examples as base..."
+          echo "Debug: GITHUB_TOKEN is ${GITHUB_TOKEN:+set}${GITHUB_TOKEN:-unset}"
+          echo "Debug: GH_TOKEN is ${GH_TOKEN:+set}${GH_TOKEN:-unset}"
+          echo "Debug: GITHUB_ACTIONS is $GITHUB_ACTIONS"
           python scripts/download_auto_examples.py
           if [ -d "docs/auto_examples" ]; then
             echo "✅ Downloaded existing auto_examples"
@@ -199,7 +203,8 @@ jobs:
             echo "ℹ️ No existing auto_examples found, will build from scratch"
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
 
       - name: Get last successful workflow commit
         id: last-success
@@ -243,7 +248,7 @@ jobs:
 
           echo "last_success_sha=$LAST_SUCCESS_SHA" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
       - name: Detect changed example files
         id: changed-examples
@@ -438,7 +443,7 @@ jobs:
         if: github.event_name == 'release'
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: docs/auto_examples.zip
