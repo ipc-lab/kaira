@@ -1,37 +1,10 @@
 #!/usr/bin/env python3
-"""Download auto_examples folder for document    except Exception as e:
-        if requests and hasattr(e, 'r    except Exception as e:
-        if requests and hasattr(e, 'response') and e.response is not None:
-            if e.response.status_code == 404:
-                log_message("No GitHub releases found or no auto_examples assets available")
-            else:
-                log_message(f"Could not check GitHub releases: HTTP {e.response.status_code}")
-        elif isinstance(e, urllib.error.HTTPError):  # urllib error
-            if e.code == 404:
-                log_message("No GitHub releases found or no auto_examples assets available")
-            else:
-                log_message(f"Could not check GitHub releases: HTTP {e.code} - {e.reason}")  # type: ignore[attr-defined]
-        else:
-            log_message(f"Could not check GitHub releases: {e}") e.response is not None:
-            if e.response.status_code == 404:
-                log_message("No GitHub artifacts found or repository not accessible")
-            elif e.response.status_code == 403:
-                log_message("GitHub artifacts require authentication (GITHUB_TOKEN)")
-            else:
-                log_message(f"Could not check GitHub artifacts: HTTP {e.response.status_code}")
-        elif isinstance(e, urllib.error.HTTPError):  # urllib error
-            if e.code == 404:
-                log_message("No GitHub artifacts found or repository not accessible")
-            elif e.code == 403:
-                log_message("GitHub artifacts require authentication (GITHUB_TOKEN)")
-            else:
-                log_message(f"Could not check GitHub artifacts: HTTP {e.code} - {e.reason}")  # type: ignore[attr-defined]
-        else:
-            log_message(f"Could not check GitHub artifacts: {e}")is script downloads the auto_examples folder from a remote source (such as GitHub releases or
-artifacts) before documentation builds. It's designed to work both locally and on ReadTheDocs.
+"""Download auto_examples folder from a remote source (such as GitHub releases or artifacts) before
+documentation builds.
+
+It's designed to work both locally and on ReadTheDocs.
 """
 
-import configparser
 import json
 import os
 import shutil
@@ -87,9 +60,17 @@ def check_github_artifacts_for_examples(repo_owner: str, repo_name: str, token: 
                 artifacts_data = json.loads(urllib_response.read().decode())
 
         # Look for recent auto_examples artifacts
-        for artifact in artifacts_data.get("artifacts", []):
-            if "auto_examples" in artifact["name"].lower() and not artifact["expired"]:
-                log_message(f"Found auto_examples artifact: {artifact['name']}")
+        # Sort by creation date to get the most recent first
+        artifacts = sorted(
+            artifacts_data.get("artifacts", []),
+            key=lambda x: x.get("created_at", ""),
+            reverse=True,
+        )
+
+        for artifact in artifacts:
+            name_lower = artifact["name"].lower()
+            if ("auto_examples" in name_lower or "auto-examples" in name_lower) and not artifact["expired"]:
+                log_message(f"Found auto_examples artifact: {artifact['name']} (created: {artifact.get('created_at', 'unknown')})")
                 return artifact["archive_download_url"]
 
     except Exception as e:
@@ -282,13 +263,9 @@ def generate_placeholder_examples(target_dir: Path) -> None:
     log_message("Placeholder auto_examples created")
 
 
-def load_config(script_dir: Path) -> dict[str, bool | int | str]:
-    """Load configuration from config file."""
-    config_file = script_dir / "auto_examples_config.ini"
-    config = configparser.ConfigParser()
-
-    # Set defaults with their expected types
-    defaults = {
+def get_default_config() -> dict[str, bool | int | str]:
+    """Get default configuration for auto_examples download."""
+    return {
         "github_owner": "ipc-lab",
         "github_repo": "kaira",
         "use_github_releases": True,
@@ -298,44 +275,6 @@ def load_config(script_dir: Path) -> dict[str, bool | int | str]:
         "min_files_threshold": 20,
         "skip_if_exists": True,
     }
-
-    if config_file.exists():
-        config.read(config_file)
-
-    # Merge with defaults
-    result: dict[str, bool | int | str] = {}
-    for key, default_value in defaults.items():
-        if "." in key:
-            section, option = key.split(".", 1)
-        else:
-            section = "sources" if key.startswith(("github_", "use_")) else "settings"
-            option = key
-
-        try:
-            if section in config and option in config[section]:
-                raw_value = config[section][option]
-
-                # Convert based on the type of the default value
-                if isinstance(default_value, bool):
-                    result[key] = raw_value.lower() in ("true", "1", "yes", "on")
-                elif isinstance(default_value, int):
-                    result[key] = int(raw_value)
-                else:
-                    result[key] = str(raw_value)
-            else:
-                # Ensure we assign the correct type based on default_value type
-                if isinstance(default_value, (bool, int, str)):
-                    result[key] = default_value
-                else:
-                    result[key] = str(default_value)
-        except Exception:
-            # Ensure we assign the correct type based on default_value type
-            if isinstance(default_value, (bool, int, str)):
-                result[key] = default_value
-            else:
-                result[key] = str(default_value)
-
-    return result
 
 
 def main():
@@ -350,7 +289,7 @@ def main():
     log_message(f"Docs directory: {docs_dir}")
 
     # Load configuration
-    config = load_config(script_dir)
+    config = get_default_config()
 
     # Check if auto_examples already exists and is not empty
     auto_examples_dir = docs_dir / "auto_examples"

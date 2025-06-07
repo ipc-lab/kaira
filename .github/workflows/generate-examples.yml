@@ -7,7 +7,6 @@ on:
       - "examples/**"
       - "docs/conf.py"
       - "scripts/download_auto_examples.py"
-      - "scripts/auto_examples_config.ini"
       - "requirements*.txt"
       - ".github/workflows/generate-examples.yml"
   pull_request:
@@ -16,7 +15,6 @@ on:
       - "examples/**"
       - "docs/conf.py"
       - "scripts/download_auto_examples.py"
-      - "scripts/auto_examples_config.ini"
       - "requirements*.txt"
       - ".github/workflows/generate-examples.yml"
   release:
@@ -43,7 +41,6 @@ jobs:
               - 'examples/**'
               - 'docs/conf.py'
               - 'scripts/download_auto_examples.py'
-              - 'scripts/auto_examples_config.ini'
               - 'requirements*.txt'
               - '.github/workflows/generate-examples.yml'
 
@@ -73,7 +70,7 @@ jobs:
     if: needs.detect-changes.outputs.examples-changed == 'true' || needs.detect-changes.outputs.force-build == 'true'
     strategy:
       matrix:
-        python-version: ["3.11"] # Use a single version for example generation
+        python-version: ["3.13.2"]
 
     steps:
       - uses: actions/checkout@v4
@@ -311,7 +308,6 @@ jobs:
           echo "  - examples/**"
           echo "  - docs/conf.py"
           echo "  - scripts/download_auto_examples.py"
-          echo "  - scripts/auto_examples_config.ini"
           echo "  - requirements*.txt"
           echo "  - .github/workflows/generate-examples.yml"
           echo ""
