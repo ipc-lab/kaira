@@ -38,7 +38,7 @@ def log_message(message: str) -> None:
     print(f"[download_auto_examples] {message}")
 
 
-def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: Optional[str] = None) -> Optional[str]:
+def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: Optional[str] = None) -> Optional[tuple[str, str]]:
     """Check GitHub Actions artifacts for auto_examples.
 
     Args:
@@ -47,7 +47,7 @@ def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: O
         token: GitHub token for API access (required for artifacts)
 
     Returns:
-        Download URL for the auto_examples artifact, or None if not found
+        Tuple of (artifact_download_url, token) for the auto_examples artifact, or None if not found
 
     Note:
         GitHub artifacts ALWAYS require authentication. If no token is provided,
@@ -58,9 +58,11 @@ def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: O
         return None
 
     try:
-        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/artifacts"  # Use requests if available, otherwise fallback to urllib
+        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/artifacts"
+
+        # Use proper GitHub API headers as per 2022-11-28 API version
         if requests:
-            headers = {"Authorization": f"token {token}"}
+            headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "X-GitHub-Api-Version": "2022-11-28"}
 
             response = requests.get(api_url, headers=headers, timeout=30)
             response.raise_for_status()
@@ -68,7 +70,9 @@ def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: O
         else:
             # Fallback to urllib for compatibility
             req = urllib.request.Request(api_url)  # nosec B310 - Using HTTPS URL from trusted GitHub API
-            req.add_header("Authorization", f"token {token}")
+            req.add_header("Accept", "application/vnd.github+json")
+            req.add_header("Authorization", f"Bearer {token}")
+            req.add_header("X-GitHub-Api-Version", "2022-11-28")
 
             with urllib.request.urlopen(req) as urllib_response:  # nosec B310 - Using HTTPS URL from trusted GitHub API
                 artifacts_data = json.loads(urllib_response.read().decode())
@@ -85,7 +89,10 @@ def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: O
             name_lower = artifact["name"].lower()
             if ("auto_examples" in name_lower or "auto-examples" in name_lower) and not artifact["expired"]:
                 log_message(f"Found auto_examples artifact: {artifact['name']} (created: {artifact.get('created_at', 'unknown')})")
-                return artifact["archive_download_url"]
+                # Return the artifact ID and token for proper GitHub API download
+                artifact_id = artifact["id"]
+                download_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/artifacts/{artifact_id}/zip"
+                return (download_url, token)
 
     except Exception as e:
         if requests and hasattr(e, "response") and e.response is not None:
@@ -308,12 +315,13 @@ def get_commit_history(repo_owner: str, repo_name: str, current_commit: str, lim
         return []
 
 
-def download_and_extract_examples(download_url: str, target_dir: Path) -> bool:
+def download_and_extract_examples(download_url: str, target_dir: Path, github_token: Optional[str] = None) -> bool:
     """Download and extract auto_examples from a URL.
 
     Args:
         download_url: URL to download the examples archive
         target_dir: Target directory where auto_examples should be extracted
+        github_token: GitHub token for authenticated downloads (required for artifacts)
 
     Returns:
         True if successful, False otherwise
@@ -327,14 +335,33 @@ def download_and_extract_examples(download_url: str, target_dir: Path) -> bool:
 
         # Download the file
         if requests:
-            response = requests.get(download_url, timeout=60, stream=True)
+            # Check if this is a GitHub API URL requiring authentication
+            headers = {}
+            if github_token and "api.github.com" in download_url:
+                headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {github_token}", "X-GitHub-Api-Version": "2022-11-28"}
+
+            response = requests.get(download_url, headers=headers, timeout=60, stream=True)
             response.raise_for_status()
             with open(tmp_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
         else:
             # Fallback to urllib for compatibility
-            urllib.request.urlretrieve(download_url, tmp_path)  # nosec B310 - URL is validated from trusted GitHub API
+            if github_token and "api.github.com" in download_url:
+                req = urllib.request.Request(download_url)  # nosec B310 - URL is validated from trusted GitHub API
+                req.add_header("Accept", "application/vnd.github+json")
+                req.add_header("Authorization", f"Bearer {github_token}")
+                req.add_header("X-GitHub-Api-Version", "2022-11-28")
+                with urllib.request.urlopen(req) as urllib_response:  # nosec B310 - URL is validated from trusted GitHub API
+                    with open(tmp_path, "wb") as f:
+                        # Read in chunks to avoid type issues
+                        while True:
+                            chunk = urllib_response.read(8192)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+            else:
+                urllib.request.urlretrieve(download_url, tmp_path)  # nosec B310 - URL is validated from trusted GitHub API
         log_message(f"Downloaded to temporary file: {tmp_path}")
 
         # Extract the archive
@@ -715,9 +742,10 @@ def main() -> None:
                 # Fallback: Try GitHub artifacts (requires higher permissions)
                 if not download_succeeded:
                     log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
-                    artifact_url = check_github_releases_for_examples(repo_owner, repo_name, github_token)
-                    if artifact_url:
-                        success = download_and_extract_examples(artifact_url, docs_dir)
+                    artifact_result = check_github_releases_for_examples(repo_owner, repo_name, github_token)
+                    if artifact_result:
+                        artifact_url, token = artifact_result
+                        success = download_and_extract_examples(artifact_url, docs_dir, token)
                         if success:
                             log_message("Successfully downloaded auto_examples from GitHub artifact")
                             download_succeeded = True
@@ -740,9 +768,10 @@ def main() -> None:
                 # Fallback: Try GitHub artifacts (requires higher permissions)
                 if not download_succeeded:
                     log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
-                    artifact_url = check_github_releases_for_examples(repo_owner, repo_name, github_token)
-                    if artifact_url:
-                        success = download_and_extract_examples(artifact_url, docs_dir)
+                    artifact_result = check_github_releases_for_examples(repo_owner, repo_name, github_token)
+                    if artifact_result:
+                        artifact_url, token = artifact_result
+                        success = download_and_extract_examples(artifact_url, docs_dir, token)
                         if success:
                             log_message("Successfully downloaded auto_examples from GitHub artifact")
                             download_succeeded = True
