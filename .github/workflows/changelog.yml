@@ -31,7 +31,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11" # Use same as main CI
+          python-version: "3.13.2" # Use same as main CI
           cache: "pip"
 
       - name: Generate changelog.rst from CHANGELOG.md
