@@ -91,14 +91,16 @@ def check_github_artifacts_for_examples(repo_owner: str, repo_name: str, token: 
             if e.response.status_code == 404:
                 log_message("No GitHub artifacts found or repository not accessible")
             elif e.response.status_code == 403:
-                log_message("GitHub artifacts require authentication with 'actions:read' scope (GITHUB_TOKEN needed)")
+                log_message("GitHub artifacts require authentication with 'actions:read' scope")
+                log_message("Current GITHUB_TOKEN lacks required permissions - check token scopes")
             else:
                 log_message(f"Could not check GitHub artifacts: HTTP {e.response.status_code}")
         elif hasattr(e, "code"):  # urllib error
             if e.code == 404:
                 log_message("No GitHub artifacts found or repository not accessible")
             elif e.code == 403:
-                log_message("GitHub artifacts require authentication with 'actions:read' scope (GITHUB_TOKEN needed)")
+                log_message("GitHub artifacts require authentication with 'actions:read' scope")
+                log_message("Current GITHUB_TOKEN lacks required permissions - check token scopes")
             else:
                 log_message(f"Could not check GitHub artifacts: HTTP {e.code} - {e.reason}")  # type: ignore[attr-defined]
         else:
@@ -514,6 +516,8 @@ def main() -> None:
     if github_token:
         token_source = "automatic" if repo_context["is_github_actions"] else "configured"
         log_message(f"GitHub token available ({token_source}) - can access artifacts and releases")
+        if is_rtd:
+            log_message("RTD: GITHUB_TOKEN configured - optimal performance with artifact access")
     else:
         if is_rtd:
             log_message("RTD: No GitHub token configured - will only try public releases")
@@ -562,6 +566,12 @@ def main() -> None:
                     if success:
                         log_message("Successfully downloaded auto_examples from GitHub artifact")
                         download_succeeded = True
+                else:
+                    # Check if this is RTD with a manually configured token (not auto from GitHub Actions)
+                    is_rtd_configured_token = is_rtd and not repo_context["is_github_actions"]  # nosec B105
+                    if is_rtd_configured_token:
+                        log_message("RTD: Artifact access failed - check if GITHUB_TOKEN has 'actions:read' scope")
+                        log_message("      Tokens need: actions:read, contents:read permissions")
 
         # Try releases as fallback for push/commit
         if not download_succeeded and config["use_github_releases"]:
