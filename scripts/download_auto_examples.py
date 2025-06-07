@@ -386,6 +386,7 @@ def download_and_extract_examples(download_url: str, target_dir: Path) -> bool:
                 try:
                     error_data = e.response.json()
                     if "actions scope" in error_data.get("message", "").lower():
+                        log_message(error_data.get("message", ""))
                         log_message("Error: GitHub token lacks 'actions:read' scope required for artifact download")
                         log_message("Please ensure GITHUB_TOKEN has the necessary permissions")
                     else:
@@ -636,6 +637,10 @@ def main() -> None:
 
     if is_rtd:
         log_message("Running on ReadTheDocs environment")
+        # For ReadTheDocs, enable placeholders by default to ensure builds don't fail
+        config["create_placeholders"] = True
+        config["use_local_examples"] = True
+        log_message("RTD: Enabled fallback strategies (placeholders + local examples)")
     elif is_ci:
         log_message("Running in CI environment")
 
@@ -823,7 +828,12 @@ For external CI/services:
 2. Alternative: Use GitHub releases instead of artifacts (no token needed)
 3. Ensure workflow artifacts exist and haven't expired (30-day retention)"""
                 log_message(error_msg)
-                exit(1)
+                # For ReadTheDocs, don't exit with error - let it fall back gracefully
+                if is_rtd:
+                    log_message("RTD: Continuing with build despite download failures - will use local examples or placeholders")
+                    log_message("This is expected if no GITHUB_TOKEN is configured in RTD project settings")
+                else:
+                    exit(1)
             else:
                 log_message(error_msg)
                 log_message("Sphinx-gallery will generate examples during build if local examples exist")
