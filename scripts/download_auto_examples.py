@@ -153,7 +153,8 @@ def check_github_release_for_examples(repo_owner: str, repo_name: str) -> Option
         for asset in release_data.get("assets", []):
             if "auto_examples" in asset["name"].lower() and asset["name"].endswith(".zip"):
                 log_message(f"Found auto_examples asset in latest release: {asset['name']}")
-                return asset["browser_download_url"]
+                download_url: str = asset["browser_download_url"]
+                return download_url
 
     except Exception as e:
         if requests and hasattr(e, "response") and e.response is not None:
@@ -233,7 +234,8 @@ def check_commit_specific_releases(repo_owner: str, repo_name: str) -> Optional[
                 for asset in release.get("assets", []):
                     if "auto_examples" in asset["name"].lower() and asset["name"].endswith(".zip"):
                         log_message(f"Found commit-specific auto_examples: {tag_name} (commit: {matching_commit[:8]})")
-                        return asset["browser_download_url"]
+                        download_url: str = asset["browser_download_url"]
+                        return download_url
 
         log_message("No commit-specific auto-examples releases found in current commit tree")
         return None
