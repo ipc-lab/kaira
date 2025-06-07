@@ -22,6 +22,12 @@ on:
   release:
     types: [published]
 
+# Required permissions for the workflow
+permissions:
+  actions: read # Required for downloading workflow artifacts
+  contents: read # Required for checking out repository
+  id-token: write # Required for uploading artifacts
+
 # Cancel previous runs if a new push happens
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
