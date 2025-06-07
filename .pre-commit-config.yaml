@@ -95,7 +95,8 @@ repos:
     rev: "1.8.3"
     hooks:
       - id: bandit
-        args: ["-s", "B101"]
+        # Skip B101 (assert statements), B603/B607 (subprocess with trusted git commands)
+        args: ["-s", "B101,B603,B607"]
 
   # yaml formatting
   - repo: https://github.com/pre-commit/mirrors-prettier
