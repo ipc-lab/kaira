@@ -113,6 +113,9 @@ def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: O
 def check_github_release_for_examples(repo_owner: str, repo_name: str) -> Optional[str]:
     """Check if there's a recent GitHub release with auto_examples.
 
+    First tries to find commit-specific auto-examples releases for the current commit tree,
+    then falls back to the latest release if no commit-specific release is found.
+
     Args:
         repo_owner: GitHub repository owner
         repo_name: GitHub repository name
@@ -120,6 +123,12 @@ def check_github_release_for_examples(repo_owner: str, repo_name: str) -> Option
     Returns:
         Download URL for the auto_examples archive, or None if not found
     """
+    # First try to find commit-specific auto-examples releases
+    commit_specific_url = check_commit_specific_releases(repo_owner, repo_name)
+    if commit_specific_url:
+        return commit_specific_url
+
+    # Fallback to latest release
     try:
         api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
 
@@ -136,7 +145,7 @@ def check_github_release_for_examples(repo_owner: str, repo_name: str) -> Option
         # Look for an asset named something like "auto_examples.zip"
         for asset in release_data.get("assets", []):
             if "auto_examples" in asset["name"].lower() and asset["name"].endswith(".zip"):
-                log_message(f"Found auto_examples asset: {asset['name']}")
+                log_message(f"Found auto_examples asset in latest release: {asset['name']}")
                 return asset["browser_download_url"]
 
     except Exception as e:
@@ -154,6 +163,149 @@ def check_github_release_for_examples(repo_owner: str, repo_name: str) -> Option
             log_message(f"Could not check GitHub releases: {e}")
 
     return None
+
+
+def check_commit_specific_releases(repo_owner: str, repo_name: str) -> Optional[str]:
+    """Check for commit-specific auto-examples releases in the current commit tree.
+
+    Searches for releases with tags like 'auto-examples-{commit_sha_prefix}' and finds
+    the most recent one that corresponds to a commit in the current branch's history.
+
+    Args:
+        repo_owner: GitHub repository owner
+        repo_name: GitHub repository name
+
+    Returns:
+        Download URL for the auto_examples archive, or None if not found
+    """
+    try:
+        # Get current commit SHA
+        current_commit = get_current_commit_sha()
+        if not current_commit:
+            log_message("Could not determine current commit SHA")
+            return None
+
+        # Get list of commits in current branch (last 50 to avoid too many API calls)
+        commit_history = get_commit_history(repo_owner, repo_name, current_commit)
+        if not commit_history:
+            log_message("Could not get commit history")
+            return None
+
+        log_message(f"Searching for auto-examples releases in commit tree (current: {current_commit[:8]})")
+
+        # Get all releases
+        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases"
+
+        if requests:
+            response = requests.get(api_url, timeout=30, params={"per_page": 100})
+            response.raise_for_status()
+            releases = response.json()
+        else:
+            # Fallback to urllib for compatibility
+            with urllib.request.urlopen(f"{api_url}?per_page=100") as urllib_response:  # nosec B310 - Using HTTPS URL from trusted GitHub API
+                releases = json.loads(urllib_response.read().decode())
+
+        # Look for auto-examples releases and check if their commit is in our history
+        for release in releases:
+            tag_name = release.get("tag_name", "")
+            if not tag_name.startswith("auto-examples-"):
+                continue
+
+            # Extract commit SHA prefix from tag name
+            commit_prefix = tag_name.replace("auto-examples-", "")
+
+            # Check if this commit is in our history
+            matching_commit = None
+            for commit_sha in commit_history:
+                if commit_sha.startswith(commit_prefix):
+                    matching_commit = commit_sha
+                    break
+
+            if matching_commit:
+                # Look for auto_examples.zip asset in this release
+                for asset in release.get("assets", []):
+                    if "auto_examples" in asset["name"].lower() and asset["name"].endswith(".zip"):
+                        log_message(f"Found commit-specific auto_examples: {tag_name} (commit: {matching_commit[:8]})")
+                        return asset["browser_download_url"]
+
+        log_message("No commit-specific auto-examples releases found in current commit tree")
+        return None
+
+    except Exception as e:
+        if requests and hasattr(e, "response") and e.response is not None:
+            log_message(f"Error checking commit-specific releases: HTTP {e.response.status_code}")
+        else:
+            log_message(f"Error checking commit-specific releases: {e}")
+        return None
+
+
+def get_current_commit_sha() -> Optional[str]:
+    """Get the current commit SHA from environment or git."""
+    # First try GitHub Actions environment
+    github_sha = os.environ.get("GITHUB_SHA")
+    if github_sha:
+        return github_sha
+
+    # Try git command
+    try:
+        import subprocess  # nosec B404 - Using subprocess for trusted git commands only
+
+        result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False)  # nosec B603,B607 - trusted git command
+
+        if result.returncode == 0:
+            return result.stdout.strip()
+
+    except (ImportError, FileNotFoundError):
+        pass
+
+    return None
+
+
+def get_commit_history(repo_owner: str, repo_name: str, current_commit: str, limit: int = 50) -> list[str]:
+    """Get commit history for the current branch.
+
+    Args:
+        repo_owner: GitHub repository owner
+        repo_name: GitHub repository name
+        current_commit: Current commit SHA
+        limit: Maximum number of commits to retrieve
+
+    Returns:
+        List of commit SHAs in reverse chronological order
+    """
+    try:
+        # First try GitHub API to get commit history
+        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits"
+        params: dict[str, str | int] = {"sha": current_commit, "per_page": limit}
+
+        if requests:
+            response = requests.get(api_url, timeout=30, params=params)
+            response.raise_for_status()
+            commits = response.json()
+        else:
+            # Fallback to urllib for compatibility
+            query_string = "&".join(f"{k}={v}" for k, v in params.items())
+            with urllib.request.urlopen(f"{api_url}?{query_string}") as urllib_response:  # nosec B310 - Using HTTPS URL from trusted GitHub API
+                commits = json.loads(urllib_response.read().decode())
+
+        return [commit["sha"] for commit in commits]
+
+    except Exception as e:
+        log_message(f"Could not get commit history from GitHub API: {e}")
+
+        # Fallback to git command if available
+        try:
+            import subprocess  # nosec B404 - Using subprocess for trusted git commands only
+
+            result = subprocess.run(["git", "log", "--format=%H", f"-{limit}", current_commit], capture_output=True, text=True, check=False)  # nosec B603,B607 - trusted git command
+
+            if result.returncode == 0:
+                return result.stdout.strip().split("\n")
+
+        except (ImportError, FileNotFoundError):
+            pass
+
+        return []
 
 
 def download_and_extract_examples(download_url: str, target_dir: Path) -> bool:
