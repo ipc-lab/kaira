@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Download auto_examples folder from a remote source (such as GitHub releases or artifacts) before
-documentation builds.
+"""Download auto_examples folder from a remote source (GitHub releases) before documentation
+builds.
 
-It's designed to work both locally and on ReadTheDocs.
+This script downloads the auto_examples folder from the latest GitHub release to enable incremental
+builds. It's designed to work both locally and in CI environments.
 
 Security Note:
     This script uses subprocess calls with trusted git commands for repository context detection.
@@ -37,7 +38,7 @@ def log_message(message: str) -> None:
     print(f"[download_auto_examples] {message}")
 
 
-def check_github_artifacts_for_examples(repo_owner: str, repo_name: str, token: Optional[str] = None) -> Optional[str]:
+def check_github_releases_for_examples(repo_owner: str, repo_name: str, token: Optional[str] = None) -> Optional[str]:
     """Check GitHub Actions artifacts for auto_examples.
 
     Args:
@@ -545,13 +546,24 @@ def main() -> None:
         # Try artifacts as fallback for releases
         if not download_succeeded and config["use_github_artifacts"]:
             if github_token:
-                log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
-                artifact_url = check_github_artifacts_for_examples(repo_owner, repo_name, github_token)
-                if artifact_url:
-                    success = download_and_extract_examples(artifact_url, docs_dir)
+                # Try GitHub releases first (more accessible across workflows)
+                log_message(f"Trying GitHub releases (primary) - using {token_source} token")
+                release_url = check_github_release_for_examples(repo_owner, repo_name)
+                if release_url:
+                    success = download_and_extract_examples(release_url, docs_dir)
                     if success:
-                        log_message("Successfully downloaded auto_examples from GitHub artifact")
+                        log_message("Successfully downloaded auto_examples from GitHub release")
                         download_succeeded = True
+
+                # Fallback: Try GitHub artifacts (requires higher permissions)
+                if not download_succeeded:
+                    log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
+                    artifact_url = check_github_releases_for_examples(repo_owner, repo_name, github_token)
+                    if artifact_url:
+                        success = download_and_extract_examples(artifact_url, docs_dir)
+                        if success:
+                            log_message("Successfully downloaded auto_examples from GitHub artifact")
+                            download_succeeded = True
 
     else:  # artifacts_first strategy
         log_message("Using artifacts-first strategy (detected push/commit)")
@@ -559,13 +571,24 @@ def main() -> None:
         # Try GitHub Actions artifacts first for push/commit context
         if config["use_github_artifacts"]:
             if github_token:
-                log_message(f"Trying GitHub Actions artifacts (primary for push/commit) - using {token_source} token")
-                artifact_url = check_github_artifacts_for_examples(repo_owner, repo_name, github_token)
-                if artifact_url:
-                    success = download_and_extract_examples(artifact_url, docs_dir)
+                # Try GitHub releases first (more accessible across workflows)
+                log_message(f"Trying GitHub releases (primary for push/commit) - using {token_source} token")
+                release_url = check_github_release_for_examples(repo_owner, repo_name)
+                if release_url:
+                    success = download_and_extract_examples(release_url, docs_dir)
                     if success:
-                        log_message("Successfully downloaded auto_examples from GitHub artifact")
+                        log_message("Successfully downloaded auto_examples from GitHub release")
                         download_succeeded = True
+
+                # Fallback: Try GitHub artifacts (requires higher permissions)
+                if not download_succeeded:
+                    log_message(f"Trying GitHub Actions artifacts (fallback) - using {token_source} token")
+                    artifact_url = check_github_releases_for_examples(repo_owner, repo_name, github_token)
+                    if artifact_url:
+                        success = download_and_extract_examples(artifact_url, docs_dir)
+                        if success:
+                            log_message("Successfully downloaded auto_examples from GitHub artifact")
+                            download_succeeded = True
                 else:
                     # Check if this is RTD with a manually configured token (not auto from GitHub Actions)
                     is_rtd_configured_token = is_rtd and not repo_context["is_github_actions"]  # nosec B105

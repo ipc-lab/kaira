@@ -25,7 +25,7 @@ on:
 # Required permissions for the workflow
 permissions:
   actions: read # Required for downloading workflow artifacts
-  contents: read # Required for checking out repository
+  contents: read # Required for checking out repository and creating releases
   pull-requests: read # Required for PR operations
   id-token: write # Required for uploading artifacts
 
@@ -187,24 +187,18 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Download latest auto_examples
+      - name: Download latest auto_examples from releases
         run: |
-          echo "🔽 Downloading latest auto_examples as base..."
-          echo "Debug: GITHUB_TOKEN is ${GITHUB_TOKEN:+set}${GITHUB_TOKEN:-unset}"
-          echo "Debug: GH_TOKEN is ${GH_TOKEN:+set}${GH_TOKEN:-unset}"
-          echo "Debug: GITHUB_ACTIONS is $GITHUB_ACTIONS"
+          echo "🔽 Downloading latest auto_examples from GitHub releases..."
           python scripts/download_auto_examples.py
           if [ -d "docs/auto_examples" ]; then
-            echo "✅ Downloaded existing auto_examples"
+            echo "✅ Downloaded existing auto_examples from releases"
             echo "Files: $(find docs/auto_examples -name "*.py" | wc -l) Python files"
             echo "Images: $(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l) image files"
             echo "Size: $(du -sh docs/auto_examples | cut -f1)"
           else
-            echo "ℹ️ No existing auto_examples found, will build from scratch"
+            echo "ℹ️ No existing auto_examples found in releases, will build from scratch"
           fi
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GH_TOKEN: ${{ github.token }}
 
       - name: Get last successful workflow commit
         id: last-success
@@ -432,23 +426,45 @@ jobs:
           echo "  - Commit: ${{ github.sha }}"
           echo "  - Event: ${{ github.event_name }}"
 
-      - name: Upload auto_examples as artifact
+      - name: Upload auto_examples as artifact (backup)
         uses: actions/upload-artifact@v4
         with:
           name: auto_examples-${{ github.sha }}-incremental
           path: docs/auto_examples.zip
           retention-days: 30
 
-      - name: Upload auto_examples to release
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
+      - name: Create/Update auto-examples release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Creating/updating auto-examples release..."
+
+          # Check if auto-examples release exists
+          RELEASE_TAG="auto-examples-latest"
+          RELEASE_NAME="Auto-generated Examples (Latest)"
+
+          # Try to get existing release
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "Updating existing release: $RELEASE_TAG"
+
+            # Delete existing asset if it exists
+            if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -q "auto_examples.zip"; then
+              echo "Deleting existing auto_examples.zip asset..."
+              gh release delete-asset "$RELEASE_TAG" auto_examples.zip --yes
+            fi
+
+            # Upload new asset
+            gh release upload "$RELEASE_TAG" docs/auto_examples.zip --clobber
+          else
+            echo "Creating new release: $RELEASE_TAG"
+            gh release create "$RELEASE_TAG" docs/auto_examples.zip \
+              --title "$RELEASE_NAME" \
+              --notes "This release contains the latest auto-generated examples for incremental builds. Updated automatically by GitHub Actions." \
+              --target main
+          fi
+
+          echo "✅ Successfully updated auto-examples release"
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: docs/auto_examples.zip
-          asset_name: auto_examples.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ github.token }}
 
   # Job to report when examples are skipped
   skip-examples:
