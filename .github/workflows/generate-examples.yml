@@ -187,21 +187,6 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Download latest auto_examples from releases
-        run: |
-          echo "🔽 Downloading latest auto_examples from GitHub releases..."
-          python scripts/download_auto_examples.py
-          if [ -d "docs/auto_examples" ]; then
-            echo "✅ Downloaded existing auto_examples from releases"
-            echo "Files: $(find docs/auto_examples -name "*.py" | wc -l) Python files"
-            echo "Images: $(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l) image files"
-            echo "Size: $(du -sh docs/auto_examples | cut -f1)"
-          else
-            echo "ℹ️ No existing auto_examples found in releases, will build from scratch"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
       - name: Get last successful workflow commit
         id: last-success
         run: |
@@ -249,7 +234,7 @@ jobs:
       - name: Detect changed example files
         id: changed-examples
         run: |
-          echo "🔍 Detecting changed example files..."
+          echo "🔍 Detecting if any example files changed..."
 
           LAST_SUCCESS_SHA="${{ steps.last-success.outputs.last_success_sha }}"
           CURRENT_SHA="${{ github.sha }}"
@@ -264,7 +249,7 @@ jobs:
             else
               echo "⚠️ Last successful commit $LAST_SUCCESS_SHA not accessible in current checkout"
               echo "This might happen with shallow clones - treating all examples as changed"
-              changed_files=$(find examples -name "*.py" -type f)
+              changed_files="examples_changed"
             fi
           else
             if [ "$LAST_SUCCESS_SHA" = "$CURRENT_SHA" ]; then
@@ -272,94 +257,30 @@ jobs:
               changed_files=""
             else
               echo "⚠️ No reference commit available - treating all examples as changed"
-              changed_files=$(find examples -name "*.py" -type f)
+              changed_files="examples_changed"
             fi
           fi
 
           if [ -z "$changed_files" ]; then
-            echo "No example files changed since last successful build"
-            echo "changed_count=0" >> $GITHUB_OUTPUT
-            echo "changed_files=" >> $GITHUB_OUTPUT
+            echo "No example files changed since last successful build - skipping generation"
+            echo "examples_changed=false" >> $GITHUB_OUTPUT
           else
-            echo "Changed example files since last successful build:"
-            echo "$changed_files"
-            echo "changed_count=$(echo "$changed_files" | wc -l)" >> $GITHUB_OUTPUT
-            # Store changed files (newlines replaced with spaces for GitHub Actions)
-            echo "changed_files=$(echo "$changed_files" | tr '\n' ' ')" >> $GITHUB_OUTPUT
+            echo "Example files have changed since last successful build - will rebuild all examples"
+            echo "examples_changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Remove generated files for changed examples
-        if: steps.changed-examples.outputs.changed_count > 0
+      - name: Generate auto_examples (full build)
+        if: steps.changed-examples.outputs.examples_changed == 'true'
         run: |
-          echo "🗑️ Removing generated files for changed examples..."
-          changed_files="${{ steps.changed-examples.outputs.changed_files }}"
+          echo "🔄 Generating auto_examples (full build)"
+          echo "Reason: Example files have changed"
 
-          for example_file in $changed_files; do
-            if [ -f "$example_file" ]; then
-              # Convert examples/category/plot_example.py to auto_examples/category/plot_example.py
-              auto_example_file=$(echo "$example_file" | sed 's|^examples/|docs/auto_examples/|')
-              auto_example_dir=$(dirname "$auto_example_file")
-              auto_example_base=$(basename "$auto_example_file" .py)
-
-              echo "  Processing: $example_file"
-              echo "    -> Auto example: $auto_example_file"
-
-              if [ -d "$auto_example_dir" ]; then
-                # Remove the main Python file
-                if [ -f "$auto_example_file" ]; then
-                  rm -f "$auto_example_file"
-                  echo "    ✅ Removed: $auto_example_file"
-                fi
-
-                # Remove associated files (images, notebooks, etc.)
-                rm -f "${auto_example_dir}/${auto_example_base}"*.png
-                rm -f "${auto_example_dir}/${auto_example_base}"*.jpg
-                rm -f "${auto_example_dir}/${auto_example_base}"*.svg
-                rm -f "${auto_example_dir}/${auto_example_base}"*.ipynb
-                rm -f "${auto_example_dir}/${auto_example_base}"*.zip
-
-                echo "    ✅ Removed associated files for: $auto_example_base"
-              else
-                echo "    ℹ️ Auto examples directory doesn't exist yet: $auto_example_dir"
-              fi
-            fi
-          done
-
-          echo "🎯 Removed generated files for ${{ steps.changed-examples.outputs.changed_count }} changed examples"
-
-      - name: Generate auto_examples (incremental)
-        run: |
           cd docs
-          changed_count="${{ steps.changed-examples.outputs.changed_count }}"
-          total_examples=$(find ../examples -name "*.py" | wc -l)
-
-          if [ "$changed_count" -gt 0 ] && [ -d "auto_examples" ]; then
-            echo "🔄 Generating auto_examples (incremental build)"
-            echo "Changed files: $changed_count out of $total_examples total"
-
-            # Use the incremental build script
-            changed_files="${{ steps.changed-examples.outputs.changed_files }}"
-            echo "Running incremental build for: $changed_files"
-
-            python ../scripts/build_incremental_examples.py \
-              --changed-files "$changed_files" \
-              --docs-dir . \
-              --fallback-full-build
-
-          else
-            echo "🔄 Generating auto_examples (full build)"
-            if [ "$changed_count" -eq 0 ]; then
-              echo "Reason: No changed files detected"
-            else
-              echo "Reason: No existing auto_examples base found"
-            fi
-
-            # Use sphinx-build to generate the complete gallery
-            sphinx-build -b html \
-              -D sphinx_gallery_conf.plot_gallery=True \
-              -D sphinx_gallery_conf.download_all_examples=True \
-              . _build/html -v
-          fi
+          # Use sphinx-build to generate the complete gallery
+          sphinx-build -b html \
+            -D sphinx_gallery_conf.plot_gallery=True \
+            -D sphinx_gallery_conf.download_all_examples=True \
+            . _build/html -v
 
       - name: Verify auto_examples generation
         run: |
@@ -382,21 +303,8 @@ jobs:
             echo "  - Notebook files: $notebook_files"
             echo "  - Total size: $total_size"
 
-            # Show what was actually built vs reused
-            changed_count="${{ steps.changed-examples.outputs.changed_count }}"
             total_examples=$(find examples -name "*.py" | wc -l)
-
-            if [ "$changed_count" -gt 0 ] && [ "$changed_count" -lt "$total_examples" ]; then
-              reused_count=$((total_examples - changed_count))
-              echo "🎯 Incremental Build Summary:"
-              echo "  - Rebuilt: $changed_count examples"
-              echo "  - Reused: $reused_count examples"
-              # Calculate percentage without bc dependency
-              efficiency_percent=$((reused_count * 100 / total_examples))
-              echo "  - Efficiency: ${efficiency_percent}% reused"
-            else
-              echo "🔄 Full Build: Generated all examples"
-            fi
+            echo "🔄 Full Build: Generated all $total_examples examples"
           else
             echo "❌ ERROR: auto_examples directory was not created"
             exit 1
@@ -410,28 +318,20 @@ jobs:
           archive_size=$(ls -lh auto_examples.zip | awk '{print $5}')
 
           # Add build metadata to the archive
-          changed_count="${{ steps.changed-examples.outputs.changed_count }}"
           total_examples=$(find ../examples -name "*.py" | wc -l)
 
           echo "📦 Archive Information:"
           echo "  - File: auto_examples.zip"
           echo "  - Size: $archive_size"
           echo "  - Total examples: $total_examples"
-
-          if [ "$changed_count" -gt 0 ] && [ "$changed_count" -lt "$total_examples" ]; then
-            reused_count=$((total_examples - changed_count))
-            echo "  - Build type: Incremental ($changed_count rebuilt, $reused_count reused)"
-          else
-            echo "  - Build type: Full build"
-          fi
-
+          echo "  - Build type: Full build"
           echo "  - Commit: ${{ github.sha }}"
           echo "  - Event: ${{ github.event_name }}"
 
       - name: Upload auto_examples as artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: auto_examples-${{ github.sha }}-incremental
+          name: auto_examples-${{ github.sha }}
           path: docs/auto_examples.zip
           retention-days: 30
 
@@ -488,9 +388,7 @@ jobs:
           echo "  - .github/workflows/generate-examples.yml"
           echo ""
           echo "💡 When changes are detected, the workflow will:"
-          echo "  1. Download latest auto_examples as base"
-          echo "  2. Remove generated files for changed examples only"
-          echo "  3. Rebuild only the changed examples (incremental build)"
-          echo "  4. Upload the updated auto_examples archive"
+          echo "  1. Generate all auto_examples from scratch (full build)"
+          echo "  2. Upload the auto_examples archive"
           echo ""
           echo "🚀 To force rebuild, include '[rebuild-examples]' in commit message"
