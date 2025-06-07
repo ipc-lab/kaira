@@ -33,16 +33,64 @@ jobs:
           fetch-depth: 0 # Need full history for proper change detection
 
       - name: Detect changes in example-related files
-        uses: dorny/paths-filter@v2
         id: changes
-        with:
-          filters: |
-            examples:
-              - 'examples/**'
-              - 'docs/conf.py'
-              - 'scripts/download_auto_examples.py'
-              - 'requirements*.txt'
-              - '.github/workflows/generate-examples.yml'
+        run: |
+          echo "Detecting changes in example-related files..."
+
+          # Define paths to monitor
+          PATHS=(
+            "examples/"
+            "docs/conf.py"
+            "scripts/download_auto_examples.py"
+            "requirements*.txt"
+            ".github/workflows/generate-examples.yml"
+          )
+
+          # Initialize changed flag
+          EXAMPLES_CHANGED="false"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, compare against the base branch
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "Comparing PR: $BASE_SHA..$HEAD_SHA"
+
+            # Check if any monitored paths have changes
+            for path in "${PATHS[@]}"; do
+              if git diff --name-only "$BASE_SHA..$HEAD_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
+                echo "Changes detected in: $path"
+                EXAMPLES_CHANGED="true"
+                break
+              fi
+            done
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # For pushes, compare against previous commit
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              BEFORE_SHA="${{ github.event.before }}"
+              AFTER_SHA="${{ github.sha }}"
+              echo "Comparing push: $BEFORE_SHA..$AFTER_SHA"
+
+              # Check if any monitored paths have changes
+              for path in "${PATHS[@]}"; do
+                if git diff --name-only "$BEFORE_SHA..$AFTER_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
+                  echo "Changes detected in: $path"
+                  EXAMPLES_CHANGED="true"
+                  break
+                fi
+              done
+            else
+              # First commit or force push, consider as changed
+              echo "First commit or force push detected"
+              EXAMPLES_CHANGED="true"
+            fi
+          else
+            # For other events (like release), don't auto-detect changes
+            echo "Event type: ${{ github.event_name }} - no automatic change detection"
+            EXAMPLES_CHANGED="false"
+          fi
+
+          echo "examples=$EXAMPLES_CHANGED" >> $GITHUB_OUTPUT
+          echo "Examples changed: $EXAMPLES_CHANGED"
 
       - name: Check for force build conditions
         id: check-force
