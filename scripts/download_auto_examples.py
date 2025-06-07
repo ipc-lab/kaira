@@ -317,6 +317,125 @@ def get_commit_history(repo_owner: str, repo_name: str, current_commit: str, lim
         return []
 
 
+def detect_extraction_conflicts(file_list):
+    """Detect files that conflict with directory creation.
+
+    Args:
+        file_list: List of file paths in the archive
+
+    Returns:
+        set: Set of conflicting file paths that should be skipped
+    """
+
+    directories_needed = set()
+    files_present = set()
+
+    # Collect all paths that should be directories (have subdirectories/files)
+    for file_path in file_list:
+        if file_path.startswith("auto_examples/"):
+            relative_path = file_path[len("auto_examples/") :]
+            if relative_path and "/" in relative_path:
+                # Extract all directory components
+                parts = relative_path.split("/")
+                for i in range(len(parts) - 1):  # Exclude the filename
+                    dir_path = "/".join(parts[: i + 1])
+                    full_dir_path = f"auto_examples/{dir_path}"
+                    directories_needed.add(full_dir_path)
+
+    # Collect all file paths
+    for file_path in file_list:
+        if file_path.startswith("auto_examples/") and not file_path.endswith("/"):
+            files_present.add(file_path)
+
+    # Find conflicts: files that have the same path as needed directories
+    conflicts = directories_needed.intersection(files_present)
+
+    return conflicts
+
+
+def safe_extract_auto_examples(nested_zip_ref, nested_file_list, target_dir):
+    """Safely extract auto_examples with conflict resolution.
+
+    This function handles the case where archives contain both files and directories
+    with the same names (e.g., a file named 'constraints' and a directory 'constraints/').
+
+    Args:
+        nested_zip_ref: ZipFile object for the nested archive
+        nested_file_list: List of file paths in the nested archive
+        target_dir: Target directory for extraction
+
+    Returns:
+        bool: True if extraction succeeded, False otherwise
+    """
+
+    # Step 1: Analyze conflicts
+    conflicts = detect_extraction_conflicts(nested_file_list)
+
+    if conflicts:
+        log_message(f"Detected {len(conflicts)} file/directory conflicts")
+        for conflict in list(conflicts)[:5]:  # Show first 5 conflicts
+            log_message(f"  Conflict: {conflict}")
+        if len(conflicts) > 5:
+            log_message(f"  ... and {len(conflicts) - 5} more conflicts")
+
+    # Step 2: Clear existing auto_examples directory completely
+    auto_examples_target = target_dir / "auto_examples"
+    if auto_examples_target.exists():
+        log_message("Removing existing auto_examples directory to avoid conflicts")
+        try:
+            shutil.rmtree(auto_examples_target)
+        except OSError as e:
+            log_message(f"Warning: Could not fully remove existing directory: {e}")
+            # Continue anyway
+
+    # Step 3: Extract files with conflict resolution
+    auto_examples_extracted = False
+    successful_extractions = 0
+    failed_extractions = 0
+
+    for file_path in nested_file_list:
+        if file_path.startswith("auto_examples/"):
+            relative_path = file_path[len("auto_examples/") :]
+            if relative_path:  # Skip the auto_examples/ directory itself
+                target_file_path = target_dir / "auto_examples" / relative_path
+
+                # Skip conflicting files that would prevent directory creation
+                if file_path in conflicts:
+                    log_message(f"Skipping conflicting file: {file_path}")
+                    continue
+
+                # Extract the file safely
+                try:
+                    # Create parent directories with more robust error handling
+                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Extract the file
+                    with nested_zip_ref.open(file_path) as source:
+                        with open(target_file_path, "wb") as target:
+                            shutil.copyfileobj(source, target)
+
+                    auto_examples_extracted = True
+                    successful_extractions += 1
+
+                except OSError as e:
+                    log_message(f"Warning: Could not extract file {file_path}: {e}")
+                    failed_extractions += 1
+                    continue
+                except Exception as e:
+                    log_message(f"Unexpected error extracting {file_path}: {e}")
+                    failed_extractions += 1
+                    continue
+
+    log_message(f"Extraction summary: {successful_extractions} successful, {failed_extractions} failed")
+
+    if auto_examples_extracted:
+        log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
+        return True
+    else:
+        log_message("ERROR: No auto_examples files were successfully extracted")
+        return False
+
+
 def download_and_extract_examples(download_url: str, target_dir: Path, github_token: Optional[str] = None) -> bool:
     """Download and extract auto_examples from a URL.
 
@@ -388,94 +507,26 @@ def download_and_extract_examples(download_url: str, target_dir: Path, github_to
                     with open(nested_tmp_path, "wb") as f:
                         shutil.copyfileobj(nested_zip_data, f)
 
-                # Now extract from the nested zip
+                # Now extract from the nested zip using safe extraction
                 with zipfile.ZipFile(nested_tmp_path, "r") as nested_zip_ref:
                     nested_file_list = nested_zip_ref.namelist()
                     log_message(f"Nested archive contains {len(nested_file_list)} files")
 
-                    # Clear existing auto_examples directory to avoid conflicts
-                    auto_examples_target = target_dir / "auto_examples"
-                    if auto_examples_target.exists():
-                        log_message("Removing existing auto_examples directory to avoid conflicts")
-                        shutil.rmtree(auto_examples_target)
-
-                    # Extract auto_examples files from nested archive
-                    auto_examples_extracted = False
-                    for file_path in nested_file_list:
-                        if file_path.startswith("auto_examples/"):
-                            # Calculate relative path within auto_examples
-                            relative_path = file_path[len("auto_examples/") :]
-                            if relative_path:  # Skip the auto_examples/ directory itself
-                                target_file_path = target_dir / "auto_examples" / relative_path
-
-                                # Create parent directories with more robust error handling
-                                try:
-                                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
-                                except OSError as e:
-                                    log_message(f"Warning: Could not create directory {target_file_path.parent}: {e}")
-                                    # Try to continue anyway
-
-                                # Extract the file
-                                try:
-                                    with nested_zip_ref.open(file_path) as source:
-                                        with open(target_file_path, "wb") as target:
-                                            shutil.copyfileobj(source, target)
-                                    auto_examples_extracted = True
-                                except OSError as e:
-                                    log_message(f"Warning: Could not extract file {file_path}: {e}")
-                                    # Continue with other files
-
-                    if auto_examples_extracted:
-                        log_message(f"Successfully extracted auto_examples from nested archive to {target_dir / 'auto_examples'}")
-                    else:
-                        log_message("ERROR: No auto_examples/ files found in nested archive")
+                    # Use safe extraction with conflict resolution
+                    success = safe_extract_auto_examples(nested_zip_ref, nested_file_list, target_dir)
+                    if not success:
+                        log_message("ERROR: Failed to extract auto_examples from nested archive")
                         return False
 
                 # Clean up temporary nested file
                 nested_tmp_path.unlink()
 
             else:
-                # Original logic for direct archive structure
-                # Find the auto_examples directory in the archive
-                auto_examples_prefix = None
-                for file_path in file_list:
-                    if "auto_examples/" in file_path:
-                        # Get the prefix before auto_examples
-                        parts = file_path.split("auto_examples/")
-                        if len(parts) >= 2:
-                            auto_examples_prefix = parts[0] + "auto_examples/"
-                            break
-
-                if auto_examples_prefix:
-                    log_message(f"Found auto_examples with prefix: {auto_examples_prefix}")
-
-                    # Extract only auto_examples files
-                    for file_path in file_list:
-                        if file_path.startswith(auto_examples_prefix):
-                            # Calculate relative path within auto_examples
-                            relative_path = file_path[len(auto_examples_prefix) :]
-                            if relative_path:  # Skip the auto_examples/ directory itself
-                                target_file_path = target_dir / "auto_examples" / relative_path
-
-                                # Create parent directories with robust error handling
-                                try:
-                                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
-                                except OSError as e:
-                                    log_message(f"Warning: Could not create directory {target_file_path.parent}: {e}")
-                                    continue
-
-                                # Extract the file
-                                try:
-                                    with zip_ref.open(file_path) as source:
-                                        with open(target_file_path, "wb") as target:
-                                            shutil.copyfileobj(source, target)
-                                except OSError as e:
-                                    log_message(f"Warning: Could not extract file {file_path}: {e}")
-                                    continue
-
-                    log_message(f"Successfully extracted auto_examples to {target_dir / 'auto_examples'}")
-                else:
-                    log_message("Could not find auto_examples directory in archive")
+                # Direct archive structure - use safe extraction
+                log_message("Processing direct archive structure")
+                success = safe_extract_auto_examples(zip_ref, file_list, target_dir)
+                if not success:
+                    log_message("ERROR: Failed to extract auto_examples from direct archive")
                     return False
 
         # Clean up temporary file
