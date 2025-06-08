@@ -14,10 +14,11 @@ from kaira.models.image.compressors.bpg import BPGCompressor
 def _is_bpg_available():
     """Check if BPG tools are available on the system."""
     try:
-        subprocess.run(["bpgenc", "--help"], capture_output=True, check=True)  # nosec B603 B607
-        subprocess.run(["bpgdec", "--help"], capture_output=True, check=True)  # nosec B603 B607
+        # Run commands without check=True since they exit with code 1 when showing help
+        subprocess.run(["bpgenc"], capture_output=True, check=False)  # nosec B603 B607
+        subprocess.run(["bpgdec"], capture_output=True, check=False)  # nosec B603 B607
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except FileNotFoundError:
         return False
 
 

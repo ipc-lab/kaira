@@ -81,6 +81,7 @@ and digital channels, with support for various noise models, distortions, and fa
    PoissonChannel
    RayleighFadingChannel
    RicianFadingChannel
+   UplinkMACChannel
 
 
 Constraints

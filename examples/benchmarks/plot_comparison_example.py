@@ -6,11 +6,33 @@ Benchmark Comparison Example
 This example demonstrates how to use the Kaira benchmarking system
 to compare the performance of different approaches, such as various
 modulation schemes, using parameter sweeps and result visualization.
+
+The comparison framework allows you to:
+
+* Compare multiple algorithms or configurations side-by-side
+* Run parameter sweeps to explore performance across different settings
+* Visualize comparative results with unified plotting
+* Generate comprehensive performance summaries
 """
 
+# %%
+# Setting up the Environment
+# ---------------------------
+# First, let's import the necessary modules for benchmark comparison.
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from kaira.benchmarks import BenchmarkConfig, ComparisonRunner, create_benchmark
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# %%
+# Comparing Modulation Schemes
+# ----------------------------
+# Let's compare the BER performance of different modulation schemes to see
+# how they perform under various SNR conditions.
 
 
 def compare_modulation_schemes():
@@ -53,6 +75,15 @@ def compare_modulation_schemes():
     plt.grid(True)
     plt.show()
 
+    return results
+
+
+# %%
+# Parameter Sweep Functionality
+# ------------------------------
+# Parameter sweeps allow you to explore how benchmark performance varies
+# across different parameter combinations.
+
 
 def parameter_sweep_example():
     """Demonstrate parameter sweep functionality."""
@@ -73,9 +104,39 @@ def parameter_sweep_example():
     print("\nParameter Sweep Completed!")
     print(f"Total configurations tested: {len(list(sweep_results.values())[0])}")
 
+    return sweep_results
+
+
+# %%
+# Running the Complete Comparison Example
+# ----------------------------------------
+# Let's execute both comparison functions and display the results.
 
 if __name__ == "__main__":
-    compare_modulation_schemes()
-    parameter_sweep_example()
+    print("Benchmark Comparison Example")
+    print("=" * 40)
 
-    print("\nComparison examples completed!")
+    # Run modulation scheme comparison
+    print("\n1. Comparing Modulation Schemes...")
+    comparison_results = compare_modulation_schemes()
+
+    # Run parameter sweep
+    print("\n2. Running Parameter Sweep...")
+    sweep_results = parameter_sweep_example()
+
+    print("\n" + "=" * 40)
+    print("All comparison examples completed!")
+    print("=" * 40)
+
+# %%
+# Summary
+# -------
+# This example showcased the comparison capabilities of the Kaira benchmarking system:
+#
+# 1. **Side-by-side Comparisons**: Running multiple benchmarks with the same configuration
+# 2. **Parameter Sweeps**: Exploring performance across different parameter combinations
+# 3. **Visualization**: Creating comparative plots to understand relative performance
+# 4. **Summary Statistics**: Generating execution time and performance summaries
+#
+# These tools are essential for making informed decisions about algorithm selection
+# and parameter optimization in communication systems.

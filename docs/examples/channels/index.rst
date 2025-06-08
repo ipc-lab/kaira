@@ -171,6 +171,22 @@ Channel models for wireless communications, including AWGN, fading channels, and
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the UplinkMACChannel class to simulate uplink communication scenarios with multiple users transmitting simultaneously. It demonstrates both shared channel and per-user channel configurations, and shows how to dynamically update channel parameters. Key Features Demonstrated: - Using a single shared channel for all users - Using different channels for each user - Dynamic parameter updates during transmission - Signal visualization and analysis">
+
+.. only:: html
+
+    .. image:: /auto_examples/channels/images/thumb/sphx_glr_plot_uplink_mac_channel_thumb.png
+      :alt: UplinkMACChannel Usage with Different Channel Types
+
+    :ref:`sphx_glr_auto_examples_channels_plot_uplink_mac_channel.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">UplinkMACChannel Usage with Different Channel Types</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -187,3 +203,4 @@ Channel models for wireless communications, including AWGN, fading channels, and
    /auto_examples/channels/plot_phase_noise_channel
    /auto_examples/channels/plot_poisson_channel
    /auto_examples/channels/plot_rician_fading
+   /auto_examples/channels/plot_uplink_mac_channel

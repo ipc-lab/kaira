@@ -139,6 +139,22 @@ Neural network models and architectures for communications, including deep learn
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the UplinkMACChannel in an end-to-end communication system. The UplinkMACChannel handles per-user channel effects and signal combining for uplink Multiple Access Channel scenarios. Since UplinkMACChannel expects separate user signals (before combining), we create a custom model that properly integrates encoders, UplinkMACChannel, and decoders. Key Features Demonstrated: - Using UplinkMACChannel for per-user channel modeling - Comparing different channel configurations (shared vs per-user channels) - Analyzing performance with varying numbers of users - Demonstrating dynamic parameter updates during transmission">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_uplink_mac_integration_thumb.png
+      :alt: UplinkMACChannel Integration Example
+
+    :ref:`sphx_glr_auto_examples_models_plot_uplink_mac_integration.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">UplinkMACChannel Integration Example</div>
+    </div>
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the Discrete Task-Oriented Deep JSCC (DT-DeepJSCC) model from Xie et al. (2023). Unlike traditional DeepJSCC which focuses on image reconstruction, DT-DeepJSCC is designed for task-oriented semantic communications, specifically for image classification tasks. It uses a discrete bottleneck for robustness against channel impairments.">
 
 .. only:: html
@@ -169,4 +185,5 @@ Neural network models and architectures for communications, including deep learn
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_projections_and_cover_tests
    /auto_examples/models/plot_sequential_model
+   /auto_examples/models/plot_uplink_mac_integration
    /auto_examples/models/plot_xie2023_dt_deepjscc

@@ -49,7 +49,7 @@ Kaira integrates seamlessly with PyTorch for deep learning applications:
     import kaira
 
     # Define a simple autoencoder model
-    class SimpleAutoencoder(nn.Module):
+    class SimpleAutoencoder(kaira.models.BaseModel):
         def __init__(self, input_dim, latent_dim):
             super().__init__()
             self.encoder = nn.Sequential(

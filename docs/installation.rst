@@ -99,6 +99,82 @@ For more details on PyTorch GPU configuration, please refer to the `PyTorch docu
 
 No additional Kaira-specific installation commands are required for GPU support as it's included in the main package.
 
+Optional Dependencies
+---------------------
+
+BPG Image Compression Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Kaira includes support for BPG (Better Portable Graphics) image compression through the ``BPGCompressor`` class. To use this feature, you need to install the BPG command-line tools separately.
+
+**Installation Instructions:**
+
+1. **Download and Install BPG Tools**
+
+   Visit the official BPG website: https://bellard.org/bpg/
+
+   Download the appropriate binary package for your system or compile from source.
+
+2. **Platform-Specific Instructions:**
+
+   **Linux (Ubuntu/Debian):**
+
+   .. code-block:: bash
+
+      # Download and compile from source
+      wget https://bellard.org/bpg/bpg-0.9.8.tar.gz
+      tar xzf bpg-0.9.8.tar.gz
+      cd bpg-0.9.8
+      make
+      sudo make install
+
+   **macOS:**
+
+   .. code-block:: bash
+
+      # Install Homebrew if not already installed
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      # Force tap homebrew/core
+      brew tap homebrew/core --force
+
+      # Edit the libbpg formula to remove the unmaintained flag
+      brew edit libbpg
+
+      # In the editor that opens, remove the entire line:
+      # disable! date: "2024-09-26", because: :unmaintained
+      # Save and quit the editor
+
+      # Install libbpg with API bypass
+      HOMEBREW_NO_INSTALL_FROM_API=1 brew install libbpg
+
+   **Windows:**
+
+   1. Download the pre-compiled Windows binaries from https://bellard.org/bpg/bpg-0.9.8-win64.zip
+   2. Extract the ZIP file to a directory (e.g., ``C:\bpg``)
+   3. Add the directory containing ``bpgenc.exe`` and ``bpgdec.exe`` to your system PATH environment variable
+
+3. **Verify BPG Installation:**
+
+   .. code-block:: bash
+
+      # Test that BPG tools are available
+      bpgenc
+      bpgdec
+
+4. **Usage in Kaira:**
+
+   .. code-block:: python
+
+      from kaira.models.image.compressors.bpg import BPGCompressor
+
+      # Create BPG compressor with quality setting
+      compressor = BPGCompressor(quality=30)
+
+      # Or with target bits per image
+      compressor = BPGCompressor(max_bits_per_image=1000)
+
+**Note:** If BPG tools are not installed, the ``BPGCompressor`` will raise a ``RuntimeError`` during initialization. The rest of Kaira's functionality remains unaffected.
+
 Verifying Installation
 ----------------------
 Confirm your installation is working correctly:

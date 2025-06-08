@@ -31,6 +31,9 @@ from .lambda_channel import LambdaChannel
 # Channel registry
 from .registry import ChannelRegistry
 
+# Uplink MAC channel
+from .uplink_mac import UplinkMACChannel
+
 __all__ = [
     # Base classes
     "BaseChannel",
@@ -54,6 +57,8 @@ __all__ = [
     "RicianFadingChannel",
     "LogNormalFadingChannel",
     "NonlinearChannel",
+    # Uplink MAC channel
+    "UplinkMACChannel",
     # Channel registry
     "ChannelRegistry",
 ]

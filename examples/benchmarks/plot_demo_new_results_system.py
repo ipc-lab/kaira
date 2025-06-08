@@ -7,12 +7,36 @@ New Results Management System Demo
 This example demonstrates the new organized results management system in Kaira,
 showcasing automatic directory structuring, experiment naming, suite management,
 result comparison, and maintenance features.
+
+The results management system provides:
+
+* Automatic directory organization for benchmark results
+* Experiment naming and metadata tracking
+* Suite-level result aggregation and comparison
+* Result maintenance and cleanup utilities
+* Comprehensive result analysis and reporting
 """
+
+# %%
+# Setting up the Environment
+# ---------------------------
+# First, let's import the necessary modules and create our demonstration benchmark.
+
 import time
+
+import numpy as np
 
 from kaira.benchmarks.base import BaseBenchmark, BenchmarkSuite
 from kaira.benchmarks.results_manager import BenchmarkResultsManager
 from kaira.benchmarks.runners import StandardRunner
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# %%
+# Creating a Custom Benchmark
+# ----------------------------
+# Let's create a simple benchmark class for demonstration purposes.
 
 
 class ExampleBenchmark(BaseBenchmark):
@@ -33,6 +57,12 @@ class ExampleBenchmark(BaseBenchmark):
 
         # Return some example metrics
         return {"throughput": 1000 / self.delay, "latency": self.delay, "success": True, "memory_usage": 100 + self.delay * 50, "accuracy": 0.95 + (0.05 * (1 - self.delay))}  # Operations per second  # Seconds  # MB  # Percentage
+
+
+# %%
+# Demonstrating Basic Results Management
+# --------------------------------------
+# Let's start with the basic usage of the results management system.
 
 
 def demonstrate_basic_usage():
@@ -58,6 +88,12 @@ def demonstrate_basic_usage():
     print(f"Found {len(results)} benchmark results")
 
     return results_manager
+
+
+# %%
+# Suite Management Features
+# -------------------------
+# The results system also provides comprehensive suite management capabilities.
 
 
 def demonstrate_suite_management(results_manager):
@@ -86,6 +122,12 @@ def demonstrate_suite_management(results_manager):
     print(f"Found {len(suite_files)} suite-related files")
 
 
+# %%
+# Result Comparison and Analysis
+# ------------------------------
+# The system provides powerful tools for comparing and analyzing benchmark results.
+
+
 def demonstrate_comparison_and_analysis(results_manager):
     """Demonstrate result comparison and analysis features."""
     print("\n" + "=" * 60)
@@ -105,6 +147,12 @@ def demonstrate_comparison_and_analysis(results_manager):
         print("\nSample result:", sample_result.name)
         print(f"  Execution time: {sample_result.execution_time:.3f}s")
         print(f"  Key metrics: {sample_result.metrics}")
+
+
+# %%
+# Maintenance and Cleanup Features
+# --------------------------------
+# The results system includes maintenance tools to keep your results organized.
 
 
 def demonstrate_maintenance_features(results_manager):
@@ -128,6 +176,12 @@ def demonstrate_maintenance_features(results_manager):
             print(f"  📁 {item.relative_to(results_manager.base_dir)}/")
         else:
             print(f"  📄 {item.relative_to(results_manager.base_dir)}")
+
+
+# %%
+# Running the Complete Demo
+# -------------------------
+# Let's run through all the demonstration functions to see the full system in action.
 
 
 def main():
@@ -167,5 +221,22 @@ def main():
         traceback.print_exc()
 
 
+# %%
+# Execute the demonstration
 if __name__ == "__main__":
     main()
+
+# %%
+# Summary
+# -------
+# This example demonstrated the comprehensive results management system in Kaira:
+#
+# 1. **Organized Structure**: Automatic directory organization for different result types
+# 2. **Metadata Tracking**: Automatic timestamping and experiment naming
+# 3. **Suite Management**: Handling collections of related benchmarks
+# 4. **Comparison Tools**: Built-in result comparison and analysis features
+# 5. **Maintenance**: Archiving and cleanup utilities to manage result storage
+#
+# The results management system ensures that your benchmark data is organized,
+# accessible, and maintainable over time, making it easier to track performance
+# trends and compare different approaches.

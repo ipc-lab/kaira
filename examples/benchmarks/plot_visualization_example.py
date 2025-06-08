@@ -7,14 +7,39 @@ Benchmark Visualization Example
 This example demonstrates comprehensive benchmark result visualization in Kaira,
 including BER curve plotting, throughput performance, modulation comparisons,
 and performance summary generation.
+
+The visualization system provides:
+
+* BER curve plotting with theoretical and simulated results
+* Throughput performance analysis across different payload sizes
+* Comparative visualization of multiple algorithms or configurations
+* Automated report generation with statistical summaries
+* Customizable plotting styles and formats
 """
 
+# %%
+# Setting up the Environment
+# ---------------------------
+# First, let's import the necessary modules for benchmark visualization.
+
+import json
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from kaira.benchmarks import BenchmarkConfig, BenchmarkVisualizer, StandardRunner, get_benchmark
 
+# Set random seed for reproducibility
+np.random.seed(42)
 
-def main():
+# %%
+# Running and Visualizing BER Benchmarks
+# ---------------------------------------
+# Let's create and visualize BER simulation results.
+
+
+def run_visualization_example():
     """Run benchmark visualization example."""
     print("Kaira Benchmark Visualization Example")
     print("=" * 50)
@@ -78,8 +103,6 @@ def main():
         print(f"✓ {mod.upper()} BER curve saved to visualization_results/{plot_name}")
 
     # Create a combined comparison plot manually using matplotlib
-    import matplotlib.pyplot as plt
-
     plt.figure(figsize=(12, 8))
     for mod, result_metrics in zip(modulations, comparison_results):
         snr_range = result_metrics.get("snr_range", [])
@@ -95,6 +118,7 @@ def main():
     plt.legend(fontsize=11)
     plt.tight_layout()
     plt.savefig(str(output_dir / "modulation_comparison.png"), dpi=100, bbox_inches="tight")
+    plt.show()  # Show the plot for sphinx-gallery
     plt.close()
 
     print("✓ Modulation comparison saved to visualization_results/modulation_comparison.png")
@@ -102,7 +126,6 @@ def main():
     # Create summary statistics plot
     print("\n7. Creating performance summary...")
     # Create a summary of benchmark results by saving them to a JSON file first
-    import json
 
     summary_data = {
         "summary": {"total_benchmarks": 2, "successful_benchmarks": 2, "failed_benchmarks": 0, "total_execution_time": ber_result.execution_time + throughput_result.execution_time, "average_execution_time": (ber_result.execution_time + throughput_result.execution_time) / 2},
@@ -135,5 +158,20 @@ def main():
     print("  • performance_summary.png - Overall performance summary")
 
 
-if __name__ == "__main__":
-    main()
+# %%
+# Execute the visualization example
+run_visualization_example()
+
+# %%
+# Summary
+# -------
+# This example demonstrated the comprehensive visualization capabilities of the Kaira benchmarking system:
+#
+# 1. **BER Curve Plotting**: Visualizing bit error rate performance vs. SNR
+# 2. **Throughput Analysis**: Comparing performance across different data payload sizes
+# 3. **Modulation Comparisons**: Side-by-side comparison of different modulation schemes
+# 4. **Performance Summaries**: Automated generation of comprehensive performance reports
+# 5. **Customizable Plots**: Flexible visualization options with matplotlib integration
+#
+# The visualization system makes it easy to understand benchmark results and communicate
+# findings through clear, publication-ready plots and comprehensive performance summaries.

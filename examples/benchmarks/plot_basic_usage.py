@@ -6,14 +6,35 @@ Basic Benchmark Usage
 This example demonstrates the basic usage of the Kaira benchmarking system,
 including running individual benchmarks, creating and running benchmark suites,
 and saving/analyzing results.
+
+The Kaira benchmarking system provides tools for:
+
+* Running individual benchmarks with different configurations
+* Creating and executing benchmark suites
+* Analyzing and visualizing benchmark results
+* Comparing performance across different algorithms and parameters
 """
+
+# %%
+# Setting up the Environment
+# ---------------------------
+# First, let's import the necessary modules and set up our environment.
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Import Kaira benchmarking components
 from kaira.benchmarks import BenchmarkConfig, BenchmarkSuite, StandardRunner, create_benchmark
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# %%
+# Running a BER Simulation Benchmark
+# -----------------------------------
+# Let's start with a basic BER (Bit Error Rate) simulation benchmark using BPSK modulation.
 
 
 def run_ber_benchmark():
@@ -44,6 +65,14 @@ def run_ber_benchmark():
     print(f"Benchmark completed in {result.execution_time:.2f} seconds")
     print("RMSE between simulated and theoretical: {:.6f}".format(result.metrics["rmse"]))
 
+    return result
+
+
+# %%
+# Running a Throughput Benchmark
+# -------------------------------
+# Next, let's run a throughput benchmark to measure data processing speeds.
+
 
 def run_throughput_benchmark():
     """Run a throughput benchmark."""
@@ -65,6 +94,15 @@ def run_throughput_benchmark():
         print("  Payload size {}: {:.2f} ± {:.2f} bits/s".format(size, stats["mean"], stats["std"]))
 
     print("Peak throughput: {:.2f} bits/s".format(result.metrics["peak_throughput"]))
+
+    return result
+
+
+# %%
+# Creating and Running Benchmark Suites
+# --------------------------------------
+# Benchmark suites allow you to run multiple related benchmarks together and
+# analyze their collective performance.
 
 
 def run_benchmark_suite():
@@ -99,13 +137,39 @@ def run_benchmark_suite():
     suite.save_results(output_dir)
     print("\nResults saved to:", output_dir)
 
+    return suite
+
+
+# %%
+# Putting It All Together
+# ------------------------
+# Now let's run all the benchmark examples and display the results.
 
 if __name__ == "__main__":
     # Run individual benchmarks
-    run_ber_benchmark()
-    run_throughput_benchmark()
+    print("Running BER Benchmark...")
+    ber_result = run_ber_benchmark()
+
+    print("\nRunning Throughput Benchmark...")
+    throughput_result = run_throughput_benchmark()
 
     # Run benchmark suite
-    run_benchmark_suite()
+    print("\nRunning Benchmark Suite...")
+    suite = run_benchmark_suite()
 
-    print("\nBenchmarking examples completed!")
+    print("\n" + "=" * 50)
+    print("All benchmarking examples completed successfully!")
+    print("=" * 50)
+
+# %%
+# Summary
+# -------
+# This example demonstrated the core features of the Kaira benchmarking system:
+#
+# 1. **Individual Benchmarks**: Running single benchmarks with specific configurations
+# 2. **Throughput Testing**: Measuring data processing performance across different payload sizes
+# 3. **Benchmark Suites**: Organizing and running multiple related benchmarks
+# 4. **Result Management**: Saving and analyzing benchmark results
+#
+# The benchmarking system provides a flexible framework for evaluating communication
+# system performance across different algorithms, configurations, and scenarios.

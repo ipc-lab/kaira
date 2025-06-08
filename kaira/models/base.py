@@ -295,7 +295,7 @@ class ChannelAwareBaseModel(BaseModel):
 
         return features
 
-    def forward_csi_to_submodules(self, csi: torch.Tensor, modules: List[nn.Module], *args, **kwargs) -> List[Any]:
+    def forward_csi_to_submodules(self, csi: torch.Tensor, modules: List[BaseModel], *args, **kwargs) -> List[Any]:
         """Helper method to consistently pass CSI to submodules.
 
         This method facilitates passing CSI to multiple submodules that require
@@ -303,7 +303,7 @@ class ChannelAwareBaseModel(BaseModel):
 
         Args:
             csi (torch.Tensor): Channel state information tensor
-            modules (List[nn.Module]): List of modules to apply
+            modules (List[BaseModel]): List of modules to apply
             *args: Positional arguments to pass to modules
             **kwargs: Keyword arguments to pass to modules
 

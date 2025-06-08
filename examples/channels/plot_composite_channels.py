@@ -21,6 +21,7 @@ import torch
 
 from kaira.channels import (
     AWGNChannel,
+    BaseChannel,
     FlatFadingChannel,
     NonlinearChannel,
     PerfectChannel,
@@ -487,7 +488,7 @@ plt.show()
 # For repeated use, you can create a custom composite channel class.
 
 
-class SatelliteChannel(torch.nn.Module):
+class SatelliteChannel(BaseChannel):
     """A composite channel model for satellite communications.
 
     This model chains together typical impairments found in satellite links:

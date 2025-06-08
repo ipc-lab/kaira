@@ -28,9 +28,36 @@ logger = logging.getLogger(__name__)
 class BPGCompressor(BaseModel):
     """BPG (Better Portable Graphics) image compression based on bpgenc and bpgdec.
 
-    This class provides BPG-based compression. It can operate in two modes:
+    This class provides BPG-based compression using external BPG tools. It can operate in two modes:
     1. Fixed quality mode: directly uses the specified quality level
     2. Bit-constrained mode: finds the highest quality that stays under a bit budget
+
+    BPG (Better Portable Graphics) is a lossy image compression format based on HEVC
+    (High Efficiency Video Coding) that provides superior compression efficiency compared
+    to JPEG while maintaining good visual quality.
+
+    Installation:
+        The BPG tools (bpgenc and bpgdec) must be installed separately on your system.
+        For installation instructions, see:
+        https://kaira.readthedocs.io/en/latest/installation.html#bpg-image-compression-support
+
+    Example:
+        # Fixed quality compression
+        compressor = BPGCompressor(quality=30)
+        compressed_images = compressor(image_batch)
+
+        # Bit-constrained compression
+        compressor = BPGCompressor(max_bits_per_image=5000)
+        compressed_images, bits_used = compressor(image_batch)
+
+        # With compression statistics
+        compressor = BPGCompressor(quality=25, collect_stats=True, return_bits=True)
+        compressed_images, bits_per_image = compressor(image_batch)
+        stats = compressor.get_stats()
+
+    Note:
+        This class requires external BPG tools to be installed and available in PATH
+        or specified via bpg_encoder_path and bpg_decoder_path parameters.
     """
 
     def __init__(
@@ -92,7 +119,7 @@ class BPGCompressor(BaseModel):
             self._safe_subprocess_run([self.bpg_encoder_path, "--help"])
         except (subprocess.SubprocessError, FileNotFoundError):
             logger.error(f"BPG encoder not found at '{self.bpg_encoder_path}'. Please install BPG tools.")
-            raise RuntimeError(f"BPG encoder not found at '{self.bpg_encoder_path}'")
+            raise RuntimeError(f"BPG encoder not found at '{self.bpg_encoder_path}'. " "Please install BPG tools following the instructions at: " "https://kaira.readthedocs.io/en/latest/installation.html#bpg-image-compression-support")
 
     def _validate_executable_path(self, path: str) -> None:
         """Validate that an executable path doesn't contain shell metacharacters.
@@ -228,8 +255,21 @@ class BPGCompressor(BaseModel):
 
         return result
 
-    def _setup_temp_paths(self, idx):
-        """Create temporary directory and generate file paths."""
+    def _setup_temp_paths(self, idx: int) -> Dict[str, str]:
+        """Create temporary directory and generate file paths.
+
+        This method creates a temporary directory with unique filenames for:
+        - Input image (PNG format)
+        - Compressed image (BPG format)
+        - Decompressed output (PNG format)
+        - Best output for binary search (PNG format)
+
+        Args:
+            idx: Image index for generating unique filenames
+
+        Returns:
+            Dict containing paths for 'dir', 'input', 'compressed', 'output', 'best_output'
+        """
         temp_dir = tempfile.mkdtemp(prefix="bpg_")
         uid = f"{idx}_{uuid.uuid4()}"
 
@@ -442,8 +482,25 @@ class BPGCompressor(BaseModel):
         # Return the final_result
         return final_result
 
-    def get_stats(self):
-        """Return compression statistics if collect_stats=True was set."""
+    def get_stats(self) -> Dict[str, Any]:
+        """Return compression statistics if collect_stats=True was set.
+
+        Returns detailed compression statistics collected during the forward pass,
+        including total bits, average quality, bits per pixel, compression ratios,
+        and processing time.
+
+        Returns:
+            Dict containing compression statistics:
+                - total_bits: Total bits used for all images
+                - avg_quality: Average BPG quality level used
+                - avg_bpp: Average bits per pixel across all images
+                - avg_compression_ratio: Average compression ratio (original/compressed)
+                - processing_time: Time taken for compression
+                - img_stats: List of per-image statistics
+
+        Note:
+            Returns empty dict if collect_stats=False was set during initialization.
+        """
         if not self.collect_stats:
             logger.warning("Statistics not collected. Initialize with collect_stats=True to enable.")
             return {}
