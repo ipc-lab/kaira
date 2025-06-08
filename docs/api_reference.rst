@@ -395,6 +395,7 @@ transmission over noisy channels :cite:`lin2004error,moon2005error`.
    LDPCCodeEncoder
    LinearBlockCodeEncoder
    PolarCodeEncoder
+   ReedMullerCodeEncoder
    ReedSolomonCodeEncoder
    RepetitionCodeEncoder
    SingleParityCheckCodeEncoder

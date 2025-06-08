@@ -11,6 +11,7 @@ results
 examples/benchmarks/example_results
 examples/benchmarks/benchmark_results
 examples/benchmarks/visualization_results
+.gradio
 
 # Distribution / packaging
 .Python
