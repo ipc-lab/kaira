@@ -95,6 +95,8 @@ extensions = [
 ]
 
 # Enhanced sphinx-gallery configuration
+# Note: This configuration contains function objects (like FileNameSortKey) that cannot be cached
+# The warning about "cannot cache unpickable configuration value" is expected and can be ignored
 sphinx_gallery_conf = {
     # Directory paths
     "examples_dirs": [
@@ -339,6 +341,7 @@ hoverxref_role_types = {
 
 suppress_warnings = [
     "autodoc.duplicate_object",
+    "config.cache",  # Suppress warnings about unpicklable configuration values like sphinx_gallery_conf
 ]
 # Commented out # Add setting to prevent duplicate documentation of enum members
 # "app.add_directive", "app.add_role", "app.add_generic_role", "app.add_transform",
