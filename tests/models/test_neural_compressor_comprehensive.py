@@ -128,8 +128,23 @@ class TestNeuralCompressorRealFunctionality:
     @patch("compressai.zoo.bmshj2018_factorized")
     def test_bit_constrained_with_early_stopping(self, mock_factory, sample_image_batch, mock_compressai_zoo):
         """Test early stopping functionality in bit-constrained mode."""
-        mock_model = mock_compressai_zoo["bmshj2018_factorized"](quality=1)  # Low quality, low bits
-        mock_factory.return_value = mock_model
+
+        # Create a model that produces predictable, low bits
+        def create_low_bit_model(**kwargs):
+            model = Mock()
+            model.eval.return_value = model
+            model.to.return_value = model
+
+            def mock_forward(x):
+                batch_size = x.shape[0]
+                # High likelihood = low bits
+                return {"x_hat": torch.rand_like(x) * 0.1 + x * 0.9, "likelihoods": {"y": torch.ones(batch_size, 3, 8, 8) * 0.8, "z": torch.ones(batch_size, 3, 4, 4) * 0.8}}
+
+            model.__call__ = mock_forward
+            model.compress = lambda x: {"strings": {"y": b"test", "z": b"test"}, "shape": {"y": [8, 8], "z": [4, 4]}}
+            return model
+
+        mock_factory.side_effect = create_low_bit_model
 
         compressor = NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=1000, early_stopping_threshold=0.9, return_bits=True)  # High bit budget  # Stop at 90% of budget
 
@@ -144,8 +159,23 @@ class TestNeuralCompressorRealFunctionality:
     @patch("compressai.zoo.bmshj2018_factorized")
     def test_bit_constrained_with_compressed_data(self, mock_factory, sample_image_batch, mock_compressai_zoo):
         """Test compressed data collection in bit-constrained mode."""
-        mock_model = mock_compressai_zoo["bmshj2018_factorized"](quality=5)
-        mock_factory.return_value = mock_model
+
+        # Create a model that produces bits within constraint
+        def create_controlled_bit_model(**kwargs):
+            model = Mock()
+            model.eval.return_value = model
+            model.to.return_value = model
+
+            def mock_forward(x):
+                batch_size = x.shape[0]
+                # Use moderate likelihood to stay within 500 bit constraint
+                return {"x_hat": torch.rand_like(x) * 0.1 + x * 0.9, "likelihoods": {"y": torch.ones(batch_size, 3, 8, 8) * 0.7, "z": torch.ones(batch_size, 3, 4, 4) * 0.7}}
+
+            model.__call__ = mock_forward
+            model.compress = lambda x: {"strings": {"y": b"compressed_y", "z": b"compressed_z"}, "shape": {"y": [8, 8], "z": [4, 4]}}
+            return model
+
+        mock_factory.side_effect = create_controlled_bit_model
 
         compressor = NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=500, return_compressed_data=True, return_bits=True)
 
@@ -183,13 +213,9 @@ class TestNeuralCompressorRealFunctionality:
         # Explicitly set return_bits=False to match test expectation
         compressor = NeuralCompressor(method="bmshj2018_factorized", max_bits_per_image=50, collect_stats=True, return_bits=False)  # Very low bit budget
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        # Expect warning about exceeding max_bits_per_image constraint
+        with pytest.warns(UserWarning, match="exceed max_bits_per_image even at lowest quality"):
             result = compressor.forward(sample_image_batch)
-
-            # Should get warning about exceeding budget
-            assert len(w) > 0
-            assert any("exceed max_bits_per_image even at lowest quality" in str(warning.message) for warning in w)
 
         assert result.shape == sample_image_batch.shape
 
@@ -350,13 +376,9 @@ class TestNeuralCompressorEdgeCases:
 
             compressor = NeuralCompressor(method="bmshj2018_factorized", quality=8, max_bits_per_image=50)  # High quality  # Low budget
 
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
+            # Expect warning about exceeding constraint
+            with pytest.warns(UserWarning, match="exceed the max_bits_per_image constraint"):
                 compressor.forward(sample_image_batch)
-
-                # Should warn about exceeding constraint
-                assert len(w) > 0
-                assert any("exceed the max_bits_per_image constraint" in str(warning.message) for warning in w)
 
     def test_empty_batch_handling(self):
         """Test handling of empty batches."""
