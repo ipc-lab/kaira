@@ -40,5 +40,11 @@ deploy: ## Deploy package to PyPI
 build-docs: ## Generate HTML documentation
 	./scripts/build_docs.sh
 
+build-changelog: ## Generate changelog.rst from CHANGELOG.md
+	python ./scripts/generate_changelog.py
+
+build-api-reference: ## Generate API reference documentation
+	python ./scripts/generate_api_reference.py docs/api_reference.rst
+
 build-readme: ## Build README.rst from template
 	python ./scripts/build_readme.py

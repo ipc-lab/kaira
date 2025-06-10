@@ -26,11 +26,7 @@ try:
     if dot_path:
         print(f"Found graphviz 'dot' command at {dot_path}")
     else:
-        print("WARNING: graphviz 'dot' command not found in PATH. Setting graphviz_dot to use dot through the graphviz Python package.")
-        # Set graphviz_dot to use the Python package interface
-        import os
-
-        os.environ["GRAPHVIZ_DOT"] = graphviz.backend.dot_command
+        print("WARNING: graphviz 'dot' command not found in PATH. Continuing without graphviz dot command.")
 except ImportError:
     has_graphviz = False
     print("WARNING: Python graphviz package not found. Inheritance diagrams may not render properly.")
@@ -67,8 +63,8 @@ except ImportError as e:
 
 project = "Kaira"
 author = "Kaira Team"
-version = "0.1.0"
-release = "0.1.0"
+version = "0.2.0"
+release = "0.2.0"
 
 copyright = f"{datetime.datetime.now().year}, {author}"
 
@@ -99,6 +95,8 @@ extensions = [
 ]
 
 # Enhanced sphinx-gallery configuration
+# Note: This configuration contains function objects (like FileNameSortKey) that cannot be cached
+# The warning about "cannot cache unpickable configuration value" is expected and can be ignored
 sphinx_gallery_conf = {
     # Directory paths
     "examples_dirs": [
@@ -110,6 +108,7 @@ sphinx_gallery_conf = {
         "../examples/losses",
         "../examples/models",
         "../examples/models_fec",
+        "../examples/benchmarks",
         "../examples/utils",
     ],
     "gallery_dirs": [
@@ -121,6 +120,7 @@ sphinx_gallery_conf = {
         "auto_examples/losses",
         "auto_examples/models",
         "auto_examples/models_fec",
+        "auto_examples/benchmarks",
         "auto_examples/utils",
     ],
     # File patterns and organization
@@ -323,7 +323,6 @@ master_doc = "index"
 # -- Options for intersphinx extension ---------------------------------------
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable", None),
     "torch": ("https://pytorch.org/docs/stable", None),
     "torchmetrics": ("https://torchmetrics.readthedocs.io/en/stable/", None),
 }
@@ -340,8 +339,14 @@ hoverxref_role_types = {
     "term": "tooltip",
 }
 
-# Add setting to prevent duplicate documentation of enum members
-suppress_warnings = ["autodoc.duplicate_object"]
+suppress_warnings = [
+    "autodoc.duplicate_object",
+    "config.cache",  # Suppress warnings about unpicklable configuration values like sphinx_gallery_conf
+]
+# Commented out # Add setting to prevent duplicate documentation of enum members
+# "app.add_directive", "app.add_role", "app.add_generic_role", "app.add_transform",
+# "app.add_post_transform", "app.add_domain", "app.add_builder", "misc.highlighting_failure",
+# "autosummary", "autosectionlabel.*",
 
 
 def skip_member(app, what, name, obj, skip, options):
@@ -398,4 +403,46 @@ def setup(app):
         app: The Sphinx application object.
     """
     app.connect("autodoc-skip-member", skip_member)
-    app.add_config_value("current_date", get_current_date(), "env")
+
+    # Add config value only if it doesn't exist
+    try:
+        app.add_config_value("current_date", get_current_date(), "env")
+    except AttributeError:  # More specific exception
+        pass  # Config value already exists
+
+    # Download auto_examples before building if needed
+    app.connect("config-inited", download_auto_examples_if_needed)
+
+
+def download_auto_examples_if_needed(app, config):
+    """Download auto_examples if needed during Sphinx build."""
+    import subprocess  # nosec B404 - subprocess is needed for legitimate script execution
+    import sys
+    from pathlib import Path
+
+    # Get the project root directory
+    docs_dir = Path(app.srcdir).resolve()
+    project_root = docs_dir.parent
+    # Ensure download_script is a string representation of the path
+    download_script = str(project_root / "scripts" / "download_auto_examples.py")
+    python_executable = str(sys.executable)  # Ensure python executable is a string
+
+    if Path(download_script).exists():
+        try:
+            print("[Sphinx] Running auto_examples download script...")
+            # Ensure all parts of the command are strings
+            # Validate that we're only executing our own script with trusted python executable
+            if not Path(download_script).is_file() or not Path(python_executable).is_file():
+                raise ValueError("Invalid script or python executable path")
+            command = [python_executable, download_script]
+            result = subprocess.run(command, capture_output=True, text=True, cwd=str(project_root), check=False)  # nosec B603 - controlled execution of our own script
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            if result.returncode != 0:
+                print(f"[Sphinx] Warning: auto_examples download script failed with code {result.returncode}")
+        except Exception as e:
+            print(f"[Sphinx] Warning: Could not run auto_examples download script: {e}")
+    else:
+        print(f"[Sphinx] Warning: Download script not found at {download_script}")

@@ -3,7 +3,7 @@
 Constraints
 ===========
 
-Examples demonstrating various constraints for communications systems.
+Constraint handling and optimization techniques for communication systems design and signal processing.
 
 .. raw:: html
 
@@ -16,7 +16,7 @@ Examples demonstrating various constraints for communications systems.
 .. only:: html
 
     .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_basic_constraints_thumb.png
-      :alt:
+      :alt: Understanding Basic Power Constraints in Kaira
 
     :ref:`sphx_glr_auto_examples_constraints_plot_basic_constraints.py`
 
@@ -32,7 +32,7 @@ Examples demonstrating various constraints for communications systems.
 .. only:: html
 
     .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_constraint_composition_thumb.png
-      :alt:
+      :alt: Composing Constraints for Complex Signal Requirements
 
     :ref:`sphx_glr_auto_examples_constraints_plot_constraint_composition.py`
 
@@ -48,7 +48,7 @@ Examples demonstrating various constraints for communications systems.
 .. only:: html
 
     .. image:: /auto_examples/constraints/images/thumb/sphx_glr_plot_practical_constraints_thumb.png
-      :alt:
+      :alt: Practical Applications of Constraints in Wireless Communication Systems
 
     :ref:`sphx_glr_auto_examples_constraints_plot_practical_constraints.py`
 
@@ -61,7 +61,8 @@ Examples demonstrating various constraints for communications systems.
 
     </div>
 
-.. toctree::
+
+.. toctree:
    :hidden:
 
    /auto_examples/constraints/plot_basic_constraints

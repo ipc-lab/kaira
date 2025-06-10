@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 import torch
 
@@ -24,7 +23,7 @@ class TestCapacityAnalyzer:
         # Setup common test data
         self.snr_db_single = 10.0
         self.snr_db_list = [0.0, 5.0, 10.0, 15.0]
-        self.snr_db_array = np.array(self.snr_db_list)
+        self.snr_db_array = torch.tensor(self.snr_db_list)
         self.snr_db_tensor = torch.tensor(self.snr_db_list, device=self.device)
 
         # Setup channels for testing
@@ -108,8 +107,8 @@ class TestCapacityAnalyzer:
         assert isinstance(capacity, torch.Tensor)
         assert capacity.shape == torch.Size([len(p_list)])
 
-        # Test with numpy array
-        p_array = np.array(p_list)
+        # Test with torch tensor
+        p_array = torch.tensor(p_list)
         capacity = self.analyzer.bsc_capacity(p_array)
         assert isinstance(capacity, torch.Tensor)
         assert capacity.shape == torch.Size([len(p_array)])
@@ -165,8 +164,8 @@ class TestCapacityAnalyzer:
         assert isinstance(capacity, torch.Tensor)
         assert capacity.shape == torch.Size([len(e_list)])
 
-        # Test with numpy array
-        e_array = np.array(e_list)
+        # Test with torch tensor
+        e_array = torch.tensor(e_list)
         capacity = self.analyzer.bec_capacity(e_array)
         assert isinstance(capacity, torch.Tensor)
         assert capacity.shape == torch.Size([len(e_array)])

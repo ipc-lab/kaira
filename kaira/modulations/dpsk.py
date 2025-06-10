@@ -2,8 +2,7 @@
 
 from typing import Any, Literal, Optional, Union
 
-import matplotlib.pyplot as plt  # type: ignore  # type: ignore
-import numpy as np
+import matplotlib.pyplot as plt  # type: ignore
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -46,7 +45,7 @@ class DPSKModulator(BaseModulator):
             if not (order > 0 and (order & (order - 1) == 0)):
                 raise ValueError(f"DPSK order must be a power of 2, got {order}")
             self.order = order
-            self._bits_per_symbol: int = int(np.log2(order))
+            self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         else:
             raise ValueError("Either order or bits_per_symbol must be provided")
 
@@ -62,12 +61,12 @@ class DPSKModulator(BaseModulator):
     def _create_constellation(self) -> None:
         """Create the DPSK constellation mapping."""
         # Generate differential phase shifts
-        angles = torch.arange(0, self.order) * (2 * np.pi / self.order)
+        angles = torch.arange(0, self.order) * (2 * torch.pi / self.order)
 
         # For non-gray-coded, rotate constellation to make it different
         if not self.gray_coding:
             # Add a small rotation to make non-gray constellation visibly different
-            angles = angles + np.pi / self.order
+            angles = angles + torch.pi / self.order
 
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
@@ -224,7 +223,7 @@ class DPSKDemodulator(BaseDemodulator):
             self.order = 2**bits_per_symbol
         elif order is not None:
             self.order = order
-            self._bits_per_symbol: int = int(np.log2(order))
+            self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         else:
             raise ValueError("Either order or bits_per_symbol must be provided")
 
@@ -273,7 +272,7 @@ class DPSKDemodulator(BaseDemodulator):
             expanded_const_angle = const_angles.expand(*([1] * len(batch_shape)), symbol_len - 1, self.order)  # (..., N-1, order)
 
             # Calculate circular distance
-            angle_diff = torch.abs((expanded_z_angle - expanded_const_angle + np.pi) % (2 * np.pi) - np.pi)
+            angle_diff = torch.abs((expanded_z_angle - expanded_const_angle + torch.pi) % (2 * torch.pi) - torch.pi)
             closest_indices = torch.argmin(angle_diff, dim=-1)  # (..., N-1)
 
             # Map to bit patterns using the modulator's bit patterns

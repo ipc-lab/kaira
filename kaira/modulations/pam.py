@@ -3,7 +3,6 @@
 from typing import Literal, Optional, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -44,7 +43,7 @@ class PAMModulator(BaseModulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol: int = int(np.log2(order))
+        self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
         # Create PAM constellation
         self._create_constellation()
@@ -171,7 +170,7 @@ class PAMDemodulator(BaseDemodulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol: int = int(np.log2(order))
+        self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
         # Create reference modulator to access constellation
         self.modulator = PAMModulator(order, gray_coding, normalize)

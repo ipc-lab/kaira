@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 
 from kaira.channels import AWGNChannel
+from kaira.models.base import BaseModel
 from kaira.models.components import AFModule
 
 # Set random seed for reproducibility
@@ -170,7 +171,7 @@ plt.show()
 
 
 # Create a simple model with AFModule
-class SimpleEncoder(nn.Module):
+class SimpleEncoder(BaseModel):
     """A simple encoder model that incorporates the Attention-Feature Module.
 
     This encoder processes input data through a linear layer and applies

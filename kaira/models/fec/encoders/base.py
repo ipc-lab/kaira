@@ -15,7 +15,7 @@ and error detection processes.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Tuple, Union
+from typing import Any
 
 import torch
 
@@ -44,8 +44,9 @@ class BaseBlockCodeEncoder(BaseModel, ABC):
         ValueError: If code parameters are invalid (e.g., non-positive or dimension > length)
 
     Note:
-        All concrete implementations must override the forward, inverse_encode, and
-        calculate_syndrome methods to provide specific encoding and decoding behavior.
+        All concrete implementations must override the forward method to provide specific
+        encoding behavior. The inverse_encode and calculate_syndrome methods are available
+        in LinearBlockCodeEncoder for codes that support these operations.
     """
 
     def __init__(self, code_length: int, code_dimension: int, *args: Any, **kwargs: Any):
@@ -165,58 +166,3 @@ class BaseBlockCodeEncoder(BaseModel, ABC):
             may use different algorithms.
         """
         raise NotImplementedError("Subclasses must implement forward method")
-
-    @abstractmethod
-    def inverse_encode(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """Decode a received codeword back to a message.
-
-        This method is the inverse of the encoding process, attempting to recover
-        the original message from a potentially corrupted codeword. The ability to
-        correct errors depends on the specific code properties and the error pattern.
-
-        Args:
-            x: Input tensor containing received codewords. The last dimension should be
-               a multiple of the code length (n).
-            *args: Additional positional arguments for specific decoder implementations.
-            **kwargs: Additional keyword arguments for specific decoder implementations.
-
-        Returns:
-            Either:
-            - Decoded tensor containing messages, or
-            - A tuple of (decoded tensor, syndrome or error information)
-
-            The return type depends on the specific implementation and parameters.
-
-        Raises:
-            ValueError: If the last dimension of x is not a multiple of n.
-
-        Note:
-            This method may not recover the original message perfectly if the number
-            of errors exceeds the error-correcting capability of the code.
-        """
-        raise NotImplementedError("Subclasses must implement inverse_encode method")
-
-    @abstractmethod
-    def calculate_syndrome(self, x: torch.Tensor) -> torch.Tensor:
-        """Calculate the syndrome of a received codeword.
-
-        The syndrome provides information about errors that may have occurred during
-        transmission. A zero syndrome indicates that the received word is a valid codeword
-        (though not necessarily the transmitted one if the number of errors is large).
-
-        The syndrome pattern helps identify the error pattern and is used in the
-        decoding process to correct errors.
-
-        Args:
-            x: Received codeword tensor with shape (..., n) or (..., m*n)
-               where n is the code length and m is some multiple.
-
-        Returns:
-            Syndrome tensor that characterizes the error pattern (if any).
-            A zero syndrome indicates a valid codeword.
-
-        Note:
-            For linear codes, the syndrome is computed as H·r where H is the parity-check
-            matrix and r is the received codeword vector.
-        """
-        raise NotImplementedError("Subclasses must implement calculate_syndrome method")

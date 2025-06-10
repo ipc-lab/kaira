@@ -9,7 +9,6 @@ For a comprehensive overview of analog channel models, see :cite:`goldsmith2005w
 
 from typing import Any, Optional, Union  # Add Union
 
-import numpy as np
 import torch
 
 from kaira.utils import snr_to_noise_power
@@ -502,7 +501,7 @@ class FlatFadingChannel(BaseChannel):
             # Complex Gaussian distribution for Rayleigh fading
             h_real = torch.randn(batch_size, num_blocks, device=device)
             h_imag = torch.randn(batch_size, num_blocks, device=device)
-            h = torch.complex(h_real, h_imag) / np.sqrt(2)
+            h = torch.complex(h_real, h_imag) / (2**0.5)
 
         elif self.fading_type == "rician":
             # Rician fading with K factor
@@ -516,7 +515,7 @@ class FlatFadingChannel(BaseChannel):
             los = los_magnitude * torch.ones(batch_size, num_blocks, device=device)
 
             # Scattered component
-            scattered_magnitude = torch.sqrt(1 / (k + 1)) / np.sqrt(2)
+            scattered_magnitude = torch.sqrt(1 / (k + 1)) / (2**0.5)
             h_real = torch.randn(batch_size, num_blocks, device=device) * scattered_magnitude
             h_imag = torch.randn(batch_size, num_blocks, device=device) * scattered_magnitude
             scattered = torch.complex(h_real, h_imag)
@@ -529,14 +528,14 @@ class FlatFadingChannel(BaseChannel):
             # First generate Rayleigh component
             h_real = torch.randn(batch_size, num_blocks, device=device)
             h_imag = torch.randn(batch_size, num_blocks, device=device)
-            h_rayleigh = torch.complex(h_real, h_imag) / np.sqrt(2)
+            h_rayleigh = torch.complex(h_real, h_imag) / (2**0.5)
 
             # Generate log-normal shadowing in linear scale
             # Ensure shadow_sigma_db is tensor for calculations
             if self.shadow_sigma_db is None:
                 raise ValueError("shadow_sigma_db must be provided for lognormal fading")
             shadow_sigma_db_tensor = torch.tensor(self.shadow_sigma_db, device=device)
-            sigma_ln = shadow_sigma_db_tensor * (np.log(10) / 10)  # Convert from dB to natural log
+            sigma_ln = shadow_sigma_db_tensor * (torch.log(torch.tensor(10.0, device=device)) / 10)  # Convert from dB to natural log
             ln_mean = -(sigma_ln**2) / 2  # Ensure unit mean
             shadow = torch.exp(torch.randn(batch_size, num_blocks, device=device) * sigma_ln + ln_mean)
 

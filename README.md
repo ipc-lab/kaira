@@ -8,7 +8,7 @@
 
 **Build Better Communication Systems with Kaira.** Kaira is an open-source toolkit for PyTorch designed to help you simulate and innovate in communication systems. Its name is inspired by **Kayra** (from Turkic mythology, meaning 'creator') and **Kairos** (a Greek concept for the 'opportune moment'). This reflects Kaira's core purpose: to empower engineers and researchers to **architect** (*Kayra*) advanced communication models and to ensure messages are transmitted effectively and at the **right moment** (*Kairos*). Kaira provides the tools to design, analyze, and optimize complex communication scenarios, making it an essential asset for research and development.
 
-Kaira is built to accelerate your research. Its user-friendly, modular design allows for easy integration with existing PyTorch projects, facilitating rapid prototyping of new communication strategies. This is particularly beneficial for developing and testing advanced techniques, such as Deep Joint Source-Channel Coding (DeepJSCC) and other deep learning-based approaches. Kaira helps you bring your innovative communication concepts to life.
+Kaira is built to accelerate your research. Its user-friendly, modular design allows for easy integration with existing PyTorch projects, facilitating rapid prototyping of new communication strategies. This is particularly beneficial for developing and testing advanced techniques, such as deep joint source-channel coding (DeepJSCC) and other deep learning-based approaches, as well as classical forward error correction with industry-standard LDPC, Polar, and algebraic codes. Kaira helps you bring your innovative communication concepts to life.
 
 > **Note**: Kaira is currently in beta. The API is subject to change as we refine the library based on user feedback and evolving research needs.
 
@@ -26,6 +26,14 @@ Kaira is built to accelerate your research. Its user-friendly, modular design al
    improvements.
 5. **Well Documented**: Comes with comprehensive documentation for easy
    understanding.
+
+# Example Code
+
+Here's a simple example showing how to use Kaira's Bourtsoulatze2019 DeepJSCC model:
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/ipc-lab/kaira/refs/heads/main/docs/example_code.png" alt="Kaira Example Code" width="600px">
+</div>
 
 # Installation
 

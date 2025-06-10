@@ -3,7 +3,6 @@
 from typing import Literal, Optional, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -37,12 +36,12 @@ class QAMModulator(BaseModulator):
         if not isinstance(order, int) or order <= 0 or order not in (4, 16, 64, 256):
             raise ValueError(f"QAM order must be a valid power of 4 (4, 16, 64, or 256), got {order}")
 
-        sqrt_order = int(np.sqrt(order))
+        sqrt_order = int(order**0.5)
 
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol: int = int(np.log2(order))
+        self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         self._k: int = sqrt_order  # Number of points on each dimension
 
         # Create QAM constellation
@@ -171,7 +170,7 @@ class QAMDemodulator(BaseDemodulator):
         self.order = order
         self.gray_coding = gray_coding
         self.normalize = normalize
-        self._bits_per_symbol: int = int(np.log2(order))
+        self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
         # Create reference modulator to access constellation
         self.modulator = QAMModulator(order, gray_coding, normalize)

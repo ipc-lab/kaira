@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 
@@ -187,7 +186,7 @@ def test_dpsk_modulator_initialization():
     # Test with gray coding
     mod_gray = DPSKModulator(bits_per_symbol=2, gray_coded=True)
     mod_no_gray = DPSKModulator(bits_per_symbol=2, gray_coded=False)
-    assert not np.array_equal(mod_gray.constellation.numpy(), mod_no_gray.constellation.numpy())
+    assert not torch.equal(mod_gray.constellation, mod_no_gray.constellation)
 
 
 def test_dpsk_modulator_detailed_forward(dpsk_modulator):

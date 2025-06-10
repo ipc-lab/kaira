@@ -20,7 +20,6 @@ The implementation follows the key principles of Wyner-Ziv coding:
 from typing import Any, Dict, Optional
 
 import torch
-import torch.nn as nn
 
 from kaira.channels import BaseChannel
 from kaira.constraints import BaseConstraint
@@ -29,7 +28,7 @@ from .base import BaseModel
 from .registry import ModelRegistry
 
 
-class WynerZivCorrelationModel(nn.Module):
+class WynerZivCorrelationModel(BaseModel):
     """Model for simulating correlation between source and side information.
 
     In Wyner-Ziv coding, there is correlation between the source X and the side information
@@ -148,8 +147,8 @@ class WynerZivModel(BaseModel):
         channel: BaseChannel,
         decoder: BaseModel,
         correlation_model: Optional[WynerZivCorrelationModel] = None,
-        quantizer: Optional[nn.Module] = None,
-        syndrome_generator: Optional[nn.Module] = None,
+        quantizer: Optional[BaseModel] = None,
+        syndrome_generator: Optional[BaseModel] = None,
         constraint: Optional[BaseConstraint] = None,
         *args: Any,
         **kwargs: Any,

@@ -1,28 +1,13 @@
 :orphan:
 
-Data Generation and Correlation Models
-======================================
-Examples demonstrating data generation utilities and correlation models for information theory and communication systems.
+Data
+====
+
+Data handling utilities, dataset management, and preprocessing tools for machine learning and communications applications.
 
 .. raw:: html
 
     <div class="sphx-glr-thumbnails">
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the data generation utilities in Kaira, including binary and uniform tensor creation, as well as dataset classes for batch processing. These utilities are particularly useful for creating synthetic data for information theory and communication systems experiments.">
-
-.. only:: html
-
-    .. image:: /auto_examples/data/images/thumb/sphx_glr_plot_data_generation_thumb.png
-      :alt:
-
-    :ref:`sphx_glr_auto_examples_data_plot_data_generation.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Data Generation Utilities</div>
-    </div>
 
 .. raw:: html
 
@@ -31,7 +16,7 @@ Examples demonstrating data generation utilities and correlation models for info
 .. only:: html
 
     .. image:: /auto_examples/data/images/thumb/sphx_glr_plot_correlation_models_thumb.png
-      :alt:
+      :alt: Correlation Models for Data Generation
 
     :ref:`sphx_glr_auto_examples_data_plot_correlation_models.py`
 
@@ -42,10 +27,27 @@ Examples demonstrating data generation utilities and correlation models for info
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the data generation utilities in Kaira, including binary and uniform tensor creation, as well as dataset classes for batch processing. These utilities are particularly useful for creating synthetic data for information theory and communication systems experiments.">
+
+.. only:: html
+
+    .. image:: /auto_examples/data/images/thumb/sphx_glr_plot_data_generation_thumb.png
+      :alt: Data Generation Utilities
+
+    :ref:`sphx_glr_auto_examples_data_plot_data_generation.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Data Generation Utilities</div>
     </div>
 
-.. toctree::
+.. raw:: html
+
+    </div>
+
+
+.. toctree:
    :hidden:
 
-   /auto_examples/data/plot_data_generation
    /auto_examples/data/plot_correlation_models
+   /auto_examples/data/plot_data_generation

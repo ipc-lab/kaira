@@ -1,0 +1,155 @@
+name: Update Changelog Documentation
+
+on:
+  push:
+    branches: [main, master, dev]
+    paths:
+      - "CHANGELOG.md"
+  pull_request:
+    branches: [main, master, dev]
+    paths:
+      - "CHANGELOG.md"
+  workflow_dispatch: # Allow manual triggering
+
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Need full history for proper git operations
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.2" # Use same as main CI
+          cache: "pip"
+
+      - name: Generate changelog.rst from CHANGELOG.md
+        run: |
+          echo "📚 Generating changelog.rst from CHANGELOG.md..."
+          python scripts/generate_changelog.py
+          echo "✅ Changelog generation completed"
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          echo "🔍 Checking for changes in changelog..."
+
+          if [ ! -f "docs/changelog.rst" ]; then
+            echo "❌ Changelog file was not generated"
+            exit 1
+          fi
+
+          if [ -n "$(git status --porcelain docs/changelog.rst)" ]; then
+            echo "📝 Changes detected in changelog"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ No changes detected in changelog"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          echo "📝 Committing changelog updates..."
+
+          # Configure git with better identity
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Add the file and commit
+          git add docs/changelog.rst
+
+          # Create commit with more context
+          commit_msg="docs: Auto-update changelog.rst from CHANGELOG.md
+
+          Updated changelog for commit ${{ github.sha }}
+          Triggered by: ${{ github.event_name }}
+          Branch: ${{ github.ref_name }}
+
+          [skip ci]"
+
+          git commit -m "$commit_msg"
+
+          # Push with retry logic
+          max_attempts=3
+          attempt=1
+
+          while [ $attempt -le $max_attempts ]; do
+            echo "📤 Push attempt $attempt of $max_attempts..."
+            if git push; then
+              echo "✅ Successfully pushed changelog updates"
+              break
+            else
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ Failed to push after $max_attempts attempts"
+                exit 1
+              fi
+              echo "⚠️ Push failed, retrying in 5 seconds..."
+              sleep 5
+              git pull --rebase
+              attempt=$((attempt + 1))
+            fi
+          done
+
+      - name: Create comment on PR
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `📄 **Changelog Documentation Updated**
+
+            This PR modifies \`CHANGELOG.md\`. The corresponding \`docs/changelog.rst\` file has been automatically updated.
+
+            ### Changes Summary:
+            - Updated \`docs/changelog.rst\` from \`CHANGELOG.md\`
+            - Generated reStructuredText format for Sphinx documentation
+
+            > 💡 **Note**: The updated changelog will be visible in the documentation once this PR is merged and the docs are rebuilt.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
+
+      - name: Generate job summary
+        if: always()
+        run: |
+          echo "# 📄 Changelog Documentation Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.verify-changed-files.outputs.changed }}" = "true" ]; then
+            echo "✅ **Status**: Changelog documentation was updated" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Changes Made:" >> $GITHUB_STEP_SUMMARY
+            echo "- Updated \`docs/changelog.rst\` from \`CHANGELOG.md\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Generated reStructuredText format for Sphinx documentation" >> $GITHUB_STEP_SUMMARY
+
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "- Automatically committed and pushed changes" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "- Added comment to PR with update details" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "ℹ️ **Status**: No changes needed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The changelog documentation is already up to date." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Trigger Information:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

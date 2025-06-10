@@ -9,46 +9,98 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: self-hosted
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-ci-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'pyproject.toml', 'setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-ci-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-ci-pip-
+
       - name: Install dependencies
         run: |
+          echo "🔧 Installing dependencies for CI build..."
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-cov
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+          # Install package requirements
+          if [ -f requirements-dev.txt ]; then
+            echo "📦 Installing requirements-dev.txt..."
+            pip install -r requirements-dev.txt
+          fi
+          if [ -f requirements.txt ]; then
+            echo "📦 Installing requirements.txt..."
+            pip install -r requirements.txt
+          fi
+
+          echo "✅ Dependencies installed successfully"
+
+      - name: Validate build environment
+        run: |
+          echo "🔍 Validating CI environment..."
+          python --version
+          pip --version
+          pytest --version
+
+          echo "📊 Key installed packages:"
+          pip list | grep -E "(pytest|coverage|sphinx|numpy|scipy)" || true
 
       - name: Test with pytest
         run: |
-          pytest --cov=./ --cov-report=xml
+          echo "🧪 Running CI tests..."
+          pytest --cov=./ --cov-report=xml --cov-report=term-missing -v
+          echo "✅ Tests completed successfully"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build documentation
         if: matrix.python-version == '3.11' && github.event_name == 'push'
         run: |
+          echo "📚 Building documentation..."
           if [ -f docs/requirements.txt ]; then
+            echo "📦 Installing documentation dependencies..."
             pip install -r docs/requirements.txt
             pip install -r docs/requirements-dev.txt
+
+            echo "🔨 Building HTML documentation..."
             cd docs && make clean html
+            echo "✅ Documentation built successfully"
+          else
+            echo "⚠️ No docs/requirements.txt found, skipping documentation build"
           fi
 
       - name: Archive code coverage results
@@ -56,4 +108,40 @@ jobs:
         with:
           name: code-coverage-report-${{ matrix.python-version }}
           path: coverage.xml
-          retention-days: 5
+          retention-days: 7
+
+      - name: Archive documentation
+        if: matrix.python-version == '3.11' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-html
+          path: docs/_build/html/
+          retention-days: 14
+
+      - name: Generate CI summary
+        if: always()
+        run: |
+          echo "# 🏗️ CI Build Results - Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ $? -eq 0 ]; then
+            echo "✅ **Status**: Build and tests successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Build or tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Information:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner**: ${{ runner.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts Generated:" >> $GITHUB_STEP_SUMMARY
+          echo "- Code coverage report" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ matrix.python-version }}" = "3.11" ] && [ "${{ github.event_name }}" = "push" ]; then
+            echo "- HTML documentation (Python 3.11 only)" >> $GITHUB_STEP_SUMMARY
+          fi

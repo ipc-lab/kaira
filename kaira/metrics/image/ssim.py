@@ -11,7 +11,6 @@ from typing import Any, Optional, Tuple
 
 import torch
 import torchmetrics
-from pytorch_msssim import ms_ssim
 from torch import Tensor
 
 from ..base import BaseMetric
@@ -120,10 +119,22 @@ class MultiScaleSSIM(BaseMetric):
         """
         # Remove name="MS-SSIM" as BaseMetric handles it
         super().__init__(*args, **kwargs)  # Pass args and kwargs
-        self.kernel_size = kernel_size
-        self.data_range = data_range
         self.reduction = reduction
-        self.weights = weights
+
+        # Convert weights to betas format for torchmetrics if provided
+        if weights is not None:
+            betas = tuple(weights.tolist())
+        else:
+            # Use default betas from torchmetrics
+            betas = (0.0448, 0.2856, 0.3001, 0.2363, 0.1333)
+
+        # Pass only relevant kwargs to torchmetrics
+        torchmetrics_kwargs = {k: v for k, v in kwargs.items() if k in inspect.signature(torchmetrics.image.MultiScaleStructuralSimilarityIndexMeasure.__init__).parameters}
+
+        # Use torchmetrics MultiScaleStructuralSimilarityIndexMeasure
+        self.ms_ssim = torchmetrics.image.MultiScaleStructuralSimilarityIndexMeasure(data_range=data_range, kernel_size=kernel_size, reduction=None, betas=betas, **torchmetrics_kwargs)  # Always use None for reduction in underlying implementation
+
+        # Register buffers for backwards compatibility with existing tests
         self.register_buffer("sum_values", torch.tensor(0.0))
         self.register_buffer("sum_sq", torch.tensor(0.0))
         self.register_buffer("count", torch.tensor(0))
@@ -141,16 +152,11 @@ class MultiScaleSSIM(BaseMetric):
         Returns:
             torch.Tensor: MS-SSIM values for each sample, or reduced according to reduction parameter
         """
-        # Note: *args and **kwargs are not directly used by ms_ssim call here
+        # Note: *args and **kwargs are not directly used here
         # but are included for interface consistency.
-        values = ms_ssim(
-            x,
-            y,
-            data_range=self.data_range,
-            size_average=False,
-            win_size=self.kernel_size,
-            weights=self.weights,
-        )
+
+        # Use torchmetrics MS-SSIM implementation
+        values = self.ms_ssim(x, y)
 
         # Apply reduction if specified
         if self.reduction == "mean":
@@ -158,7 +164,10 @@ class MultiScaleSSIM(BaseMetric):
         elif self.reduction == "sum":
             return values.sum()
         else:
-            return values.unsqueeze(0) if values.dim() == 0 else values
+            # Ensure the tensor has at least one dimension when not reduced
+            if values.dim() == 0:
+                return values.unsqueeze(0)
+            return values
 
     def update(self, preds: torch.Tensor, targets: torch.Tensor, *args: Any, **kwargs: Any) -> None:
         """Update internal state with batch of samples.
@@ -182,15 +191,46 @@ class MultiScaleSSIM(BaseMetric):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Mean and standard deviation
         """
+        # For backward compatibility, we return mean and std
+        if self.count == 0:
+            return torch.tensor(0.0), torch.tensor(0.0)
+
         mean = self.sum_values / self.count
         std = torch.sqrt((self.sum_sq / self.count) - mean**2)
         return mean, std
 
     def reset(self) -> None:
         """Reset accumulated statistics."""
+        self.ms_ssim.reset()
         self.sum_values.zero_()
         self.sum_sq.zero_()
         self.count.zero_()
+
+    # Rename preds to x and targets to y to match BaseMetric
+    def compute_with_stats(self, x: torch.Tensor, y: torch.Tensor, *args: Any, **kwargs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Compute MS-SSIM with mean and standard deviation.
+
+        Args:
+            x (torch.Tensor): Predicted images
+            y (torch.Tensor): Target images
+            *args: Variable length argument list (currently unused).
+            **kwargs: Arbitrary keyword arguments (currently unused).
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Mean and standard deviation of MS-SSIM values
+        """
+        # Note: *args and **kwargs are not directly used here
+        # but are included for interface consistency.
+        values = self.forward(x, y)  # Use self.forward to handle reduction
+        # Handle single value case to avoid NaN in std calculation
+        if values.numel() <= 1:
+            return values.mean(), torch.tensor(0.0)
+        return values.mean(), values.std()
+
+    @property
+    def data_range(self) -> float:
+        """Get the data range used by the underlying torchmetrics implementation."""
+        return self.ms_ssim.data_range
 
 
 # Alias for backward compatibility

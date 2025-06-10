@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 
@@ -27,7 +26,8 @@ def test_pi4qpsk_modulator_initialization():
     # Verify constellation points
     # Pi/4-QPSK uses two QPSK constellations rotated by pi/4
     torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
-    torch.tensor([np.sqrt(2) / 2 + np.sqrt(2) / 2 * 1j, -np.sqrt(2) / 2 + np.sqrt(2) / 2 * 1j, -np.sqrt(2) / 2 - np.sqrt(2) / 2 * 1j, np.sqrt(2) / 2 - np.sqrt(2) / 2 * 1j], dtype=torch.complex64)
+    sqrt_2_over_2 = torch.sqrt(torch.tensor(2.0)) / 2
+    torch.tensor([sqrt_2_over_2 + sqrt_2_over_2 * 1j, -sqrt_2_over_2 + sqrt_2_over_2 * 1j, -sqrt_2_over_2 - sqrt_2_over_2 * 1j, sqrt_2_over_2 - sqrt_2_over_2 * 1j], dtype=torch.complex64)
 
     # Verify the rotation property is preserved in the implementation
     assert mod._even_symbols or mod._odd_symbols

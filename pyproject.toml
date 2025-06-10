@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py310", "py311", "py312", "py313"]
 include = '\.pyi?$'
 exclude = '''
 (
@@ -34,3 +34,18 @@ use_parentheses = true
 ensure_newline_before_comments = true
 skip_gitignore = true
 skip_glob = ["docs/*", "*.pyi"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Unit tests with mocked dependencies (always run)",
+    "integration: Integration tests with real external tools (conditional)",
+    "slow: Tests that take a long time to run",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "-v",
+]

@@ -14,6 +14,9 @@ Key Features:
 3. Efficient handling of sparse parity-check matrices.
 4. Configurable number of iterations for decoding.
 
+References:
+    :cite:`kschischang2001factor`, :cite:`pearl1988probabilistic`, :cite:`mackay2003information`
+
 Attributes:
     encoder (Union[LinearBlockCodeEncoder, LDPCCodeEncoder]): The encoder instance providing code
         parameters and syndrome calculation methods.

@@ -4,3 +4,5 @@ joblib
 torchvision
 compressai
 torchaudio
+seaborn
+numpy

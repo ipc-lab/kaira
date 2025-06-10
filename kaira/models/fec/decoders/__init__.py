@@ -12,7 +12,8 @@ Decoders
 - ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
 - WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
 - BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
-- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm :cite:`kschischang2001factor` for decoding LDPC codes
+- MinSumLDPCDecoder: Min-Sum decoder :cite:`chen2005reduced` for LDPC codes with reduced computational complexity
 
 These decoders can be used to recover original messages from possibly corrupted codewords
 that have been transmitted over noisy channels. Each decoder has specific strengths and
@@ -31,18 +32,13 @@ Examples
 
 from .base import BaseBlockDecoder
 from .belief_propagation import BeliefPropagationDecoder
+from .belief_propagation_polar import BeliefPropagationPolarDecoder
 from .berlekamp_massey import BerlekampMasseyDecoder
 from .brute_force_ml import BruteForceMLDecoder
+from .min_sum_ldpc import MinSumLDPCDecoder
 from .reed_muller_decoder import ReedMullerDecoder
+from .successive_cancellation import SuccessiveCancellationDecoder
 from .syndrome_lookup import SyndromeLookupDecoder
 from .wagner_soft_decision_decoder import WagnerSoftDecisionDecoder
 
-__all__ = [
-    "BaseBlockDecoder",
-    "SyndromeLookupDecoder",
-    "BerlekampMasseyDecoder",
-    "ReedMullerDecoder",
-    "WagnerSoftDecisionDecoder",
-    "BruteForceMLDecoder",
-    "BeliefPropagationDecoder",
-]
+__all__ = ["BaseBlockDecoder", "SyndromeLookupDecoder", "BerlekampMasseyDecoder", "ReedMullerDecoder", "WagnerSoftDecisionDecoder", "BruteForceMLDecoder", "BeliefPropagationDecoder", "BeliefPropagationPolarDecoder", "SuccessiveCancellationDecoder", "MinSumLDPCDecoder"]

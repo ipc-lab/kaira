@@ -5,13 +5,13 @@ from typing import Any
 import torch
 from torch import nn
 
-from kaira.models.base import BaseModel
+from kaira.models.base import ChannelAwareBaseModel
 
 from ..registry import ModelRegistry
 
 
 @ModelRegistry.register_model()
-class AFModule(BaseModel):
+class AFModule(ChannelAwareBaseModel):
     """
     AFModule: Attention-Feature Module :cite:`xu2021wireless`.
 

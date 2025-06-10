@@ -1,0 +1,410 @@
+name: Generate Auto Examples
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - "examples/**"
+      - "docs/conf.py"
+      - "scripts/download_auto_examples.py"
+      - "scripts/build_incremental_examples.py"
+      - "requirements*.txt"
+      - ".github/workflows/generate-examples.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "docs/conf.py"
+      - "scripts/download_auto_examples.py"
+      - "scripts/build_incremental_examples.py"
+      - "requirements*.txt"
+      - ".github/workflows/generate-examples.yml"
+  release:
+    types: [published]
+
+# Required permissions for the workflow
+permissions:
+  actions: read # Required for downloading workflow artifacts
+  contents: write # Required for checking out repository and creating releases
+  pull-requests: read # Required for PR operations
+  id-token: write # Required for uploading artifacts
+
+# Cancel previous runs if a new push happens
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job to detect changes and set up conditions
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      examples-changed: ${{ steps.changes.outputs.examples }}
+      force-build: ${{ steps.check-force.outputs.force }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for proper change detection
+
+      - name: Detect changes in example-related files
+        id: changes
+        run: |
+          echo "Detecting changes in example-related files..."
+
+          # Define paths to monitor
+          PATHS=(
+            "examples/"
+            "docs/conf.py"
+            "scripts/download_auto_examples.py"
+            "scripts/build_incremental_examples.py"
+            "requirements*.txt"
+            ".github/workflows/generate-examples.yml"
+          )
+
+          # Initialize changed flag
+          EXAMPLES_CHANGED="false"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, compare against the base branch
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "Comparing PR: $BASE_SHA..$HEAD_SHA"
+
+            # Check if any monitored paths have changes
+            for path in "${PATHS[@]}"; do
+              if git diff --name-only "$BASE_SHA..$HEAD_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
+                echo "Changes detected in: $path"
+                EXAMPLES_CHANGED="true"
+                break
+              fi
+            done
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # For pushes, compare against previous commit
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              BEFORE_SHA="${{ github.event.before }}"
+              AFTER_SHA="${{ github.sha }}"
+              echo "Comparing push: $BEFORE_SHA..$AFTER_SHA"
+
+              # Check if both commits exist before trying to diff
+              if git cat-file -e "$BEFORE_SHA" 2>/dev/null && git cat-file -e "$AFTER_SHA" 2>/dev/null; then
+                # Check if any monitored paths have changes
+                for path in "${PATHS[@]}"; do
+                  if git diff --name-only "$BEFORE_SHA..$AFTER_SHA" | grep -E "^${path//\*/.*}" > /dev/null; then
+                    echo "Changes detected in: $path"
+                    EXAMPLES_CHANGED="true"
+                    break
+                  fi
+                done
+              else
+                echo "⚠️ Previous commit $BEFORE_SHA not accessible (likely force push or shallow clone)"
+                echo "Treating as changed to ensure examples are updated"
+                EXAMPLES_CHANGED="true"
+              fi
+            else
+              # First commit or force push, consider as changed
+              echo "First commit or force push detected"
+              EXAMPLES_CHANGED="true"
+            fi
+          else
+            # For other events (like release), don't auto-detect changes
+            echo "Event type: ${{ github.event_name }} - no automatic change detection"
+            EXAMPLES_CHANGED="false"
+          fi
+
+          echo "examples=$EXAMPLES_CHANGED" >> $GITHUB_OUTPUT
+          echo "Examples changed: $EXAMPLES_CHANGED"
+
+      - name: Check for force build conditions
+        id: check-force
+        run: |
+          # Always build on releases
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Release event"
+          # Always build on main branch pushes (for consistency)
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Push to main branch"
+          # Check for [rebuild-examples] in commit message
+          elif echo "${{ github.event.head_commit.message }}" | grep -q "\[rebuild-examples\]"; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "Force build: Rebuild examples requested in commit message"
+          else
+            echo "force=false" >> $GITHUB_OUTPUT
+            echo "No force build conditions met"
+          fi
+
+  generate-examples:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.examples-changed == 'true' || needs.detect-changes.outputs.force-build == 'true'
+    strategy:
+      matrix:
+        python-version: ["3.13.2"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history to ensure we have all commits for comparison
+
+      - name: Log build reason
+        run: |
+          echo "=== Auto-Examples Build Information ==="
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Current commit: ${{ github.sha }}"
+          if [ "${{ needs.detect-changes.outputs.examples-changed }}" = "true" ]; then
+            echo "Reason: Example-related files changed"
+          fi
+          if [ "${{ needs.detect-changes.outputs.force-build }}" = "true" ]; then
+            echo "Reason: Force build condition met"
+          fi
+          echo "======================================"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Install GitHub CLI
+        run: |
+          # Install GitHub CLI for workflow API access
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Get last successful workflow commit
+        id: last-success
+        run: |
+          echo "🔍 Finding last successful workflow run..."
+
+          # Get the last successful workflow run for this branch/workflow
+          LAST_SUCCESS_SHA=""
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, use the base branch as reference
+            LAST_SUCCESS_SHA="${{ github.event.pull_request.base.sha }}"
+            echo "Using PR base as reference: $LAST_SUCCESS_SHA"
+          else
+            # For pushes, find the last successful run on this branch
+            echo "Searching for last successful workflow run..."
+
+            # Use GitHub CLI to get last successful run
+            LAST_SUCCESS_SHA=$(gh run list \
+              --workflow="generate-examples.yml" \
+              --branch="${{ github.ref_name }}" \
+              --status=completed \
+              --conclusion=success \
+              --limit=10 \
+              --json headSha \
+              --jq '.[0].headSha' 2>/dev/null || echo "")
+
+            if [ -n "$LAST_SUCCESS_SHA" ] && [ "$LAST_SUCCESS_SHA" != "null" ]; then
+              echo "Found last successful run at commit: $LAST_SUCCESS_SHA"
+            else
+              echo "⚠️ No previous successful run found, will compare against previous commit"
+              # Fallback to previous commit comparison
+              if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+                LAST_SUCCESS_SHA="${{ github.event.before }}"
+              else
+                echo "⚠️ No previous commit available, treating all examples as changed"
+                LAST_SUCCESS_SHA=""
+              fi
+            fi
+          fi
+
+          echo "last_success_sha=$LAST_SUCCESS_SHA" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Detect changed example files
+        id: changed-examples
+        run: |
+          echo "🔍 Detecting if any example files changed..."
+
+          LAST_SUCCESS_SHA="${{ steps.last-success.outputs.last_success_sha }}"
+          CURRENT_SHA="${{ github.sha }}"
+
+          if [ -n "$LAST_SUCCESS_SHA" ] && [ "$LAST_SUCCESS_SHA" != "$CURRENT_SHA" ]; then
+            echo "Comparing against last successful workflow: $LAST_SUCCESS_SHA..$CURRENT_SHA"
+
+            # Check if the reference commit exists
+            if git cat-file -e "$LAST_SUCCESS_SHA" 2>/dev/null; then
+              changed_files=$(git diff --name-only "$LAST_SUCCESS_SHA..$CURRENT_SHA" | grep '^examples/.*\.py$' || true)
+              echo "Successfully compared against last successful run"
+            else
+              echo "⚠️ Last successful commit $LAST_SUCCESS_SHA not accessible in current checkout"
+              echo "This might happen with shallow clones - treating all examples as changed"
+              changed_files="examples_changed"
+            fi
+          else
+            if [ "$LAST_SUCCESS_SHA" = "$CURRENT_SHA" ]; then
+              echo "ℹ️ Current commit is the same as last successful run - no changes"
+              changed_files=""
+            else
+              echo "⚠️ No reference commit available - treating all examples as changed"
+              changed_files="examples_changed"
+            fi
+          fi
+
+          if [ -z "$changed_files" ]; then
+            echo "No example files changed since last successful build - skipping generation"
+            echo "examples_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Example files have changed since last successful build - will rebuild all examples"
+            echo "examples_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report skipped generation
+        if: steps.changed-examples.outputs.examples_changed == 'false'
+        run: |
+          echo "⏭️ Skipping auto_examples generation"
+          echo "Reason: No example files changed since last successful build"
+          echo ""
+          echo "🔍 The workflow detected that no Python files in the examples/ directory"
+          echo "   have changed since the last successful build, so generation is skipped"
+          echo "   to save build time and resources."
+          echo ""
+          echo "💡 Generation will run when:"
+          echo "  - Example files (.py) in examples/ directory are modified"
+          echo "  - Force rebuild is requested with '[rebuild-examples]' in commit message"
+          echo "  - Building on main branch (for consistency)"
+          echo "  - Release events"
+
+      - name: Generate auto_examples (full build)
+        if: steps.changed-examples.outputs.examples_changed == 'true'
+        run: |
+          echo "🔄 Generating auto_examples (full build)"
+          echo "Reason: Example files have changed"
+
+          cd docs
+          # Use sphinx-build to generate the complete gallery
+          sphinx-build -b html \
+            -D sphinx_gallery_conf.plot_gallery=True \
+            -D sphinx_gallery_conf.download_all_examples=True \
+            . _build/html -v
+
+      - name: Verify auto_examples generation
+        if: steps.changed-examples.outputs.examples_changed == 'true'
+        run: |
+          if [ -d "docs/auto_examples" ]; then
+            echo "✅ auto_examples directory exists"
+
+            # Show first few generated files
+            echo "📄 Sample generated files:"
+            find docs/auto_examples -type f -name "*.py" | head -10
+
+            # Statistics
+            python_files=$(find docs/auto_examples -name "*.py" | wc -l)
+            image_files=$(find docs/auto_examples -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l)
+            notebook_files=$(find docs/auto_examples -name "*.ipynb" | wc -l)
+            total_size=$(du -sh docs/auto_examples | cut -f1)
+
+            echo "📊 Generation Statistics:"
+            echo "  - Python files: $python_files"
+            echo "  - Image files: $image_files"
+            echo "  - Notebook files: $notebook_files"
+            echo "  - Total size: $total_size"
+
+            total_examples=$(find examples -name "*.py" | wc -l)
+            echo "🔄 Full Build: Generated all $total_examples examples"
+          else
+            echo "❌ ERROR: auto_examples directory was not created"
+            exit 1
+          fi
+
+      - name: Create auto_examples archive
+        if: steps.changed-examples.outputs.examples_changed == 'true'
+        run: |
+          cd docs
+          # Create a zip archive of the auto_examples directory
+          zip -r auto_examples.zip auto_examples/
+          archive_size=$(ls -lh auto_examples.zip | awk '{print $5}')
+
+          # Add build metadata to the archive
+          total_examples=$(find ../examples -name "*.py" | wc -l)
+
+          echo "📦 Archive Information:"
+          echo "  - File: auto_examples.zip"
+          echo "  - Size: $archive_size"
+          echo "  - Total examples: $total_examples"
+          echo "  - Build type: Full build"
+          echo "  - Commit: ${{ github.sha }}"
+          echo "  - Event: ${{ github.event_name }}"
+
+      - name: Upload auto_examples as artifact (backup)
+        if: steps.changed-examples.outputs.examples_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto_examples-${{ github.sha }}
+          path: docs/auto_examples.zip
+          retention-days: 30
+
+      - name: Add auto_examples.zip to existing release
+        if: steps.changed-examples.outputs.examples_changed == 'true' && github.event_name == 'release'
+        run: |
+          echo "🚀 Adding auto_examples.zip to existing release..."
+
+          # Get the release tag from the release event
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          echo "Release tag: $RELEASE_TAG"
+
+          # Check if release exists and add auto_examples.zip as an asset
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "Found existing release: $RELEASE_TAG"
+
+            # Delete existing auto_examples.zip asset if it exists
+            if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -q "auto_examples.zip"; then
+              echo "Deleting existing auto_examples.zip asset..."
+              gh release delete-asset "$RELEASE_TAG" auto_examples.zip --yes
+            fi
+
+            # Upload new asset to the existing release
+            echo "Uploading auto_examples.zip to release..."
+            gh release upload "$RELEASE_TAG" docs/auto_examples.zip --clobber
+            echo "✅ Successfully added auto_examples.zip to release: $RELEASE_TAG"
+          else
+            echo "❌ ERROR: Release $RELEASE_TAG not found"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # Job to report when examples are skipped
+  skip-examples:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.examples-changed == 'false' && needs.detect-changes.outputs.force-build == 'false'
+    steps:
+      - name: Report skip reason
+        run: |
+          echo "⏭️ Skipping auto-examples generation"
+          echo "Reason: No changes detected in example-related files"
+          echo ""
+          echo "🔍 Files monitored for changes:"
+          echo "  - examples/**"
+          echo "  - docs/conf.py"
+          echo "  - scripts/download_auto_examples.py"
+          echo "  - scripts/build_incremental_examples.py"
+          echo "  - requirements*.txt"
+          echo "  - .github/workflows/generate-examples.yml"
+          echo ""
+          echo "💡 When changes are detected, the workflow will:"
+          echo "  1. Generate all auto_examples from scratch (full build)"
+          echo "  2. Upload the auto_examples archive"
+          echo ""
+          echo "🚀 To force rebuild, include '[rebuild-examples]' in commit message"

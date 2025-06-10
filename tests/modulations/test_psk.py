@@ -1,7 +1,6 @@
 """Comprehensive tests for PSK modulation schemes."""
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 
@@ -231,7 +230,7 @@ class TestQPSK:
 
         # Expected QPSK symbols with normalization (1/√2)
         # [00, 01, 10, 11] -> [(1+j)/√2, (1-j)/√2, (-1+j)/√2, (-1-j)/√2]
-        norm = 1 / np.sqrt(2)
+        norm = 1 / torch.sqrt(torch.tensor(2, dtype=torch.float))
         expected = torch.complex(torch.tensor([norm, norm, -norm, -norm], dtype=symbols.real.dtype), torch.tensor([norm, -norm, norm, -norm], dtype=symbols.imag.dtype))
 
         # Check output matches expected symbols
@@ -290,7 +289,7 @@ class TestQPSK:
     def test_qpsk_demodulator_soft(self):
         """Test QPSK soft demodulation (LLR calculation)."""
         # Create test symbols with normalization factor
-        norm = 1 / np.sqrt(2)
+        norm = 1 / torch.sqrt(torch.tensor(2, dtype=torch.float))
         symbols = torch.complex(torch.tensor([0.7, 0.8, -0.7, -0.8]) * norm, torch.tensor([0.6, -0.7, 0.8, -0.6]) * norm)
 
         # Noise variance
@@ -411,7 +410,7 @@ class TestQPSK:
         custom_figsize = (8, 6)
         result_custom = modulator.plot_constellation(figsize=custom_figsize)
         fig_custom, _ = result_custom
-        assert np.allclose(fig_custom.get_size_inches(), custom_figsize)
+        assert torch.allclose(torch.tensor(fig_custom.get_size_inches(), dtype=torch.float64), torch.tensor(custom_figsize, dtype=torch.float64))
 
         # Clean up resources
         plt.close(fig)
@@ -486,7 +485,7 @@ class TestPSK:
             # Create modulator with specified order
             modulator = PSKModulator(order=order, gray_coding=True)
             # Check bits_per_symbol is calculated correctly
-            bits_per_symbol = int(np.log2(order))
+            bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
             assert modulator.bits_per_symbol == bits_per_symbol
             # Check constellation size
             assert modulator.constellation.shape[0] == order
@@ -543,7 +542,7 @@ class TestPSK:
 
         # Create random bit pattern
         num_symbols = 10
-        bits_per_symbol = int(np.log2(order))
+        bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         bits = torch.randint(0, 2, (num_symbols * bits_per_symbol,), dtype=torch.float32)
 
         # Modulate bits
@@ -714,7 +713,7 @@ class TestPSK:
         torch.manual_seed(42)
 
         # Create bit patterns for just enough symbols to test
-        int(np.log2(M))
+        int(torch.log2(torch.tensor(M, dtype=torch.float)).item())
         num_symbols = 5  # Just a few symbols for quicker testing
 
         # Create modulator and demodulator
@@ -954,7 +953,7 @@ class TestPSK:
         # Test with different PSK orders
         for order in [4, 8]:
             modulator = PSKModulator(order=order)
-            bits_per_symbol = int(np.log2(order))
+            bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
             # Case 1: Input has exactly bits_per_symbol bits
             # Create a tensor with exactly bits_per_symbol bits
@@ -1005,7 +1004,7 @@ class TestPSK:
         # Test with different PSK orders
         for order in [4, 8]:
             modulator = PSKModulator(order=order)
-            bits_per_symbol = int(np.log2(order))
+            bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
             # Create input tensor with exactly bits_per_symbol bits
             bits = torch.zeros(bits_per_symbol, dtype=torch.float)
@@ -1096,7 +1095,7 @@ class TestPSK:
         # For different orders
         for order in [4, 8]:
             modulator = PSKModulator(order=order)
-            bits_per_symbol = int(np.log2(order))
+            bits_per_symbol = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
 
             # Create a single bit sequence with exactly bits_per_symbol bits
             # This is a single symbol

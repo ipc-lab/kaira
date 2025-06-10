@@ -119,6 +119,75 @@ Before submitting a pull request, please ensure:
   - Usage examples
   - Implementation notes if helpful for users
 
+## Creating Examples
+
+Kaira uses an automated example gallery system that makes it easy to add new examples without manual maintenance of index files.
+
+### Adding New Examples
+
+1. **File Naming**: Use the `plot_` prefix for all examples (e.g., `plot_my_feature.py`)
+
+2. **Location**: Place examples in the appropriate category directory under `examples/`
+
+3. **Docstring Format**: Use the following format at the top of your example:
+
+   ```python
+   """
+   ==========================================
+   Clear and Descriptive Title
+   ==========================================
+
+   Comprehensive description explaining what the example demonstrates,
+   key concepts covered, and expected outcomes.
+
+   Additional paragraphs can provide more detail about implementation
+   specifics, theoretical background, or usage notes.
+   """
+   ```
+
+4. **Structure**: Follow the template in `examples/template_example.py`
+
+### Automated Index Generation
+
+The system automatically:
+
+- Discovers all `plot_*.py` files in example directories
+- Extracts titles and descriptions from docstrings
+- Generates `index.rst` files for each category
+- Maintains synchronization during documentation builds
+- Updates example galleries automatically via pre-commit hooks when example files are modified
+
+**No manual index.rst editing required!** The example gallery indices are automatically updated whenever you commit changes to example files through pre-commit hooks.
+
+### Development Tools
+
+Use the example workflow script for development:
+
+```bash
+# Preview examples in a category
+python scripts/example_workflow.py preview --category modulation
+
+# Sync all example galleries
+python scripts/example_workflow.py sync
+
+# Validate example format
+python scripts/example_workflow.py validate --file examples/modulation/plot_new_example.py
+```
+
+### Example Categories
+
+Examples are organized into categories:
+
+- `channels` - Channel models for wireless communications
+- `modulation` - Digital modulation schemes
+- `metrics` - Performance metrics and evaluation tools
+- `models` - Neural network models and architectures
+- `models_fec` - Forward Error Correction models
+- `benchmarks` - Benchmarking tools and comparisons
+- And more...
+
+For detailed information, see `docs/automated_example_gallery.md`.
+
 ## Testing
 
 - Write unit tests for all new functionality

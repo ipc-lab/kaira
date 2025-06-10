@@ -37,14 +37,14 @@ from torch import nn
 
 from kaira.channels.base import BaseChannel
 from kaira.constraints.base import BaseConstraint
-from kaira.models.base import BaseModel
+from kaira.models.base import BaseModel, ChannelAwareBaseModel
 from kaira.models.components.afmodule import AFModule
 from kaira.models.registry import ModelRegistry
 from kaira.models.wyner_ziv import WynerZivModel
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
+class Yilmaz2024DeepJSCCWZSmallEncoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ-sm Encoder Module :cite:`yilmaz2024deepjsccwz`.
 
     This is a lightweight version of the DeepJSCC-WZ encoder that transforms input images
@@ -122,7 +122,7 @@ class Yilmaz2024DeepJSCCWZSmallEncoder(BaseModel):
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
+class Yilmaz2024DeepJSCCWZSmallDecoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ-sm Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     This lightweight decoder reconstructs the original image from the received noisy representation
@@ -194,6 +194,10 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
         Args:
             x (torch.Tensor): Received noisy encoded representation of shape [B, M, H/16, W/16].
+            x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W].
+            csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
+            *args: Additional positional arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
             x_side (torch.Tensor): Side information tensor of shape [B, 3, H, W] to assist in decoding.
             csi (torch.Tensor): Channel state information tensor of shape [B, 1, 1, 1].
             *args: Additional positional arguments (passed to internal layers).
@@ -234,7 +238,7 @@ class Yilmaz2024DeepJSCCWZSmallDecoder(BaseModel):
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
+class Yilmaz2024DeepJSCCWZEncoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ Encoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The full-size encoder for the DeepJSCC-WZ model that compresses input images
@@ -311,6 +315,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
                                 Contains SNR or other channel quality indicators.
             *args: Additional positional arguments (passed to internal layers).
             **kwargs: Additional keyword arguments (passed to internal layers).
+            **kwargs: Additional keyword arguments (passed to internal layers).
 
         Returns:
             torch.Tensor: Encoded representation ready for transmission.
@@ -331,7 +336,7 @@ class Yilmaz2024DeepJSCCWZEncoder(BaseModel):
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
+class Yilmaz2024DeepJSCCWZDecoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The full-size decoder for the DeepJSCC-WZ model that reconstructs the original image
@@ -458,7 +463,7 @@ class Yilmaz2024DeepJSCCWZDecoder(BaseModel):
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
+class Yilmaz2024DeepJSCCWZConditionalEncoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ Conditional Encoder Module :cite:`yilmaz2024deepjsccwz`.
 
     This variant of the DeepJSCC-WZ encoder actively incorporates side information during
@@ -591,7 +596,7 @@ class Yilmaz2024DeepJSCCWZConditionalEncoder(BaseModel):
 
 
 @ModelRegistry.register_model()
-class Yilmaz2024DeepJSCCWZConditionalDecoder(BaseModel):
+class Yilmaz2024DeepJSCCWZConditionalDecoder(ChannelAwareBaseModel):
     """DeepJSCC-WZ Conditional Decoder Module :cite:`yilmaz2024deepjsccwz`.
 
     The decoder counterpart to the conditional encoder, designed to reconstruct images

@@ -36,10 +36,10 @@ To start contributing to Kaira:
 6. Engage with the community and help others
 7. Share your experiences and feedback
 
+.. _development-workflow:
+
 Development Workflow
 ------------------------
-
-.. _development-workflow:
 
 1. **Setting up your environment:**
 
@@ -59,6 +59,33 @@ Development Workflow
    - Build the documentation: `bash build_docs.sh`
    - Ensure your code is PEP8 compliant: `bash lint.sh`
    - Run tests to ensure everything works: `pytest --cov=kaira --cov-config=.coveragerc`
+
+   **Testing Guidelines:**
+
+   Kaira uses a dual testing approach with pytest markers:
+
+   - **Unit Tests** (`@pytest.mark.unit`): Fast, mocked tests that always run
+   - **Integration Tests** (`@pytest.mark.integration`): Tests with real external tools (when available)
+
+   When adding tests for components with external dependencies:
+
+   - Write unit tests with mocking for core logic validation
+   - Add integration tests that use real tools when they're available
+   - Use appropriate skip decorators for optional dependencies
+
+   Test execution examples::
+
+       # Run all tests
+       pytest tests/
+
+       # Run only unit tests (fast)
+       pytest tests/ -m unit
+
+       # Run only integration tests
+       pytest tests/ -m integration
+
+       # Exclude slow tests
+       pytest tests/ -m "not slow"
    - Run pre-commit checks: `pre-commit run -a`
 
 4. **Submitting a pull request:**

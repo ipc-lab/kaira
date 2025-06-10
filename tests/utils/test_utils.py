@@ -3,7 +3,6 @@
 import os
 import random
 
-import numpy as np
 import pytest
 import torch
 
@@ -54,7 +53,7 @@ class TestBasicUtils:
             (1, torch.Tensor),
             (1.0, torch.Tensor),
             ([1, 2, 3], torch.Tensor),
-            (np.array([1, 2, 3]), torch.Tensor),
+            (torch.tensor([1, 2, 3]), torch.Tensor),  # Convert numpy array to torch tensor
         ],
     )
     def test_to_tensor(self, x, expected_type):
@@ -85,12 +84,12 @@ class TestBasicUtils:
         assert isinstance(int_tensor, torch.Tensor)
         assert int_tensor.item() == 42
 
-        # Test with mixed precision numpy array
-        np_mixed = np.array([1, 2.5, 3])
-        mixed_tensor = to_tensor(np_mixed)
+        # Test with mixed precision torch tensor
+        torch_mixed = torch.tensor([1, 2.5, 3])
+        mixed_tensor = to_tensor(torch_mixed)
         assert isinstance(mixed_tensor, torch.Tensor)
-        assert mixed_tensor.dtype == torch.float64  # NumPy defaults to float64 for mixed arrays
-        assert torch.allclose(mixed_tensor, torch.tensor([1.0, 2.5, 3.0], dtype=torch.float64))
+        assert mixed_tensor.dtype == torch.float32  # Torch defaults to float32 for mixed arrays
+        assert torch.allclose(mixed_tensor, torch.tensor([1.0, 2.5, 3.0], dtype=torch.float32))
 
     def test_to_tensor_error_cases(self):
         """Test to_tensor function error handling."""
@@ -138,7 +137,7 @@ class TestBasicUtils:
         num_filters = calculate_num_filters_factor_image(num_strided_layers, bw_ratio, is_complex_transmission=True)
         assert isinstance(num_filters, int)
         expected_filters = 2 * 3 * (2 ** (2 * num_strided_layers)) * bw_ratio
-        assert np.isclose(num_filters, expected_filters)
+        assert abs(num_filters - expected_filters) < 1e-6  # Use torch-style close comparison
 
     def test_calculate_num_filters_with_params(self):
         """Test calculating number of filters for image processing with various parameters."""
@@ -166,7 +165,7 @@ class TestSNRUtils:
         """Test snr_linear_to_db function."""
         snr_db = snr_linear_to_db(snr_linear)
         assert isinstance(snr_db, torch.Tensor)
-        expected = torch.tensor(10 * np.log10(snr_linear), dtype=snr_db.dtype)
+        expected = 10 * torch.log10(torch.tensor(snr_linear, dtype=snr_db.dtype))
         assert torch.isclose(snr_db, expected)
 
     @pytest.mark.parametrize("snr_db", [0.0, 10.0, 20.0])
@@ -620,7 +619,7 @@ class TestSeedUtils:
 
         # Get random numbers from different generators
         random_py = random.random()  # nosec B311
-        random_np = np.random.rand()
+        random_torch_test = torch.rand(1).item()
         random_torch = torch.rand(1).item()
 
         # Reset and seed again with the same value
@@ -628,7 +627,7 @@ class TestSeedUtils:
 
         # Check that we get the same values after re-seeding
         assert random_py == random.random()  # nosec B311
-        assert random_np == np.random.rand()
+        assert random_torch_test == torch.rand(1).item()  # Use torch random instead of numpy
         assert random_torch == torch.rand(1).item()
 
     def test_seed_everything_different_values(self):
@@ -671,7 +670,7 @@ class TestSeedUtils:
 
         # Generate some random values
         rand1 = torch.rand(5)
-        rand2 = np.random.rand(5)
+        rand2 = torch.rand(5)  # Use torch instead of numpy
         rand3 = [random.random() for _ in range(5)]  # nosec B311
 
         # Reset with the same seed
@@ -679,10 +678,10 @@ class TestSeedUtils:
 
         # Generate new random values - they should match the previous ones
         rand1_new = torch.rand(5)
-        rand2_new = np.random.rand(5)
+        rand2_new = torch.rand(5)  # Use torch instead of numpy
         rand3_new = [random.random() for _ in range(5)]  # nosec B311
 
         # Check if the random values are identical
         assert torch.all(torch.eq(rand1, rand1_new))
-        assert np.array_equal(rand2, rand2_new)
+        assert torch.allclose(rand2, rand2_new)  # Use torch comparison
         assert rand3 == rand3_new

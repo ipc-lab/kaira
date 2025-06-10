@@ -1,6 +1,5 @@
 # tests/test_models/test_wyner_ziv.py
 """Tests for the Wyner-Ziv model with complex scenarios."""
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn
@@ -150,7 +149,7 @@ class TestWynerZivCorrelationModel:
 
             # Expected correlation for BSC with crossover prob p is (1-2p)
             if n1_ > 0 and n0_ > 0 and n_1 > 0 and n_0 > 0:
-                phi = (n11 * n00 - n10 * n01) / np.sqrt(n1_ * n0_ * n_1 * n_0)
+                phi = (n11 * n00 - n10 * n01) / torch.sqrt(torch.tensor(n1_ * n0_ * n_1 * n_0, dtype=torch.float32))
                 expected_phi = 1 - 2 * p
                 assert abs(phi - expected_phi) < 0.05
 

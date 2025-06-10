@@ -81,6 +81,7 @@ and digital channels, with support for various noise models, distortions, and fa
    PoissonChannel
    RayleighFadingChannel
    RicianFadingChannel
+   UplinkMACChannel
 
 
 Constraints
@@ -220,6 +221,8 @@ This module contains metrics for evaluating signal processing performance.
    BLER
    BitErrorRate
    BlockErrorRate
+   EVM
+   ErrorVectorMagnitude
    FER
    FrameErrorRate
    SER
@@ -322,7 +325,8 @@ Decoders
 - ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
 - WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
 - BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
-- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm :cite:`kschischang2001factor` for decoding LDPC codes
+- MinSumLDPCDecoder: Min-Sum decoder :cite:`chen2005reduced` for LDPC codes with reduced computational complexity
 
 These decoders can be used to recover original messages from possibly corrupted codewords
 that have been transmitted over noisy channels. Each decoder has specific strengths and
@@ -347,9 +351,12 @@ Examples
 
    BaseBlockDecoder
    BeliefPropagationDecoder
+   BeliefPropagationPolarDecoder
    BerlekampMasseyDecoder
    BruteForceMLDecoder
+   MinSumLDPCDecoder
    ReedMullerDecoder
+   SuccessiveCancellationDecoder
    SyndromeLookupDecoder
    WagnerSoftDecisionDecoder
 
@@ -389,6 +396,8 @@ transmission over noisy channels :cite:`lin2004error,moon2005error`.
    HammingCodeEncoder
    LDPCCodeEncoder
    LinearBlockCodeEncoder
+   PolarCodeEncoder
+   ReedMullerCodeEncoder
    ReedSolomonCodeEncoder
    RepetitionCodeEncoder
    SingleParityCheckCodeEncoder
@@ -751,3 +760,47 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_db_to_linear
    snr_linear_to_db
    snr_to_noise_power
+
+
+Benchmarks
+----------
+
+Kaira Benchmarking System.
+
+This module provides standardized benchmarks for evaluating communication system components and
+deep learning models in Kaira.
+
+.. currentmodule:: kaira.benchmarks
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseBenchmark
+   BenchmarkConfig
+   BenchmarkRegistry
+   BenchmarkResult
+   BenchmarkResultsManager
+   BenchmarkSuite
+   BenchmarkVisualizer
+   ComparisonRunner
+   ParallelRunner
+   ParametricRunner
+   StandardMetrics
+   StandardRunner
+
+
+.. currentmodule:: kaira.benchmarks
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   create_benchmark
+   get_benchmark
+   get_config
+   list_benchmarks
+   list_configs
+   register_benchmark

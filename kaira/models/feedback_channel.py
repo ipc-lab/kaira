@@ -7,7 +7,6 @@ path from the receiver to the transmitter.
 from typing import Any, Dict
 
 import torch
-import torch.nn as nn
 
 from kaira.channels.base import BaseChannel
 from kaira.models.base import BaseModel
@@ -39,9 +38,9 @@ class FeedbackChannelModel(BaseModel):
         encoder: BaseModel,
         forward_channel: BaseChannel,
         decoder: BaseModel,
-        feedback_generator: nn.Module,
+        feedback_generator: BaseModel,
         feedback_channel: BaseChannel,
-        feedback_processor: nn.Module,
+        feedback_processor: BaseModel,
         max_iterations: int = 1,
         *args: Any,
         **kwargs: Any,
@@ -52,9 +51,9 @@ class FeedbackChannelModel(BaseModel):
             encoder (BaseModel): The encoder that processes input data
             forward_channel (BaseChannel): The channel from transmitter to receiver
             decoder (BaseModel): The decoder at the receiver
-            feedback_generator (nn.Module): Module that generates feedback signals
+            feedback_generator (BaseModel): Module that generates feedback signals
             feedback_channel (BaseChannel): The channel for feedback
-            feedback_processor (nn.Module): Module that processes feedback at the transmitter
+            feedback_processor (BaseModel): Module that processes feedback at the transmitter
             max_iterations (int): Maximum number of transmission iterations (default: 1)
             *args: Variable positional arguments passed to the base class.
             **kwargs: Variable keyword arguments passed to the base class.

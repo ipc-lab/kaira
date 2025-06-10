@@ -95,7 +95,8 @@ repos:
     rev: "1.8.3"
     hooks:
       - id: bandit
-        args: ["-s", "B101"]
+        # Skip B101 (assert statements), B603/B607 (subprocess with trusted git commands)
+        args: ["-s", "B101,B603,B607"]
 
   # yaml formatting
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -129,7 +130,7 @@ repos:
       - id: codespell
         args:
           - --skip=logs/**,data/**,*.ipynb,*.bib
-          - --ignore-words-list=fro,ser,SER,Tung,ans
+          - --ignore-words-list=fro,ser,SER,Tung,ans,Wehn
 
   # jupyter notebook cell output clearing
   - repo: https://github.com/kynan/nbstripout
@@ -169,3 +170,32 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  # Local hooks for project automation
+  - repo: local
+    hooks:
+      - id: install-requirements
+        name: Install requirements.txt
+        entry: pip install -r requirements.txt
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: generate-changelog
+        name: Generate changelog.rst from CHANGELOG.md
+        entry: python scripts/generate_changelog.py
+        language: system
+        files: ^CHANGELOG\.md$
+        pass_filenames: false
+      - id: generate-api-reference
+        name: Generate API reference documentation
+        entry: python scripts/generate_api_reference.py docs/api_reference.rst
+        language: system
+        files: ^kaira/.*\.py$
+        pass_filenames: false
+      - id: generate-example-indices
+        name: Generate example gallery index files
+        entry: python scripts/generate_example_indices.py
+        language: system
+        files: ^examples/.*\.py$
+        pass_filenames: false

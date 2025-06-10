@@ -3,9 +3,7 @@
 from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
-from scipy import special  # type: ignore
 
 __all__ = [
     "binary_to_gray",
@@ -67,7 +65,7 @@ def gray_to_binary(num: int) -> int:
     return result
 
 
-def binary_array_to_gray(binary: Union[List[int], np.ndarray, torch.Tensor]) -> torch.Tensor:
+def binary_array_to_gray(binary: Union[List[int], torch.Tensor]) -> torch.Tensor:
     """Convert binary array to Gray code.
 
     Args:
@@ -77,32 +75,32 @@ def binary_array_to_gray(binary: Union[List[int], np.ndarray, torch.Tensor]) -> 
         Gray-coded array as PyTorch tensor
     """
     if isinstance(binary, torch.Tensor):
-        binary_np = binary.detach().cpu().numpy()
+        binary_tensor = binary.detach().cpu()
         original_device = binary.device
         original_dtype = binary.dtype
     else:
-        binary_np = np.asarray(binary)
+        binary_tensor = torch.tensor(binary, dtype=torch.int64)
         original_device = torch.device("cpu")
         original_dtype = torch.int64
 
     # Handle empty array case
-    if binary_np.size == 0:
+    if binary_tensor.numel() == 0:
         return torch.tensor([], dtype=original_dtype, device=original_device)
 
-    # Convert to integers if the array contains decimals
-    if binary_np.dtype == np.float32 or binary_np.dtype == np.float64:
-        binary_np = binary_np.astype(np.int64)
+    # Convert to integers if the tensor contains decimals
+    if binary_tensor.dtype in (torch.float32, torch.float64):
+        binary_tensor = binary_tensor.long()
 
     # Convert each number to Gray code
-    gray = np.zeros_like(binary_np)
-    for i, num in enumerate(binary_np):
+    gray = torch.zeros_like(binary_tensor)
+    for i, num in enumerate(binary_tensor):
         gray[i] = binary_to_gray(int(num))
 
-    # Convert back to torch tensor
-    return torch.tensor(gray, dtype=original_dtype, device=original_device)
+    # Convert back to original device and dtype
+    return gray.to(dtype=original_dtype, device=original_device)
 
 
-def gray_array_to_binary(gray: Union[List[int], np.ndarray, torch.Tensor]) -> torch.Tensor:
+def gray_array_to_binary(gray: Union[List[int], torch.Tensor]) -> torch.Tensor:
     """Convert Gray-coded array to binary.
 
     Args:
@@ -112,29 +110,29 @@ def gray_array_to_binary(gray: Union[List[int], np.ndarray, torch.Tensor]) -> to
         Binary array as PyTorch tensor
     """
     if isinstance(gray, torch.Tensor):
-        gray_np = gray.detach().cpu().numpy()
+        gray_tensor = gray.detach().cpu()
         original_device = gray.device
         original_dtype = gray.dtype
     else:
-        gray_np = np.asarray(gray)
+        gray_tensor = torch.tensor(gray, dtype=torch.int64)
         original_device = torch.device("cpu")
         original_dtype = torch.int64
 
     # Handle empty array case
-    if gray_np.size == 0:
+    if gray_tensor.numel() == 0:
         return torch.tensor([], dtype=original_dtype, device=original_device)
 
-    # Convert to integers if the array contains decimals
-    if gray_np.dtype == np.float32 or gray_np.dtype == np.float64:
-        gray_np = gray_np.astype(np.int64)
+    # Convert to integers if the tensor contains decimals
+    if gray_tensor.dtype in (torch.float32, torch.float64):
+        gray_tensor = gray_tensor.long()
 
     # Convert each number from Gray code to binary
-    binary = np.zeros_like(gray_np)
-    for i, num in enumerate(gray_np):
+    binary = torch.zeros_like(gray_tensor)
+    for i, num in enumerate(gray_tensor):
         binary[i] = gray_to_binary(int(num))
 
-    # Convert back to torch tensor
-    return torch.tensor(binary, dtype=original_dtype, device=original_device)
+    # Convert back to original device and dtype
+    return binary.to(dtype=original_dtype, device=original_device)
 
 
 def plot_constellation(
@@ -202,7 +200,7 @@ def plot_constellation(
     return fig, ax
 
 
-def calculate_theoretical_ber(snr_db: Union[float, List[float], np.ndarray, torch.Tensor], modulation: str) -> torch.Tensor:
+def calculate_theoretical_ber(snr_db: Union[float, List[float], torch.Tensor], modulation: str) -> torch.Tensor:
     """Calculate theoretical Bit Error Rate (BER) for common modulations.
 
     Args:
@@ -218,47 +216,51 @@ def calculate_theoretical_ber(snr_db: Union[float, List[float], np.ndarray, torc
     if is_tensor and hasattr(snr_db, "device"):
         original_device = snr_db.device
 
-    # Convert to numpy array if needed
-    if isinstance(snr_db, (list, torch.Tensor)):
-        snr_db = np.array(snr_db)
+    # Convert to tensor if needed
+    if isinstance(snr_db, list):
+        snr_tensor = torch.tensor(snr_db, dtype=torch.float32, device=original_device)
+    elif isinstance(snr_db, torch.Tensor):
+        snr_tensor = snr_db.float()
     elif isinstance(snr_db, float):
-        snr_db = np.array([snr_db])
+        snr_tensor = torch.tensor([snr_db], dtype=torch.float32, device=original_device)
+    else:
+        raise ValueError(f"Unsupported type for snr_db: {type(snr_db)}")
 
     # Convert SNR from dB to linear scale
-    snr = 10 ** (snr_db / 10)
+    snr = 10 ** (snr_tensor / 10)
 
     modulation = modulation.lower()
     result = None
 
     if modulation == "bpsk":
-        result = 0.5 * special.erfc(np.sqrt(snr))
+        result = 0.5 * torch.special.erfc(snr**0.5)
     elif modulation == "qpsk" or modulation == "4qam":
         # For QPSK, we treat snr_db as Eb/N0, which is the same as SNR for BPSK
         # This ensures QPSK and BPSK have the same BER for the same Eb/N0
-        result = 0.5 * special.erfc(np.sqrt(snr))
+        result = 0.5 * torch.special.erfc(snr**0.5)
     elif modulation == "16qam":
         # Approximate BER for 16-QAM
-        result = 0.75 * special.erfc(np.sqrt(snr / 10))
+        result = 0.75 * torch.special.erfc((snr / 10) ** 0.5)
     elif modulation == "64qam":
         # Approximate BER for 64-QAM (corrected to ensure consistent hierarchy)
-        result = (7 / 12) * special.erfc(np.sqrt(snr / 60))
+        result = (7 / 12) * torch.special.erfc((snr / 60) ** 0.5)
     elif modulation == "4pam":
         # BER for 4-PAM
-        result = 0.75 * special.erfc(np.sqrt(snr / 5))
+        result = 0.75 * torch.special.erfc((snr / 5) ** 0.5)
     elif modulation == "8pam":
         # Approximate BER for 8-PAM
-        result = (7 / 12) * special.erfc(np.sqrt(snr / 21))
+        result = (7 / 12) * torch.special.erfc((snr / 21) ** 0.5)
     elif modulation == "dpsk" or modulation == "dbpsk":
         # BER for DBPSK
-        result = 0.5 * np.exp(-snr)
+        result = 0.5 * torch.exp(-snr)  # Using exp approximation
     elif modulation == "dqpsk":
         # Approximate BER for DQPSK
-        result = special.erfc(np.sqrt(snr / 2)) - 0.25 * (special.erfc(np.sqrt(snr / 2))) ** 2
+        result = torch.special.erfc((snr / 2) ** 0.5) - 0.25 * (torch.special.erfc((snr / 2) ** 0.5)) ** 2
     else:
         raise ValueError(f"Modulation scheme '{modulation}' not supported for theoretical BER")
 
-    # Convert result to torch tensor
-    return torch.tensor(result, device=original_device)
+    # Return result as torch tensor
+    return result
 
 
 def calculate_spectral_efficiency(modulation: str, coding_rate: float = 1.0) -> float:
@@ -304,8 +306,10 @@ def calculate_spectral_efficiency(modulation: str, coding_rate: float = 1.0) -> 
         for scheme in ("qam", "psk", "pam"):
             if scheme in modulation_lower:
                 try:
+                    import math
+
                     order = int("".join(filter(str.isdigit, modulation_lower)))
-                    se = np.log2(order)
+                    se = math.log2(order)
                     break
                 except ValueError:
                     pass

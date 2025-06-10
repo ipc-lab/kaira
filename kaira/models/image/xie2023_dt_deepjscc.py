@@ -8,7 +8,6 @@ tasks under varying channel conditions.
 Adapted from: https://github.com/SongjieXie/Discrete-TaskOriented-JSCC
 """
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -105,7 +104,7 @@ class MaskAttentionSampler(nn.Module):
         Returns:
             torch.Tensor: Attention scores [batch_size*h*w, num_embeddings]
         """
-        return torch.matmul(X, self.embedding.transpose(1, 0)) / np.sqrt(self.dim_dic)
+        return torch.matmul(X, self.embedding.transpose(1, 0)) / torch.sqrt(torch.tensor(self.dim_dic, dtype=torch.float32))
 
     def sample(self, score):
         """Sample from the discrete codebook based on attention scores.
@@ -256,7 +255,7 @@ class Xie2023DTDeepJSCCEncoder(BaseModel):
         indices, _ = self.sampler(features)
 
         # Convert indices to bits
-        bits_per_symbol = int(np.log2(self.num_embeddings))
+        bits_per_symbol = int(torch.log2(torch.tensor(self.num_embeddings, dtype=torch.float32)).item())
         bits = torch.zeros((indices.size(0), bits_per_symbol), device=indices.device, dtype=torch.float)
 
         # Convert indices to bits representation
@@ -339,7 +338,7 @@ class Xie2023DTDeepJSCCDecoder(BaseModel):
         """
         # Extract batch size from the received bits tensor
         batch_size = received_bits.size(0)
-        bits_per_symbol = int(np.log2(self.num_embeddings))
+        bits_per_symbol = int(torch.log2(torch.tensor(self.num_embeddings, dtype=torch.float32)).item())
 
         # Flatten the spatial dimension for processing
         received_bits_flat = received_bits.view(-1, bits_per_symbol)
@@ -357,12 +356,12 @@ class Xie2023DTDeepJSCCDecoder(BaseModel):
 
         # Calculate appropriate spatial dimensions
         # For CIFAR-10, typically 4x4
-        spatial_dim = int(np.sqrt(spatial_elements))
+        spatial_dim = int(torch.sqrt(torch.tensor(spatial_elements, dtype=torch.float32)).item())
 
         # Handle non-square spatial dimensions if needed
         if spatial_dim * spatial_dim != spatial_elements:
             # Find factors for non-square feature maps
-            for i in range(int(np.sqrt(spatial_elements)), 0, -1):
+            for i in range(int(torch.sqrt(torch.tensor(spatial_elements, dtype=torch.float32)).item()), 0, -1):
                 if spatial_elements % i == 0:
                     h_dim = i
                     w_dim = spatial_elements // i

@@ -1,11 +1,9 @@
 """Tests for modulation utility functions."""
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 from matplotlib.text import Annotation
-from scipy import special
 
 from kaira.modulations.utils import (
     binary_array_to_gray,
@@ -203,18 +201,18 @@ class TestBinaryGrayConversion:
         """Test that empty arrays are handled correctly."""
         # Test empty array for binary_array_to_gray
         empty_list = []
-        empty_np = np.array([])
+        empty_torch = torch.tensor([])
         empty_tensor = torch.tensor([])
 
         # Test with different empty input types
-        for empty_input in [empty_list, empty_np, empty_tensor]:
+        for empty_input in [empty_list, empty_torch, empty_tensor]:
             result = binary_array_to_gray(empty_input)
             assert isinstance(result, torch.Tensor)
             assert result.numel() == 0
             assert result.shape == torch.Size([0])
 
         # Test empty array for gray_array_to_binary
-        for empty_input in [empty_list, empty_np, empty_tensor]:
+        for empty_input in [empty_list, empty_torch, empty_tensor]:
             result = gray_array_to_binary(empty_input)
             assert isinstance(result, torch.Tensor)
             assert result.numel() == 0
@@ -239,25 +237,25 @@ class TestBinaryGrayConversion:
 
     def test_float_to_int64_conversion(self):
         """Test that float arrays are correctly converted to int64 during processing."""
-        # Test with float32 numpy arrays
-        float32_arr = np.array([0, 1, 2, 3], dtype=np.float32)
+        # Test with float32 torch arrays
+        float32_arr = torch.tensor([0, 1, 2, 3], dtype=torch.float32)
         result = binary_array_to_gray(float32_arr)
         expected = torch.tensor([0, 1, 3, 2])  # Expected Gray code values
         assert torch.equal(result, expected)
 
-        # Test with float64 numpy arrays
-        float64_arr = np.array([0, 1, 2, 3], dtype=np.float64)
+        # Test with float64 torch arrays
+        float64_arr = torch.tensor([0, 1, 2, 3], dtype=torch.float64)
         result = binary_array_to_gray(float64_arr)
         assert torch.equal(result, expected)
 
         # Test gray_array_to_binary with float arrays
-        gray_float32 = np.array([0, 1, 3, 2], dtype=np.float32)
+        gray_float32 = torch.tensor([0, 1, 3, 2], dtype=torch.float32)
         result = gray_array_to_binary(gray_float32)
         expected = torch.tensor([0, 1, 2, 3])  # Expected binary values
         assert torch.equal(result, expected)
 
-        # Test with float64 numpy arrays
-        gray_float64 = np.array([0, 1, 3, 2], dtype=np.float64)
+        # Test with float64 torch arrays
+        gray_float64 = torch.tensor([0, 1, 3, 2], dtype=torch.float64)
         result = gray_array_to_binary(gray_float64)
         assert torch.equal(result, expected)
 
@@ -306,12 +304,12 @@ class TestTheoreticalBER:
         snr_linear = 10 ** (snr / 10)
 
         # Expected BER for 4-PAM: 0.75 * erfc(sqrt(snr / 5))
-        expected_4pam = 0.75 * torch.tensor(float(special.erfc(np.sqrt(snr_linear / 5)))).to(torch.float32)
+        expected_4pam = 0.75 * torch.special.erfc(torch.sqrt(torch.tensor(snr_linear / 5))).to(torch.float32)
         actual_4pam = calculate_theoretical_ber(snr, "4pam").to(torch.float32)
         assert torch.isclose(actual_4pam, expected_4pam)
 
         # Expected BER for 8-PAM: (7/12) * erfc(sqrt(snr / 21))
-        expected_8pam = (7 / 12) * torch.tensor(float(special.erfc(np.sqrt(snr_linear / 21)))).to(torch.float32)
+        expected_8pam = (7 / 12) * torch.special.erfc(torch.sqrt(torch.tensor(snr_linear / 21))).to(torch.float32)
         actual_8pam = calculate_theoretical_ber(snr, "8pam").to(torch.float32)
         assert torch.isclose(actual_8pam, expected_8pam)
 
@@ -344,12 +342,12 @@ class TestTheoreticalBER:
         snr_linear = 10 ** (snr / 10)
 
         # Expected BER for DPSK: 0.5 * exp(-snr)
-        expected_dpsk = 0.5 * torch.tensor(float(np.exp(-snr_linear))).to(torch.float32)
+        expected_dpsk = 0.5 * torch.exp(-torch.tensor(snr_linear)).to(torch.float32)
         actual_dpsk = calculate_theoretical_ber(snr, "dpsk").to(torch.float32)
         assert torch.isclose(actual_dpsk, expected_dpsk)
 
         # Expected BER for DQPSK: erfc(sqrt(snr/2)) - 0.25 * (erfc(sqrt(snr/2)))^2
-        erfc_term = float(special.erfc(np.sqrt(snr_linear / 2)))
+        erfc_term = torch.special.erfc(torch.sqrt(torch.tensor(snr_linear / 2))).item()
         expected_dqpsk = torch.tensor(erfc_term - 0.25 * erfc_term**2).to(torch.float32)
         actual_dqpsk = calculate_theoretical_ber(snr, "dqpsk").to(torch.float32)
         assert torch.isclose(actual_dqpsk, expected_dqpsk)
@@ -492,8 +490,8 @@ class TestSpectralEfficiency:
         assert calculate_spectral_efficiency("PSK32", coding_rate=0.75) == 3.75
 
         # Verify non-power-of-2 orders
-        assert calculate_spectral_efficiency("24QAM") == pytest.approx(np.log2(24))
-        assert calculate_spectral_efficiency("10PSK") == pytest.approx(np.log2(10))
+        assert calculate_spectral_efficiency("24QAM") == pytest.approx(torch.log2(torch.tensor(24.0)).item())
+        assert calculate_spectral_efficiency("10PSK") == pytest.approx(torch.log2(torch.tensor(10.0)).item())
 
         # Test multi-digit orders
         assert calculate_spectral_efficiency("1024QAM") == 10.0

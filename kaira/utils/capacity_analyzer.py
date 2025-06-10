@@ -9,7 +9,6 @@ import multiprocessing
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 
 from kaira.channels.base import BaseChannel
@@ -56,7 +55,7 @@ class CapacityAnalyzer:
         self._mimo_cache: Dict[Tuple, torch.Tensor] = {}
         self._mutual_info_cache: Dict[Tuple, torch.Tensor] = {}
 
-    def awgn_capacity(self, snr_db: Union[float, List[float], np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def awgn_capacity(self, snr_db: Union[float, List[float], torch.Tensor]) -> torch.Tensor:
         """Compute Shannon capacity for an AWGN channel.
 
         Calculates C = log2(1 + SNR) for the additive white Gaussian noise channel.
@@ -68,7 +67,10 @@ class CapacityAnalyzer:
             torch.Tensor: Capacity in bits per channel use
         """
         # Convert SNR from dB to linear
-        if isinstance(snr_db, (list, np.ndarray)):
+        if isinstance(snr_db, list):
+            snr_db = torch.tensor(snr_db, device=self.device)
+        elif hasattr(snr_db, "__array__") and not isinstance(snr_db, torch.Tensor):
+            # Handle numpy arrays and other array-like objects
             snr_db = torch.tensor(snr_db, device=self.device)
         elif not isinstance(snr_db, torch.Tensor):
             snr_db = torch.tensor([snr_db], device=self.device)
@@ -80,7 +82,7 @@ class CapacityAnalyzer:
 
         return capacity
 
-    def awgn_capacity_complex(self, snr_db: Union[float, List[float], np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def awgn_capacity_complex(self, snr_db: Union[float, List[float], torch.Tensor]) -> torch.Tensor:
         """Compute Shannon capacity for a complex AWGN channel.
 
         For complex channels, C = log2(1 + SNR) where SNR is defined per complex dimension.
@@ -94,7 +96,7 @@ class CapacityAnalyzer:
         # Complex channel has capacity = log2(1 + SNR)
         return self.awgn_capacity(snr_db)
 
-    def bsc_capacity(self, p: Union[float, List[float], np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def bsc_capacity(self, p: Union[float, List[float], torch.Tensor]) -> torch.Tensor:
         """Compute capacity for the Binary Symmetric Channel.
 
         For a BSC with crossover probability p, C = 1 - H(p) where H(p) is the binary entropy function.
@@ -105,7 +107,10 @@ class CapacityAnalyzer:
         Returns:
             torch.Tensor: Capacity in bits per channel use
         """
-        if isinstance(p, (list, np.ndarray)):
+        if isinstance(p, list):
+            p = torch.tensor(p, device=self.device)
+        elif hasattr(p, "__array__") and not isinstance(p, torch.Tensor):
+            # Handle numpy arrays and other array-like objects
             p = torch.tensor(p, device=self.device)
         elif not isinstance(p, torch.Tensor):
             p = torch.tensor([p], device=self.device)
@@ -147,7 +152,7 @@ class CapacityAnalyzer:
 
         return h_p
 
-    def bec_capacity(self, erasure_prob: Union[float, List[float], np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def bec_capacity(self, erasure_prob: Union[float, List[float], torch.Tensor]) -> torch.Tensor:
         """Compute capacity for the Binary Erasure Channel.
 
         For a BEC with erasure probability ε, C = 1 - ε.
@@ -158,7 +163,10 @@ class CapacityAnalyzer:
         Returns:
             torch.Tensor: Capacity in bits per channel use
         """
-        if isinstance(erasure_prob, (list, np.ndarray)):
+        if isinstance(erasure_prob, list):
+            erasure_prob = torch.tensor(erasure_prob, device=self.device)
+        elif hasattr(erasure_prob, "__array__") and not isinstance(erasure_prob, torch.Tensor):
+            # Handle numpy arrays and other array-like objects
             erasure_prob = torch.tensor(erasure_prob, device=self.device)
         elif not isinstance(erasure_prob, torch.Tensor):
             erasure_prob = torch.tensor([erasure_prob], device=self.device)
@@ -171,7 +179,7 @@ class CapacityAnalyzer:
 
         return capacity
 
-    def gaussian_input_capacity(self, channel: BaseChannel, snr_db: Union[float, List[float], np.ndarray, torch.Tensor], constrained: bool = True) -> torch.Tensor:
+    def gaussian_input_capacity(self, channel: BaseChannel, snr_db: Union[float, List[float], torch.Tensor], constrained: bool = True) -> torch.Tensor:
         """Compute capacity assuming Gaussian input distribution.
 
         For many channels, the capacity-achieving input distribution is Gaussian.
@@ -185,7 +193,7 @@ class CapacityAnalyzer:
         Returns:
             torch.Tensor: Capacity in bits per channel use
         """
-        if isinstance(snr_db, (list, np.ndarray)):
+        if isinstance(snr_db, list):
             snr_db = torch.tensor(snr_db, device=self.device)
         elif not isinstance(snr_db, torch.Tensor):
             snr_db = torch.tensor([snr_db], device=self.device)
@@ -243,7 +251,7 @@ class CapacityAnalyzer:
 
         return capacity
 
-    def mutual_information(self, modulator: BaseModulator, channel: BaseChannel, snr_db: Union[float, List[float], np.ndarray, torch.Tensor], num_symbols: int = 10000, num_bins: int = 100, estimation_method: str = "histogram") -> torch.Tensor:
+    def mutual_information(self, modulator: BaseModulator, channel: BaseChannel, snr_db: Union[float, List[float], torch.Tensor], num_symbols: int = 10000, num_bins: int = 100, estimation_method: str = "histogram") -> torch.Tensor:
         """Compute mutual information for a modulation scheme over a given channel.
 
         Uses Monte Carlo simulation to estimate the mutual information between
@@ -261,7 +269,7 @@ class CapacityAnalyzer:
         Returns:
             torch.Tensor: Mutual information in bits per channel use
         """
-        if isinstance(snr_db, (list, np.ndarray)):
+        if isinstance(snr_db, list):
             snr_db = torch.tensor(snr_db, device=self.device)
         elif not isinstance(snr_db, torch.Tensor):
             snr_db = torch.tensor([snr_db], device=self.device)
@@ -270,7 +278,7 @@ class CapacityAnalyzer:
         modulator_type = modulator.__class__.__name__
         channel_type = channel.__class__.__name__
 
-        cache_key = (modulator_type, channel_type, tuple(snr_db.cpu().numpy().tolist()), num_symbols, num_bins, estimation_method)
+        cache_key = (modulator_type, channel_type, tuple(snr_db.tolist()), num_symbols, num_bins, estimation_method)
 
         # Check if result is in cache
         if cache_key in self._mutual_info_cache:
@@ -534,7 +542,7 @@ class CapacityAnalyzer:
         # Move result back to original device
         return mi.clone().detach().to(self.device)
 
-    def modulation_capacity(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], num_symbols: int = 10000, monte_carlo: bool = True, estimation_method: str = "histogram") -> Tuple[torch.Tensor, torch.Tensor]:
+    def modulation_capacity(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], num_symbols: int = 10000, monte_carlo: bool = True, estimation_method: str = "histogram") -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute capacity of a modulation scheme over a specified channel.
 
         Either analytically (when possible) or using Monte Carlo simulation.
@@ -551,7 +559,7 @@ class CapacityAnalyzer:
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (SNR values, capacity values)
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Get modulator and channel type names
@@ -559,7 +567,7 @@ class CapacityAnalyzer:
         channel_type = channel.__class__.__name__
 
         # Create cache key with relevant parameters
-        cache_key = (modulator_type, channel_type, tuple(snr_db_range.cpu().numpy().tolist()), num_symbols, monte_carlo, estimation_method, self.fast_mode)
+        cache_key = (modulator_type, channel_type, tuple(snr_db_range.tolist()), num_symbols, monte_carlo, estimation_method, self.fast_mode)
 
         # Check if result is in cache
         if cache_key in self._capacity_cache:
@@ -721,7 +729,7 @@ class CapacityAnalyzer:
 
     def plot_capacity_vs_snr(
         self,
-        snr_db_range: Union[List[float], np.ndarray, torch.Tensor],
+        snr_db_range: Union[List[float], torch.Tensor],
         capacities: Union[List[torch.Tensor], Dict[str, torch.Tensor]],
         labels: Optional[List[str]] = None,
         title: str = "Channel Capacity vs. SNR",
@@ -765,28 +773,28 @@ class CapacityAnalyzer:
 
         # Convert to numpy for plotting
         if isinstance(snr_db_range, torch.Tensor):
-            snr_db_range = snr_db_range.cpu().numpy()
+            snr_db_range = snr_db_range.detach().cpu().numpy()
 
         # Plot Shannon capacity limit if requested
         if include_shannon:
-            shannon_capacity = self.awgn_capacity(torch.tensor(snr_db_range, device=self.device)).cpu().numpy()
+            shannon_capacity = self.awgn_capacity(torch.tensor(snr_db_range, device=self.device)).detach().cpu().numpy()
             ax.plot(snr_db_range, shannon_capacity, "k--", label="Shannon Limit (SISO)")
 
         # Plot MIMO Shannon capacity if requested
         if include_shannon_mimo and mimo_tx > 0 and mimo_rx > 0:
-            mimo_capacity = self.mimo_capacity(snr_db_range, tx_antennas=mimo_tx, rx_antennas=mimo_rx, channel_knowledge="perfect").cpu().numpy()
+            mimo_capacity = self.mimo_capacity(snr_db_range, tx_antennas=mimo_tx, rx_antennas=mimo_rx, channel_knowledge="perfect").detach().cpu().numpy()
             ax.plot(snr_db_range, mimo_capacity, "r-.", label=f"Shannon Limit ({mimo_tx}x{mimo_rx} MIMO)")
 
         # Plot each capacity curve
         if isinstance(capacities, dict):
             for label, capacity in capacities.items():
                 if isinstance(capacity, torch.Tensor):
-                    capacity = capacity.cpu().numpy()
+                    capacity = capacity.detach().cpu().numpy()
                 ax.plot(snr_db_range, capacity, "-o", label=label)
         else:
             for i, capacity in enumerate(capacities):
                 if isinstance(capacity, torch.Tensor):
-                    capacity = capacity.cpu().numpy()
+                    capacity = capacity.detach().cpu().numpy()
                 label = labels[i] if labels and i < len(labels) else f"Scheme {i+1}"
                 ax.plot(snr_db_range, capacity, "-o", label=label)
 
@@ -805,7 +813,7 @@ class CapacityAnalyzer:
 
     def plot_capacity_vs_param(
         self,
-        param_values: Union[List[float], np.ndarray, torch.Tensor],
+        param_values: Union[List[float], torch.Tensor],
         capacities: Union[List[torch.Tensor], Dict[str, torch.Tensor]],
         param_name: str = "Parameter",
         labels: Optional[List[str]] = None,
@@ -843,18 +851,18 @@ class CapacityAnalyzer:
 
         # Convert to numpy for plotting
         if isinstance(param_values, torch.Tensor):
-            param_values = param_values.cpu().numpy()
+            param_values = param_values.detach().cpu().numpy()
 
         # Plot each capacity curve
         if isinstance(capacities, dict):
             for label, capacity in capacities.items():
                 if isinstance(capacity, torch.Tensor):
-                    capacity = capacity.cpu().numpy()
+                    capacity = capacity.detach().cpu().numpy()
                 ax.plot(param_values, capacity, "-o", label=label)
         else:
             for i, capacity in enumerate(capacities):
                 if isinstance(capacity, torch.Tensor):
-                    capacity = capacity.cpu().numpy()
+                    capacity = capacity.detach().cpu().numpy()
                 label = labels[i] if labels and i < len(labels) else f"Scheme {i+1}"
                 ax.plot(param_values, capacity, "-o", label=label)
 
@@ -871,7 +879,7 @@ class CapacityAnalyzer:
 
         return fig
 
-    def ergodic_capacity(self, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], num_realizations: int = 1000, num_symbols_per_realization: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
+    def ergodic_capacity(self, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], num_realizations: int = 1000, num_symbols_per_realization: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute ergodic capacity for fading channels.
 
         For fading channels, the ergodic capacity is the expected value of
@@ -886,7 +894,7 @@ class CapacityAnalyzer:
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (SNR values, ergodic capacity values)
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Channel to device
@@ -926,7 +934,7 @@ class CapacityAnalyzer:
 
         return snr_db_range, ergodic_capacity
 
-    def outage_capacity(self, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], outage_probability: float = 0.01, num_realizations: int = 1000, num_symbols_per_realization: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
+    def outage_capacity(self, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], outage_probability: float = 0.01, num_realizations: int = 1000, num_symbols_per_realization: int = 100) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute outage capacity for fading channels.
 
         The outage capacity is the highest rate that can be achieved with
@@ -942,7 +950,7 @@ class CapacityAnalyzer:
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (SNR values, outage capacity values)
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Channel to device
@@ -981,7 +989,7 @@ class CapacityAnalyzer:
         return snr_db_range, outage_capacity
 
     def compare_modulation_schemes(
-        self, modulators: List[BaseModulator], channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], labels: Optional[List[str]] = None, num_symbols: int = 10000, plot: bool = True, figsize: Tuple[int, int] = (10, 6), estimation_method: str = "histogram"
+        self, modulators: List[BaseModulator], channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], labels: Optional[List[str]] = None, num_symbols: int = 10000, plot: bool = True, figsize: Tuple[int, int] = (10, 6), estimation_method: str = "histogram"
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], Optional[plt.Figure]]:
         """Compare capacity of multiple modulation schemes over a specified channel.
 
@@ -1001,7 +1009,7 @@ class CapacityAnalyzer:
             - Dictionary mapping modulation names to capacity values
             - Optional matplotlib figure if plot=True
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Generate default labels if not provided
@@ -1022,7 +1030,7 @@ class CapacityAnalyzer:
         return snr_db_range, capacities, fig
 
     def compare_channels(
-        self, modulator: BaseModulator, channels: List[BaseChannel], snr_db_range: Union[List[float], np.ndarray, torch.Tensor], labels: Optional[List[str]] = None, num_symbols: int = 10000, plot: bool = True, figsize: Tuple[int, int] = (10, 6), estimation_method: str = "histogram"
+        self, modulator: BaseModulator, channels: List[BaseChannel], snr_db_range: Union[List[float], torch.Tensor], labels: Optional[List[str]] = None, num_symbols: int = 10000, plot: bool = True, figsize: Tuple[int, int] = (10, 6), estimation_method: str = "histogram"
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], Optional[plt.Figure]]:
         """Compare capacity of a modulation scheme over multiple channels.
 
@@ -1042,7 +1050,7 @@ class CapacityAnalyzer:
             - Dictionary mapping channel names to capacity values
             - Optional matplotlib figure if plot=True
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Generate default labels if not provided
@@ -1062,7 +1070,7 @@ class CapacityAnalyzer:
 
         return snr_db_range, capacities, fig
 
-    def mimo_capacity(self, snr_db_range: Union[float, List[float], np.ndarray, torch.Tensor], tx_antennas: int = 2, rx_antennas: int = 2, channel_knowledge: str = "perfect", num_realizations: int = 1000) -> torch.Tensor:
+    def mimo_capacity(self, snr_db_range: Union[float, List[float], torch.Tensor], tx_antennas: int = 2, rx_antennas: int = 2, channel_knowledge: str = "perfect", num_realizations: int = 1000) -> torch.Tensor:
         """Compute capacity for MIMO systems.
 
         For MIMO systems, the capacity varies based on channel knowledge at the transmitter.
@@ -1081,11 +1089,17 @@ class CapacityAnalyzer:
         if isinstance(snr_db_range, (float, int)):
             snr_db_range = [snr_db_range]
 
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
+            snr_db_range = torch.tensor(snr_db_range, device=self.device)
+        elif hasattr(snr_db_range, "__array__") and not isinstance(snr_db_range, torch.Tensor):
+            # Handle numpy arrays and other array-like objects
+            snr_db_range = torch.tensor(snr_db_range, device=self.device)
+        elif not isinstance(snr_db_range, torch.Tensor):
+            # Handle other types
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Create cache key
-        cache_key = (tuple(snr_db_range.cpu().numpy().tolist()), tx_antennas, rx_antennas, channel_knowledge, num_realizations)
+        cache_key = (tuple(snr_db_range.tolist()), tx_antennas, rx_antennas, channel_knowledge, num_realizations)
 
         # Check if result is in cache
         if cache_key in self._mimo_cache:
@@ -1204,7 +1218,7 @@ class CapacityAnalyzer:
 
         return capacity
 
-    def capacity_gap_to_shannon(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], num_symbols: int = 10000) -> Tuple[torch.Tensor, torch.Tensor]:
+    def capacity_gap_to_shannon(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], num_symbols: int = 10000) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute the gap between a modulation scheme's capacity and the Shannon limit.
 
         This quantifies how close a practical modulation scheme comes to the theoretical limit.
@@ -1218,7 +1232,7 @@ class CapacityAnalyzer:
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (SNR values, capacity gap in dB)
         """
-        if isinstance(snr_db_range, (list, np.ndarray)):
+        if isinstance(snr_db_range, list):
             snr_db_range = torch.tensor(snr_db_range, device=self.device)
 
         # Calculate Shannon capacity
@@ -1272,7 +1286,7 @@ class CapacityAnalyzer:
 
         return sorted_capacities, cdf
 
-    def spectral_efficiency(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], bandwidth: float = 1.0, overhead: float = 0.0) -> Tuple[torch.Tensor, torch.Tensor]:
+    def spectral_efficiency(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], bandwidth: float = 1.0, overhead: float = 0.0) -> Tuple[torch.Tensor, torch.Tensor]:
         """Calculate spectral efficiency for a modulation scheme.
 
         Takes into account protocol overhead to give a realistic measure of efficiency.
@@ -1295,7 +1309,7 @@ class CapacityAnalyzer:
 
         return snr_db_range, spectral_eff
 
-    def energy_efficiency(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], np.ndarray, torch.Tensor], tx_power_watts: float = 1.0, circuit_power_watts: float = 0.1) -> Tuple[torch.Tensor, torch.Tensor]:
+    def energy_efficiency(self, modulator: BaseModulator, channel: BaseChannel, snr_db_range: Union[List[float], torch.Tensor], tx_power_watts: float = 1.0, circuit_power_watts: float = 0.1) -> Tuple[torch.Tensor, torch.Tensor]:
         """Calculate energy efficiency for a communication system.
 
         Energy efficiency is defined as bits/joule, accounting for both

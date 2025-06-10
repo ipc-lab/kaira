@@ -1,6 +1,5 @@
 """Tests for the systematic_linear_block_code module in kaira.models.fec.encoders package."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -164,12 +163,12 @@ class TestSystematicLinearBlockCodeEncoder:
         # Verify properties of the custom encoder
         assert torch.equal(self.encoder_custom.information_set, torch.tensor(self.custom_info_set))
 
-        # Test initialization with numpy array instead of torch tensor
-        parity_np = np.array([[1, 1, 0], [0, 1, 1]])
-        encoder_np = SystematicLinearBlockCodeEncoder(parity_np)
-        assert encoder_np.code_length == 5
-        assert encoder_np.code_dimension == 2
-        assert encoder_np.redundancy == 3
+        # Test initialization with torch tensor instead of numpy array
+        parity_torch = torch.tensor([[1, 1, 0], [0, 1, 1]])
+        encoder_torch = SystematicLinearBlockCodeEncoder(parity_torch)
+        assert encoder_torch.code_length == 5
+        assert encoder_torch.code_dimension == 2
+        assert encoder_torch.redundancy == 3
 
         # Test with invalid information set (wrong size)
         with pytest.raises(ValueError):

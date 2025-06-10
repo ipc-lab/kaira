@@ -153,3 +153,4 @@ plt.show()
 # - QPSK provides twice the spectral efficiency of BPSK
 # - Constellation points become more scattered as SNR decreases
 # - Practical results closely match theoretical predictions
+#

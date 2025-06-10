@@ -4,7 +4,6 @@ import os
 import random
 from typing import Any, Union
 
-import numpy as np
 import torch
 
 from .capacity_analyzer import CapacityAnalyzer
@@ -40,7 +39,7 @@ def to_tensor(x: Any, device: Union[str, torch.device, None] = None) -> torch.Te
         return x.to(device) if device is not None else x
     elif isinstance(x, (int, float)):
         return torch.tensor(x, device=device)
-    elif isinstance(x, (list, np.ndarray)):
+    elif isinstance(x, (list, torch.Tensor)):
         return torch.tensor(x, device=device)
     else:
         raise TypeError(f"Unsupported type: {type(x)}")
@@ -85,7 +84,6 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
     """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = cudnn_deterministic

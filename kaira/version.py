@@ -24,8 +24,9 @@ For example:
     "0.1.0", "2.0rc1", "2.1.dev0", etc.
 """
 
-__version_info__ = (0, 1, 1)
+__version_info__ = (0, 2, 0)
 __version__ = ".".join(map(str, __version_info__))
 
 if __name__ == "__main__":
     print("Kaira version:", __version__)
+# Test change

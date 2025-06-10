@@ -3,7 +3,6 @@
 from typing import Optional, Union
 
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np
 import torch
 
 from .base import BaseDemodulator, BaseModulator
@@ -49,10 +48,10 @@ class Pi4QPSKModulator(BaseModulator):
         """Create standard and rotated QPSK constellations."""
         if self.gray_coded:
             # Standard QPSK with Gray coding (00, 01, 11, 10)
-            angles = torch.tensor([1, 3, 7, 5]) * np.pi / 4
+            angles = torch.tensor([1, 3, 7, 5]) * torch.pi / 4
         else:
             # Standard QPSK without Gray coding (00, 01, 10, 11)
-            angles = torch.tensor([1, 3, 5, 7]) * np.pi / 4
+            angles = torch.tensor([1, 3, 5, 7]) * torch.pi / 4
 
         re_part = torch.cos(angles)
         im_part = torch.sin(angles)
@@ -61,10 +60,10 @@ class Pi4QPSKModulator(BaseModulator):
         # π/4 rotated QPSK with same encoding
         if self.gray_coded:
             # Rotated QPSK with Gray coding (00, 01, 11, 10)
-            angles_rotated = torch.tensor([0, 2, 6, 4]) * np.pi / 4
+            angles_rotated = torch.tensor([0, 2, 6, 4]) * torch.pi / 4
         else:
             # Rotated QPSK without Gray coding (00, 01, 10, 11)
-            angles_rotated = torch.tensor([0, 2, 4, 6]) * np.pi / 4
+            angles_rotated = torch.tensor([0, 2, 4, 6]) * torch.pi / 4
 
         re_part_rotated = torch.cos(angles_rotated)
         im_part_rotated = torch.sin(angles_rotated)
