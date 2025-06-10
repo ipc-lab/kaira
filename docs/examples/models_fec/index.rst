@@ -11,7 +11,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the fundamental binary operations used in forward error correction (FEC) coding. We'll explore how to calculate Hamming distances, Hamming weights, and convert between binary and integer representations using utility functions from the FEC module.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the fundamental binary operations used in forward error correction (FEC) coding using Kaira's utility functions. We'll explore Hamming distances, Hamming weights, and binary-integer conversions.">
 
 .. only:: html
 
@@ -59,22 +59,6 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example provides a detailed visualization of how forward error correction (FEC) decoding algorithms work. We'll create animated, step-by-step visualizations of several popular decoding algorithms to help understand their inner workings and relative performance characteristics.">
-
-.. only:: html
-
-    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_decoding_visualization_thumb.png
-      :alt: Visualizing the FEC Decoding Process
-
-    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_decoding_visualization.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Visualizing the FEC Decoding Process</div>
-    </div>
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use various Forward Error Correction (FEC) encoders from the kaira.models.fec.encoders module. FEC codes add redundancy to transmitted data, allowing receivers to detect and correct errors without retransmission. We'll explore: - Basic block codes (Repetition, Single Parity Check) - Linear block codes (Hamming) - Cyclic codes and BCH codes - Reed-Solomon codes - Advanced features and performance evaluation">
 
 .. only:: html
@@ -91,7 +75,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the algebraic foundations of forward error correction (FEC) codes using the binary polynomial and finite field utilities in the `kaira.models.fec.algebra` module. These algebraic structures are essential for advanced codes like BCH, Reed-Solomon, and other algebraic error correction codes.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the essential finite field algebra operations in Kaira's FEC module. We'll focus on the core functionality of BinaryPolynomial and FiniteBifield classes that are fundamental to error correction codes.">
 
 .. only:: html
 
@@ -187,22 +171,6 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example showcases various forward error correction (FEC) coding schemes in real-world applications through interactive, visually rich demonstrations. We'll explore how different codes perform under various channel conditions and application constraints, with a focus on the practical tradeoffs between redundancy, error correction capability, and computational complexity.">
-
-.. only:: html
-
-    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_practical_applications_thumb.png
-      :alt: Interactive FEC Code Comparison for Real-World Applications
-
-    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_practical_applications.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Interactive FEC Code Comparison for Real-World Applications</div>
-    </div>
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates syndrome decoding, a key technique in forward error correction (FEC) that efficiently corrects errors using a parity-check matrix. We'll visualize the syndrome computation and the error correction process with animated, interactive graphics.">
 
 .. only:: html
@@ -215,22 +183,6 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Syndrome Decoding Visualization</div>
-    </div>
-
-.. raw:: html
-
-    <div class="sphx-glr-thumbcontainer" tooltip="This example provides a visually rich demonstration of forward error correction (FEC) techniques in action. We'll visualize how different coding schemes protect data as it passes through noisy channels, with animated and interactive visualizations that show the encoding, transmission, corruption, and decoding processes.">
-
-.. only:: html
-
-    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_fec_visual_error_correction_thumb.png
-      :alt: Visualizing Error Correction in Action
-
-    :ref:`sphx_glr_auto_examples_models_fec_plot_fec_visual_error_correction.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Visualizing Error Correction in Action</div>
     </div>
 
 .. raw:: html
@@ -260,7 +212,6 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
    /auto_examples/models_fec/plot_fec_binary_operations
    /auto_examples/models_fec/plot_fec_blockwise_processing
    /auto_examples/models_fec/plot_fec_decoders_tutorial
-   /auto_examples/models_fec/plot_fec_decoding_visualization
    /auto_examples/models_fec/plot_fec_encoders_tutorial
    /auto_examples/models_fec/plot_fec_finite_field_algebra
    /auto_examples/models_fec/plot_fec_ldpc_advanced_visualization
@@ -268,7 +219,5 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
    /auto_examples/models_fec/plot_fec_ldpc_simulation
    /auto_examples/models_fec/plot_fec_polar_advanced_visualization
    /auto_examples/models_fec/plot_fec_polar_simulation
-   /auto_examples/models_fec/plot_fec_practical_applications
    /auto_examples/models_fec/plot_fec_syndrome_decoding
-   /auto_examples/models_fec/plot_fec_visual_error_correction
    /auto_examples/models_fec/plot_ldpc_educational_vs_professional

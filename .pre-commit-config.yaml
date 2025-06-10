@@ -87,12 +87,7 @@ repos:
       - id: mypy
         # Removed problematic types-all and added specific type stubs
         additional_dependencies:
-          [
-            types-requests,
-            types-PyYAML,
-            types-toml,
-            types-setuptools,
-          ]
+          [types-requests, types-PyYAML, types-toml, types-setuptools]
         exclude: "^tests/"
 
   # Python security linter
