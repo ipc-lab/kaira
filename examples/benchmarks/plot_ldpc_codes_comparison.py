@@ -484,7 +484,7 @@ print(f"\nSimulation completed in {total_time:.1f} seconds")
 
 # %%
 # Performance Visualization - Fair Comparison Approach
-# --------------------------------------
+# ---------------------------------------------------------
 # Create separate visualizations for educational and professional codes
 
 print("\n" + "=" * 80)
@@ -857,7 +857,7 @@ plt.show()
 
 # %%
 # Advanced Standards Comparison and Analysis
-# --------------------------------------
+# --------------------------------------------
 # Deep dive into RPTU database standards diversity
 
 print("\n🌐 ADVANCED STANDARDS ANALYSIS")
@@ -1112,7 +1112,7 @@ if BENCHMARK_CONFIG["decoder_comparison"]["enabled"]:
 
 # %%
 # Summary Statistics and Performance Table
-# --------------------------------------
+# ----------------------------------------------
 
 print("\n" + "=" * 80)
 print("COMPREHENSIVE LDPC CODES COMPARISON SUMMARY")
@@ -1382,7 +1382,7 @@ print("=" * 80)
 
 # %%
 # Equivalent Data Transmission Comparison
-# --------------------------------------
+# -------------------------------------------
 
 
 def simulate_equivalent_data_comparison(ldpc_codes: Dict[str, Dict[str, Any]], total_info_bits: int = 100000, snr_db_values: np.ndarray = np.arange(2, 12, 2), bp_iterations: int = 10, batch_size: int = 50) -> Dict[str, Any]:

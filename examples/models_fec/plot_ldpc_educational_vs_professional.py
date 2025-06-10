@@ -1,7 +1,7 @@
 """
-====================================================================
+======================================================================
 Educational vs Professional LDPC Codes: Understanding the Differences
-====================================================================
+======================================================================
 
 This example demonstrates the fundamental differences between educational
 hand-crafted LDPC codes :cite:`gallager1962low` and professional RPTU database codes, explaining

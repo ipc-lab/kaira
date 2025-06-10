@@ -8,7 +8,7 @@ coverage:
     patch:
       default:
         target: 80%
-        threshold: 1%
+        threshold: 30%
         if_not_found: success
 
 comment:

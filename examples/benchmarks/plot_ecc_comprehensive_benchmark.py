@@ -1,7 +1,7 @@
 """
-=========================================
+=================================================
 Comprehensive Error Correction Codes Benchmark
-=========================================
+=================================================
 
 This example demonstrates a comprehensive benchmark for Forward Error Correction (FEC) codes
 using the Kaira benchmarking system. It evaluates multiple ECC algorithms across different
@@ -81,9 +81,9 @@ class ComprehensiveECCBenchmark(CommunicationBenchmark):
     def setup(self, **kwargs):
         """Setup benchmark parameters."""
         super().setup(**kwargs)
-        self.num_bits = kwargs.get("num_bits", 10000)
+        self.num_bits = kwargs.get("num_bits", 1000)
         self.num_trials = kwargs.get("num_trials", 1000)
-        self.max_errors = kwargs.get("max_errors", 100)
+        self.max_errors = kwargs.get("max_errors", 10)
         self.snr_range = kwargs.get("snr_range", list(range(-4, 8, 2)))
 
         # Define ECC configurations to test
@@ -513,7 +513,7 @@ def run_comprehensive_ecc_benchmark():
 
     # Configure benchmark
     config = BenchmarkConfig(name="comprehensive_ecc_evaluation", snr_range=list(range(-4, 8, 2)), num_trials=50, verbose=True)
-    config.update(num_bits=10000, max_errors=100)
+    config.update(num_bits=1000, max_errors=10)
 
     # Run benchmark
     runner = StandardRunner(verbose=True)
@@ -707,8 +707,8 @@ def create_ecc_benchmark_suite():
         suite.add_benchmark(create_benchmark("channel_coding", code_type=code_type, code_rate=rate))
 
     # Configure suite
-    config = BenchmarkConfig(name="ecc_suite_evaluation", snr_range=list(range(-4, 10, 2)), num_trials=10000, verbose=True)
-    config.update(num_bits=10000)
+    config = BenchmarkConfig(name="ecc_suite_evaluation", snr_range=list(range(-4, 10, 2)), num_trials=1000, verbose=True)
+    config.update(num_bits=1000)
 
     return suite, config
 
