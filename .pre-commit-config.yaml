@@ -92,7 +92,6 @@ repos:
             types-PyYAML,
             types-toml,
             types-setuptools,
-            types-requests,
           ]
         exclude: "^tests/"
 
