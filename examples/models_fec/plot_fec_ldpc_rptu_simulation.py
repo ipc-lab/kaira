@@ -3,8 +3,8 @@
 LDPC Coding and Belief Propagation Decoding via RPTU Database
 ====================================================================
 
-This example demonstrates Low-Density Parity-Check (LDPC) codes (via RPTU database) and
-belief propagation decoding. We'll simulate a complete communication
+This example demonstrates Low-Density Parity-Check (LDPC) codes :cite:`gallager1962low` (via RPTU database) and
+belief propagation decoding :cite:`kschischang2001factor`. We'll simulate a complete communication
 system using LDPC codes over an AWGN channel and analyze the error
 performance at different SNR levels.
 """
@@ -273,12 +273,12 @@ plt.show()
 # %%
 # Conclusion
 # ------------------
-# This example demonstrates how LDPC codes can effectively correct
+# This example demonstrates how LDPC codes :cite:`gallager1962low` can effectively correct
 # errors introduced by noisy channels. We've shown how the performance
 # improves with increased SNR and more decoding iterations.
 #
 # LDPC codes are widely used in modern communication systems due to
 # their excellent error-correcting capabilities that approach the
-# Shannon limit. The belief propagation algorithm provides an
+# Shannon limit. The belief propagation algorithm :cite:`kschischang2001factor` provides an
 # efficient decoding method that works well for sparse parity-check
 # matrices.

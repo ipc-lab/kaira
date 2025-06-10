@@ -4,6 +4,7 @@ This module provides standardized benchmarks for evaluating communication system
 deep learning models in Kaira.
 """
 
+from . import ecc_benchmark  # Import ECC benchmarks to register them  # noqa: F401
 from . import standard  # Import standard benchmarks to register them  # noqa: F401
 from .base import BaseBenchmark, BenchmarkResult, BenchmarkSuite
 from .config import BenchmarkConfig, get_config, list_configs

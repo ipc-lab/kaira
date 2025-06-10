@@ -3,9 +3,9 @@
 Advanced Polar Code Visualization with Decoding Animations
 ==================================================================
 
-This example demonstrates advanced visualizations for Polar codes, including
-channel polarization visualization, successive cancellation decoding steps,
-and performance comparisons between different decoders.
+This example demonstrates advanced visualizations for Polar codes :cite:`arikan2008channel`, including
+channel polarization visualization, successive cancellation decoding :cite:`arikan2009channel` steps,
+and performance comparisons between different decoders including belief propagation :cite:`arikan2011systematic`.
 """
 
 import matplotlib.pyplot as plt

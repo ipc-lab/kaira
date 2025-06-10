@@ -107,7 +107,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates advanced visualizations for Low-Density Parity-Check (LDPC) codes, including animated belief propagation, Tanner graph analysis, and performance comparisons with different decoder configurations.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates advanced visualizations for Low-Density Parity-Check (LDPC) codes :cite:`gallager1962low`, including animated belief propagation :cite:`kschischang2001factor`, Tanner graph analysis, and performance comparisons with different decoder configurations.">
 
 .. only:: html
 
@@ -123,7 +123,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Low-Density Parity-Check (LDPC) codes (via RPTU database) and belief propagation decoding. We'll simulate a complete communication system using LDPC codes over an AWGN channel and analyze the error performance at different SNR levels.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Low-Density Parity-Check (LDPC) codes :cite:`gallager1962low` (via RPTU database) and belief propagation decoding :cite:`kschischang2001factor`. We'll simulate a complete communication system using LDPC codes over an AWGN channel and analyze the error performance at different SNR levels.">
 
 .. only:: html
 
@@ -139,7 +139,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Low-Density Parity-Check (LDPC) codes and belief propagation decoding. We'll simulate a complete communication system using LDPC codes over an AWGN channel and analyze the error performance at different SNR levels.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Low-Density Parity-Check (LDPC) codes and belief propagation decoding :cite:`gallager1962low` :cite:`kschischang2001factor`. We'll simulate a complete communication system using LDPC codes over an AWGN channel and analyze the error performance at different SNR levels.">
 
 .. only:: html
 
@@ -155,7 +155,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates advanced visualizations for Polar codes, including channel polarization visualization, successive cancellation decoding steps, and performance comparisons between different decoders.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates advanced visualizations for Polar codes :cite:`arikan2008channel`, including channel polarization visualization, successive cancellation decoding :cite:`arikan2009channel` steps, and performance comparisons between different decoders including belief propagation :cite:`arikan2011systematic`.">
 
 .. only:: html
 
@@ -171,7 +171,7 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Polar codes with successive cancellation and belief propagation decoding. We'll simulate a complete communication system using Polar codes over an AWGN channel and analyze the error performance at different SNR levels.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates Polar codes :cite:`arikan2008channel` with successive cancellation :cite:`arikan2009channel` and belief propagation decoding :cite:`arikan2011systematic`. We'll simulate a complete communication system using Polar codes over an AWGN channel and analyze the error performance at different SNR levels.">
 
 .. only:: html
 
@@ -235,6 +235,22 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the fundamental differences between educational hand-crafted LDPC codes :cite:`gallager1962low` and professional RPTU database codes, explaining why direct performance comparison is inappropriate and misleading. We focus on: - Educational value of small hand-crafted codes - Real-world applications of RPTU database codes - Why these serve different purposes - Proper evaluation methodologies for each type **Key Message**: These code types serve different purposes and should not be directly compared for "performance" - it's like comparing a bicycle to an airplane for transportation efficiency.">
+
+.. only:: html
+
+    .. image:: /auto_examples/models_fec/images/thumb/sphx_glr_plot_ldpc_educational_vs_professional_thumb.png
+      :alt: Educational vs Professional LDPC Codes: Understanding the Differences
+
+    :ref:`sphx_glr_auto_examples_models_fec_plot_ldpc_educational_vs_professional.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Educational vs Professional LDPC Codes: Understanding the Differences</div>
+    </div>
+
+.. raw:: html
+
     </div>
 
 
@@ -255,3 +271,4 @@ Forward Error Correction (FEC) models and coding techniques, including modern de
    /auto_examples/models_fec/plot_fec_practical_applications
    /auto_examples/models_fec/plot_fec_syndrome_decoding
    /auto_examples/models_fec/plot_fec_visual_error_correction
+   /auto_examples/models_fec/plot_ldpc_educational_vs_professional

@@ -8,7 +8,7 @@ The implementation follows common conventions in coding theory with particular f
 on channels polarization as introduced by Arikan.
 
 References:
-- E. Arikan, "Channel Polarization: A Method for Constructing Capacity-Achieving Codes for Symmetric Binary-Input Memoryless Channels," IEEE Transactions on Information Theory, 2008.
+    :cite:`arikan2008channel`
 """
 
 from typing import Any, Optional
@@ -62,7 +62,7 @@ def calculate_gm(code_length: int, device: torch.device) -> torch.Tensor:
 
 @ModelRegistry.register_model("polar_code_encoder")
 class PolarCodeEncoder(BaseBlockCodeEncoder):
-    """Encoder for Polar code.
+    """Encoder for Polar code :cite:`arikan2008channel`.
 
     This class implements the encoding process for Polar codes, a type of linear block code used in error correction.
     Polar codes leverage the channel polarization property to achieve efficient encoding and decoding.

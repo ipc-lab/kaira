@@ -17,7 +17,7 @@ Attributes:
     clip (float): Clipping value for numerical stability.
 
 References:
-- E. Arikan, "Channel Polarization: A Method for Constructing Capacity-Achieving Codes for Symmetric Binary-Input Memoryless Channels," IEEE Transactions on Information Theory, 2008.
+    :cite:`arikan2009channel`
 """
 
 from typing import Any, Tuple
@@ -31,7 +31,7 @@ from .base import BaseBlockDecoder
 
 
 class SuccessiveCancellationDecoder(BaseBlockDecoder[PolarCodeEncoder]):
-    """Decoder for Polar code using Successive Cancellation (SC) method.
+    """Decoder for Polar code using Successive Cancellation (SC) method :cite:`arikan2009channel`.
 
     This class implements the Successive Cancellation algorithm for decoding Polar codes. It processes the received codeword
     and estimates the transmitted message bits. The SC method is a recursive decoding algorithm that leverages the structure

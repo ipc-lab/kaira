@@ -6,11 +6,7 @@ and estimates the transmitted message bits. The decoder supports two regimes: 's
 provides options for early stopping and cyclic permutations.
 
 References:
-- E. Arikan, "A performance comparison of polar codes and Reed-Muller codes," IEEE Communications Letters, 2008.
-- E. Arikan, "Polar codes: A pipelined implementation," 2010. URL: https://api.semanticscholar.org/CorpusID:38221574.
-For more details on the Belief Propagation decoding on permuted factor graph, refer to:
-- A. Elkelesh, M. Ebada, S. Cammerer and S. ten Brink, "Belief propagation decoding of polar codes on permuted factor graphs,"
- 2018 IEEE Wireless Communications and Networking Conference (WCNC).
+    :cite:`arikan2008channel`, :cite:`arikan2011systematic`
 """
 
 from typing import Any

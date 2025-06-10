@@ -3,8 +3,8 @@
 Polar Coding and Decoding: Successive Cancellation and Belief Propagation
 =========================================================================
 
-This example demonstrates Polar codes with
-successive cancellation and belief propagation decoding. We'll simulate
+This example demonstrates Polar codes :cite:`arikan2008channel` with
+successive cancellation :cite:`arikan2009channel` and belief propagation decoding :cite:`arikan2011systematic`. We'll simulate
 a complete communication system using Polar codes over an AWGN channel
 and analyze the error performance at different SNR levels.
 """
@@ -288,11 +288,11 @@ plt.show()
 # %%
 # Conclusion
 # ------------------
-# This example demonstrates how Polar codes can effectively correct
+# This example demonstrates how Polar codes :cite:`arikan2008channel` can effectively correct
 # errors introduced by noisy channels. We've shown how the performance
 # improves with increased SNR and more different decoding configurations.
 #
 # Polar codes are widely used in modern communication systems due to
 # their excellent error-correcting capabilities that approach the
-# Shannon limit. The successive cancellation and belief propagation algorithms
+# Shannon limit. The successive cancellation :cite:`arikan2009channel` and belief propagation algorithms :cite:`arikan2011systematic`
 # provides an efficient decoding for polar codes.

@@ -325,7 +325,8 @@ Decoders
 - ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
 - WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
 - BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
-- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm :cite:`kschischang2001factor` for decoding LDPC codes
+- MinSumLDPCDecoder: Min-Sum decoder :cite:`chen2005reduced` for LDPC codes with reduced computational complexity
 
 These decoders can be used to recover original messages from possibly corrupted codewords
 that have been transmitted over noisy channels. Each decoder has specific strengths and
@@ -353,6 +354,7 @@ Examples
    BeliefPropagationPolarDecoder
    BerlekampMasseyDecoder
    BruteForceMLDecoder
+   MinSumLDPCDecoder
    ReedMullerDecoder
    SuccessiveCancellationDecoder
    SyndromeLookupDecoder

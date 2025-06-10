@@ -4,7 +4,7 @@ Advanced LDPC Code Visualization with Belief Propagation Animation
 ====================================================================
 
 This example demonstrates advanced visualizations for Low-Density Parity-Check
-(LDPC) codes, including animated belief propagation, Tanner graph analysis,
+(LDPC) codes :cite:`gallager1962low`, including animated belief propagation :cite:`kschischang2001factor`, Tanner graph analysis,
 and performance comparisons with different decoder configurations.
 """
 

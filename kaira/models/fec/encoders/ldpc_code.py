@@ -8,8 +8,7 @@ The implementation follows common conventions in coding theory with particular f
 on LDPC codes which are defined by a sparse parity-check matrix H.
 
 References:
-- R. G. Gallager, "Low-Density Parity-Check Codes," 1962.
-- T. J. Richardson and R. L. Urbanke, "Modern Coding Theory," 2008.
+    :cite:`gallager1962low`, :cite:`gallager1963low`, :cite:`richardson2008modern`
 """
 
 from typing import Any
@@ -25,7 +24,7 @@ from ..utils import row_reduction
 
 @ModelRegistry.register_model("ldpc_code_encoder")
 class LDPCCodeEncoder(LinearBlockCodeEncoder):
-    """Encoder for LDPC code.
+    """Encoder for LDPC code :cite:`gallager1962low`, :cite:`gallager1963low`.
 
     This encoder follows conventional approach of linear block codes and
     transforms binary input messages into codewords according to

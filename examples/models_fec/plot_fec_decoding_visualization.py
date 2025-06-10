@@ -333,7 +333,7 @@ plt.show()
 # %%
 # Visualizing LDPC Decoding with Belief Propagation
 # -----------------------------------------------------------------------------------------------------------------
-# LDPC (Low-Density Parity-Check) codes use belief propagation on a factor graph
+# LDPC (Low-Density Parity-Check) codes :cite:`gallager1962low` use belief propagation :cite:`kschischang2001factor` on a factor graph
 # for decoding. Let's visualize a simplified version of this process.
 
 # Define a small LDPC code with 6 variable nodes and 4 check nodes

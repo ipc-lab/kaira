@@ -59,6 +59,38 @@ Benchmarking tools and performance comparisons for different algorithms, models,
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates a comprehensive benchmark for Forward Error Correction (FEC) codes using the Kaira benchmarking system. It evaluates multiple ECC algorithms across different parameters and provides detailed performance comparison. The comprehensive ECC benchmark includes: * Multiple error correction codes (Hamming, BCH, Golay, Repetition, Single Parity Check) * Block Error Rate (BLER) and Bit Error Rate (BER) evaluation * Coding gain analysis * Error correction capability evaluation * Comparison across different code rates and block lengths Note: Individual benchmarks use only repetition codes (the only code type currently supported by ChannelCodingBenchmark), while the comprehensive benchmark tests all available ECC implementations directly using the FEC encoder/decoder classes.">
+
+.. only:: html
+
+    .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_ecc_comprehensive_benchmark_thumb.png
+      :alt: Comprehensive Error Correction Codes Benchmark
+
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_ecc_comprehensive_benchmark.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Comprehensive Error Correction Codes Benchmark</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This benchmark compares different LDPC (Low-Density Parity-Check) codes :cite:`gallager1962low` across various metrics including: - Bit Error Rate (BER) performance - Block Error Rate (BLER) performance - Decoding convergence behavior with belief propagation :cite:`kschischang2001factor` - Computational complexity - Code rate efficiency We test multiple LDPC code configurations with different: - Parity check matrix structures - Code rates - Block lengths - Belief propagation iteration counts">
+
+.. only:: html
+
+    .. image:: /auto_examples/benchmarks/images/thumb/sphx_glr_plot_ldpc_codes_comparison_thumb.png
+      :alt: LDPC Codes Comparison Benchmark
+
+    :ref:`sphx_glr_auto_examples_benchmarks_plot_ldpc_codes_comparison.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">LDPC Codes Comparison Benchmark</div>
+    </div>
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates comprehensive benchmark result visualization in Kaira, including BER curve plotting, throughput performance, modulation comparisons, and performance summary generation. The visualization system provides: * BER curve plotting with theoretical and simulated results * Throughput performance analysis across different payload sizes * Comparative visualization of multiple algorithms or configurations * Automated report generation with statistical summaries * Customizable plotting styles and formats">
 
 .. only:: html
@@ -84,4 +116,6 @@ Benchmarking tools and performance comparisons for different algorithms, models,
    /auto_examples/benchmarks/plot_basic_usage
    /auto_examples/benchmarks/plot_comparison_example
    /auto_examples/benchmarks/plot_demo_new_results_system
+   /auto_examples/benchmarks/plot_ecc_comprehensive_benchmark
+   /auto_examples/benchmarks/plot_ldpc_codes_comparison
    /auto_examples/benchmarks/plot_visualization_example
