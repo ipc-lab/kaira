@@ -12,12 +12,21 @@ We'll explore how to apply various constraints to signals and visualize their ef
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
 from kaira.constraints import AveragePowerConstraint, PAPRConstraint, TotalPowerConstraint
 from kaira.constraints.utils import measure_signal_properties
+
+# Plotting imports
+from examples.utils.plotting import (
+    setup_plotting_style,
+    plot_constraint_comparison,
+    plot_signal_properties_comparison
+)
+import matplotlib.pyplot as plt
+
+setup_plotting_style()
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -86,25 +95,8 @@ for name, signal in signals.items():
 # Visualize Total Power Constraint Results
 # -------------------------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(15, 10))
-for i, (name, signal) in enumerate(signals.items()):
-    # Plot original signal
-    plt.subplot(len(signals), 2, i * 2 + 1)
-    plt.plot(t, signal.squeeze().numpy(), "b-")
-    props = measure_signal_properties(signal)
-    plt.title(f'Original {name}\nPower: {props["mean_power"]:.2f}, PAPR: {props["papr_db"]:.2f} dB')
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-
-    # Plot power-constrained signal
-    plt.subplot(len(signals), 2, i * 2 + 2)
-    plt.plot(t, power_results[name], "g-")
-    plt.title(f"After TotalPowerConstraint\nPower: {target_power:.2f}")
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-
-plt.tight_layout()
-plt.show()
+fig = plot_constraint_comparison(signals, power_results, t, "TotalPowerConstraint", target_power)
+fig.show()
 
 # %%
 # Apply PAPR Constraint
@@ -136,26 +128,8 @@ for name, signal in signals.items():
 # Visualize PAPR Constraint Results
 # ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(15, 10))
-for i, (name, signal) in enumerate(signals.items()):
-    # Plot original signal
-    plt.subplot(len(signals), 2, i * 2 + 1)
-    plt.plot(t, signal.squeeze().numpy(), "b-")
-    props = measure_signal_properties(signal)
-    plt.title(f'Original {name}\nPower: {props["mean_power"]:.2f}, PAPR: {props["papr_db"]:.2f} dB')
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-
-    # Plot PAPR-constrained signal
-    plt.subplot(len(signals), 2, i * 2 + 2)
-    plt.plot(t, papr_results[name], "r-")
-    constrained_props = measure_signal_properties(torch.tensor(papr_results[name]).reshape(1, -1))
-    plt.title(f'After PAPRConstraint\nPAPR: {constrained_props["papr_db"]:.2f} dB')
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-
-plt.tight_layout()
-plt.show()
+fig = plot_constraint_comparison(signals, papr_results, t, "PAPRConstraint", max_papr)
+fig.show()
 
 # %%
 # Apply Average Power Constraint
@@ -186,18 +160,20 @@ for name, signal in signals.items():
 # -----------------------------------------------
 # Let's compare how different constraints affect the same signal
 
-plt.figure(figsize=(15, 12))
+fig, axes = plt.subplots(len(signals), 1, figsize=(15, 12))
+if len(signals) == 1:
+    axes = [axes]
+
 for i, (name, original) in enumerate(signals.items()):
     original_np = original.squeeze().numpy()
     power_np = power_results[name]
     papr_np = papr_results[name]
     avg_power_np = avg_power_results[name]
 
-    plt.subplot(len(signals), 1, i + 1)
-    plt.plot(t, original_np, "b-", alpha=0.7, label="Original")
-    plt.plot(t, power_np, "g-", alpha=0.7, label=f"Total Power = {target_power}")
-    plt.plot(t, papr_np, "r-", alpha=0.7, label=f"Max PAPR = {max_papr}")
-    plt.plot(t, avg_power_np, "m-", alpha=0.7, label=f"Avg Power = {avg_power}")
+    axes[i].plot(t, original_np, "b-", alpha=0.7, label="Original", linewidth=1.5)
+    axes[i].plot(t, power_np, "g-", alpha=0.7, label=f"Total Power = {target_power}", linewidth=1.5)
+    axes[i].plot(t, papr_np, "r-", alpha=0.7, label=f"Max PAPR = {max_papr}", linewidth=1.5)
+    axes[i].plot(t, avg_power_np, "m-", alpha=0.7, label=f"Avg Power = {avg_power}", linewidth=1.5)
 
     # Measure properties for display
     orig_props = measure_signal_properties(original)
@@ -205,20 +181,35 @@ for i, (name, original) in enumerate(signals.items()):
     papr_props = measure_signal_properties(torch.tensor(papr_np).reshape(1, -1))
     avg_props = measure_signal_properties(torch.tensor(avg_power_np).reshape(1, -1))
 
-    plt.title(
+    axes[i].set_title(
         f"{name} - Comparison of Constraints\n"
         f'Original: Power={orig_props["mean_power"]:.2f}, PAPR={orig_props["papr_db"]:.2f} dB | '
         f'TotalPower: Power={power_props["mean_power"]:.2f}, PAPR={power_props["papr_db"]:.2f} dB | '
         f'PAPR: Power={papr_props["mean_power"]:.2f}, PAPR={papr_props["papr_db"]:.2f} dB'
     )
 
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-    plt.legend()
+    axes[i].grid(True, alpha=0.3)
+    axes[i].set_ylabel("Amplitude")
+    axes[i].legend()
 
-plt.xlabel("Time (s)")
+axes[-1].set_xlabel("Time (s)")
 plt.tight_layout()
-plt.show()
+fig.show()
+
+# %%
+# Signal Properties Comparison
+# --------------------------------------------
+# Visualize how different constraints affect signal properties
+
+# Convert constrained signals back to tensors for comparison
+power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in power_results.items()}
+papr_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in papr_results.items()}
+avg_power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in avg_power_results.items()}
+
+# Compare total power constraint
+print("\n=== Comparing Total Power Constraint ===")
+fig = plot_signal_properties_comparison(signals, power_signals, ["TotalPowerConstraint"])
+fig.show()
 
 # %%
 # Conclusion
@@ -232,9 +223,13 @@ plt.show()
 #
 # Key observations:
 # - The TotalPowerConstraint preserves the signal shape while scaling its amplitude
-# - The PAPRConstraint affects peaks while preserving lower amplitude portions
-# - Different signals respond differently to the same constraints
+# - The PAPRConstraint clips peaks to limit the PAPR, which may introduce distortion
+# - The AveragePowerConstraint adjusts the overall signal level
+# - Each constraint affects different aspects of the signal and has trade-offs
+# - Visualization helps understand the impact of each constraint on signal characteristics
 #
-# These constraints are fundamental building blocks in communication system design,
-# particularly for signals that will be transmitted through physical channels
-# with power limitations.
+# These constraints are essential tools for:
+# - Meeting hardware limitations (amplifier saturation)
+# - Satisfying regulatory requirements (power spectral density)
+# - Optimizing system performance (energy efficiency)
+# - Ensuring signal quality (avoiding distortion)

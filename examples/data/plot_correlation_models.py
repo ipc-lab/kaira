@@ -9,16 +9,23 @@ between data sources in distributed source coding scenarios
 like Wyner-Ziv coding.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
-
-# %%
-# Imports and Setup
-# ---------------------------------------------------------
 import torch
 
 from kaira.data import WynerZivCorrelationDataset, create_binary_tensor, create_uniform_tensor
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
+
+# Plotting imports
+from examples.utils.plotting import setup_plotting_style
+import matplotlib.pyplot as plt
+
+setup_plotting_style()
+
+# %%
+# Imports and Setup
+# ---------------------------------------------------------
+# Correlation Models Configuration and Setup
+# ==========================================
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -62,10 +69,13 @@ for sigma in sigma_values:
 # %%
 # Visualizing Gaussian Correlation
 # ---------------------------------------------------------
+# Gaussian Correlation Visualization
+# ==================================
+# 
 # Let's visualize the relationship between the source and
 # side information for different noise levels.
 
-plt.figure(figsize=(15, 10))
+fig, axes = plt.subplots(4, 1, figsize=(15, 10))
 
 # Only show a segment for clarity
 segment_size = 100
@@ -73,53 +83,55 @@ segment_start = 0
 segment_end = segment_start + segment_size
 
 # Plot original source
-ax1 = plt.subplot(4, 1, 1)
-plt.plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
-plt.title("Original Source Signal")
-plt.ylabel("Amplitude")
-plt.grid(True, alpha=0.3)
-plt.legend()
+axes[0].plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
+axes[0].set_title("Original Source Signal")
+axes[0].set_ylabel("Amplitude")
+axes[0].grid(True, alpha=0.3)
+axes[0].legend()
 
 # Plot side information for each sigma value
 colors = ["g", "r", "m"]
 for i, (sigma, side_info) in enumerate(zip(sigma_values, gaussian_side_info)):
-    ax = plt.subplot(4, 1, i + 2, sharex=ax1)
-    plt.plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
-    plt.plot(side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", label=f"Side Info Y (σ={sigma})")
-    plt.title(f"Gaussian Correlation (σ={sigma})")
-    plt.ylabel("Amplitude")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
+    axes[i + 1].plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
+    axes[i + 1].plot(side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", label=f"Side Info Y (σ={sigma})")
+    axes[i + 1].set_title(f"Gaussian Correlation (σ={sigma})")
+    axes[i + 1].set_ylabel("Amplitude")
+    axes[i + 1].grid(True, alpha=0.3)
+    axes[i + 1].legend()
 
-plt.xlabel("Sample Index")
+axes[-1].set_xlabel("Sample Index")
 plt.tight_layout()
 plt.show()
 
 # %%
 # Visualizing the Statistical Dependence
 # ---------------------------------------------------------
+# Statistical Dependence Visualization
+# ====================================
+# 
 # Let's plot the joint distribution of X and Y to visualize
 # the correlation strength.
 
-plt.figure(figsize=(15, 5))
+fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
 for i, (sigma, side_info) in enumerate(zip(sigma_values, gaussian_side_info)):
-    plt.subplot(1, 3, i + 1)
-    plt.scatter(source.numpy().flatten(), side_info.numpy().flatten(), alpha=0.3, s=10)
-    plt.title(f"Joint Distribution (σ={sigma})")
-    plt.xlabel("Source X")
-    plt.ylabel("Side Information Y")
+    axes[i].scatter(source.numpy().flatten(), side_info.numpy().flatten(), alpha=0.3, s=10)
+    axes[i].set_title(f"Joint Distribution (σ={sigma})")
+    axes[i].set_xlabel("Source X")
+    axes[i].set_ylabel("Side Information Y")
 
     # Add regression line to visualize correlation
     z = np.polyfit(source.numpy().flatten(), side_info.numpy().flatten(), 1)
     p = np.poly1d(z)
-    plt.plot([0, 1], [p(0), p(1)], "r--", alpha=0.8)
+    axes[i].plot([0, 1], [p(0), p(1)], "r--", alpha=0.8)
 
     # Calculate and display correlation coefficient
     corr_coef = np.corrcoef(source.numpy().flatten(), side_info.numpy().flatten())[0, 1]
-    plt.text(0.05, 0.95, f"Correlation: {corr_coef:.4f}", transform=plt.gca().transAxes, fontsize=12, verticalalignment="top", bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+    axes[i].text(0.05, 0.95, f"Correlation: {corr_coef:.4f}", transform=axes[i].transAxes, 
+                fontsize=12, verticalalignment="top", 
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
 
-    plt.grid(True, alpha=0.3)
+    axes[i].grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()

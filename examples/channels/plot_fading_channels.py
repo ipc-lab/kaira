@@ -12,20 +12,27 @@ flat fading where all frequency components of the signal experience the same
 magnitude of fading.
 """
 
-import matplotlib.pyplot as plt
-
-# %%
-# Imports and Setup
-# -------------------------------
 import numpy as np
 import torch
-from scipy import signal  # Added here to fix E402 error
+from scipy import signal
 
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
 from kaira.metrics.signal import BitErrorRate
 from kaira.modulations import QPSKModulator
 from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.utils import snr_to_noise_power
+
+# Plotting imports
+from examples.utils.plotting import setup_plotting_style
+import matplotlib.pyplot as plt
+
+setup_plotting_style()
+
+# %%
+# Imports and Setup
+# -------------------------------
+# Fading Channel Simulation Configuration
+# =======================================
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -34,6 +41,9 @@ np.random.seed(42)
 # %%
 # Generate QPSK Signal
 # ------------------------------------
+# QPSK Signal Generation
+# =====================
+# 
 # Let's use Kaira's QPSKModulator to generate QPSK symbols.
 
 # Create a QPSK modulator
@@ -62,21 +72,25 @@ for i in range(n_symbols):
         idx += 1
     symbol_indices[i] = idx
 
-print(f"Generated {n_symbols} QPSK symbols")
-print(f"Input signal shape: {input_signal.shape}")
-print(f"First 5 complex symbols: {qpsk_symbols[:5]}")
+# QPSK Signal Information:
+# Generated {n_symbols} QPSK symbols
+# Input signal shape: {input_signal.shape}
+# First 5 complex symbols: {qpsk_symbols[:5]}
 
 # Show the QPSK constellation diagram
-plt.figure(figsize=(6, 6))
+fig, ax = plt.subplots(figsize=(6, 6))
 qpsk_modulator.plot_constellation()
-plt.title("QPSK Constellation")
-plt.grid(True)
+ax.set_title("QPSK Constellation")
+ax.grid(True)
 plt.tight_layout()
 plt.show()
 
 # %%
 # Define Channel Scenarios
 # ------------------------------------------
+# Channel Configuration and Setup
+# ===============================
+# 
 # We'll compare a perfect channel (no distortion), an AWGN channel (noise only),
 # and a flat fading channel (fading + noise).
 
@@ -90,9 +104,10 @@ perfect_channel = PerfectChannel()
 awgn_channel = AWGNChannel(avg_noise_power=noise_power)
 fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)  # Use Rayleigh fading  # Independent fading for each symbol
 
-print(f"Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})")
-print(f"AWGN Channel configuration: {awgn_channel.get_config()}")
-print(f"Fading Channel configuration: {fading_channel.get_config()}")
+# Channel Configuration Results:
+# Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})
+# AWGN Channel configuration: {awgn_channel.get_config()}
+# Fading Channel configuration: {fading_channel.get_config()}
 
 # %%
 # Pass Signal Through Channels

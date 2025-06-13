@@ -13,10 +13,15 @@ can be sequentially applied to meet practical transmission specifications.
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib.gridspec import GridSpec
+
+from examples.utils.plotting import (
+    plot_constraint_chain_effects,
+    plot_spectral_constraint_effects,
+    plot_comprehensive_constraint_analysis,
+    setup_plotting_style
+)
 
 from kaira.constraints import (
     PAPRConstraint,
@@ -34,6 +39,9 @@ from kaira.constraints.utils import (
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+setup_plotting_style()
 
 # %%
 # Creating a Test Signal with Challenging Properties
@@ -58,6 +66,12 @@ signal = torch.cat((signal.real, signal.imag), dim=0)  # Separate real and imagi
 
 # Display properties of the original signal
 original_props = measure_signal_properties(signal)
+
+# Original Signal Properties:
+# - Shape: signal.shape
+# - Power: original_props['mean_power']
+# - PAPR: original_props['papr'] (original_props['papr_db'] dB)  
+# - Peak Amplitude: original_props['peak_amplitude']
 print("Original Signal Properties:")
 print(f"  Shape: {signal.shape}")
 print(f"  Power: {original_props['mean_power']:.4f}")
@@ -87,6 +101,21 @@ props1 = measure_signal_properties(signal1)
 props2 = measure_signal_properties(signal2)
 props3 = measure_signal_properties(signal3)
 
+# Sequential Constraint Application Results:
+# After Power Constraint:
+# - Power: props1['mean_power']
+# - PAPR: props1['papr'] (props1['papr_db'] dB)
+# - Peak Amplitude: props1['peak_amplitude']
+# 
+# After PAPR Constraint:
+# - Power: props2['mean_power']
+# - PAPR: props2['papr'] (props2['papr_db'] dB)
+# - Peak Amplitude: props2['peak_amplitude']
+#
+# After Amplitude Constraint:
+# - Power: props3['mean_power']
+# - PAPR: props3['papr'] (props3['papr_db'] dB)
+# - Peak Amplitude: props3['peak_amplitude']
 print("\nSequential Constraint Application:")
 print("After Power Constraint:")
 print(f"  Power: {props1['mean_power']:.4f}")
@@ -115,6 +144,10 @@ combined_constraint = combine_constraints([power_constraint, papr_constraint, am
 signal_combined = combined_constraint(signal.clone())
 props_combined = measure_signal_properties(signal_combined)
 
+# Combined Constraint Application Results:
+# - Power: props_combined['mean_power']
+# - PAPR: props_combined['papr'] (props_combined['papr_db'] dB)
+# - Peak Amplitude: props_combined['peak_amplitude']
 print("\nCombined Constraint Application:")
 print(f"  Power: {props_combined['mean_power']:.4f}")
 print(f"  PAPR: {props_combined['papr']:.2f} ({props_combined['papr_db']:.2f} dB)")
@@ -123,38 +156,35 @@ print(f"  Peak Amplitude: {props_combined['peak_amplitude']:.4f}")
 # %%
 # Visualizing the Effect of Constraint Composition
 # ------------------------------------------------------------------------------------------------------------------------------------------------------
+# This section demonstrates how each constraint modifies the signal properties
 
 # Time vector for plotting
 t = np.arange(signal.shape[1]) / (sample_rate * n_subcarriers)
 
-plt.figure(figsize=(15, 10))
-signals_to_plot = [("Original", signal[0].numpy()), ("Power Constraint", signal1[0].numpy()), ("+ PAPR Constraint", signal2[0].numpy()), ("+ Amplitude Constraint", signal3[0].numpy()), ("Combined Constraints", signal_combined[0].numpy())]
+# Create list of signals and their properties for visualization
+signals_list = [
+    ("Original", signal[0].numpy()),
+    ("Power Constraint", signal1[0].numpy()),
+    ("+ PAPR Constraint", signal2[0].numpy()),
+    ("+ Amplitude Constraint", signal3[0].numpy()),
+    ("Combined Constraints", signal_combined[0].numpy())
+]
 
-# Plot a segment of the signal to see details
-plot_segment = slice(0, 200)  # Adjust as needed
-for i, (name, sig) in enumerate(signals_to_plot):
-    plt.subplot(len(signals_to_plot), 1, i + 1)
-    plt.plot(t[plot_segment], sig[plot_segment], linewidth=1.5)
+properties_list = [
+    original_props,
+    props1,
+    props2,
+    props3,
+    props_combined
+]
 
-    # Calculate properties for display
-    if i == 0:
-        props = original_props
-    elif i == 1:
-        props = props1
-    elif i == 2:
-        props = props2
-    elif i == 3:
-        props = props3
-    else:
-        props = props_combined
-
-    plt.title(f"{name}\nPower: {props['mean_power']:.4f}, PAPR: {props['papr_db']:.2f} dB, Max Amplitude: {props['peak_amplitude']:.4f}")
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-
-plt.xlabel("Time")
-plt.tight_layout()
-plt.show()
+# Generate constraint chain visualization
+plot_constraint_chain_effects(
+    signals_list=signals_list,
+    properties_list=properties_list,
+    t=t,
+    title="Sequential Constraint Application Effects"
+)
 
 # %%
 # Using apply_constraint_chain with Verbose Output
@@ -167,6 +197,10 @@ constraints = [power_constraint, papr_constraint, amplitude_constraint]
 signal_chain = apply_constraint_chain(constraints, signal.clone())
 props_chain = measure_signal_properties(signal_chain)
 
+# Constraint chain results:
+# - Power: props_chain['mean_power']
+# - PAPR: props_chain['papr'] (props_chain['papr_db'] dB)
+# - Peak Amplitude: props_chain['peak_amplitude']
 print("\nConstraint Chain Result:")
 print(f"  Power: {props_chain['mean_power']:.4f}")
 print(f"  PAPR: {props_chain['papr']:.2f} ({props_chain['papr_db']:.2f} dB)")
@@ -184,6 +218,10 @@ ofdm_constraints = create_ofdm_constraints(total_power=1.0, max_papr=5.0, is_com
 signal_ofdm = ofdm_constraints(signal.clone())
 props_ofdm = measure_signal_properties(signal_ofdm)
 
+# OFDM Constraints (from factory function) Results:
+# - Power: props_ofdm['mean_power']
+# - PAPR: props_ofdm['papr'] (props_ofdm['papr_db'] dB)
+# - Peak Amplitude: props_ofdm['peak_amplitude']
 print("\nOFDM Constraints (from factory function):")
 print(f"  Power: {props_ofdm['mean_power']:.4f}")
 print(f"  PAPR: {props_ofdm['papr']:.2f} ({props_ofdm['papr_db']:.2f} dB)")
@@ -215,30 +253,15 @@ signal_spectral = spectral_constraint(signal.clone())
 signal_spectral_freq = torch.fft.fft(signal_spectral[0])
 signal_spectral_spectrum = torch.abs(signal_spectral_freq) ** 2
 
-# Plot the spectra
-plt.figure(figsize=(12, 8))
+# Generate spectral constraint visualization
 freq = np.fft.fftfreq(n_freq) * n_freq
-mask_for_plot = mask.numpy() * torch.max(signal_spectrum).item()  # Scale for visualization
-
-plt.subplot(2, 1, 1)
-plt.semilogy(freq, signal_spectrum.numpy(), "b", label="Original")
-plt.semilogy(freq, mask_for_plot, "r--", label="Spectral Mask")
-plt.title("Original Signal Spectrum")
-plt.grid(True)
-plt.ylabel("Power")
-plt.legend()
-
-plt.subplot(2, 1, 2)
-plt.semilogy(freq, signal_spectral_spectrum.numpy(), "g", label="Constrained")
-plt.semilogy(freq, mask_for_plot, "r--", label="Spectral Mask")
-plt.title("Spectrum After Spectral Mask Constraint")
-plt.grid(True)
-plt.xlabel("Normalized Frequency")
-plt.ylabel("Power")
-plt.legend()
-
-plt.tight_layout()
-plt.show()
+plot_spectral_constraint_effects(
+    original_spectrum=signal_spectrum.numpy(),
+    constrained_spectrum=signal_spectral_spectrum.numpy(),
+    mask=mask.numpy(),
+    freq=freq,
+    title="Spectral Mask Constraint Effects"
+)
 
 # %%
 # Combining All Constraints Together
@@ -258,50 +281,28 @@ signal_all_spectrum = torch.abs(signal_all_freq) ** 2
 # Measure properties
 props_all = measure_signal_properties(signal_all)
 
+# All constraints combined results:
+# - Power: props_all['mean_power']
+# - PAPR: props_all['papr'] (props_all['papr_db'] dB)
+# - Peak Amplitude: props_all['peak_amplitude']
 print("\nAll Constraints Combined:")
 print(f"  Power: {props_all['mean_power']:.4f}")
 print(f"  PAPR: {props_all['papr']:.2f} ({props_all['papr_db']:.2f} dB)")
 print(f"  Peak Amplitude: {props_all['peak_amplitude']:.4f}")
 
-# Create visualization of all constraints
-fig = plt.figure(figsize=(15, 12))
-gs = GridSpec(3, 2, figure=fig)
-
-# Time domain plots
-plt.subplot(gs[0, :])
-plt.plot(t[plot_segment], signal[0].numpy()[plot_segment], "b-", label="Original")
-plt.plot(t[plot_segment], signal_all[0].numpy()[plot_segment], "r-", label="All Constraints")
-plt.title(f"Time Domain - Original vs. All Constraints\n" f"Power: {props_all['mean_power']:.2f}, PAPR: {props_all['papr_db']:.2f} dB, Max Amplitude: {props_all['peak_amplitude']:.2f}")
-plt.grid(True)
-plt.legend()
-
-# Frequency domain plots
-plt.subplot(gs[1, 0])
-plt.semilogy(freq, signal_spectrum.numpy(), "b")
-plt.title("Original Spectrum")
-plt.grid(True)
-plt.ylabel("Power")
-
-plt.subplot(gs[1, 1])
-plt.semilogy(freq, signal_all_spectrum.numpy(), "r")
-plt.semilogy(freq, mask_for_plot, "k--", alpha=0.7)
-plt.title("Constrained Spectrum")
-plt.grid(True)
-
-# Amplitude distribution plot (histogram)
-plt.subplot(gs[2, :])
-# Ensure we're using real values for histogram
-orig_signal = signal[0].numpy().real if np.iscomplexobj(signal[0].numpy()) else signal[0].numpy()
-all_signal = signal_all[0].numpy().real if np.iscomplexobj(signal_all[0].numpy()) else signal_all[0].numpy()
-plt.hist(orig_signal, bins=50, alpha=0.5, label="Original")
-plt.hist(all_signal, bins=50, alpha=0.5, label="Constrained")
-plt.axvline(x=props_all["peak_amplitude"], color="r", linestyle="--", label=f'Max Amplitude: {props_all["peak_amplitude"]:.2f}')
-plt.title("Amplitude Distribution")
-plt.grid(True)
-plt.legend()
-
-plt.tight_layout()
-plt.show()
+# Create comprehensive visualization of all constraints effects
+plot_segment = slice(0, 200)
+plot_comprehensive_constraint_analysis(
+    original_signal=signal[0].numpy(),
+    constrained_signal=signal_all[0].numpy(),
+    original_spectrum=signal_spectrum.numpy(),
+    constrained_spectrum=signal_all_spectrum.numpy(),
+    mask=mask.numpy(),
+    freq=freq,
+    t=t,
+    props=props_all,
+    plot_segment=plot_segment
+)
 
 # %%
 # Conclusion

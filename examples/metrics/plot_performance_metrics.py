@@ -15,14 +15,16 @@ measures of system performance.
 #
 # First, let's import the necessary libraries and set up our environment.
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.projections import register_projection
-from matplotlib.projections.polar import PolarAxes
 from scipy import special
+
+from examples.utils.plotting import (
+    setup_plotting_style,
+    plot_ber_performance,
+    plot_constellation_comparison,
+    plot_ber_vs_snr_comparison
+)
 
 from kaira.channels import AWGNChannel, BinarySymmetricChannel, RayleighFadingChannel
 from kaira.utils import seed_everything
@@ -30,13 +32,8 @@ from kaira.utils import seed_everything
 # Set seeds for reproducibility
 seed_everything(42)
 
-# Set a visually appealing style
-plt.style.use("seaborn-v0_8-whitegrid")
-sns.set_context("notebook", font_scale=1.2)
-
-# Create a custom colormap for attractive visualizations
-colors = ["#4C72B0", "#55A868", "#C44E52", "#8172B3", "#CCB974", "#64B5CD"]
-cmap = LinearSegmentedColormap.from_list("kaira_cmap", colors)
+# Configure plotting style
+setup_plotting_style()
 
 # %%
 # Theoretical vs. Simulated BER Curves

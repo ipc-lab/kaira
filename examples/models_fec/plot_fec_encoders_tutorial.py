@@ -19,9 +19,14 @@ We'll explore:
 
 # %%
 # First, let's import the necessary modules
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
+from examples.utils.plotting import (
+    setup_plotting_style,
+    plot_hamming_code_visualization,
+    plot_code_structure_comparison
+)
 
 # Import encoders from kaira
 from kaira.models.fec.encoders import (
@@ -39,6 +44,9 @@ from kaira.models.fec.encoders import (
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+setup_plotting_style()
 
 # %%
 # Helper Functions
@@ -63,22 +71,11 @@ def print_code_parameters(encoder, name: str) -> None:
 
 def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str) -> None:
     """Visualize a message and its corresponding codeword."""
-    plt.figure(figsize=(10, 2))
-
-    # Plot message bits
-    ax1 = plt.subplot(1, 2, 1)
-    ax1.imshow(message.view(1, -1), cmap="binary", aspect="auto")
-    ax1.set_title(f"{name} - Message ({len(message)} bits)")
-    ax1.set_yticks([])
-
-    # Plot codeword bits
-    ax2 = plt.subplot(1, 2, 2)
-    ax2.imshow(codeword.view(1, -1), cmap="binary", aspect="auto")
-    ax2.set_title(f"{name} - Codeword ({len(codeword)} bits)")
-    ax2.set_yticks([])
-
-    plt.tight_layout()
-    plt.show()
+    plot_hamming_code_visualization(
+        message=message.numpy(),
+        codeword=codeword.numpy(),
+        title=f"{name} - Message ({len(message)} bits) vs Codeword ({len(codeword)} bits)"
+    )
 
 
 # %%
@@ -349,16 +346,15 @@ for name, encoder in encoders.items():
     else:
         min_distances.append(None)
 
-# Plot code rates
-plt.figure(figsize=(10, 6))
-plt.bar(names, rates)
-plt.xlabel("Code")
-plt.ylabel("Code Rate (k/n)")
-plt.title("Comparison of Code Rates")
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+# Generate code comparison visualization
+plot_code_structure_comparison(
+    names=names,
+    rates=rates,
+    min_distances=min_distances,
+    title="Comparison of FEC Code Performance"
+)
 
+# Code Rates and Minimum Distances Summary:
 print("\nCode Rates and Minimum Distances:")
 for i, name in enumerate(names):
     print(f"{name}: Rate = {rates[i]:.3f}, Min Distance = {min_distances[i]}")

@@ -9,9 +9,7 @@ system using LDPC codes over an AWGN channel and analyze the error
 performance at different SNR levels.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
 from tqdm import tqdm
 
@@ -19,70 +17,89 @@ from kaira.channels.analog import AWGNChannel
 from kaira.models.fec.decoders import BeliefPropagationDecoder
 from kaira.models.fec.encoders import LDPCCodeEncoder
 
+# Plotting imports
+from examples.utils.plotting import (
+    setup_plotting_style, plot_ldpc_matrix_comparison, 
+    plot_ber_performance, plot_code_structure_comparison
+)
+import matplotlib.pyplot as plt
+
+setup_plotting_style()
+
 # %%
 # Setting up
 # --------------------------------------
+# LDPC Code Configuration and Reproducibility Setup
+# =============================================
+# 
 # First, we set a random seed to ensure reproducibility and
 # configure our visualization settings.
 
 torch.manual_seed(42)
 np.random.seed(42)
 
-# Configure better visualization settings
-plt.style.use("seaborn-v0_8-whitegrid")
-sns.set_context("notebook", font_scale=1.2)
-
 # %%
 # LDPC Code Fundamentals
 # --------------------------------------
+# LDPC Code Matrix Definition
+# ===========================
+# 
 # LDPC codes are defined by a sparse parity-check matrix H.
 # Here we create a simple parity-check matrix for demonstration.
 
 # Define a simple parity-check matrix
 parity_check_matrix = torch.tensor([[1, 0, 1, 1, 0, 0], [0, 1, 1, 0, 1, 0], [0, 0, 0, 1, 1, 1]], dtype=torch.float32)
 
-print("Parity-check matrix (H):")
-print(parity_check_matrix)
+# Display parity-check matrix information
+# Parity-check matrix (H):
+# tensor([[1., 0., 1., 1., 0., 0.],
+#         [0., 1., 1., 0., 1., 0.],
+#         [0., 0., 0., 1., 1., 1.]])
 
 # %%
 # Visualizing the Parity-Check Matrix
 # -------------------------------------------------------------------
+# Matrix Sparsity Visualization
+# =============================
+# 
 # We can visualize the parity-check matrix as a binary grid,
 # which helps illustrate the sparsity pattern essential for LDPC codes.
 
-plt.figure(figsize=(8, 6))
-plt.imshow(parity_check_matrix, cmap="binary", interpolation="nearest")
-plt.colorbar(ticks=[0, 1], label="Connection Value")
-plt.xlabel("Variable Nodes (Bits)")
-plt.ylabel("Check Nodes (Parity Constraints)")
-plt.title("LDPC Parity-Check Matrix")
-plt.grid(False)
-for i in range(parity_check_matrix.shape[0]):
-    for j in range(parity_check_matrix.shape[1]):
-        plt.text(j, i, int(parity_check_matrix[i, j]), ha="center", va="center", color="red" if parity_check_matrix[i, j] == 0 else "white")
-plt.tight_layout()
+# Create visualization using utility function
+plot_ldpc_matrix_comparison(
+    [parity_check_matrix], 
+    ["LDPC Parity-Check Matrix"], 
+    "LDPC Code Matrix Structure"
+)
+plt.show()
 
 # %%
 # Communication System Setup
 # -------------------------------------------------
+# LDPC Encoder Configuration
+# ===========================
+# 
 # We'll set up a complete communication system with an LDPC encoder,
 # an AWGN channel, and a belief propagation decoder.
 
 # Initialize the encoder
 encoder = LDPCCodeEncoder(parity_check_matrix)
 
+# LDPC Code Dimensions Analysis
+# ============================
 # For LDPC codes, dimensions are determined from the parity check matrix
 # The parity check matrix H has dimensions (n-k) x n, where:
 # - n is the codeword length
-# - k is the message length
+# - k is the message length  
 # - (n-k) is the number of parity bits
 parity_bits = parity_check_matrix.shape[0]
 codeword_length = parity_check_matrix.shape[1]
 message_length = codeword_length - parity_bits
 
-print(f"Message length: {message_length} bits")
-print(f"Codeword length: {codeword_length} bits")
-print(f"Code rate: {message_length/codeword_length:.3f}")
+# Code parameters:
+# Message length: {message_length} bits
+# Codeword length: {codeword_length} bits  
+# Code rate: {message_length/codeword_length:.3f}
 
 # %%
 # Simulating Communication at Different SNR Levels
@@ -152,36 +169,42 @@ for bp_iters in iterations_values:
 # %%
 # Performance Analysis
 # -----------------------------------
+# Error Rate Performance Visualization  
+# ===================================
+# 
 # Let's visualize the performance of our LDPC code with different numbers
 # of belief propagation iterations across various SNR levels.
 
-plt.figure(figsize=(12, 8))
+# Extract BER data for plotting
+ber_curves = []
+bler_curves = []
+labels = []
 
-# Plot Bit Error Rate
-plt.subplot(1, 2, 1)
 for bp_iters, data in results.items():
-    plt.semilogy(snr_db_values, data["ber"], "o-", label=f"BP Iterations = {bp_iters}")
-plt.grid(True, which="both", ls="--")
-plt.xlabel("SNR (dB)")
-plt.ylabel("Bit Error Rate (BER)")
-plt.title("BER Performance of LDPC Code")
-plt.legend()
+    ber_curves.append(data["ber"])
+    bler_curves.append(data["bler"])
+    labels.append(f"BP Iterations = {bp_iters}")
 
-# Plot Block Error Rate
-plt.subplot(1, 2, 2)
-for bp_iters, data in results.items():
-    plt.semilogy(snr_db_values, data["bler"], "s-", label=f"BP Iterations = {bp_iters}")
-plt.grid(True, which="both", ls="--")
-plt.xlabel("SNR (dB)")
-plt.ylabel("Block Error Rate (BLER)")
-plt.title("BLER Performance of LDPC Code")
-plt.legend()
+# Plot BER performance
+plot_ber_performance(
+    snr_db_values, ber_curves, labels,
+    "BER Performance of LDPC Code", "Bit Error Rate (BER)"
+)
+plt.show()
 
-plt.tight_layout()
+# Plot BLER performance  
+plot_ber_performance(
+    snr_db_values, bler_curves, labels,
+    "BLER Performance of LDPC Code", "Block Error Rate (BLER)"
+)
+plt.show()
 
 # %%
 # Single Message Example
 # ------------------------------------
+# Individual Message Processing Demonstration
+# =========================================
+# 
 # Let's walk through the encoding, transmission, and decoding process
 # for a single message to better understand the flow.
 
@@ -210,57 +233,64 @@ single_decoded = test_decoder(single_received)
 # Check if successfully decoded
 success = torch.all(single_message == single_decoded).item()
 
-print(f"\nSingle Message Transmission Example (SNR = {test_snr_db} dB):")
-print(f"Original message: {single_message.squeeze().int().tolist()}")
-print(f"Encoded codeword: {single_codeword.squeeze().int().tolist()}")
-print(f"Decoded message: {single_decoded.squeeze().int().tolist()}")
-print(f"Decoding {'successful' if success else 'failed'}")
+# Single Message Transmission Results (SNR = {test_snr_db} dB):
+# ============================================================
+# Original message: {single_message.squeeze().int().tolist()}
+# Encoded codeword: {single_codeword.squeeze().int().tolist()}  
+# Decoded message: {single_decoded.squeeze().int().tolist()}
+# Decoding result: {'successful' if success else 'failed'}
 
 # %%
 # Visualizing the Transmission Process
 # ------------------------------------------------------------------
+# Signal Flow Visualization
+# =========================
+# 
 # Let's visualize the transmission process for our single message example.
 
-plt.figure(figsize=(14, 8))
+fig, axes = plt.subplots(3, 1, figsize=(14, 8), constrained_layout=True)
 
 # Plot original and encoded messages
-plt.subplot(3, 1, 1)
-plt.step(range(message_length), single_message.squeeze(), "ro-", where="mid", label="Original Message")
-plt.step(range(codeword_length), single_codeword.squeeze(), "bo-", where="mid", label="Encoded Codeword")
-plt.grid(True)
-plt.legend()
-plt.title("Message Encoding")
-plt.ylim(-0.1, 1.1)
+axes[0].step(range(message_length), single_message.squeeze(), "ro-", where="mid", label="Original Message")
+axes[0].step(range(codeword_length), single_codeword.squeeze(), "bo-", where="mid", label="Encoded Codeword")
+axes[0].grid(True)
+axes[0].legend()
+axes[0].set_title("Message Encoding")
+axes[0].set_ylim(-0.1, 1.1)
 
 # Plot channel input and output
-plt.subplot(3, 1, 2)
-plt.step(range(codeword_length), single_bipolar.squeeze(), "go-", where="mid", label="Channel Input (Bipolar)")
-plt.step(range(codeword_length), single_received.squeeze(), "mo-", where="mid", label="Channel Output (with Noise)")
-plt.grid(True)
-plt.legend()
-plt.title(f"AWGN Channel (SNR = {test_snr_db} dB)")
+axes[1].step(range(codeword_length), single_bipolar.squeeze(), "go-", where="mid", label="Channel Input (Bipolar)")
+axes[1].step(range(codeword_length), single_received.squeeze(), "mo-", where="mid", label="Channel Output (with Noise)")
+axes[1].grid(True)
+axes[1].legend()
+axes[1].set_title(f"AWGN Channel (SNR = {test_snr_db} dB)")
 
 # Plot comparison of original and decoded messages
-plt.subplot(3, 1, 3)
-plt.step(range(message_length), single_message.squeeze(), "ro-", where="mid", label="Original Message")
-plt.step(range(message_length), single_decoded.squeeze(), "bo-", where="mid", label="Decoded Message")
-plt.grid(True)
-plt.legend()
-plt.title("Decoding Result")
-plt.ylim(-0.1, 1.1)
+axes[2].step(range(message_length), single_message.squeeze(), "ro-", where="mid", label="Original Message")
+axes[2].step(range(message_length), single_decoded.squeeze(), "bo-", where="mid", label="Decoded Message")
+axes[2].grid(True)
+axes[2].legend()
+axes[2].set_title("Decoding Result")
+axes[2].set_ylim(-0.1, 1.1)
 
-plt.tight_layout()
 plt.show()
 
 # %%
 # Conclusion
 # ------------------
+# LDPC Performance Summary
+# ========================
+# 
 # This example demonstrates how LDPC codes :cite:`gallager1962low` can effectively correct
 # errors introduced by noisy channels. We've shown how the performance
 # improves with increased SNR and more decoding iterations.
 #
-# LDPC codes are widely used in modern communication systems due to
-# their excellent error-correcting capabilities that approach the
-# Shannon limit. The belief propagation algorithm :cite:`kschischang2001factor` provides an
-# efficient decoding method that works well for sparse parity-check
-# matrices.
+# Key Insights:
+# - LDPC codes are widely used in modern communication systems due to
+#   their excellent error-correcting capabilities that approach the
+#   Shannon limit
+# - The belief propagation algorithm :cite:`kschischang2001factor` provides an
+#   efficient decoding method that works well for sparse parity-check
+#   matrices
+# - Performance scales with both SNR and the number of decoding iterations
+# - Block error rates typically decrease faster than bit error rates

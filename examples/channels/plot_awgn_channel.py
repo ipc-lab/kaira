@@ -15,9 +15,16 @@ We'll visualize how different noise levels (SNR) affect signal transmission.
 # -------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
+from examples.utils.plotting import (
+    setup_plotting_style,
+    plot_signal_noise_comparison,
+    plot_snr_psnr_comparison,
+    plot_snr_vs_mse,
+    plot_noise_level_analysis
+)
 
 from kaira.channels import AWGNChannel
 from kaira.metrics.image import PSNR
@@ -27,6 +34,9 @@ from kaira.utils import snr_to_noise_power
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+setup_plotting_style()
 
 # %%
 # Create Sample Signal
@@ -93,69 +103,36 @@ for snr_db, channel in awgn_channels:
     measured_metrics.append({"target_snr_db": snr_db, "measured_snr_db": measured_snr, "measured_psnr_db": measured_psnr})
 
     # Ensure we're using float values for string formatting
-    print(f"Target SNR: {snr_db:.1f} dB, Measured SNR: {measured_snr:.1f} dB, PSNR: {measured_psnr:.1f} dB")
+    # AWGN Channel Performance Analysis
+    # ===============================
+    # Target SNR: {snr_db:.1f} dB, Measured SNR: {measured_snr:.1f} dB, PSNR: {measured_psnr:.1f} dB
 
 # %%
 # Visualize the Results
 # -------------------------------------
 # Let's visualize how different SNR levels affect the transmitted signal.
 
-plt.figure(figsize=(10, 8))
+# Visualization: Signal Degradation with Noise
+# ============================================
+# Compare the original clean signal with signals processed through 
+# AWGN channels at different SNR levels to observe noise effects.
 
-# Plot the original signal
-plt.subplot(len(snr_levels_db) + 1, 1, 1)
-plt.plot(t, signal, "b-", linewidth=1.5)
-plt.title("Original Signal")
-plt.grid(True)
-plt.ylabel("Amplitude")
-plt.xlim([0, 1])
-
-# Plot each noisy signal
-for i, (snr_db, output) in enumerate(outputs):
-    plt.subplot(len(snr_levels_db) + 1, 1, i + 2)
-    plt.plot(t, output, "r-", alpha=0.8)
-    measured_snr = measured_metrics[i]["measured_snr_db"]
-    plt.title(f"AWGN Channel (Target SNR = {snr_db} dB, Measured SNR = {measured_snr:.1f} dB)")
-    plt.grid(True)
-    plt.ylabel("Amplitude")
-    if i == len(outputs) - 1:
-        plt.xlabel("Time (s)")
-    plt.xlim([0, 1])
-
-plt.tight_layout()
-plt.show()
+fig = plot_signal_noise_comparison(t, signal, outputs, measured_metrics, 
+                                 "AWGN Channel Effects on Signal Transmission")
+fig.show()
 
 # %%
 # Compare Theoretical and Measured SNR Values
 # ------------------------------------------------------------------------------
 # Let's compare the target SNR values with what we actually measured.
 
-plt.figure(figsize=(10, 5))
+# SNR and PSNR Analysis
+# ====================
+# Compare theoretical vs measured SNR values and examine PSNR behavior
+# to validate the AWGN channel model performance.
 
-target_snrs = [metric["target_snr_db"] for metric in measured_metrics]
-measured_snrs = [metric["measured_snr_db"] for metric in measured_metrics]
-measured_psnrs = [metric["measured_psnr_db"] for metric in measured_metrics]
-
-# Plot SNR comparison
-plt.subplot(1, 2, 1)
-plt.plot(target_snrs, measured_snrs, "bo-", linewidth=2, label="Measured SNR")
-plt.plot(target_snrs, target_snrs, "k--", linewidth=1, label="Theoretical (Target)")
-plt.grid(True)
-plt.xlabel("Target SNR (dB)")
-plt.ylabel("Measured SNR (dB)")
-plt.title("Theoretical vs. Measured SNR")
-plt.legend()
-
-# Plot PSNR values
-plt.subplot(1, 2, 2)
-plt.plot(target_snrs, measured_psnrs, "ro-", linewidth=2)
-plt.grid(True)
-plt.xlabel("Target SNR (dB)")
-plt.ylabel("PSNR (dB)")
-plt.title("PSNR vs. Target SNR")
-
-plt.tight_layout()
-plt.show()
+fig = plot_snr_psnr_comparison(measured_metrics, "SNR and PSNR Validation")
+fig.show()
 
 # %%
 # Calculate Mean Squared Error (MSE)
@@ -166,32 +143,26 @@ mse_values = []
 for snr_db, output in outputs:
     mse = np.mean((signal - output) ** 2)
     mse_values.append((snr_db, mse))
-    print(f"SNR: {snr_db} dB, MSE: {mse:.6f}")
+    # MSE Analysis Results
+    # ===================
+    # SNR: {snr_db} dB, MSE: {mse:.6f}
 
 # %%
 # Plot SNR vs MSE
 # -------------------------
 # Let's plot the relationship between SNR and MSE.
 
-plt.figure(figsize=(8, 5))
+# MSE vs SNR Relationship Analysis
+# ===============================
+# Examine the theoretical and measured relationship between
+# signal-to-noise ratio and mean squared error.
+
 snr_levels = [snr for snr, _ in mse_values]
 mse_vals = [mse for _, mse in mse_values]
-
-plt.plot(snr_levels, mse_vals, "o-", linewidth=2)
-plt.grid(True)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Mean Squared Error")
-plt.title("SNR vs. Mean Squared Error")
-plt.yscale("log")  # Use logarithmic scale for MSE
-
-# Add theoretical MSE curve: MSE = noise_power = signal_power / 10^(SNR/10)
-snr_range = np.linspace(-6, 21, 100)
 signal_power = amplitude**2 / 2
-theoretical_mse = signal_power / np.power(10, snr_range / 10)
-plt.plot(snr_range, theoretical_mse, "k--", linewidth=1, label="Theoretical")
-plt.legend()
 
-plt.show()
+fig = plot_snr_vs_mse(snr_levels, mse_vals, signal_power, "SNR vs Mean Squared Error Analysis")
+fig.show()
 
 # %%
 # Conclusion

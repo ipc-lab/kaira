@@ -11,9 +11,22 @@ These metrics are essential for evaluating the performance of communication syst
 
 from typing import Dict, List, Literal
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
+from examples.utils.plotting import (
+    setup_plotting_style,
+    plot_ber_performance,
+    plot_ber_vs_snr_comparison,
+    plot_bit_error_visualization,
+    plot_error_rate_comparison,
+    plot_block_error_visualization,
+    plot_qam_constellation_with_errors,
+    plot_symbol_error_analysis,
+    plot_multi_qam_ber_performance,
+    plot_bler_vs_snr_analysis,
+    plot_multiple_metrics_comparison
+)
 
 from kaira.channels import AWGNChannel
 from kaira.metrics.signal import (
@@ -29,6 +42,9 @@ from kaira.utils import snr_to_noise_power
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+setup_plotting_style()
 
 # %%
 # Initialize Metrics
@@ -56,29 +72,20 @@ received_bits = torch.logical_xor(bits, errors).int()
 # Calculate BER
 ber_value = ber_metric(received_bits, bits)
 
-print(f"True error rate: {error_probability}")
-print(f"Measured BER: {ber_value.item():.5f}")
+# Performance Results: Basic Error Rate Analysis
+# ==============================================
+# True error probability: {error_probability}
+# Measured BER: {ber_value.item():.5f}
 
 # %%
 # Visualize bit errors
-plt.figure(figsize=(12, 3))
-plt.subplot(1, 3, 1)
-plt.imshow(bits.view(25, 40), cmap="binary", aspect="auto")
-plt.title("Original Bits")
-plt.colorbar()
+# Visualization: Bit Error Locations and Patterns
+# ================================================
+# Display the original bits, error locations, and received bits to understand
+# the error distribution and pattern in the transmitted data.
 
-plt.subplot(1, 3, 2)
-plt.imshow(errors.int().view(25, 40), cmap="binary", aspect="auto")
-plt.title("Error Locations")
-plt.colorbar()
-
-plt.subplot(1, 3, 3)
-plt.imshow(received_bits.view(25, 40), cmap="binary", aspect="auto")
-plt.title("Received Bits")
-plt.colorbar()
-
-plt.tight_layout()
-plt.show()
+fig = plot_bit_error_visualization(bits, errors, received_bits, "Bit Error Analysis")
+fig.show()
 
 # %%
 # 2. Block Error Rate (BLER) and Frame Error Rate (FER)
@@ -97,29 +104,30 @@ bler_value = bler_metric(received_block_bits, block_bits)
 # Calculate FER (treating each block as a frame)
 fer_value = fer_metric(received_block_bits, block_bits)
 
-print(f"Block Error Rate: {bler_value.item():.5f}")
-print(f"Frame Error Rate: {fer_value.item():.5f}")  # For this example, FER and BLER are the same
+# Block and Frame Error Analysis Results
+# =====================================
+# Block Error Rate: {bler_value.item():.5f}
+# Frame Error Rate: {fer_value.item():.5f}  # For this example, FER and BLER are the same
 
 # %%
 # Visualize the difference between bit errors and block errors
+# Block-Level Error Analysis
+# ==========================
+# Compare bit-level errors (BER) with block-level errors (BLER/FER)
+# to understand how individual bit errors propagate to block failures.
+
 # Actually count the blocks with errors for visualization
 blocks_with_errors = torch.any(torch.logical_xor(block_bits, received_block_bits), dim=-1).int()
 block_error_rate = blocks_with_errors.float().mean().item()
 
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
-plt.bar(["BER", "BLER/FER"], [ber_value.item(), bler_value.item()])
-plt.title("Error Rate Comparison")
-plt.ylim(0, 1)
-plt.grid(axis="y", alpha=0.3)
+# Create error rate comparison
+metrics_comparison = {"BER": ber_value.item(), "BLER/FER": bler_value.item()}
+fig1 = plot_error_rate_comparison(metrics_comparison, "Bit vs Block Error Rate Comparison")
+fig1.show()
 
-plt.subplot(1, 2, 2)
-plt.imshow(blocks_with_errors.view(10, n_blocks // 10), cmap="binary", aspect="auto")
-plt.title(f"Blocks with Errors (BLER = {block_error_rate:.3f})")
-plt.colorbar()
-
-plt.tight_layout()
-plt.show()
+# Visualize block error pattern
+fig2 = plot_block_error_visualization(blocks_with_errors, block_error_rate, "Block Error Pattern")
+fig2.show()
 
 # %%
 # 3. Symbol Error Rate (SER) with QAM Modulation
@@ -157,38 +165,28 @@ symbol_bits = qam_bits.reshape(1, n_symbols, bits_per_symbol)
 received_symbol_bits = received_bits.reshape(1, n_symbols, bits_per_symbol)
 qam_ser = ser_metric(received_symbol_bits, symbol_bits)
 
-print(f"16-QAM BER: {qam_ber.item():.5f}")
-print(f"16-QAM SER: {qam_ser.item():.5f}")
+# QAM Modulation Performance Results  
+# ==================================
+# 16-QAM BER: {qam_ber.item():.5f}
+# 16-QAM SER: {qam_ser.item():.5f}
 
 # %%
 # Visualize QAM constellation and received symbols
-plt.figure(figsize=(15, 5))
+# QAM Constellation and Symbol Error Analysis
+# ===========================================
+# Display the QAM constellation diagram showing transmitted vs received symbols,
+# and analyze the relationship between symbol errors and bit errors.
 
-plt.subplot(1, 3, 1)
-plt.scatter(qam_symbols.real.flatten().numpy(), qam_symbols.imag.flatten().numpy(), label="Transmitted", alpha=0.7, s=30)
-plt.scatter(received_symbols.real.flatten().numpy(), received_symbols.imag.flatten().numpy(), label="Received", alpha=0.3, s=10, c="r")
-plt.grid(True)
-plt.xlabel("In-Phase")
-plt.ylabel("Quadrature")
-plt.title("16-QAM Constellation")
-plt.legend()
-
-# Compare BER and SER
-plt.subplot(1, 3, 2)
-plt.bar(["BER", "SER"], [qam_ber.item(), qam_ser.item()])
-plt.title("QAM Error Rate Comparison")
-plt.ylim(0, max(qam_ser.item() * 1.2, 0.01))
-plt.grid(axis="y", alpha=0.3)
-
-# Visualize error distribution
+# Calculate symbol error mask for visualization
 error_mask = torch.any(torch.logical_xor(symbol_bits, received_symbol_bits), dim=-1).int()
-plt.subplot(1, 3, 3)
-plt.imshow(error_mask.reshape(25, 40), cmap="binary", aspect="auto")
-plt.title("Symbol Errors")
-plt.colorbar()
 
-plt.tight_layout()
-plt.show()
+# Create constellation plot with errors
+fig1 = plot_qam_constellation_with_errors(qam_symbols, received_symbols, "16-QAM Constellation")
+fig1.show()
+
+# Analyze symbol vs bit error rates
+fig2 = plot_symbol_error_analysis(error_mask, qam_ber.item(), qam_ser.item(), "16-QAM Error Analysis")
+fig2.show()
 
 # %%
 # 4. Evaluating Communication System Performance
@@ -248,41 +246,13 @@ for qam_order in qam_orders:
 
 # %%
 # Plot BER vs SNR
-plt.figure(figsize=(15, 5))
+# Multi-Order QAM Performance Analysis
+# ====================================
+# Compare BER and SER performance across different QAM modulation orders
+# to understand the trade-off between spectral efficiency and error rates.
 
-# BER vs SNR for different QAM orders
-plt.subplot(1, 3, 1)
-markers = ["o-", "s-", "^-"]
-for order, marker in zip(qam_orders, markers):
-    plt.semilogy(snr_db_range, ber_results[order], marker, label=f"{order}-QAM")
-plt.grid(True)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Bit Error Rate (BER)")
-plt.title("BER vs SNR")
-plt.legend()
-
-# SER vs SNR for different QAM orders
-plt.subplot(1, 3, 2)
-for order, marker in zip(qam_orders, markers):
-    plt.semilogy(snr_db_range, ser_results[order], marker, label=f"{order}-QAM")
-plt.grid(True)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Symbol Error Rate (SER)")
-plt.title("SER vs SNR")
-plt.legend()
-
-# BER vs SER for different QAM orders
-plt.subplot(1, 3, 3)
-for order, marker in zip(qam_orders, markers):
-    plt.loglog(ser_results[order], ber_results[order], marker, label=f"{order}-QAM")
-plt.grid(True)
-plt.xlabel("Symbol Error Rate (SER)")
-plt.ylabel("Bit Error Rate (BER)")
-plt.title("BER vs SER")
-plt.legend()
-
-plt.tight_layout()
-plt.show()
+fig = plot_multi_qam_ber_performance(snr_db_range, ber_results, ser_results, qam_orders)
+fig.show()
 
 # %%
 # 5. Block Error Rate vs SNR
@@ -329,22 +299,13 @@ for snr_db in snr_db_range:
 
 # %%
 # Plot BLER vs SNR for different block sizes
-plt.figure(figsize=(10, 6))
-for block_size in block_sizes:
-    plt.semilogy(snr_db_range, bler_vs_snr[block_size], "o-", label=f"Block Size = {block_size}")
-plt.grid(True)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Block Error Rate (BLER)")
-plt.title("BLER vs SNR for Different Block Sizes")
-plt.legend()
+# Block Size Impact on Error Rates
+# ================================
+# Analyze how block size affects BLER to understand the relationship
+# between block length and error probability in communication systems.
 
-# Add vertical lines at BLER thresholds
-for threshold in [0.1, 0.01, 0.001]:
-    plt.axhline(y=threshold, color="r", linestyle="--", alpha=0.3)
-    plt.text(0.5, threshold, f"BLER = {threshold}", ha="left", va="bottom", alpha=0.7)
-
-plt.tight_layout()
-plt.show()
+fig = plot_bler_vs_snr_analysis(snr_db_range, bler_vs_snr, block_sizes)
+fig.show()
 
 # %%
 # 6. Comparing Multiple Metrics on the Same System
@@ -413,22 +374,13 @@ for snr_db in snr_db_range:
 
 # %%
 # Plot all metrics together
-plt.figure(figsize=(10, 6))
+# Comprehensive Error Rate Metrics Comparison
+# ===========================================
+# Compare BER, BLER, SER, and FER on the same system to understand
+# the relationship between different error rate metrics in practice.
 
-markers = ["o-", "s-", "^-", "x-"]
-colors = ["b", "r", "g", "m"]
-line_styles = ["-", "--", "-.", ":"]
-
-for metric_name, style, color, marker in zip(metrics.keys(), line_styles, colors, markers):
-    plt.semilogy(snr_db_range, metrics[metric_name], marker[0] + style, label=metric_name, color=color)
-
-plt.grid(True)
-plt.xlabel("SNR (dB)")
-plt.ylabel("Error Rate")
-plt.title("Error Rate Metrics vs SNR for 16-QAM")
-plt.legend()
-plt.tight_layout()
-plt.show()
+fig = plot_multiple_metrics_comparison(snr_db_range, metrics, "Error Rate Metrics vs SNR for 16-QAM")
+fig.show()
 
 # %%
 # Conclusion
