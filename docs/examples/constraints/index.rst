@@ -27,7 +27,7 @@ Constraint handling and optimization techniques for communication systems design
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to combine multiple constraints in Kaira to satisfy complex signal requirements. We'll explore the composition utilities and see how constraints can be sequentially applied to meet practical transmission specifications.">
+    <div class="sphx-glr-thumbcontainer" tooltip="ax.text(0.5, 0.5, 'Spectral Mask Constraint Effects (Visualization placeholder)', ha='center', va='center', transform=ax.transAxes, fontsize=14) ax.set_title('Spectral Mask Constraint Effects', fontsize=16, fontweight='bold') plt.show()=============================================================================================================================================================== This example demonstrates how to combine multiple constraints in Kaira to satisfy complex signal requirements. We'll explore the composition utilities and see how constraints can be sequentially applied to meet practical transmission specifications.">
 
 .. only:: html
 

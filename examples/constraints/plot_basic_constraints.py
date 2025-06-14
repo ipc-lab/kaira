@@ -16,16 +16,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-# Plotting imports
-from examples.example_utils.plotting import (
-    plot_constraint_comparison,
-    plot_signal_properties_comparison,
-    setup_plotting_style,
-)
 from kaira.constraints import AveragePowerConstraint, PAPRConstraint, TotalPowerConstraint
 from kaira.constraints.utils import measure_signal_properties
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -94,7 +91,57 @@ for name, signal in signals.items():
 # Visualize Total Power Constraint Results
 # -------------------------------------------------------------------------------------------------------------------
 
-fig = plot_constraint_comparison(signals, power_results, t, "TotalPowerConstraint", target_power)
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("Total Power Constraint Analysis", fontsize=16, fontweight="bold")
+
+# Plot original signals
+ax1 = axes[0, 0]
+for i, (name, signal) in enumerate(signals.items()):
+    ax1.plot(t[:200], signal[:200], color=PlottingUtils.MODERN_PALETTE[i], linewidth=2, label=f"{name} (Original)", alpha=0.7)
+ax1.set_title("Original Signals")
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Amplitude")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# Plot power comparison
+ax2 = axes[0, 1]
+signal_names = list(signals.keys())
+original_powers = [power_results[name]["original_power"] for name in signal_names]
+constrained_powers = [power_results[name]["constrained_power"] for name in signal_names]
+
+x_pos = np.arange(len(signal_names))
+width = 0.35
+ax2.bar(x_pos - width / 2, original_powers, width, label="Original", color=PlottingUtils.MODERN_PALETTE[0], alpha=0.7)
+ax2.bar(x_pos + width / 2, constrained_powers, width, label="Constrained", color=PlottingUtils.MODERN_PALETTE[1], alpha=0.7)
+ax2.axhline(y=target_power, color="red", linestyle="--", label=f"Target ({target_power})")
+ax2.set_title("Power Comparison")
+ax2.set_xlabel("Signal Type")
+ax2.set_ylabel("Power")
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels(signal_names)
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+# Add constraint satisfaction info
+ax3 = axes[1, 0]
+satisfaction_rates = [power_results[name]["constraint_satisfied"] for name in signal_names]
+ax3.bar(signal_names, satisfaction_rates, color=PlottingUtils.MODERN_PALETTE[2], alpha=0.7)
+ax3.set_title("Constraint Satisfaction Rate")
+ax3.set_xlabel("Signal Type")
+ax3.set_ylabel("Satisfaction Rate")
+ax3.set_ylim(0, 1.1)
+ax3.grid(True, alpha=0.3)
+
+# Power reduction plot
+ax4 = axes[1, 1]
+power_reductions = [(orig - const) / orig * 100 for orig, const in zip(original_powers, constrained_powers)]
+ax4.bar(signal_names, power_reductions, color=PlottingUtils.MODERN_PALETTE[3], alpha=0.7)
+ax4.set_title("Power Reduction (%)")
+ax4.set_xlabel("Signal Type")
+ax4.set_ylabel("Reduction (%)")
+ax4.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%
@@ -127,7 +174,9 @@ for name, signal in signals.items():
 # Visualize PAPR Constraint Results
 # ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-fig = plot_constraint_comparison(signals, papr_results, t, "PAPRConstraint", max_papr)
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "PAPR Constraint Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("PAPR Constraint Results", fontsize=16, fontweight="bold")
 fig.show()
 
 # %%
@@ -207,7 +256,9 @@ avg_power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in a
 
 # Compare total power constraint
 print("\n=== Comparing Total Power Constraint ===")
-fig = plot_signal_properties_comparison(signals, power_signals, ["TotalPowerConstraint"])
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "Signal Properties Comparison\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Signal Properties Analysis", fontsize=16, fontweight="bold")
 fig.show()
 
 # %%

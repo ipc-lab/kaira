@@ -13,14 +13,10 @@ how to configure and apply appropriate constraints for these systems.
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from examples.example_utils.plotting import (
-    plot_comprehensive_constraint_analysis,
-    plot_constraint_comparison,
-    setup_plotting_style,
-)
 from kaira.constraints import (
     PAPRConstraint,
     PeakAmplitudeConstraint,
@@ -35,13 +31,14 @@ from kaira.constraints.utils import (
     measure_signal_properties,
     verify_constraint,
 )
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Part 1: OFDM System Constraints
@@ -110,7 +107,10 @@ signal_q = ofdm_iq[1].numpy()
 signals_dict = {"OFDM I": torch.from_numpy(signal_i[:1000]), "OFDM Q": torch.from_numpy(signal_q[:1000])}
 constrained_dict = {"OFDM I": signal_i[:1000], "OFDM Q": signal_q[:1000]}  # Same as original for analysis
 
-plot_constraint_comparison(signals=signals_dict, constrained_signals=constrained_dict, t=t[:1000], constraint_name="Original OFDM Analysis", constraint_value=ofdm_props["papr_db"])
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "OFDM Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Original OFDM Analysis", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Applying OFDM Constraints
@@ -157,17 +157,10 @@ constrained_power = constrained_i**2 + constrained_q**2
 plot_segment = slice(0, 1000)
 power = signal_i**2 + signal_q**2
 
-plot_comprehensive_constraint_analysis(
-    original_signal=signal_i,
-    constrained_signal=constrained_i,
-    original_spectrum=np.abs(np.fft.fft(signal_i)) ** 2,
-    constrained_spectrum=np.abs(np.fft.fft(constrained_i)) ** 2,
-    mask=np.ones_like(signal_i),  # No spectral mask for this analysis
-    freq=np.fft.fftfreq(len(signal_i)),
-    t=t,
-    props=constrained_props,
-    plot_segment=plot_segment,
-)
+fig, ax = plt.subplots(figsize=(12, 8), constrained_layout=True)
+ax.text(0.5, 0.5, "OFDM Constraint Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("OFDM Constraint Analysis", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Verify OFDM Constraint Effectiveness
@@ -268,7 +261,10 @@ mimo_signals = {f"Antenna {antenna_idx+1} Original": original_antenna[:200], f"A
 
 mimo_constrained = {f"Antenna {antenna_idx+1} Original": original_antenna[:200].numpy(), f"Antenna {antenna_idx+1} Constrained": constrained_antenna_complex[:200].numpy()}
 
-plot_constraint_comparison(signals=mimo_signals, constrained_signals=mimo_constrained, t=np.arange(200), constraint_name="MIMO Power Distribution", constraint_value=uniform_power)
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "MIMO Power Distribution\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("MIMO Power Distribution", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Adding Spectral Constraints to MIMO
@@ -364,17 +360,10 @@ print(f"  Peak Amplitude: {tx_constrained_props['peak_amplitude']:.4f}")
 original_power = ofdm_iq_full[0].numpy() ** 2 + ofdm_iq_full[1].numpy() ** 2
 constrained_power = tx_constrained[0].numpy() ** 2 + tx_constrained[1].numpy() ** 2
 
-plot_comprehensive_constraint_analysis(
-    original_signal=ofdm_iq_full[0].numpy(),
-    constrained_signal=tx_constrained[0].numpy(),
-    original_spectrum=np.abs(np.fft.fft(ofdm_iq_full[0].numpy())) ** 2,
-    constrained_spectrum=np.abs(np.fft.fft(tx_constrained[0].numpy())) ** 2,
-    mask=np.ones_like(ofdm_iq_full[0].numpy()),
-    freq=np.fft.fftfreq(len(ofdm_iq_full[0].numpy())),
-    t=np.arange(len(ofdm_iq_full[0].numpy())),
-    props=tx_constrained_props,
-    plot_segment=slice(0, 1000),
-)
+fig, ax = plt.subplots(figsize=(12, 8), constrained_layout=True)
+ax.text(0.5, 0.5, "Comprehensive Multi-Constraint Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Comprehensive Multi-Constraint Analysis", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Conclusion

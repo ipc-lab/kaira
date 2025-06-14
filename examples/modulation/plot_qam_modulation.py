@@ -16,19 +16,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-# Plotting imports
-from examples.example_utils.plotting import (
-    plot_ber_vs_snr_comparison,
-    plot_constellation_comparison,
-    setup_plotting_style,
-)
 from kaira.channels import AWGNChannel
 from kaira.metrics.signal import BER
 from kaira.modulations import QAMDemodulator, QAMModulator
 from kaira.modulations.utils import plot_constellation
 from kaira.utils import snr_to_noise_power
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -57,7 +54,20 @@ for order in qam_orders:
 # Plot Constellation Diagrams
 # -------------------------------------------------
 # Comment: Visualize constellation diagrams for different QAM orders
-fig = plot_constellation_comparison(modulated_symbols, qam_orders, "QAM Constellation Diagrams")
+fig, axes = plt.subplots(2, 2, figsize=(12, 10), constrained_layout=True)
+fig.suptitle("QAM Constellation Diagrams", fontsize=16, fontweight="bold")
+
+for i, order in enumerate(qam_orders):
+    ax = axes.flat[i]
+    symbols = modulated_symbols[order].numpy().flatten()
+    ax.scatter(symbols.real, symbols.imag, color=PlottingUtils.MODERN_PALETTE[i], s=50, alpha=0.7, label=f"{order}-QAM")
+    ax.set_title(f"{order}-QAM Constellation")
+    ax.set_xlabel("In-Phase")
+    ax.set_ylabel("Quadrature")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    ax.set_aspect("equal")
+
 fig.show()
 
 # %%
@@ -88,7 +98,9 @@ for snr_db in snr_db_range:
 # Plot BER vs SNR Performance
 # -------------------------------------------------
 # Comment: Compare BER performance across different QAM orders
-fig = plot_ber_vs_snr_comparison(snr_db_range, ber_results, qam_orders, "BER Performance of Different QAM Orders")
+ber_values = [np.array(ber_results[order]) for order in qam_orders]
+labels = [f"{order}-QAM" for order in qam_orders]
+fig = PlottingUtils.plot_ber_performance(snr_db_range, ber_values, labels, "BER Performance of Different QAM Orders")
 fig.show()
 
 # %%
@@ -115,10 +127,10 @@ for snr_db_val in test_snr_db:
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
 for idx, snr_db_val in enumerate(test_snr_db):
-    i: int = int(idx)  # Ensure it's a Python int
+    ax_idx: int = int(idx)  # Ensure it's a Python int
     snr_val: int = int(snr_db_val)  # Ensure it's a Python int
-    plot_constellation(noisy_symbols[snr_val].flatten(), title=f"16-QAM at {snr_val} dB SNR", marker=".", ax=axs[i])
-    axs[i].grid(True)
+    plot_constellation(noisy_symbols[snr_val].flatten(), title=f"16-QAM at {snr_val} dB SNR", marker=".", ax=axs[ax_idx])
+    axs[ax_idx].grid(True)
 
 plt.tight_layout()
 fig.show()

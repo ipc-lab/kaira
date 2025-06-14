@@ -15,26 +15,22 @@ We'll visualize how different noise levels (SNR) affect signal transmission.
 # -------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from examples.example_utils.plotting import (
-    plot_signal_noise_comparison,
-    plot_snr_psnr_comparison,
-    plot_snr_vs_mse,
-    setup_plotting_style,
-)
 from kaira.channels import AWGNChannel
 from kaira.metrics.image import PSNR
 from kaira.metrics.signal import SNR
 from kaira.utils import snr_to_noise_power
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Create Sample Signal
@@ -115,7 +111,55 @@ for snr_db, channel in awgn_channels:
 # Compare the original clean signal with signals processed through
 # AWGN channels at different SNR levels to observe noise effects.
 
-fig = plot_signal_noise_comparison(t, signal, outputs, measured_metrics, "AWGN Channel Effects on Signal Transmission")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("AWGN Channel Effects on Signal Transmission", fontsize=16, fontweight="bold")
+
+# Plot original and noisy signals
+ax1 = axes[0, 0]
+ax1.plot(t, signal, "b-", linewidth=2, label="Original Signal", alpha=0.8)
+for i, (snr_db, output) in enumerate(outputs[:3]):  # Show first 3 for clarity
+    color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+    ax1.plot(t, output, "--", color=color, linewidth=1.5, alpha=0.7, label=f"SNR: {snr_db} dB")
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Amplitude")
+ax1.set_title("Signal Comparison")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# Plot SNR comparison
+ax2 = axes[0, 1]
+target_snrs = [metric["target_snr_db"] for metric in measured_metrics]
+measured_snrs = [metric["measured_snr_db"] for metric in measured_metrics]
+ax2.plot(target_snrs, measured_snrs, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8)
+ax2.plot(target_snrs, target_snrs, "--", color="gray", alpha=0.7, label="Ideal (Target = Measured)")
+ax2.set_xlabel("Target SNR (dB)")
+ax2.set_ylabel("Measured SNR (dB)")
+ax2.set_title("SNR Validation")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+# Plot PSNR values
+ax3 = axes[1, 0]
+psnr_values = [metric["measured_psnr_db"] for metric in measured_metrics]
+ax3.plot(target_snrs, psnr_values, "s-", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, markersize=8)
+ax3.set_xlabel("Target SNR (dB)")
+ax3.set_ylabel("PSNR (dB)")
+ax3.set_title("PSNR vs Target SNR")
+ax3.grid(True, alpha=0.3)
+
+# Plot noise effects on signal
+ax4 = axes[1, 1]
+for i, (snr_db, output) in enumerate(outputs):
+    noise = output - signal
+    noise_power = np.mean(noise**2)
+    ax4.bar(i, noise_power, color=PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)], alpha=0.7)
+ax4.set_xlabel("Channel Index")
+ax4.set_ylabel("Noise Power")
+ax4.set_title("Noise Power by Channel")
+ax4.set_xticks(range(len(outputs)))
+ax4.set_xticklabels([f"{snr}dB" for snr, _ in outputs], rotation=45)
+ax4.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%
@@ -128,7 +172,29 @@ fig.show()
 # Compare theoretical vs measured SNR values and examine PSNR behavior
 # to validate the AWGN channel model performance.
 
-fig = plot_snr_psnr_comparison(measured_metrics, "SNR and PSNR Validation")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+fig.suptitle("SNR and PSNR Validation", fontsize=16, fontweight="bold")
+
+# SNR comparison
+target_snrs = [metric["target_snr_db"] for metric in measured_metrics]
+measured_snrs = [metric["measured_snr_db"] for metric in measured_metrics]
+psnr_values = [metric["measured_psnr_db"] for metric in measured_metrics]
+
+ax1.scatter(target_snrs, measured_snrs, color=PlottingUtils.MODERN_PALETTE[0], s=100, alpha=0.7, label="Measured SNR")
+ax1.plot(target_snrs, target_snrs, "--", color="gray", alpha=0.7, label="Ideal (Target = Measured)")
+ax1.set_xlabel("Target SNR (dB)")
+ax1.set_ylabel("Measured SNR (dB)")
+ax1.set_title("SNR Validation")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# PSNR vs Target SNR
+ax2.plot(target_snrs, psnr_values, "o-", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, markersize=8)
+ax2.set_xlabel("Target SNR (dB)")
+ax2.set_ylabel("PSNR (dB)")
+ax2.set_title("PSNR vs Target SNR")
+ax2.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%
@@ -158,7 +224,31 @@ snr_levels = [snr for snr, _ in mse_values]
 mse_vals = [mse for _, mse in mse_values]
 signal_power = amplitude**2 / 2
 
-fig = plot_snr_vs_mse(snr_levels, mse_vals, signal_power, "SNR vs Mean Squared Error Analysis")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+fig.suptitle("SNR vs Mean Squared Error Analysis", fontsize=16, fontweight="bold")
+
+# Plot MSE vs SNR
+ax1.semilogy(snr_levels, mse_vals, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8)
+ax1.set_xlabel("SNR (dB)")
+ax1.set_ylabel("MSE")
+ax1.set_title("Measured MSE vs SNR")
+ax1.grid(True, alpha=0.3)
+
+# Plot theoretical MSE (noise power)
+theoretical_mse = []
+for snr_db in snr_levels:
+    snr_linear = 10 ** (snr_db / 10)
+    theoretical_noise_power = signal_power / snr_linear
+    theoretical_mse.append(theoretical_noise_power)
+
+ax2.semilogy(snr_levels, mse_vals, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8, label="Measured MSE")
+ax2.semilogy(snr_levels, theoretical_mse, "--", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, label="Theoretical MSE")
+ax2.set_xlabel("SNR (dB)")
+ax2.set_ylabel("MSE")
+ax2.set_title("Measured vs Theoretical MSE")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%

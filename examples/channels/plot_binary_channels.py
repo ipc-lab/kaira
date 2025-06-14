@@ -18,24 +18,19 @@ We'll explore the three main binary channel models:
 # -------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from examples.example_utils.plotting import (
-    plot_binary_channel_comparison,
-    plot_channel_capacity_analysis,
-    plot_channel_error_rates,
-    plot_transition_matrices,
-    setup_plotting_style,
-)
 from kaira.channels import BinaryErasureChannel, BinarySymmetricChannel, BinaryZChannel
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Generate Binary Data
@@ -167,7 +162,32 @@ channel_outputs.append(("Z-Channel", z_output, z_p))
 
 # Visualize channel effects
 original_data = binary_data[0].numpy()
-fig = plot_binary_channel_comparison(original_data, channel_outputs, segment_start, segment_length, "Binary Channel Effects Comparison")
+
+# Create binary channel comparison plot
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("Binary Channel Effects Comparison", fontsize=16, fontweight="bold")
+
+# Plot original data segment
+segment_end = segment_start + segment_length
+ax1 = axes[0, 0]
+ax1.plot(range(segment_length), original_data[segment_start:segment_end], "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=6, label="Original")
+ax1.set_title("Original Binary Data")
+ax1.set_xlabel("Bit Index")
+ax1.set_ylabel("Bit Value")
+ax1.set_ylim(-0.1, 1.1)
+ax1.grid(True, alpha=0.3)
+
+# Plot each channel output
+for i, (channel_name, output, error_prob) in enumerate(channel_outputs[:3]):
+    ax = axes.flat[i + 1]
+    ax.plot(range(segment_length), output[segment_start:segment_end], "o-", color=PlottingUtils.MODERN_PALETTE[(i + 1) % len(PlottingUtils.MODERN_PALETTE)], linewidth=2, markersize=6, label=f"{channel_name} (p={error_prob:.2f})")
+    ax.set_title(f"{channel_name} Output")
+    ax.set_xlabel("Bit Index")
+    ax.set_ylabel("Bit Value")
+    ax.set_ylim(-0.1, 1.1)
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+
 fig.show()
 
 # %%
@@ -185,7 +205,14 @@ theoretical_bsc = error_probs  # Theoretical error rate equals p
 observed_bsc = [err_rate for _, _, err_rate in bsc_outputs]
 
 # Plot BSC error rates
-fig1 = plot_channel_error_rates(error_probs, theoretical_bsc, observed_bsc, ["BSC"], "Binary Symmetric Channel Error Rates")
+fig1, ax1 = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax1.plot(error_probs, theoretical_bsc, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8, label="Theoretical BSC")
+ax1.plot(error_probs, observed_bsc, "s-", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, markersize=8, label="Observed BSC")
+ax1.set_xlabel("Error Probability")
+ax1.set_ylabel("Error Rate")
+ax1.set_title("Binary Symmetric Channel Error Rates", fontsize=14, fontweight="bold")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
 fig1.show()
 
 # Prepare BEC erasure rate data
@@ -193,7 +220,14 @@ theoretical_bec = erasure_probs  # Theoretical erasure rate equals p
 observed_bec = [erasure_rate for _, _, erasure_rate in bec_outputs]
 
 # Plot BEC erasure rates
-fig2 = plot_channel_error_rates(erasure_probs, theoretical_bec, observed_bec, ["BEC"], "Binary Erasure Channel Erasure Rates")
+fig2, ax2 = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax2.plot(erasure_probs, theoretical_bec, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8, label="Theoretical BEC")
+ax2.plot(erasure_probs, observed_bec, "s-", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, markersize=8, label="Observed BEC")
+ax2.set_xlabel("Erasure Probability")
+ax2.set_ylabel("Erasure Rate")
+ax2.set_title("Binary Erasure Channel Erasure Rates", fontsize=14, fontweight="bold")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 fig2.show()
 
 # Prepare Z-Channel error rate data
@@ -203,7 +237,14 @@ theoretical_z = [p * p_one for p in z_error_probs]
 observed_z = [err_rate * p_one for _, _, err_rate in z_outputs]
 
 # Plot Z-Channel error rates
-fig3 = plot_channel_error_rates(z_error_probs, theoretical_z, observed_z, ["Z-Channel"], "Z-Channel Error Rates")
+fig3, ax3 = plt.subplots(figsize=(10, 6), constrained_layout=True)
+ax3.plot(z_error_probs, theoretical_z, "o-", color=PlottingUtils.MODERN_PALETTE[0], linewidth=2, markersize=8, label="Theoretical Z-Channel")
+ax3.plot(z_error_probs, observed_z, "s-", color=PlottingUtils.MODERN_PALETTE[1], linewidth=2, markersize=8, label="Observed Z-Channel")
+ax3.set_xlabel("Error Probability")
+ax3.set_ylabel("Error Rate")
+ax3.set_title("Z-Channel Error Rates", fontsize=14, fontweight="bold")
+ax3.legend()
+ax3.grid(True, alpha=0.3)
 fig3.show()
 
 # %%
@@ -230,7 +271,24 @@ z_matrix = np.array([[1, 0], [p_z, 1 - p_z]])
 # Plot transition matrices
 matrices = [("Binary Symmetric Channel", bsc_matrix, p_bsc), ("Binary Erasure Channel", bec_matrix, p_bec), ("Z-Channel", z_matrix, p_z)]
 
-fig4 = plot_transition_matrices(matrices, "Binary Channel Transition Matrices")
+fig4, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+fig4.suptitle("Binary Channel Transition Matrices", fontsize=16, fontweight="bold")
+
+for i, (name, matrix, p) in enumerate(matrices):
+    ax = axes[i]
+    im = ax.imshow(matrix, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+    ax.set_title(f"{name}\n(p={p:.2f})")
+    ax.set_xlabel("Output")
+    ax.set_ylabel("Input")
+
+    # Add text annotations
+    for row in range(matrix.shape[0]):
+        for col in range(matrix.shape[1]):
+            color = "white" if matrix[row, col] > 0.5 else "black"
+            ax.text(col, row, f"{matrix[row, col]:.2f}", ha="center", va="center", color=color, fontsize=12, fontweight="bold")
+
+    plt.colorbar(im, ax=ax, shrink=0.8)
+
 fig4.show()
 
 # %%
@@ -278,7 +336,7 @@ z_capacities = np.array([calculate_z_capacity(p) for p in p_range])
 # Plot capacity analysis
 capacities = {"BSC": bsc_capacities, "BEC": bec_capacities, "Z-Channel": z_capacities}
 
-fig5 = plot_channel_capacity_analysis(p_range, capacities, "Binary Channel Capacity Analysis")
+fig5 = PlottingUtils.plot_capacity_analysis(p_range, capacities, "Binary Channel Capacity Analysis")
 fig5.show()
 
 # %%

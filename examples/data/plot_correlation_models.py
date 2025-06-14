@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-# Plotting imports
-from examples.example_utils.plotting import setup_plotting_style
 from kaira.data import WynerZivCorrelationDataset, create_binary_tensor, create_uniform_tensor
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Imports and Setup

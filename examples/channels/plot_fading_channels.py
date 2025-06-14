@@ -17,15 +17,16 @@ import numpy as np
 import torch
 from scipy import signal
 
-# Plotting imports
-from examples.example_utils.plotting import setup_plotting_style
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
 from kaira.metrics.signal import BitErrorRate
 from kaira.modulations import QPSKModulator
 from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.utils import snr_to_noise_power
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Imports and Setup

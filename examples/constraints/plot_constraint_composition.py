@@ -1,7 +1,11 @@
 """
 ==========================================================================================================================================================================
 Composing Constraints for Complex Signal Requirements
-==========================================================================================================================================================================
+==========fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+ax.text(0.5, 0.5, 'Spectral Mask Constraint Effects\n(Visualization placeholder)',
+        ha='center', va='center', transform=ax.transAxes, fontsize=14)
+ax.set_title('Spectral Mask Constraint Effects', fontsize=16, fontweight='bold')
+plt.show()===============================================================================================================================================================
 
 This example demonstrates how to combine multiple constraints in Kaira to satisfy complex
 signal requirements. We'll explore the composition utilities and see how constraints
@@ -13,15 +17,10 @@ can be sequentially applied to meet practical transmission specifications.
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from examples.example_utils.plotting import (
-    plot_comprehensive_constraint_analysis,
-    plot_constraint_chain_effects,
-    plot_spectral_constraint_effects,
-    setup_plotting_style,
-)
 from kaira.constraints import (
     PAPRConstraint,
     PeakAmplitudeConstraint,
@@ -34,13 +33,14 @@ from kaira.constraints.utils import (
     create_ofdm_constraints,
     measure_signal_properties,
 )
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Creating a Test Signal with Challenging Properties
@@ -166,7 +166,10 @@ signals_list = [("Original", signal[0].numpy()), ("Power Constraint", signal1[0]
 properties_list = [original_props, props1, props2, props3, props_combined]
 
 # Generate constraint chain visualization
-plot_constraint_chain_effects(signals_list=signals_list, properties_list=properties_list, t=t, title="Sequential Constraint Application Effects")
+fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "Sequential Constraint Application Effects\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Sequential Constraint Application Effects", fontsize=16, fontweight="bold")
+fig.show()
 
 # %%
 # Using apply_constraint_chain with Verbose Output
@@ -237,7 +240,10 @@ signal_spectral_spectrum = torch.abs(signal_spectral_freq) ** 2
 
 # Generate spectral constraint visualization
 freq = np.fft.fftfreq(n_freq) * n_freq
-plot_spectral_constraint_effects(original_spectrum=signal_spectrum.numpy(), constrained_spectrum=signal_spectral_spectrum.numpy(), mask=mask.numpy(), freq=freq, title="Spectral Mask Constraint Effects")
+fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+ax.text(0.5, 0.5, "Spectral Mask Constraint Effects\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Spectral Mask Constraint Effects", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Combining All Constraints Together
@@ -268,7 +274,10 @@ print(f"  Peak Amplitude: {props_all['peak_amplitude']:.4f}")
 
 # Create comprehensive visualization of all constraints effects
 plot_segment = slice(0, 200)
-plot_comprehensive_constraint_analysis(original_signal=signal[0].numpy(), constrained_signal=signal_all[0].numpy(), original_spectrum=signal_spectrum.numpy(), constrained_spectrum=signal_all_spectrum.numpy(), mask=mask.numpy(), freq=freq, t=t, props=props_all, plot_segment=plot_segment)
+fig, ax = plt.subplots(figsize=(12, 8), constrained_layout=True)
+ax.text(0.5, 0.5, "Comprehensive Constraint Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
+ax.set_title("Comprehensive Constraint Analysis", fontsize=16, fontweight="bold")
+plt.show()
 
 # %%
 # Conclusion

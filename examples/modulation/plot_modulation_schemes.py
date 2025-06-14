@@ -811,8 +811,8 @@ for scheme in adaptive_mod.schemes[:-1]:
 ax2 = fig.add_subplot(gs[1])
 # Get the indices of the schemes instead of assigning the schemes directly
 scheme_indices = [adaptive_mod.schemes.index(s) for s in selected_schemes]
-colors = [str(s["color"]) for s in selected_schemes]  # type: ignore[assignment]
-ax2.scatter(time, scheme_indices, c=colors, s=50, alpha=0.7)
+scheme_colors = [s["color"] for s in selected_schemes]  # Direct color values, not strings
+ax2.scatter(time, scheme_indices, c=scheme_colors, s=50, alpha=0.7)
 
 # Connect the dots
 ax2.plot(time, scheme_indices, "k-", alpha=0.3)

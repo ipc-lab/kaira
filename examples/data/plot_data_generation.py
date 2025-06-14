@@ -15,8 +15,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-# Plotting imports
-from examples.example_utils.plotting import setup_plotting_style
 from kaira.data import (
     BinaryTensorDataset,
     UniformTensorDataset,
@@ -24,7 +22,10 @@ from kaira.data import (
     create_uniform_tensor,
 )
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Imports and Setup
@@ -321,21 +322,3 @@ plt.show()
 # • Communication system simulations
 # • Machine learning data preparation
 # • Statistical analysis and visualization
-plt.colorbar(ticks=[0, 1], orientation="vertical", pad=0.05)
-
-plt.tight_layout()
-plt.show()
-
-# %%
-# Conclusion
-# -------------------------------------------------------------
-# This example demonstrated the data generation utilities in Kaira:
-#
-# 1. Basic tensor generation with specific distributions
-# 2. Controlling the probability parameters
-# 3. Using dataset classes for batch processing
-# 4. Practical application in a channel coding simulation
-#
-# These utilities provide a foundation for experiments in
-# information theory, communications, and machine learning
-# for communication systems.
