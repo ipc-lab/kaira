@@ -22,17 +22,15 @@ from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 from scipy import special
 
-from examples.example_utils.plotting import (
-    setup_plotting_style,
-)
 from kaira.channels import AWGNChannel, BinarySymmetricChannel, RayleighFadingChannel
 from kaira.utils import seed_everything
+from kaira.utils.plotting import PlottingUtils
 
 # Set seeds for reproducibility
 seed_everything(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Theoretical vs. Simulated BER Curves

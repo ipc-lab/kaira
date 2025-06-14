@@ -72,8 +72,13 @@ target_power = 1.0
 power_constraint = TotalPowerConstraint(total_power=target_power)
 
 power_results = {}
+original_powers_dict = {}
 print(f"\nApplying TotalPowerConstraint (target power = {target_power}):")
 for name, signal in signals.items():
+    # Store original power
+    original_props = measure_signal_properties(signal)
+    original_powers_dict[name] = original_props["mean_power"]
+
     # Apply constraint
     constrained_signal = power_constraint(signal)
     props = measure_signal_properties(constrained_signal)
@@ -97,7 +102,7 @@ fig.suptitle("Total Power Constraint Analysis", fontsize=16, fontweight="bold")
 # Plot original signals
 ax1 = axes[0, 0]
 for i, (name, signal) in enumerate(signals.items()):
-    ax1.plot(t[:200], signal[:200], color=PlottingUtils.MODERN_PALETTE[i], linewidth=2, label=f"{name} (Original)", alpha=0.7)
+    ax1.plot(t[:200], signal.squeeze()[:200], color=PlottingUtils.MODERN_PALETTE[i], linewidth=2, label=f"{name} (Original)", alpha=0.7)
 ax1.set_title("Original Signals")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Amplitude")
@@ -107,8 +112,8 @@ ax1.grid(True, alpha=0.3)
 # Plot power comparison
 ax2 = axes[0, 1]
 signal_names = list(signals.keys())
-original_powers = [power_results[name]["original_power"] for name in signal_names]
-constrained_powers = [power_results[name]["constrained_power"] for name in signal_names]
+original_powers = [original_powers_dict[name] for name in signal_names]
+constrained_powers = [measure_signal_properties(torch.tensor(power_results[name]).unsqueeze(0))["mean_power"] for name in signal_names]
 
 x_pos = np.arange(len(signal_names))
 width = 0.35
@@ -125,7 +130,7 @@ ax2.grid(True, alpha=0.3)
 
 # Add constraint satisfaction info
 ax3 = axes[1, 0]
-satisfaction_rates = [power_results[name]["constraint_satisfied"] for name in signal_names]
+satisfaction_rates = [1.0 if abs(constrained_powers[i] - target_power) < 0.1 else 0.0 for i in range(len(signal_names))]
 ax3.bar(signal_names, satisfaction_rates, color=PlottingUtils.MODERN_PALETTE[2], alpha=0.7)
 ax3.set_title("Constraint Satisfaction Rate")
 ax3.set_xlabel("Signal Type")

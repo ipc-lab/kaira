@@ -14,17 +14,14 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-# Plotting imports
-from examples.example_utils.plotting import (
-    plot_ber_performance,
-    plot_ldpc_matrix_comparison,
-    setup_plotting_style,
-)
 from kaira.channels.analog import AWGNChannel
 from kaira.models.fec.decoders import BeliefPropagationDecoder
 from kaira.models.fec.encoders import LDPCCodeEncoder
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Setting up
@@ -66,7 +63,7 @@ parity_check_matrix = torch.tensor([[1, 0, 1, 1, 0, 0], [0, 1, 1, 0, 1, 0], [0, 
 # which helps illustrate the sparsity pattern essential for LDPC codes.
 
 # Create visualization using utility function
-plot_ldpc_matrix_comparison([parity_check_matrix], ["LDPC Parity-Check Matrix"], "LDPC Code Matrix Structure")
+PlottingUtils.plot_ldpc_matrix_comparison([parity_check_matrix], ["LDPC Parity-Check Matrix"], "LDPC Code Matrix Structure")
 plt.show()
 
 # %%
@@ -182,11 +179,11 @@ for bp_iters, data in results.items():
     labels.append(f"BP Iterations = {bp_iters}")
 
 # Plot BER performance
-plot_ber_performance(snr_db_values, ber_curves, labels, "BER Performance of LDPC Code", "Bit Error Rate (BER)")
+PlottingUtils.plot_ber_performance(np.array(snr_db_values), [np.array(curve) for curve in ber_curves], labels, "BER Performance of LDPC Code", "Bit Error Rate (BER)")
 plt.show()
 
 # Plot BLER performance
-plot_ber_performance(snr_db_values, bler_curves, labels, "BLER Performance of LDPC Code", "Block Error Rate (BLER)")
+PlottingUtils.plot_ber_performance(np.array(snr_db_values), [np.array(curve) for curve in bler_curves], labels, "BLER Performance of LDPC Code", "Block Error Rate (BLER)")
 plt.show()
 
 # %%

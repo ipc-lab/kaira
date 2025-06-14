@@ -22,12 +22,6 @@ We'll explore:
 import numpy as np
 import torch
 
-from examples.example_utils.plotting import (
-    plot_code_structure_comparison,
-    plot_hamming_code_visualization,
-    setup_plotting_style,
-)
-
 # Import encoders from kaira
 from kaira.models.fec.encoders import (
     BCHCodeEncoder,
@@ -40,13 +34,14 @@ from kaira.models.fec.encoders import (
     SingleParityCheckCodeEncoder,
     SystematicLinearBlockCodeEncoder,
 )
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
 
 # Configure plotting style
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Helper Functions
@@ -71,7 +66,19 @@ def print_code_parameters(encoder, name: str) -> None:
 
 def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str) -> None:
     """Visualize a message and its corresponding codeword."""
-    plot_hamming_code_visualization(message=message.numpy(), codeword=codeword.numpy(), title=f"{name} - Message ({len(message)} bits) vs Codeword ({len(codeword)} bits)")
+    # Create simple visualization by creating mock generator and parity check matrices
+    # Based on common Hamming code structure
+    if len(message) == 4 and len(codeword) == 7:  # Hamming(7,4)
+        generator_matrix = torch.tensor([[1, 0, 0, 0, 1, 1, 0], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 0, 1, 1], [0, 0, 0, 1, 1, 1, 1]], dtype=torch.float32)
+
+        parity_check_matrix = torch.tensor([[1, 1, 0, 1, 1, 0, 0], [1, 0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0, 1]], dtype=torch.float32)
+    else:
+        # Create generic matrices for other codes
+        k, n = len(message), len(codeword)
+        generator_matrix = torch.cat([torch.eye(k), torch.randint(0, 2, (k, n - k))], dim=1).float()
+        parity_check_matrix = torch.cat([torch.randint(0, 2, (n - k, k)), torch.eye(n - k)], dim=1).float()
+
+    PlottingUtils.plot_hamming_code_visualization(generator_matrix, parity_check_matrix, f"{name} Code Structure")
 
 
 # %%
@@ -336,14 +343,21 @@ for name, encoder in encoders.items():
 
     # Get minimum distance if available
     if hasattr(encoder, "minimum_distance"):
-        min_distances.append(encoder.minimum_distance)
+        min_dist = encoder.minimum_distance
+        if callable(min_dist):
+            min_dist = min_dist()
+        min_distances.append(min_dist)
     elif hasattr(encoder, "design_distance"):
-        min_distances.append(encoder.design_distance)
+        min_dist = encoder.design_distance
+        if callable(min_dist):
+            min_dist = min_dist()
+        min_distances.append(min_dist)
     else:
         min_distances.append(None)
 
 # Generate code comparison visualization
-plot_code_structure_comparison(names=names, rates=rates, min_distances=min_distances, title="Comparison of FEC Code Performance")
+metrics = {"Code Rate": rates, "Min Distance": [d if d is not None else 0 for d in min_distances]}
+PlottingUtils.plot_complexity_comparison(names, metrics, "Comparison of FEC Code Performance")
 
 # Code Rates and Minimum Distances Summary:
 print("\nCode Rates and Minimum Distances:")

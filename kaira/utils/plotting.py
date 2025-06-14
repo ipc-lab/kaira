@@ -4,7 +4,7 @@ This module provides reusable plotting functions to keep example files focused o
 algorithm demonstrations while maintaining consistent visualization across examples.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -729,6 +729,597 @@ class PlottingUtils:
 
         ax.set_xlabel("SNR (dB)", fontsize=12)
         ax.set_ylabel("Capacity (bits/channel use)", fontsize=12)
+        ax.set_title(title, fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+
+        return fig
+
+    @staticmethod
+    def plot_belief_propagation_iteration(H: torch.Tensor, beliefs: torch.Tensor, iteration: int, title: str = "Belief Propagation Iteration") -> plt.Figure:
+        """Plot belief propagation iteration state.
+
+        Parameters
+        ----------
+        H : torch.Tensor
+            Parity check matrix
+        beliefs : torch.Tensor
+            Current belief values
+        iteration : int
+            Current iteration number
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), constrained_layout=True)
+
+        # Plot parity check matrix
+        H_np = H.numpy() if isinstance(H, torch.Tensor) else H
+        im1 = ax1.imshow(H_np, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+        ax1.set_title(f"Parity Check Matrix (Iteration {iteration})")
+        ax1.set_xlabel("Variable Nodes")
+        ax1.set_ylabel("Check Nodes")
+        plt.colorbar(im1, ax=ax1, shrink=0.8)
+
+        # Plot beliefs
+        beliefs_np = beliefs.numpy() if isinstance(beliefs, torch.Tensor) else beliefs
+        im2 = ax2.imshow(beliefs_np.reshape(1, -1), cmap=PlottingUtils.BELIEF_CMAP, interpolation="nearest", aspect="auto")
+        ax2.set_title(f"Variable Node Beliefs (Iteration {iteration})")
+        ax2.set_xlabel("Variable Nodes")
+        ax2.set_yticks([])
+        plt.colorbar(im2, ax=ax2, shrink=0.8)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+        return fig
+
+    @staticmethod
+    def plot_blockwise_operation(input_blocks: List[torch.Tensor], output_blocks: List[torch.Tensor], operation_name: str = "Blockwise Operation") -> plt.Figure:
+        """Plot blockwise operation visualization.
+
+        Parameters
+        ----------
+        input_blocks : List[torch.Tensor]
+            Input blocks
+        output_blocks : List[torch.Tensor]
+            Output blocks after operation
+        operation_name : str
+            Name of the operation
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        n_blocks = min(len(input_blocks), 4)  # Show up to 4 blocks
+        fig, axes = plt.subplots(2, n_blocks, figsize=(4 * n_blocks, 8), constrained_layout=True)
+
+        if n_blocks == 1:
+            axes = axes.reshape(2, 1)
+
+        fig.suptitle(f"{operation_name} - Block Processing", fontsize=16, fontweight="bold")
+
+        for i in range(n_blocks):
+            # Input block
+            input_np = input_blocks[i].numpy() if isinstance(input_blocks[i], torch.Tensor) else input_blocks[i]
+            axes[0, i].imshow(input_np.reshape(1, -1), cmap="viridis", aspect="auto")
+            axes[0, i].set_title(f"Input Block {i+1}")
+            axes[0, i].set_xlabel("Bits")
+
+            # Output block
+            output_np = output_blocks[i].numpy() if isinstance(output_blocks[i], torch.Tensor) else output_blocks[i]
+            axes[1, i].imshow(output_np.reshape(1, -1), cmap="viridis", aspect="auto")
+            axes[1, i].set_title(f"Output Block {i+1}")
+            axes[1, i].set_xlabel("Bits")
+
+        return fig
+
+    @staticmethod
+    def plot_hamming_code_visualization(generator_matrix: torch.Tensor, parity_check_matrix: torch.Tensor, title: str = "Hamming Code Structure") -> plt.Figure:
+        """Plot Hamming code structure visualization.
+
+        Parameters
+        ----------
+        generator_matrix : torch.Tensor
+            Generator matrix
+        parity_check_matrix : torch.Tensor
+            Parity check matrix
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), constrained_layout=True)
+
+        # Generator matrix
+        G_np = generator_matrix.numpy() if isinstance(generator_matrix, torch.Tensor) else generator_matrix
+        im1 = ax1.imshow(G_np, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+        ax1.set_title("Generator Matrix (G)")
+        ax1.set_xlabel("Codeword Bits")
+        ax1.set_ylabel("Information Bits")
+
+        # Add text annotations for small matrices
+        if G_np.shape[0] <= 8 and G_np.shape[1] <= 12:
+            for row in range(G_np.shape[0]):
+                for col in range(G_np.shape[1]):
+                    color = "white" if G_np[row, col] == 1 else "black"
+                    ax1.text(col, row, int(G_np[row, col]), ha="center", va="center", color=color, fontsize=12, fontweight="bold")
+
+        plt.colorbar(im1, ax=ax1, shrink=0.8)
+
+        # Parity check matrix
+        H_np = parity_check_matrix.numpy() if isinstance(parity_check_matrix, torch.Tensor) else parity_check_matrix
+        im2 = ax2.imshow(H_np, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+        ax2.set_title("Parity Check Matrix (H)")
+        ax2.set_xlabel("Codeword Bits")
+        ax2.set_ylabel("Parity Check Equations")
+
+        # Add text annotations for small matrices
+        if H_np.shape[0] <= 8 and H_np.shape[1] <= 12:
+            for row in range(H_np.shape[0]):
+                for col in range(H_np.shape[1]):
+                    color = "white" if H_np[row, col] == 1 else "black"
+                    ax2.text(col, row, int(H_np[row, col]), ha="center", va="center", color=color, fontsize=12, fontweight="bold")
+
+        plt.colorbar(im2, ax=ax2, shrink=0.8)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+        return fig
+
+    @staticmethod
+    def plot_parity_check_visualization(syndrome: torch.Tensor, error_pattern: torch.Tensor, title: str = "Parity Check Analysis") -> plt.Figure:
+        """Plot parity check syndrome and error pattern visualization.
+
+        Parameters
+        ----------
+        syndrome : torch.Tensor
+            Syndrome vector
+        error_pattern : torch.Tensor
+            Error pattern
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), constrained_layout=True)
+
+        # Syndrome visualization
+        syndrome_np = syndrome.numpy() if isinstance(syndrome, torch.Tensor) else syndrome
+        im1 = ax1.imshow(syndrome_np.reshape(1, -1), cmap="RdYlBu", interpolation="nearest", aspect="auto")
+        ax1.set_title("Syndrome Vector")
+        ax1.set_xlabel("Parity Check Equations")
+        ax1.set_yticks([])
+
+        # Add value labels
+        for i in range(len(syndrome_np)):
+            ax1.text(i, 0, int(syndrome_np[i]), ha="center", va="center", fontweight="bold")
+
+        plt.colorbar(im1, ax=ax1, shrink=0.8)
+
+        # Error pattern visualization
+        error_np = error_pattern.numpy() if isinstance(error_pattern, torch.Tensor) else error_pattern
+        im2 = ax2.imshow(error_np.reshape(1, -1), cmap="Reds", interpolation="nearest", aspect="auto")
+        ax2.set_title("Error Pattern")
+        ax2.set_xlabel("Bit Position")
+        ax2.set_yticks([])
+
+        # Add value labels
+        for i in range(len(error_np)):
+            color = "white" if error_np[i] == 1 else "black"
+            ax2.text(i, 0, int(error_np[i]), ha="center", va="center", color=color, fontweight="bold")
+
+        plt.colorbar(im2, ax=ax2, shrink=0.8)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+        return fig
+
+    @staticmethod
+    def plot_code_structure_comparison(codes_data: Dict[str, Dict[str, Any]], title: str = "Code Structure Comparison") -> plt.Figure:
+        """Plot comparison of different code structures.
+
+        Parameters
+        ----------
+        codes_data : Dict[str, Dict[str, Any]]
+            Dictionary containing code data for comparison
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        n_codes = len(codes_data)
+        fig, axes = plt.subplots(2, n_codes, figsize=(5 * n_codes, 10), constrained_layout=True)
+
+        if n_codes == 1:
+            axes = axes.reshape(2, 1)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+
+        for i, (code_name, data) in enumerate(codes_data.items()):
+            # Generator matrix
+            if "generator_matrix" in data:
+                G = data["generator_matrix"]
+                G_np = G.numpy() if isinstance(G, torch.Tensor) else G
+                im1 = axes[0, i].imshow(G_np, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+                axes[0, i].set_title(f"{code_name} - Generator Matrix")
+                plt.colorbar(im1, ax=axes[0, i], shrink=0.8)
+
+            # Parity check matrix
+            if "parity_check_matrix" in data:
+                H = data["parity_check_matrix"]
+                H_np = H.numpy() if isinstance(H, torch.Tensor) else H
+                im2 = axes[1, i].imshow(H_np, cmap=PlottingUtils.MATRIX_CMAP, interpolation="nearest", aspect="auto")
+                axes[1, i].set_title(f"{code_name} - Parity Check Matrix")
+                plt.colorbar(im2, ax=axes[1, i], shrink=0.8)
+
+        return fig
+
+    @staticmethod
+    def plot_bit_error_visualization(original_bits: torch.Tensor, errors: torch.Tensor, received_bits: torch.Tensor, title: str = "Bit Error Analysis") -> plt.Figure:
+        """Visualize bit errors in transmission.
+
+        Parameters
+        ----------
+        original_bits : torch.Tensor
+            Original transmitted bits
+        errors : torch.Tensor
+            Error positions
+        received_bits : torch.Tensor
+            Received bits
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, axes = plt.subplots(3, 1, figsize=(15, 10), constrained_layout=True)
+
+        # Convert to numpy and flatten if necessary
+        orig_np = original_bits.numpy() if isinstance(original_bits, torch.Tensor) else original_bits
+        errors_np = errors.numpy() if isinstance(errors, torch.Tensor) else errors
+        recv_np = received_bits.numpy() if isinstance(received_bits, torch.Tensor) else received_bits
+
+        # Flatten if needed
+        if orig_np.ndim > 1:
+            orig_np = orig_np.flatten()
+        if errors_np.ndim > 1:
+            errors_np = errors_np.flatten()
+        if recv_np.ndim > 1:
+            recv_np = recv_np.flatten()
+
+        x_range = np.arange(len(orig_np))
+
+        # Original bits
+        axes[0].stem(x_range[:100], orig_np[:100], basefmt=" ")
+        axes[0].set_title("Original Bits")
+        axes[0].set_ylabel("Bit Value")
+        axes[0].grid(True, alpha=0.3)
+
+        # Error positions
+        error_positions = np.where(errors_np[:100] == 1)[0]
+        axes[1].stem(error_positions, np.ones_like(error_positions), linefmt="red", markerfmt="ro", basefmt=" ")
+        axes[1].set_title("Error Positions")
+        axes[1].set_ylabel("Error")
+        axes[1].set_xlim(0, 100)
+        axes[1].grid(True, alpha=0.3)
+
+        # Received bits with errors highlighted
+        axes[2].stem(x_range[:100], recv_np[:100], basefmt=" ")
+        axes[2].stem(error_positions, recv_np[error_positions], linefmt="red", markerfmt="ro", basefmt=" ")
+        axes[2].set_title("Received Bits (Errors in Red)")
+        axes[2].set_xlabel("Bit Index")
+        axes[2].set_ylabel("Bit Value")
+        axes[2].grid(True, alpha=0.3)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+        return fig
+
+    @staticmethod
+    def plot_error_rate_comparison(metrics: Dict[str, float], title: str = "Error Rate Comparison") -> plt.Figure:
+        """Compare different error rate metrics.
+
+        Parameters
+        ----------
+        metrics : Dict[str, float]
+            Dictionary of metric names and values
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+
+        metric_names = list(metrics.keys())
+        metric_values = list(metrics.values())
+
+        bars = ax.bar(metric_names, metric_values, color=PlottingUtils.MODERN_PALETTE[: len(metric_names)], alpha=0.8)
+
+        # Add value labels on bars
+        for bar, value in zip(bars, metric_values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2.0, height + height * 0.01, f"{value:.6f}", ha="center", va="bottom", fontweight="bold")
+
+        ax.set_title(title, fontsize=14, fontweight="bold")
+        ax.set_ylabel("Error Rate")
+        ax.set_yscale("log")
+        ax.grid(True, alpha=0.3)
+
+        return fig
+
+    @staticmethod
+    def plot_block_error_visualization(blocks_with_errors: torch.Tensor, block_error_rate: float, title: str = "Block Error Visualization") -> plt.Figure:
+        """Visualize block errors.
+
+        Parameters
+        ----------
+        blocks_with_errors : torch.Tensor
+            Indicator of which blocks have errors
+        block_error_rate : float
+            Overall block error rate
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+
+        blocks_np = blocks_with_errors.numpy() if isinstance(blocks_with_errors, torch.Tensor) else blocks_with_errors
+
+        # Flatten if necessary
+        if blocks_np.ndim > 1:
+            blocks_np = blocks_np.flatten()
+
+        # Create color map for blocks
+        colors = ["green" if error == 0 else "red" for error in blocks_np]
+
+        ax.bar(range(len(blocks_np)), [1] * len(blocks_np), color=colors, alpha=0.7)
+        ax.set_title(f"{title} (BLER: {block_error_rate:.4f})", fontsize=14, fontweight="bold")
+        ax.set_xlabel("Block Index")
+        ax.set_ylabel("Block Status")
+        ax.set_yticks([0, 1])
+        ax.set_yticklabels(["No Error", "Error"])
+
+        # Add legend
+        from matplotlib.patches import Patch
+
+        legend_elements = [Patch(facecolor="green", alpha=0.7, label="Correct Block"), Patch(facecolor="red", alpha=0.7, label="Error Block")]
+        ax.legend(handles=legend_elements)
+
+        return fig
+
+    @staticmethod
+    def plot_qam_constellation_with_errors(transmitted: torch.Tensor, received: torch.Tensor, title: str = "QAM Constellation with Errors") -> plt.Figure:
+        """Plot QAM constellation showing transmitted and received symbols.
+
+        Parameters
+        ----------
+        transmitted : torch.Tensor
+            Transmitted constellation points
+        received : torch.Tensor
+            Received constellation points
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+
+        # Convert to numpy and handle complex numbers
+        tx_np = transmitted.numpy() if isinstance(transmitted, torch.Tensor) else transmitted
+        rx_np = received.numpy() if isinstance(received, torch.Tensor) else received
+
+        if tx_np.dtype == complex or np.iscomplexobj(tx_np):
+            tx_real, tx_imag = tx_np.real, tx_np.imag
+            rx_real, rx_imag = rx_np.real, rx_np.imag
+        else:
+            # Assume real and imaginary parts are interleaved
+            tx_real, tx_imag = tx_np[::2], tx_np[1::2]
+            rx_real, rx_imag = rx_np[::2], rx_np[1::2]
+
+        # Plot transmitted symbols
+        ax.scatter(tx_real, tx_imag, c="blue", marker="o", s=100, alpha=0.7, label="Transmitted")
+
+        # Plot received symbols
+        ax.scatter(rx_real, rx_imag, c="red", marker="x", s=100, alpha=0.7, label="Received")
+
+        # Draw lines connecting transmitted to received
+        for i in range(len(tx_real)):
+            ax.plot([tx_real[i], rx_real[i]], [tx_imag[i], rx_imag[i]], "k--", alpha=0.3)
+
+        ax.set_xlabel("In-phase")
+        ax.set_ylabel("Quadrature")
+        ax.set_title(title, fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        ax.axis("equal")
+
+        return fig
+
+    @staticmethod
+    def plot_symbol_error_analysis(error_mask: torch.Tensor, ber: float, ser: float, title: str = "Symbol Error Analysis") -> plt.Figure:
+        """Analyze symbol errors.
+
+        Parameters
+        ----------
+        error_mask : torch.Tensor
+            Mask indicating which symbols have errors
+        ber : float
+            Bit error rate
+        ser : float
+            Symbol error rate
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
+
+        error_np = error_mask.numpy() if isinstance(error_mask, torch.Tensor) else error_mask
+
+        # Flatten if necessary
+        if error_np.ndim > 1:
+            error_np = error_np.flatten()
+
+        # Plot error pattern
+        ax1.stem(range(len(error_np)), error_np, basefmt="", linefmt="r-", markerfmt="ro")
+        ax1.set_title("Symbol Error Pattern")
+        ax1.set_xlabel("Symbol Index")
+        ax1.set_ylabel("Error")
+        ax1.grid(True, alpha=0.3)
+
+        # Plot error rates comparison
+        rates = [ber, ser]
+        labels = ["BER", "SER"]
+        colors = PlottingUtils.MODERN_PALETTE[:2]
+
+        bars = ax2.bar(labels, rates, color=colors, alpha=0.8)
+        for bar, rate in zip(bars, rates):
+            height = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width() / 2.0, height + height * 0.01, f"{rate:.6f}", ha="center", va="bottom", fontweight="bold")
+
+        ax2.set_title("Error Rate Comparison")
+        ax2.set_ylabel("Error Rate")
+        ax2.set_yscale("log")
+        ax2.grid(True, alpha=0.3)
+
+        fig.suptitle(title, fontsize=16, fontweight="bold")
+        return fig
+
+    @staticmethod
+    def plot_multi_qam_ber_performance(snr_range: np.ndarray, ber_results: Dict[str, np.ndarray], ser_results: Dict[str, np.ndarray], qam_orders: Sequence[int]) -> plt.Figure:
+        """Plot BER performance for multiple QAM orders.
+
+        Parameters
+        ----------
+        snr_range : np.ndarray
+            SNR values in dB
+        ber_results : Dict[str, np.ndarray]
+            BER results for each QAM order
+        ser_results : Dict[str, np.ndarray]
+            SER results for each QAM order
+        qam_orders : Sequence[int]
+            Sequence of QAM orders
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), constrained_layout=True)
+
+        # Plot BER
+        for i, order in enumerate(qam_orders):
+            label = f"{order}-QAM"
+            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+            if label in ber_results:
+                ax1.semilogy(snr_range, ber_results[label], "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
+
+        ax1.set_xlabel("SNR (dB)")
+        ax1.set_ylabel("Bit Error Rate")
+        ax1.set_title("BER vs SNR for Different QAM Orders")
+        ax1.grid(True, alpha=0.3)
+        ax1.legend()
+
+        # Plot SER
+        for i, order in enumerate(qam_orders):
+            label = f"{order}-QAM"
+            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+            if label in ser_results:
+                ax2.semilogy(snr_range, ser_results[label], "s-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
+
+        ax2.set_xlabel("SNR (dB)")
+        ax2.set_ylabel("Symbol Error Rate")
+        ax2.set_title("SER vs SNR for Different QAM Orders")
+        ax2.grid(True, alpha=0.3)
+        ax2.legend()
+
+        return fig
+
+    @staticmethod
+    def plot_bler_vs_snr_analysis(snr_range: np.ndarray, bler_data: Dict[str, np.ndarray], block_sizes: List[int]) -> plt.Figure:
+        """Plot BLER vs SNR analysis.
+
+        Parameters
+        ----------
+        snr_range : np.ndarray
+            SNR values in dB
+        bler_data : Dict[str, np.ndarray]
+            BLER data for different block sizes
+        block_sizes : List[int]
+            List of block sizes
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+
+        for i, size in enumerate(block_sizes):
+            label = f"Block Size {size}"
+            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+            if label in bler_data:
+                ax.semilogy(snr_range, bler_data[label], "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
+
+        ax.set_xlabel("SNR (dB)")
+        ax.set_ylabel("Block Error Rate")
+        ax.set_title("BLER vs SNR for Different Block Sizes")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+
+        return fig
+
+    @staticmethod
+    def plot_multiple_metrics_comparison(snr_range: np.ndarray, metrics: Dict[str, np.ndarray], title: str = "Multiple Metrics Comparison") -> plt.Figure:
+        """Plot comparison of multiple error rate metrics.
+
+        Parameters
+        ----------
+        snr_range : np.ndarray
+            SNR values in dB
+        metrics : Dict[str, np.ndarray]
+            Dictionary of metric names and values
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+
+        for i, (metric_name, values) in enumerate(metrics.items()):
+            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+            ax.semilogy(snr_range, values, "o-", color=color, linewidth=2, markersize=6, label=metric_name, alpha=0.8)
+
+        ax.set_xlabel("SNR (dB)")
+        ax.set_ylabel("Error Rate")
         ax.set_title(title, fontsize=14, fontweight="bold")
         ax.grid(True, alpha=0.3)
         ax.legend()

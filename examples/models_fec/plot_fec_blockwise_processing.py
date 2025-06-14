@@ -12,16 +12,12 @@ and interleaved coding.
 import numpy as np
 import torch
 
-# Plotting imports
-from examples.example_utils.plotting import (
-    plot_blockwise_operation,
-    plot_hamming_code_visualization,
-    plot_parity_check_visualization,
-    setup_plotting_style,
-)
 from kaira.models.fec.utils import apply_blockwise
 
-setup_plotting_style()
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Setting up
@@ -60,7 +56,11 @@ print(f"Data after block-wise NOT operation: {inverted_data}")
 # -------------------------------------------------------------------------
 # We can visualize how the block-wise operation transforms the data:
 
-fig = plot_blockwise_operation(binary_data, inverted_data, block_size, "Block-wise NOT Operation")
+# Create blocks for visualization
+input_blocks = [binary_data[i : i + block_size] for i in range(0, len(binary_data), block_size)]
+output_blocks = [inverted_data[i : i + block_size] for i in range(0, len(inverted_data), block_size)]
+
+fig = PlottingUtils.plot_blockwise_operation(input_blocks, output_blocks, "Block-wise NOT Operation")
 fig.show()
 
 # %%
@@ -155,7 +155,16 @@ for i, block in enumerate(corrupted_blocks):
 # Let's visualize the original, encoded, and corrupted data, highlighting where
 # errors were introduced and which blocks had parity violations.
 
-fig = plot_parity_check_visualization(data, encoded_data, corrupted_data, block_size, error_positions, corrupted_blocks)
+# Create syndrome and error pattern for visualization
+syndrome = torch.zeros(len(corrupted_blocks))
+for i, block in enumerate(corrupted_blocks):
+    syndrome[i] = 1 if not check_parity(block) else 0
+
+error_pattern = torch.zeros_like(corrupted_data)
+for pos in error_positions:
+    error_pattern[pos] = 1
+
+fig = PlottingUtils.plot_parity_check_visualization(syndrome, error_pattern, "Parity Check Analysis")
 fig.show()
 
 # %%
@@ -346,7 +355,13 @@ corrupted = corrupted_blocks[block_idx]
 corrected, decoded, error_pos = results[block_idx]
 actual_error_pos = error_positions[block_idx]
 
-fig = plot_hamming_code_visualization(original_data, encoded, corrupted, corrected, actual_error_pos)
+# Create simple generator and parity check matrices for visualization
+# For Hamming(7,4), create simplified matrices
+generator_matrix = torch.tensor([[1, 0, 0, 0, 1, 1, 0], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 0, 1, 1], [0, 0, 0, 1, 1, 1, 1]], dtype=torch.float32)
+
+parity_check_matrix = torch.tensor([[1, 1, 0, 1, 1, 0, 0], [1, 0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0, 1]], dtype=torch.float32)
+
+fig = PlottingUtils.plot_hamming_code_visualization(generator_matrix, parity_check_matrix, "Hamming Code Structure")
 fig.show()
 
 # %%

@@ -13,21 +13,16 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-# Plotting imports
-from examples.example_utils.plotting import (
-    plot_belief_propagation_iteration,
-    plot_ber_performance,
-    plot_tanner_graph,
-    setup_plotting_style,
-)
 from kaira.channels.analog import AWGNChannel
 from kaira.models.fec.decoders import BeliefPropagationDecoder
 from kaira.models.fec.encoders import LDPCCodeEncoder
 from kaira.modulations.psk import BPSKDemodulator, BPSKModulator
-from kaira.utils import PlottingUtils
+
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
 from kaira.utils.snr import snr_to_noise_power
 
-setup_plotting_style()
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Setting up
@@ -60,7 +55,7 @@ print(f"Actual code dimensions: ({encoder.code_length}, {encoder.code_dimension}
 print(f"Actual code rate: {encoder.code_dimension/encoder.code_length:.3f}")
 
 # Create enhanced Tanner graph visualization
-plot_tanner_graph(H_matrix, f"Enhanced LDPC Code ({encoder.code_length},{encoder.code_dimension})")
+PlottingUtils.plot_tanner_graph(H_matrix, f"Enhanced LDPC Code ({encoder.code_length},{encoder.code_dimension})")
 plt.show()
 
 # %%
@@ -132,10 +127,8 @@ class BeliefPropagationVisualizer:
     def visualize_iteration(self, iteration):
         """Visualize a specific iteration using plotting utilities."""
         beliefs = self.belief_history[iteration]
-        var_to_check = self.var_to_check_history[iteration]
-        check_to_var = self.check_to_var_history[iteration]
 
-        return plot_belief_propagation_iteration(beliefs, var_to_check, check_to_var, iteration, self.belief_history)
+        return PlottingUtils.plot_belief_propagation_iteration(self.H, beliefs, iteration, f"Belief Propagation Iteration {iteration}")
 
 
 # %%
@@ -288,7 +281,7 @@ for max_iters, ber_values in perf_results.items():
     labels.append(f"{max_iters} iterations")
 
 # Plot BER performance using utility function
-plot_ber_performance(snr_range, ber_curves, labels, "LDPC Performance Analysis: Iteration Benefits", "Bit Error Rate")
+PlottingUtils.plot_ber_performance(snr_range, ber_curves, labels, "LDPC Performance Analysis: Iteration Benefits", "Bit Error Rate")
 plt.show()
 
 # Additional performance insights plot
