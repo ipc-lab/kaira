@@ -252,8 +252,8 @@ plt.show()
 # Hard vs. Soft Demodulation
 # ---------------------------------------------------------------------
 # Demonstrate difference between hard and soft demodulation for 16-QAM
-snr_db = 15
-noise_power = snr_to_noise_power(1.0, snr_db)
+demo_snr_db: int = 15
+noise_power = snr_to_noise_power(1.0, demo_snr_db)
 channel = AWGNChannel(avg_noise_power=noise_power)
 
 # Generate a specific pattern that includes all four quadrants
@@ -286,7 +286,7 @@ plt.scatter(all_symbols.real, all_symbols.imag, color="blue", s=100, alpha=0.5, 
 plt.grid(True)
 plt.xlabel("In-phase")
 plt.ylabel("Quadrature")
-plt.title(f"16-QAM Symbol Reception at {snr_db} dB SNR")
+plt.title(f"16-QAM Symbol Reception at {demo_snr_db} dB SNR")
 plt.legend()
 plt.axis("equal")
 plt.show()

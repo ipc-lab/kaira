@@ -13,6 +13,7 @@ References:
 
 from typing import Any, Optional
 
+import numpy as np
 import torch
 
 from kaira.models.registry import ModelRegistry
@@ -120,8 +121,10 @@ class PolarCodeEncoder(BaseBlockCodeEncoder):
             csv_path = os.path.join(module_dir, "..", "rank_polar.csv")
             rank = pd.read_csv(csv_path, sep=" ", index_col=0)
             self.rank = rank.Q.values
+            # Convert to numpy array to ensure proper type handling
+            rank_array = np.asarray(self.rank)
             F = torch.zeros(self.code_length)
-            F[self.rank[self.rank < self.code_length][: self.code_length - self.code_dimension]] = 1
+            F[rank_array[rank_array < self.code_length][: self.code_length - self.code_dimension]] = 1
             info_ind = torch.where(F == 0)[0]
             self.info_indices = torch.zeros(self.code_length, dtype=torch.bool)
             self.info_indices[info_ind] = True

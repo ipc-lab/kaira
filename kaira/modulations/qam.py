@@ -1,6 +1,6 @@
 """Quadrature Amplitude Modulation (QAM) schemes."""
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
 import torch
@@ -134,7 +134,7 @@ class QAMModulator(BaseModulator):
 
         return symbols
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the QAM constellation diagram.
 
         Args:
@@ -214,15 +214,17 @@ class QAMDemodulator(BaseDemodulator):
         else:
             # Soft decision: LLR calculation
             if not isinstance(noise_var, torch.Tensor):
-                noise_var = torch.tensor(noise_var, device=y.device)
+                noise_var_tensor = torch.tensor(noise_var, device=y.device)
+            else:
+                noise_var_tensor = noise_var
 
             # Convert to real tensor if it's complex
-            if noise_var.is_complex():
-                noise_var = noise_var.real
+            if noise_var_tensor.is_complex():
+                noise_var_tensor = noise_var_tensor.real
 
             # Handle broadcasting dimensions for noise_var
-            if noise_var.dim() == 0:  # scalar
-                noise_var = noise_var.expand(*batch_shape, symbol_shape)
+            if noise_var_tensor.dim() == 0:  # scalar
+                noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
             llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
@@ -245,7 +247,7 @@ class QAMDemodulator(BaseDemodulator):
                 # Calculate LLR as log(P(bit=0)/P(bit=1))
                 # For AWGN channel: LLR = (dist_1 - dist_0)/(2*noise_var)
                 # Positive LLR means bit 0 is more likely
-                llrs[..., bit_idx] = (dist_1 - dist_0) / (2 * noise_var)
+                llrs[..., bit_idx] = (dist_1 - dist_0) / (2 * noise_var_tensor)
 
             return llrs.reshape(*batch_shape, -1)
 

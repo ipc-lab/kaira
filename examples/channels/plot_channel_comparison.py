@@ -323,7 +323,7 @@ fig = plt.figure(figsize=(12, 10))
 ax = fig.add_subplot(111, projection="3d")
 
 # Plot the surface
-surf = ax.plot_surface(signal_grid, noise_grid, ber_grid, cmap=cmap, edgecolor="none", alpha=0.8)
+surf = ax.plot_surface(signal_grid, noise_grid, ber_grid, cmap=cmap, edgecolor="none", alpha=0.8)  # type: ignore[attr-defined]
 
 # Add a color bar
 fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Bit Error Rate")
@@ -331,11 +331,11 @@ fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Bit Error Rate")
 # Set labels and title
 ax.set_xlabel("Signal Power", fontsize=12)
 ax.set_ylabel("Noise Variance", fontsize=12)
-ax.set_zlabel("Bit Error Rate", fontsize=12)
+ax.set_zlabel("Bit Error Rate", fontsize=12)  # type: ignore[attr-defined]
 ax.set_title("Theoretical Bit Error Rate for AWGN Channel\nwith varying Signal Power and Noise", fontsize=16)
 
 # Adjust the viewing angle
-ax.view_init(elev=30, azim=45)
+ax.view_init(elev=30, azim=45)  # type: ignore[attr-defined]
 
 plt.tight_layout()
 plt.show()

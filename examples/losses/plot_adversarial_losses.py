@@ -118,10 +118,10 @@ for i in range(len(real_range)):
 fig = plt.figure(figsize=(15, 10))
 for idx, (name, loss_surface) in enumerate(Z.items(), 1):
     ax = fig.add_subplot(2, 2, idx, projection="3d")
-    surf = ax.plot_surface(X.numpy(), Y.numpy(), loss_surface.numpy(), cmap="viridis")
+    surf = ax.plot_surface(X.numpy(), Y.numpy(), loss_surface.numpy(), cmap="viridis")  # type: ignore[attr-defined]
     ax.set_xlabel("Real Output")
     ax.set_ylabel("Fake Output")
-    ax.set_zlabel("Loss")
+    ax.set_zlabel("Loss")  # type: ignore[attr-defined]
     ax.set_title(f"{name} Discriminator Loss")
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
 

@@ -272,7 +272,7 @@ for i, (name, modulation, bits_per_symbol) in enumerate(modulation_schemes):
     ax.axvline(x=0, color="black", alpha=0.5, linestyle="-")
 
 plt.suptitle("Constellation Diagrams for Different Modulation Schemes", fontsize=16, fontweight="bold")
-plt.tight_layout(rect=[0, 0.03, 1, 0.97])
+plt.tight_layout(rect=(0, 0.03, 1, 0.97))
 
 # %%
 # Calculating Bit Error Rate (BER) for Different Schemes
@@ -301,7 +301,7 @@ for name, modulation, bits_per_symbol in modulation_schemes:
 
     for snr_db in snr_db_range:
         # Update channel SNR
-        channel.snr_db = snr_db
+        channel.snr_db = float(snr_db)
 
         # Modulate bits to symbols
         tx_symbols = modulation.modulate(input_bits)
@@ -384,12 +384,12 @@ for i, (name, modulation, bits_per_symbol) in enumerate(vis_schemes):
     # Modulate bits to symbols
     tx_symbols = modulation.modulate(input_bits)
 
-    for j, snr_db in enumerate(snr_values):
+    for j, snr_db_value in enumerate(snr_values):
         # Create subplot
         ax = fig.add_subplot(gs[i, j])
 
         # Update channel SNR
-        channel = AWGNChannel(snr_db=snr_db)
+        channel = AWGNChannel(snr_db=float(snr_db_value))
 
         # Pass through noisy channel
         rx_symbols = channel(tx_symbols)
@@ -484,7 +484,7 @@ for i, (name, modulation, bits_per_symbol) in enumerate(vis_schemes):
             ax.legend(fontsize=8, loc="upper right")
 
 plt.suptitle("Effect of Noise on Different Modulation Schemes", fontsize=16, fontweight="bold")
-plt.tight_layout(rect=[0, 0.03, 1, 0.97])
+plt.tight_layout(rect=(0, 0.03, 1, 0.97))
 
 # %%
 # 3D Visualization of Soft Decision Boundaries
@@ -523,12 +523,12 @@ for i, (name, modulation) in enumerate(soft_modulations):
         # For 1D modulations, plot along the x-axis only
         Z = np.zeros_like(X)
         Z[:, :] = safe_to_real(soft_bits[:, 0]).numpy().reshape(X.shape)
-        surf = ax.plot_surface(X, np.zeros_like(Y), Z, cmap="viridis", alpha=0.8, linewidth=0, antialiased=True)
+        surf = ax.plot_surface(X, np.zeros_like(Y), Z, cmap="viridis", alpha=0.8, linewidth=0, antialiased=True)  # type: ignore[attr-defined]
         ax.contour(X, np.zeros_like(Y), Z, zdir="z", offset=0, cmap="viridis", alpha=0.5)
     else:
         # For 2D modulations, use the full grid
         Z = safe_to_real(soft_bits[:, 0]).numpy().reshape(X.shape)
-        surf = ax.plot_surface(X, Y, Z, cmap="viridis", alpha=0.8, linewidth=0, antialiased=True)
+        surf = ax.plot_surface(X, Y, Z, cmap="viridis", alpha=0.8, linewidth=0, antialiased=True)  # type: ignore[attr-defined]
         ax.contour(X, Y, Z, zdir="z", offset=0, cmap="viridis", alpha=0.5)
 
     # Add a colorbar
@@ -537,14 +537,14 @@ for i, (name, modulation) in enumerate(soft_modulations):
     # Set labels and title
     ax.set_xlabel("In-phase (I)")
     ax.set_ylabel("Quadrature (Q)")
-    ax.set_zlabel("Probability")
+    ax.set_zlabel("Probability")  # type: ignore[attr-defined]
     ax.set_title(f"{name} Soft Decision Regions", fontsize=14, fontweight="bold")
 
     # Set reasonable view angle
-    ax.view_init(elev=30, azim=45)
+    ax.view_init(elev=30, azim=45)  # type: ignore[attr-defined]
 
 plt.suptitle("Soft-Decision Demodulation Probability Landscapes", fontsize=16, fontweight="bold")
-plt.tight_layout(rect=[0, 0.03, 1, 0.97])
+plt.tight_layout(rect=(0, 0.03, 1, 0.97))
 
 # %%
 # Spectral Efficiency Comparison
@@ -811,7 +811,7 @@ for scheme in adaptive_mod.schemes[:-1]:
 ax2 = fig.add_subplot(gs[1])
 # Get the indices of the schemes instead of assigning the schemes directly
 scheme_indices = [adaptive_mod.schemes.index(s) for s in selected_schemes]
-colors = [s["color"] for s in selected_schemes]
+colors = [str(s["color"]) for s in selected_schemes]  # type: ignore[assignment]
 ax2.scatter(time, scheme_indices, c=colors, s=50, alpha=0.7)
 
 # Connect the dots
@@ -844,7 +844,7 @@ ax3b.set_ylim(1e-6, 1)
 
 # Add combined legend
 lines = [line1, line2]
-ax3.legend(lines, [line.get_label() for line in lines], loc="upper right")
+ax3.legend(lines, [str(line.get_label()) for line in lines], loc="upper right")
 ax3.set_title("System Performance with Adaptive Modulation", fontsize=14, fontweight="bold")
 ax3.grid(True, linestyle="--", alpha=0.7)
 

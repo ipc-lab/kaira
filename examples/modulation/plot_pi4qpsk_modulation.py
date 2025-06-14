@@ -165,7 +165,7 @@ pi4qpsk_demod.reset_state()
 for snr_db in snr_db_range:
     # Calculate noise power and create Rayleigh fading channel
     noise_power = snr_to_noise_power(1.0, snr_db)
-    channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=n_symbols // 10, snr_db=snr_db)  # Introducing some temporal correlation
+    channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=n_symbols // 10, snr_db=float(snr_db))  # Introducing some temporal correlation
 
     # π/4-QPSK transmission
     received_pi4qpsk = channel(pi4qpsk_symbols)

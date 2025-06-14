@@ -626,20 +626,20 @@ def rician_outage_prob(snr_db, rate, K_factor):
 
 
 # Rates to compare
-rates = [1, 2, 4]  # bits/channel use
+outage_rates = [1, 2, 4]  # bits/channel use
 
 # K-factor for Rician fading
 K_factor = 5  # dB
 
 # Calculate outage probabilities
 rayleigh_outage = []
-for rate in rates:
+for rate in outage_rates:
     rayleigh_outage.append([rayleigh_outage_prob(snr, rate) for snr in snr_db_range])
 
 # Plotting
 plt.figure(figsize=(12, 8))
 
-for i, rate in enumerate(rates):
+for i, rate in enumerate(outage_rates):
     plt.semilogy(snr_db_range, rayleigh_outage[i], linewidth=3, label=f"Rate = {rate} bits/use (Rayleigh)")
 
 # Add outage capacity curve (when rate = log2(1+SNR))

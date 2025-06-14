@@ -1,6 +1,6 @@
 """Pulse Amplitude Modulation (PAM) schemes."""
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
 import torch
@@ -128,7 +128,7 @@ class PAMModulator(BaseModulator):
 
         return symbols
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the PAM constellation diagram.
 
         Args:

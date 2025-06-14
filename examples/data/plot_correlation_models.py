@@ -147,8 +147,8 @@ crossover_probs = [0.05, 0.1, 0.3]
 binary_models = []
 binary_side_info = []
 
-for p in crossover_probs:
-    model = WynerZivCorrelationModel(correlation_type="binary", correlation_params={"crossover_prob": p})
+for crossover_p in crossover_probs:
+    model = WynerZivCorrelationModel(correlation_type="binary", correlation_params={"crossover_prob": crossover_p})
     binary_models.append(model)
     # Generate correlated side information
     with torch.no_grad():
@@ -179,10 +179,10 @@ plt.legend()
 
 # Plot side information for each crossover probability
 colors = ["g", "r", "m"]
-for i, (p, side_info) in enumerate(zip(crossover_probs, binary_side_info)):
+for i, (crossover_prob, side_info) in enumerate(zip(crossover_probs, binary_side_info)):
     ax = plt.subplot(4, 1, i + 2, sharex=ax1)
     plt.step(np.arange(segment_size), binary_source[0, segment_start:segment_end].numpy(), "b-", where="mid", label="Source X")
-    plt.step(np.arange(segment_size), side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", where="mid", label=f"Side Info Y (p={p})")
+    plt.step(np.arange(segment_size), side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", where="mid", label=f"Side Info Y (p={crossover_prob})")
 
     # Highlight the flipped bits
     flipped = binary_source[0, segment_start:segment_end] != side_info[0, segment_start:segment_end]
@@ -190,7 +190,7 @@ for i, (p, side_info) in enumerate(zip(crossover_probs, binary_side_info)):
     if len(flipped_indices) > 0:
         plt.scatter(flipped_indices, side_info[0, segment_start:segment_end][flipped].numpy(), s=100, facecolors="none", edgecolors="black")
 
-    plt.title(f"Binary Symmetric Channel Correlation (p={p})")
+    plt.title(f"Binary Symmetric Channel Correlation (p={crossover_prob})")
     plt.ylabel("Value")
     plt.ylim(-0.1, 1.1)
     plt.grid(True, alpha=0.3)

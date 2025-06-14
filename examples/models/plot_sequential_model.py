@@ -562,7 +562,7 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.legend(fontsize=10)
 
 plt.suptitle("Training Performance Comparison", fontsize=16, fontweight="bold")
-plt.tight_layout(rect=[0, 0, 1, 0.96])
+plt.tight_layout(rect=(0, 0, 1, 0.96))
 
 # %%
 # Analyzing Model Performance Across Inputs

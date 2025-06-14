@@ -162,15 +162,17 @@ class OQPSKDemodulator(BaseDemodulator):
         else:
             # Soft decision: LLRs
             if not isinstance(noise_var, torch.Tensor):
-                noise_var = torch.tensor(noise_var, device=y.device)
+                noise_var_tensor = torch.tensor(noise_var, device=y.device)
+            else:
+                noise_var_tensor = noise_var
 
             # Handle broadcasting dimensions for noise_var
-            if noise_var.dim() == 0:  # scalar
-                noise_var = noise_var.expand(*batch_shape)
+            if noise_var_tensor.dim() == 0:  # scalar
+                noise_var_tensor = noise_var_tensor.expand(*batch_shape)
 
             # OQPSK demodulation is same as QPSK for LLR calculation
             # since I and Q are orthogonal
-            llr_real = 2 * y_real * self._normalization / noise_var
-            llr_imag = 2 * y_imag * self._normalization / noise_var
+            llr_real = 2 * y_real * self._normalization / noise_var_tensor
+            llr_imag = 2 * y_imag * self._normalization / noise_var_tensor
 
             return torch.cat([llr_real.reshape(*batch_shape, 1), llr_imag.reshape(*batch_shape, 1)], dim=-1).reshape(*batch_shape[:-1], -1)

@@ -28,6 +28,7 @@ import numpy as np
 import seaborn as sns
 import torch
 from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.mplot3d import Axes3D
 
 from kaira.channels import AWGNChannel, RayleighFadingChannel, RicianFadingChannel
 from kaira.modulations import BPSKModulator, PSKModulator, QAMModulator, QPSKModulator
@@ -295,7 +296,7 @@ if 1 in EXAMPLES_TO_RUN:
             spine.set_linewidth(1.5)
 
         # Add colorbar to show modulation order
-        sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=1, vmax=len(modulators)))
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("viridis"), norm=plt.Normalize(vmin=1, vmax=len(modulators)))
         sm.set_array([])
         cbar = plt.colorbar(sm, ax=ax1, orientation="vertical", pad=0.01, shrink=0.8)
         cbar.set_label("Modulation Order", fontsize=12, fontweight="bold")
@@ -321,7 +322,9 @@ if 2 in EXAMPLES_TO_RUN:
     # Create a figure for 3D plotting
     # Increase figure size to allow more space for labels
     fig2 = plt.figure(figsize=(18, 12))
-    ax2 = fig2.add_subplot(111, projection="3d")
+    from typing import cast
+
+    ax2 = cast(Axes3D, fig2.add_subplot(111, projection="3d"))
 
     # Define channel models and labels
     channels = [awgn_channel, rayleigh_channel, rician_channel]
@@ -354,20 +357,20 @@ if 2 in EXAMPLES_TO_RUN:
         snr_indices = [0, len(snr_db_range) // 3, 2 * len(snr_db_range) // 3, -1]  # More granular
 
     snr_labels = [f"{snr_db_range[i]:.0f} dB" for i in snr_indices]
-    cmap = plt.cm.viridis
+    cmap = plt.get_cmap("viridis")
 
     for k, snr_idx in enumerate(snr_indices):
         offset = k * 2  # Offset each surface for visibility
-        surf = ax2.plot_surface(mod_indices, channel_indices + offset, z_data[:, :, snr_idx].T, cmap=cmap, alpha=0.8, label=snr_labels[k])
+        surf = ax2.plot_surface(mod_indices, channel_indices + offset, z_data[:, :, snr_idx].T, cmap=cmap, alpha=0.8, label=snr_labels[k])  # type: ignore[attr-defined]
         # Add wire frame for better visibility
-        ax2.plot_wireframe(mod_indices, channel_indices + offset, z_data[:, :, snr_idx].T, color="black", alpha=0.1, linewidth=0.5)
+        ax2.plot_wireframe(mod_indices, channel_indices + offset, z_data[:, :, snr_idx].T, color="black", alpha=0.1, linewidth=0.5)  # type: ignore[attr-defined]
         # Add text annotation for SNR value
-        ax2.text(len(mod_subset) - 1, offset, np.max(z_data[:, :, snr_idx]) + 0.2, snr_labels[k], fontsize=12, fontweight="bold")
+        ax2.text(str(snr_labels[k]), len(mod_subset) - 1, offset, np.max(z_data[:, :, snr_idx]) + 0.2, fontsize=12, fontweight="bold")  # type: ignore[misc]
 
     # Customize the 3D plot
     ax2.set_xlabel("Modulation Scheme", fontsize=14, fontweight="bold")
     ax2.set_ylabel("Channel Type", fontsize=14, fontweight="bold")
-    ax2.set_zlabel("Capacity (bits/channel use)", fontsize=14, fontweight="bold")
+    ax2.set_zlabel("Capacity (bits/channel use)", fontsize=14, fontweight="bold")  # type: ignore[attr-defined]
     ax2.set_title("3D Comparison of Capacity across Channels and Modulations", fontsize=16, fontweight="bold")
 
     # Set custom tick labels
@@ -385,10 +388,10 @@ if 2 in EXAMPLES_TO_RUN:
     ax2.legend(handles=legend_elements, loc="upper left", title="SNR Values", fontsize=10, title_fontsize=12)
 
     # Set the viewing angle for best visibility
-    ax2.view_init(elev=25, azim=-35)
+    ax2.view_init(elev=25, azim=-35)  # type: ignore[attr-defined]
 
     # Add annotations explaining key insights
-    ax2.text2D(
+    ax2.text2D(  # type: ignore[attr-defined]
         0.05,
         0.05,
         "Observations:\n" + "1. AWGN channels achieve highest capacity\n" + "2. Rayleigh fading has lowest capacity due to absence of LOS\n" + "3. Higher order modulations benefit more from better channels\n" + "4. Capacity gap widens at higher SNR values",
@@ -507,8 +510,8 @@ if 3 in EXAMPLES_TO_RUN:
         # Configure axes - simplified in ultra_fast mode
         ax.set_xticks(np.arange(len(rx_antennas)))
         ax.set_yticks(np.arange(len(tx_antennas)))
-        ax.set_xticklabels(rx_antennas)
-        ax.set_yticklabels(tx_antennas)
+        ax.set_xticklabels([str(x) for x in rx_antennas])
+        ax.set_yticklabels([str(y) for y in tx_antennas])
 
         # Adjust font sizes based on performance mode
         label_fontsize = 10 if PERFORMANCE_MODE == "ultra_fast" else 12
@@ -535,7 +538,7 @@ if 3 in EXAMPLES_TO_RUN:
     if PERFORMANCE_MODE == "ultra_fast":
         plt.figtext(0.5, 0.01, "Key observation: Capacity scales with min(nTx, nRx)", ha="center", fontsize=10)
     else:
-        textbox = fig3.add_axes([0.1, 0.01, 0.8, 0.05])
+        textbox = fig3.add_axes((0.1, 0.01, 0.8, 0.05))
         textbox.axis("off")
         textbox.text(
             0.5,
@@ -665,10 +668,11 @@ if 4 in EXAMPLES_TO_RUN:
                 legend_elements.append(line)
 
     # Add channel types to legend
+    from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
 
     for name, color in zip(channel_names, channel_colors):
-        legend_elements.append(Patch(facecolor=color, label=name))
+        legend_elements.append(Patch(facecolor=color, label=name))  # type: ignore[arg-type]
 
     # Add median lines - simplified in ultra_fast mode
     if PERFORMANCE_MODE != "ultra_fast":

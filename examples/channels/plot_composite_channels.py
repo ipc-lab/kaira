@@ -350,13 +350,14 @@ for i, phase_std in enumerate(phase_noise_levels):
 plt.figure(figsize=(10, 8))
 
 # Create heatmap
-ax = sns.heatmap(ser_matrix, annot=True, fmt=".3f", cmap="viridis_r", xticklabels=snr_db_levels, yticklabels=phase_noise_levels)
+ax = sns.heatmap(ser_matrix, annot=True, fmt=".3f", cmap="viridis_r", xticklabels=[str(x) for x in snr_db_levels], yticklabels=[str(y) for y in phase_noise_levels])
 
 plt.xlabel("SNR (dB)")
 plt.ylabel("Phase Noise Std (rad)")
 plt.title("Symbol Error Rate: Phase Noise + AWGN")
 cbar = ax.collections[0].colorbar
-cbar.set_label("Symbol Error Rate")
+if cbar is not None:
+    cbar.set_label("Symbol Error Rate")
 plt.tight_layout()
 plt.show()
 

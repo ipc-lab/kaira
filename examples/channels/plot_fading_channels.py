@@ -100,8 +100,8 @@ noise_power = snr_to_noise_power(signal_power, snr_db)
 
 # Create the channels
 perfect_channel = PerfectChannel()
-awgn_channel = AWGNChannel(avg_noise_power=noise_power)
-fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)  # Use Rayleigh fading  # Independent fading for each symbol
+awgn_channel = AWGNChannel(avg_noise_power=float(noise_power.item()))
+fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=float(noise_power.item()))  # Use Rayleigh fading  # Independent fading for each symbol
 
 # Channel Configuration Results:
 # Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})
@@ -231,13 +231,14 @@ awgn_ser = []
 fading_ser = []
 
 # For each SNR level, simulate transmission and measure error rate
-for snr_db in snr_range_db:
+for snr_db_value in snr_range_db:
     # Calculate noise power from SNR
-    noise_power = snr_to_noise_power(signal_power, snr_db)
+    snr_db_val = int(snr_db_value)
+    noise_power = snr_to_noise_power(signal_power, float(snr_db_val))
 
     # Create channels with current SNR
-    awgn = AWGNChannel(avg_noise_power=noise_power)
-    fading = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)
+    awgn = AWGNChannel(avg_noise_power=float(noise_power.item()))
+    fading = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=float(noise_power.item()))
 
     # Pass signal through channels
     with torch.no_grad():
@@ -326,7 +327,7 @@ with torch.no_grad():
 time_input = time_symbols.view(1, -1)
 
 # Create a fading channel with time-correlation
-time_fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=noise_power)  # Fading stays constant for 10 symbols
+time_fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=float(noise_power.item()))  # Fading stays constant for 10 symbols
 
 # Pass signal through the channel
 with torch.no_grad():
