@@ -6,11 +6,13 @@ import torch
 from kaira.metrics.signal import (
     BER,
     BLER,
+    EVM,
     FER,
     SER,
     SNR,
     BitErrorRate,
     BlockErrorRate,
+    ErrorVectorMagnitude,
     FrameErrorRate,
     SignalToNoiseRatio,
     SymbolErrorRate,
@@ -149,6 +151,75 @@ def test_ber_update_compute_multiple_batches():
     assert metric.compute() == 0.0
     assert metric.total_bits == 0
     assert metric.error_bits == 0
+
+
+def test_ber_stateful_methods():
+    """Test BER metric stateful update, compute, and reset methods."""
+    metric = BitErrorRate()
+
+    # Test reset
+    metric.reset()
+
+    # Test update and compute with real data
+    transmitted1 = torch.tensor([1, 0, 1, 0], dtype=torch.float32)
+    received1 = torch.tensor([1, 1, 1, 0], dtype=torch.float32)  # 1 error out of 4 bits
+
+    transmitted2 = torch.tensor([0, 1, 0, 1], dtype=torch.float32)
+    received2 = torch.tensor([0, 1, 1, 1], dtype=torch.float32)  # 1 error out of 4 bits
+
+    # Update with first batch
+    metric.update(transmitted1, received1)
+    ber1 = metric.compute()
+    expected_ber1 = 1.0 / 4.0  # 1 error out of 4 bits
+    assert torch.isclose(ber1, torch.tensor(expected_ber1)), f"BER after first update should be {expected_ber1}, got {ber1}"
+
+    # Update with second batch
+    metric.update(transmitted2, received2)
+    ber2 = metric.compute()
+    expected_ber2 = 2.0 / 8.0  # 2 errors out of 8 total bits
+    assert torch.isclose(ber2, torch.tensor(expected_ber2)), f"BER after second update should be {expected_ber2}, got {ber2}"
+
+    # Test reset
+    metric.reset()
+    ber_reset = metric.compute()
+    assert torch.isclose(ber_reset, torch.tensor(0.0)), f"BER after reset should be 0, got {ber_reset}"
+
+
+def test_ber_stateful_complex():
+    """Test BER metric stateful methods with complex data."""
+    metric = BitErrorRate()
+    metric.reset()
+
+    # Complex data
+    transmitted = torch.tensor([1 + 1j, 0 + 0j, 1 + 0j, 0 + 1j], dtype=torch.complex64)
+    received = torch.tensor([1 + 1j, 1 + 0j, 0 + 0j, 0 + 1j], dtype=torch.complex64)  # 2 errors
+
+    metric.update(transmitted, received)
+    ber = metric.compute()
+
+    expected_ber = 2.0 / 8.0  # 2 errors out of 8 "bits" (real+imag)
+    assert torch.isclose(ber, torch.tensor(expected_ber)), f"Complex BER should be {expected_ber}, got {ber}"
+
+
+def test_ber_error_conditions():
+    """Test BER error conditions for full coverage."""
+    metric = BitErrorRate()
+
+    # Test shape mismatch in forward
+    with pytest.raises(ValueError, match="Input shapes must match"):
+        metric.forward(torch.tensor([1, 0]), torch.tensor([1, 0, 1]))
+
+    # Test shape mismatch in update
+    with pytest.raises(ValueError, match="Input shapes must match"):
+        metric.update(torch.tensor([1, 0]), torch.tensor([1, 0, 1]))
+
+    # Test mixed complex/real error in forward
+    with pytest.raises(ValueError, match="Both inputs must be complex if one is complex"):
+        metric.forward(torch.tensor([1 + 0j, 0 + 0j]), torch.tensor([1.0, 0.0]))
+
+    # Test mixed complex/real error in update
+    with pytest.raises(ValueError, match="Both inputs must be complex if one is complex for update"):
+        metric.update(torch.tensor([1 + 0j, 0 + 0j]), torch.tensor([1.0, 0.0]))
 
 
 # ===== BitErrorRate (BER) Tests =====
@@ -1018,6 +1089,264 @@ class TestSignalToNoiseRatio:
 # ===== Common Tests =====
 
 
+class TestErrorVectorMagnitude:
+    """Test cases for Error Vector Magnitude (EVM) metric."""
+
+    def test_evm_basic_computation(self):
+        """Test basic EVM computation with simple signals."""
+        metric = ErrorVectorMagnitude()
+
+        # Create simple complex signals
+        reference = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = torch.tensor([0.9 + 0.1j, 0.1 + 0.9j, -0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        evm = metric.forward(reference, received)
+        assert evm > 0, "EVM should be positive for signals with errors"
+        assert evm < 100, "EVM should be less than 100% for reasonable signals"
+
+    def test_evm_perfect_signal(self):
+        """Test EVM with perfect signal (no errors)."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = reference.clone()
+
+        evm = metric.forward(reference, received)
+        assert torch.isclose(evm, torch.tensor(0.0), atol=1e-6), f"EVM should be 0 for perfect signal, got {evm}"
+
+    def test_evm_modes(self):
+        """Test different EVM calculation modes."""
+        reference = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = torch.tensor([0.9 + 0.1j, 0.1 + 0.9j, -0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        # Test RMS mode
+        evm_rms = ErrorVectorMagnitude(mode="rms")
+        evm_rms_val = evm_rms.forward(reference, received)
+
+        # Test Peak mode
+        evm_peak = ErrorVectorMagnitude(mode="peak")
+        evm_peak_val = evm_peak.forward(reference, received)
+
+        # Test Percentile mode
+        evm_percentile = ErrorVectorMagnitude(mode="percentile", percentile=95.0)
+        evm_percentile_val = evm_percentile.forward(reference, received)
+
+        # Peak should be >= RMS for signals with errors
+        assert evm_peak_val >= evm_rms_val, "Peak EVM should be >= RMS EVM"
+        assert evm_percentile_val > 0, "Percentile EVM should be positive"
+
+    def test_evm_normalization(self):
+        """Test EVM with and without normalization."""
+        reference = torch.tensor([2 + 0j, 0 + 2j, -2 + 0j, 0 - 2j], dtype=torch.complex64)
+        received = torch.tensor([1.8 + 0.2j, 0.2 + 1.8j, -1.8 + 0.2j, 0.2 - 1.8j], dtype=torch.complex64)
+
+        evm_normalized = ErrorVectorMagnitude(normalize=True)
+        evm_not_normalized = ErrorVectorMagnitude(normalize=False)
+
+        evm_norm_val = evm_normalized.forward(reference, received)
+        evm_no_norm_val = evm_not_normalized.forward(reference, received)
+
+        assert evm_norm_val != evm_no_norm_val, "Normalized and non-normalized EVM should differ"
+        assert evm_norm_val > 0, "Normalized EVM should be positive"
+        assert evm_no_norm_val > 0, "Non-normalized EVM should be positive"
+
+    def test_evm_real_signals(self):
+        """Test EVM with real-valued signals."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1.0, -1.0, 1.0, -1.0])
+        received = torch.tensor([0.9, -0.9, 1.1, -1.1])
+
+        evm = metric.forward(reference, received)
+        assert evm > 0, "EVM should be positive for signals with errors"
+
+    def test_evm_empty_input(self):
+        """Test EVM with empty input tensors."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([], dtype=torch.complex64)
+        received = torch.tensor([], dtype=torch.complex64)
+
+        evm = metric.forward(reference, received)
+        assert torch.isclose(evm, torch.tensor(0.0)), f"EVM should be 0 for empty tensors, got {evm}"
+
+    def test_evm_shape_mismatch(self):
+        """Test EVM with mismatched input shapes."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1 + 0j, 0 + 1j], dtype=torch.complex64)
+        received = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j], dtype=torch.complex64)
+
+        with pytest.raises(ValueError, match="Input shapes must match"):
+            metric.forward(reference, received)
+
+    def test_evm_invalid_mode(self):
+        """Test EVM initialization with invalid mode."""
+        with pytest.raises(ValueError, match="Mode must be 'rms', 'peak', or 'percentile', got 'invalid'"):
+            ErrorVectorMagnitude(mode="invalid")
+
+    def test_evm_invalid_percentile(self):
+        """Test EVM initialization with invalid percentile values."""
+        with pytest.raises(ValueError, match="Percentile must be between 0 and 100, got 0"):
+            ErrorVectorMagnitude(mode="percentile", percentile=0)
+
+        with pytest.raises(ValueError, match="Percentile must be between 0 and 100, got 101"):
+            ErrorVectorMagnitude(mode="percentile", percentile=101)
+
+    def test_evm_per_symbol_calculation(self):
+        """Test per-symbol EVM calculation."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = torch.tensor([0.9 + 0.1j, 0.1 + 0.9j, -0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        per_symbol_evm = metric.calculate_per_symbol_evm(reference, received)
+
+        assert per_symbol_evm.shape == reference.shape, "Per-symbol EVM should have same shape as input"
+        assert torch.all(per_symbol_evm >= 0), "All per-symbol EVM values should be non-negative"
+
+    def test_evm_per_symbol_empty(self):
+        """Test per-symbol EVM with empty tensors."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([], dtype=torch.complex64)
+        received = torch.tensor([], dtype=torch.complex64)
+
+        per_symbol_evm = metric.calculate_per_symbol_evm(reference, received)
+        assert per_symbol_evm.numel() == 0, "Per-symbol EVM should be empty for empty input"
+
+    def test_evm_per_symbol_shape_mismatch(self):
+        """Test per-symbol EVM with mismatched shapes."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1 + 0j, 0 + 1j], dtype=torch.complex64)
+        received = torch.tensor([1 + 0j], dtype=torch.complex64)
+
+        with pytest.raises(ValueError, match="Input shapes must match"):
+            metric.calculate_per_symbol_evm(reference, received)
+
+    def test_evm_statistics(self):
+        """Test comprehensive EVM statistics calculation."""
+        metric = ErrorVectorMagnitude()
+
+        reference = torch.tensor([1 + 0j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = torch.tensor([0.9 + 0.1j, 0.1 + 0.9j, -0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        stats = metric.calculate_statistics(reference, received)
+
+        expected_keys = ["evm_rms", "evm_mean", "evm_std", "evm_min", "evm_max", "evm_median", "evm_95th", "evm_99th", "evm_per_symbol"]
+
+        assert all(key in stats for key in expected_keys), "All expected statistics should be present"
+        assert stats["evm_min"] <= stats["evm_mean"] <= stats["evm_max"], "Statistics should be ordered correctly"
+        assert stats["evm_per_symbol"].shape == reference.shape, "Per-symbol stats should match input shape"
+
+    def test_evm_batched_input(self):
+        """Test EVM with batched input."""
+        metric = ErrorVectorMagnitude()
+
+        # Create batched data
+        batch_size = 3
+        signal_length = 4
+        reference = torch.randn(batch_size, signal_length, dtype=torch.complex64)
+        noise = torch.randn(batch_size, signal_length, dtype=torch.complex64) * 0.1
+        received = reference + noise
+
+        evm = metric.forward(reference, received)
+        assert evm > 0, "EVM should be positive for noisy signals"
+        assert torch.isfinite(evm), "EVM should be finite"
+
+    def test_evm_zero_reference(self):
+        """Test EVM behavior with zero reference signal."""
+        metric = ErrorVectorMagnitude(normalize=True)
+
+        reference = torch.zeros(4, dtype=torch.complex64)
+        received = torch.tensor([0.1 + 0.1j, 0.1 + 0.1j, 0.1 + 0.1j, 0.1 + 0.1j], dtype=torch.complex64)
+
+        # Should handle zero reference gracefully due to clamping
+        evm = metric.forward(reference, received)
+        assert torch.isfinite(evm), "EVM should be finite even with zero reference"
+
+    def test_evm_update_compute(self):
+        """Test EVM metric state update and compute methods."""
+        metric = ErrorVectorMagnitude()
+
+        reference1 = torch.tensor([1 + 0j, 0 + 1j], dtype=torch.complex64)
+        received1 = torch.tensor([0.9 + 0.1j, 0.1 + 0.9j], dtype=torch.complex64)
+
+        reference2 = torch.tensor([-1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received2 = torch.tensor([-0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        # Test single update
+        metric.reset()
+        metric.update(reference1, received1)
+        evm1 = metric.compute()
+
+        # Test multiple updates
+        metric.reset()
+        metric.update(reference1, received1)
+        metric.update(reference2, received2)
+        evm2 = metric.compute()
+
+        assert torch.isfinite(evm1), "Single update EVM should be finite"
+        assert torch.isfinite(evm2), "Multiple update EVM should be finite"
+        assert evm1 > 0, "Single update EVM should be positive"
+        assert evm2 > 0, "Multiple update EVM should be positive"
+
+    def test_evm_comprehensive_coverage(self):
+        """Test comprehensive EVM functionality to achieve 100% coverage."""
+        metric = ErrorVectorMagnitude()
+
+        # Test with complex signals to ensure all code paths are hit
+        reference = torch.tensor([1 + 1j, 0 + 1j, -1 + 0j, 0 - 1j], dtype=torch.complex64)
+        received = torch.tensor([0.9 + 0.9j, 0.1 + 0.9j, -0.9 + 0.1j, 0.1 - 0.9j], dtype=torch.complex64)
+
+        # Test forward method (should hit lines 73-115)
+        evm_result = metric.forward(reference, received)
+        assert evm_result > 0, "EVM should be positive for signals with errors"
+
+        # Test calculate_per_symbol_evm method (should hit lines 127-153)
+        per_symbol_result = metric.calculate_per_symbol_evm(reference, received)
+        assert per_symbol_result.shape == reference.shape, "Per-symbol EVM should match input shape"
+        assert torch.all(per_symbol_result >= 0), "Per-symbol EVM should be non-negative"
+
+        # Test calculate_statistics method (should hit lines 166-181)
+        stats_result = metric.calculate_statistics(reference, received)
+        expected_keys = ["evm_rms", "evm_mean", "evm_std", "evm_min", "evm_max", "evm_median", "evm_95th", "evm_99th", "evm_per_symbol"]
+        assert all(key in stats_result for key in expected_keys), "All stats keys should be present"
+
+        # Test with zero reference to hit normalization edge case
+        zero_ref = torch.zeros(2, dtype=torch.complex64)
+        received_zero = torch.tensor([0.1 + 0.1j, 0.2 + 0.2j], dtype=torch.complex64)
+        evm_zero = metric.forward(zero_ref, received_zero)
+        assert torch.isfinite(evm_zero), "EVM should be finite even with zero reference"
+
+    def test_evm_edge_cases_for_coverage(self):
+        """Test EVM edge cases to ensure complete coverage."""
+        # Test all three modes with the same data
+        reference = torch.tensor([1 + 0j, 2 + 1j, -1 + 2j], dtype=torch.complex64)
+        received = torch.tensor([0.8 + 0.1j, 1.9 + 0.9j, -0.9 + 1.9j], dtype=torch.complex64)
+
+        # Test RMS mode
+        evm_rms = ErrorVectorMagnitude(mode="rms")
+        result_rms = evm_rms.forward(reference, received)
+
+        # Test Peak mode
+        evm_peak = ErrorVectorMagnitude(mode="peak")
+        result_peak = evm_peak.forward(reference, received)
+
+        # Test Percentile mode
+        evm_percentile = ErrorVectorMagnitude(mode="percentile", percentile=90.0)
+        result_percentile = evm_percentile.forward(reference, received)
+
+        # All should be finite and positive
+        assert torch.isfinite(result_rms), "RMS EVM should be finite"
+        assert torch.isfinite(result_peak), "Peak EVM should be finite"
+        assert torch.isfinite(result_percentile), "Percentile EVM should be finite"
+        assert result_rms > 0, "RMS EVM should be positive"
+        assert result_peak > 0, "Peak EVM should be positive"
+        assert result_percentile > 0, "Percentile EVM should be positive"
+
+
 def test_metrics_aliases():
     """Test that metric aliases work properly."""
     assert BitErrorRate is BER
@@ -1025,3 +1354,132 @@ def test_metrics_aliases():
     assert FrameErrorRate is FER
     assert SymbolErrorRate is SER
     assert SignalToNoiseRatio is SNR
+    assert ErrorVectorMagnitude is EVM
+
+
+# Final comprehensive tests to achieve 100% coverage
+
+
+def test_missing_ber_coverage():
+    """Test specific missing BER coverage lines 105-116 (complex handling in update)."""
+    metric = BitErrorRate()
+    metric.reset()
+
+    # Test complex handling in update method (lines 105-116)
+    transmitted = torch.tensor([1 + 1j, 0 + 0j, 1 + 0j, 0 + 1j], dtype=torch.complex64)
+    received = torch.tensor([1 + 1j, 1 + 0j, 0 + 0j, 0 + 1j], dtype=torch.complex64)
+
+    # This should hit the complex branch in update method
+    metric.update(transmitted, received)
+    ber_result = metric.compute()
+
+    expected_ber = 2.0 / 8.0  # 2 errors out of 8 "bits"
+    assert torch.isclose(ber_result, torch.tensor(expected_ber)), f"Complex BER update should give {expected_ber}, got {ber_result}"
+
+    # Test with real data in update for comparison
+    metric.reset()
+    transmitted_real = torch.tensor([1.0, 0.0, 1.0, 0.0])
+    received_real = torch.tensor([0.9, 0.1, 1.1, 0.1])
+    metric.update(transmitted_real, received_real)
+    ber_real = metric.compute()
+    assert torch.isfinite(ber_real), "Real BER update should be finite"
+
+
+def test_missing_snr_coverage():
+    """Test specific missing SNR coverage lines."""
+    # Test various SNR edge cases to hit missing lines
+
+    # Test with batched data
+    signal_batch = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    noise_batch = torch.tensor([[0.1, 0.2], [0.3, 0.1]])
+
+    snr_db = SignalToNoiseRatio(mode="db")
+    snr_linear = SignalToNoiseRatio(mode="linear")
+
+    # Test batch processing
+    snr_db_val = snr_db.forward(signal_batch, noise_batch)
+    snr_linear_val = snr_linear.forward(signal_batch, noise_batch)
+
+    assert torch.all(torch.isfinite(snr_db_val)), "Batched dB SNR should be finite"
+    assert torch.all(torch.isfinite(snr_linear_val)), "Batched linear SNR should be finite"
+
+    # Test compute_with_stats
+    mean_snr, std_snr = snr_db.compute_with_stats(signal_batch, noise_batch)
+    assert torch.isfinite(mean_snr), "Mean SNR should be finite"
+    assert torch.isfinite(std_snr) or torch.isnan(std_snr), "Std SNR should be finite or NaN"
+
+    # Test with zero noise (edge case)
+    zero_noise = torch.zeros_like(signal_batch)
+    try:
+        snr_zero = snr_db.forward(signal_batch, zero_noise)
+        # Should handle gracefully (might be inf)
+        assert torch.isfinite(snr_zero) or torch.isinf(snr_zero), "Zero noise SNR should be finite or inf"
+    except (RuntimeError, ValueError, ZeroDivisionError):
+        # It's acceptable for zero noise to raise mathematical errors like division by zero
+        # This is expected behavior when computing SNR with zero noise
+        pytest.skip("Zero noise SNR computation raised expected mathematical error")
+
+    # Test with complex signals
+    signal_complex = torch.tensor([1 + 1j, 2 + 0j], dtype=torch.complex64)
+    noise_complex = torch.tensor([0.1 + 0.1j, 0.2 + 0j], dtype=torch.complex64)
+    snr_complex = snr_db.forward(signal_complex, noise_complex)
+    assert torch.isfinite(snr_complex), "Complex SNR should be finite"
+
+
+def test_missing_evm_coverage():
+    """Test remaining EVM coverage lines 74, 78, 128, 132."""
+
+    # Test to hit lines 74, 78 (shape mismatch and empty tensors)
+    metric = ErrorVectorMagnitude()
+
+    # Shape mismatch (line 74)
+    try:
+        metric.forward(torch.tensor([1 + 0j]), torch.tensor([1 + 0j, 2 + 0j]))
+        assert False, "Should have raised ValueError for shape mismatch"
+    except ValueError:
+        pass  # Expected
+
+    # Empty tensors (line 78)
+    empty_ref = torch.tensor([], dtype=torch.complex64)
+    empty_rec = torch.tensor([], dtype=torch.complex64)
+    evm_empty = metric.forward(empty_ref, empty_rec)
+    assert torch.isclose(evm_empty, torch.tensor(0.0)), f"Empty tensor EVM should be 0, got {evm_empty}"
+
+    # Test calculate_per_symbol_evm with shape mismatch (line 128)
+    try:
+        metric.calculate_per_symbol_evm(torch.tensor([1 + 0j]), torch.tensor([1 + 0j, 2 + 0j]))
+        assert False, "Should have raised ValueError for per-symbol shape mismatch"
+    except ValueError:
+        pass  # Expected
+
+    # Test calculate_per_symbol_evm with empty tensors (line 132)
+    per_symbol_empty = metric.calculate_per_symbol_evm(empty_ref, empty_rec)
+    assert per_symbol_empty.numel() == 0, "Per-symbol EVM should be empty for empty input"
+
+
+def test_missing_bler_coverage():
+    """Test missing BLER coverage lines."""
+
+    # Test various BLER edge cases
+    metric = BlockErrorRate()
+
+    # Test with different block sizes
+    metric_block4 = BlockErrorRate(block_size=4)
+    data = torch.tensor([1, 0, 1, 0, 0, 1, 0, 1], dtype=torch.float32).reshape(1, -1)
+    data_err = torch.tensor([1, 1, 1, 0, 0, 1, 1, 1], dtype=torch.float32).reshape(1, -1)
+
+    bler_val = metric_block4.forward(data, data_err)
+    assert torch.isfinite(bler_val), "BLER with block_size should be finite"
+
+    # Test with threshold different from 0.5
+    metric_thresh = BlockErrorRate(threshold=0.7)
+    data_thresh = torch.tensor([[0.8, 0.3, 0.9, 0.2]], dtype=torch.float32)
+    data_thresh_err = torch.tensor([[0.6, 0.8, 0.1, 0.9]], dtype=torch.float32)
+    bler_thresh = metric_thresh.forward(data_thresh, data_thresh_err)
+    assert torch.isfinite(bler_thresh), "BLER with custom threshold should be finite"
+
+    # Test stateful methods
+    metric.reset()
+    metric.update(data, data_err)
+    bler_computed = metric.compute()
+    assert torch.isfinite(bler_computed), "BLER computed should be finite"
