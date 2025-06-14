@@ -54,10 +54,62 @@ jobs:
       - name: Install system dependencies
         run: |
           echo "🔧 Installing system dependencies for BPG..."
-          # Install missing libraries
-          sudo apt-get update -qq
-          sudo apt-get install -y libtiff5-dev pkg-config wget build-essential
-          echo "✅ System dependencies installed"
+
+          # Check if we can use sudo without password
+          if sudo -n true 2>/dev/null; then
+            echo "📦 Installing system packages with sudo..."
+            sudo apt-get update -qq
+            sudo apt-get install -y libtiff5-dev pkg-config wget build-essential
+            echo "✅ System dependencies installed via apt"
+          else
+            echo "⚠️ Cannot use sudo - checking for existing dependencies..."
+
+            # Check if required tools/libraries are already available
+            MISSING_DEPS=()
+
+            # Check for essential build tools
+            if ! command -v gcc &> /dev/null; then
+              MISSING_DEPS+=("gcc")
+            fi
+            if ! command -v make &> /dev/null; then
+              MISSING_DEPS+=("make")
+            fi
+            if ! command -v wget &> /dev/null && ! command -v curl &> /dev/null; then
+              MISSING_DEPS+=("wget or curl")
+            fi
+
+            # Check for pkg-config and libraries
+            if ! command -v pkg-config &> /dev/null; then
+              MISSING_DEPS+=("pkg-config")
+            fi
+            if ! pkg-config --exists libtiff-4 2>/dev/null; then
+              MISSING_DEPS+=("libtiff-dev")
+            fi
+
+            if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
+              echo "✅ All required dependencies are already available"
+            else
+              echo "❌ Missing dependencies: ${MISSING_DEPS[*]}"
+              echo "📝 BPG compilation may fail due to missing system dependencies"
+              echo "💡 Consider configuring passwordless sudo for the runner user"
+              echo "   or pre-installing: libtiff5-dev pkg-config wget build-essential"
+
+              # Try alternative installation methods
+              echo "🔄 Attempting alternative installation methods..."
+
+              # Try using conda if available
+              if command -v conda &> /dev/null; then
+                echo "📦 Trying conda installation..."
+                conda install -c conda-forge libtiff pkg-config -y || echo "⚠️ Conda install failed"
+              fi
+
+              # Try using homebrew if available (for macOS runners)
+              if command -v brew &> /dev/null; then
+                echo "📦 Trying homebrew installation..."
+                brew install libtiff pkg-config || echo "⚠️ Homebrew install failed"
+              fi
+            fi
+          fi
 
       - name: Install BPG tools
         run: |
