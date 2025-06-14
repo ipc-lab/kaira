@@ -37,6 +37,13 @@ class PlottingUtils:
         """Set up consistent plotting style for all examples."""
         plt.style.use("seaborn-v0_8-whitegrid")
         sns.set_context("notebook", font_scale=1.2)
+        # Configure matplotlib to not warn about too many figures in testing environments
+        plt.rcParams["figure.max_open_warning"] = 0
+
+    @staticmethod
+    def close_all_figures():
+        """Close all matplotlib figures to free memory."""
+        plt.close("all")
 
     @staticmethod
     def plot_ldpc_matrix_comparison(H_matrices: List[torch.Tensor], titles: List[str], main_title: str = "LDPC Matrix Comparison") -> plt.Figure:
@@ -135,7 +142,9 @@ class PlottingUtils:
             min_ber = min([np.min(ber_subset) for ber_subset in non_zero_bers])
             ax.set_ylim(min_ber / 10, 1)
         else:
-            ax.set_ylim(1e-6, 1)
+            # When all values are zero, use linear scale instead of log scale
+            ax.set_yscale("linear")
+            ax.set_ylim(0, 0.1)
 
         return fig
 
@@ -407,7 +416,7 @@ class PlottingUtils:
             percentiles = latency_stats["percentiles"]
             box_data = [percentiles["p25"], percentiles["p50"], percentiles["p75"]]
 
-            bp = ax1.boxplot([box_data], patch_artist=True, labels=["Latency"])
+            bp = ax1.boxplot([box_data], patch_artist=True, tick_labels=["Latency"])
             bp["boxes"][0].set_facecolor(PlottingUtils.MODERN_PALETTE[0])
             bp["boxes"][0].set_alpha(0.7)
 
