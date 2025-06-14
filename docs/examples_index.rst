@@ -90,13 +90,6 @@ Examples and Tutorials
             </a>
         </div>
 
-        <div class="category-card">
-            <a href="examples/utils/index.html">
-                <h3>Utility Functions</h3>
-                <p>Essential tools for capacity analysis, SNR estimation, performance profiling, and visualization</p>
-            </a>
-        </div>
-
     </div>
 
 .. raw:: html

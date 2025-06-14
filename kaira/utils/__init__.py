@@ -6,7 +6,6 @@ from typing import Any, Union
 
 import torch
 
-from .capacity_analyzer import CapacityAnalyzer
 from .plotting import (  # Core plotting class
     PlottingUtils,
 )
@@ -94,7 +93,6 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
 
 
 __all__ = [
-    "CapacityAnalyzer",
     "to_tensor",
     "calculate_num_filters_factor_image",
     "snr_db_to_linear",
