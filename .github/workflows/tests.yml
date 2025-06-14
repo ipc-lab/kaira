@@ -42,6 +42,45 @@ jobs:
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-pip-
 
+      - name: Install BPG tools
+        run: |
+          echo "🔧 Installing BPG (Better Portable Graphics) tools..."
+
+          # Check if BPG tools are already installed
+          if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+            echo "✅ BPG tools already installed"
+            bpgenc 2>&1 | head -n 3 || true
+          else
+            echo "📦 Installing BPG tools from source..."
+
+            # Install required dependencies
+            sudo apt-get update
+            sudo apt-get install -y build-essential cmake libjpeg-dev libpng-dev libtiff-dev
+
+            # Download and compile BPG
+            cd /tmp
+            wget -q https://bellard.org/bpg/bpg-0.9.8.tar.gz
+            tar xzf bpg-0.9.8.tar.gz
+            cd bpg-0.9.8
+
+            # Compile BPG tools
+            make
+
+            # Install to system
+            sudo cp bpgenc bpgdec /usr/local/bin/
+            sudo chmod +x /usr/local/bin/bpgenc /usr/local/bin/bpgdec
+
+            # Verify installation
+            if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+              echo "✅ BPG tools installed successfully"
+              bpgenc 2>&1 | head -n 3 || true
+            else
+              echo "❌ BPG tools installation failed"
+              exit 1
+            fi
+          fi
+        shell: bash
+
       - name: Install dependencies
         run: |
           echo "🔧 Installing dependencies for Python ${{ matrix.python-version }}..."
@@ -68,7 +107,16 @@ jobs:
           pytest --version
           python -c "import kaira; print(f'Kaira version: {kaira.__version__}')" || echo "⚠️ Kaira not importable"
 
-          echo "📊 Installed packages:"
+          echo "� Validating BPG tools..."
+          if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+            echo "✅ BPG tools available"
+            echo "bpgenc location: $(which bpgenc)"
+            echo "bpgdec location: $(which bpgdec)"
+          else
+            echo "❌ BPG tools not found in PATH"
+          fi
+
+          echo "�📊 Installed packages:"
           pip list | head -20
 
       - name: Test with pytest
