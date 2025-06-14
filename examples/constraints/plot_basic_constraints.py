@@ -12,19 +12,18 @@ We'll explore how to apply various constraints to signals and visualize their ef
 # ----------------------------------------------------------
 # We start by importing the necessary modules and setting up the environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+# Plotting imports
+from examples.example_utils.plotting import (
+    plot_constraint_comparison,
+    plot_signal_properties_comparison,
+    setup_plotting_style,
+)
 from kaira.constraints import AveragePowerConstraint, PAPRConstraint, TotalPowerConstraint
 from kaira.constraints.utils import measure_signal_properties
-
-# Plotting imports
-from examples.utils.plotting import (
-    setup_plotting_style,
-    plot_constraint_comparison,
-    plot_signal_properties_comparison
-)
-import matplotlib.pyplot as plt
 
 setup_plotting_style()
 

@@ -8,23 +8,24 @@ This example demonstrates advanced visualizations for Low-Density Parity-Check
 and performance comparisons with different decoder configurations.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from tqdm import tqdm
 
+# Plotting imports
+from examples.example_utils.plotting import (
+    plot_belief_propagation_iteration,
+    plot_ber_performance,
+    plot_tanner_graph,
+    setup_plotting_style,
+)
 from kaira.channels.analog import AWGNChannel
 from kaira.models.fec.decoders import BeliefPropagationDecoder
 from kaira.models.fec.encoders import LDPCCodeEncoder
 from kaira.modulations.psk import BPSKDemodulator, BPSKModulator
+from kaira.utils import PlottingUtils
 from kaira.utils.snr import snr_to_noise_power
-
-# Plotting imports
-from examples.utils.plotting import (
-    setup_plotting_style, plot_tanner_graph, 
-    plot_belief_propagation_iteration, plot_ber_performance,
-    MODERN_PALETTE
-)
-import matplotlib.pyplot as plt
 
 setup_plotting_style()
 
@@ -133,10 +134,8 @@ class BeliefPropagationVisualizer:
         beliefs = self.belief_history[iteration]
         var_to_check = self.var_to_check_history[iteration]
         check_to_var = self.check_to_var_history[iteration]
-        
-        return plot_belief_propagation_iteration(
-            beliefs, var_to_check, check_to_var, iteration, self.belief_history
-        )
+
+        return plot_belief_propagation_iteration(beliefs, var_to_check, check_to_var, iteration, self.belief_history)
 
 
 # %%
@@ -289,10 +288,7 @@ for max_iters, ber_values in perf_results.items():
     labels.append(f"{max_iters} iterations")
 
 # Plot BER performance using utility function
-plot_ber_performance(
-    snr_range, ber_curves, labels,
-    "LDPC Performance Analysis: Iteration Benefits", "Bit Error Rate"
-)
+plot_ber_performance(snr_range, ber_curves, labels, "LDPC Performance Analysis: Iteration Benefits", "Bit Error Rate")
 plt.show()
 
 # Additional performance insights plot
@@ -302,11 +298,12 @@ fig.suptitle("LDPC Performance Analysis: Why More Iterations Help", fontsize=16,
 # Convergence benefit visualization
 snr_target = 3.0  # dB - use a point where we have data
 snr_idx = np.argmin(np.abs(snr_range - snr_target))  # Find closest SNR
+
 iterations = list(perf_results.keys())
 bers_at_target = [perf_results[it][snr_idx] for it in iterations]
 
-colors = MODERN_PALETTE[:len(iterations)] if len(iterations) <= len(MODERN_PALETTE) else MODERN_PALETTE * (len(iterations) // len(MODERN_PALETTE) + 1)
-bars = axes[1].bar(range(len(iterations)), bers_at_target, color=colors[:len(iterations)], alpha=0.8, edgecolor="black")
+colors = PlottingUtils.MODERN_PALETTE[: len(iterations)] if len(iterations) <= len(PlottingUtils.MODERN_PALETTE) else PlottingUtils.MODERN_PALETTE * (len(iterations) // len(PlottingUtils.MODERN_PALETTE) + 1)
+bars = axes[1].bar(range(len(iterations)), bers_at_target, color=colors[: len(iterations)], alpha=0.8, edgecolor="black")
 axes[1].set_yscale("log")
 axes[1].set_xlabel("Number of Iterations", fontsize=12, fontweight="bold")
 axes[1].set_ylabel("Bit Error Rate", fontsize=12, fontweight="bold")
@@ -326,13 +323,16 @@ for i, (bar, ber) in enumerate(zip(bars, bers_at_target)):
 
 # Add insights text
 axes[0].text(
-    0.02, 0.98, 
-    "Key Insights:\n• More iterations help most in 2-5 dB range\n• Diminishing returns beyond 20 iterations\n• Statistical reliability needs 300+ trials", 
-    transform=axes[0].transAxes, fontsize=12, verticalalignment="top", 
-    bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8)
+    0.02,
+    0.98,
+    "Key Insights:\n• More iterations help most in 2-5 dB range\n• Diminishing returns beyond 20 iterations\n• Statistical reliability needs 300+ trials",
+    transform=axes[0].transAxes,
+    fontsize=12,
+    verticalalignment="top",
+    bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8),
 )
 axes[0].set_title("Performance Analysis Insights", fontsize=14, fontweight="bold")
-axes[0].axis('off')
+axes[0].axis("off")
 
 plt.show()
 
@@ -344,29 +344,29 @@ plt.show()
 
 # WHY BER DOESN'T ALWAYS DECREASE WITH MORE ITERATIONS
 # ===================================================
-# 
+#
 # THEORETICAL BACKGROUND:
-# 
+#
 # 1. CONVERGENCE TO WRONG CODEWORDS:
 #    • Belief propagation is not guaranteed to find the ML solution
 #    • Can converge to pseudocodewords (invalid but low-energy states)
 #    • More iterations may reinforce incorrect decisions
-# 
+#
 # 2. CODE DESIGN LIMITATIONS:
 #    • Simple/poorly designed H matrices have poor distance properties
 #    • Short cycles in Tanner graph cause correlation in messages
 #    • Irregular degree distributions can lead to poor convergence
-# 
+#
 # 3. OPERATING REGIME EFFECTS:
 #    • Very low SNR: Noise dominates, iterations can't help
 #    • Very high SNR: Already error-free, no room for improvement
 #    • Sweet spot: Medium SNR (2-6 dB for typical codes)
-# 
+#
 # 4. STATISTICAL FLUCTUATIONS:
 #    • Small number of trials gives noisy BER estimates
 #    • Some error patterns are inherently uncorrectable
 #    • Need sufficient trials for stable statistics
-# 
+#
 # PRACTICAL IMPLICATIONS:
 # ✓ Use well-designed LDPC codes with regular structure
 # ✓ Test in appropriate SNR range (where code is useful)
@@ -423,7 +423,7 @@ def analyze_code_structure(H):
 
     # Variable node degree distribution
     unique_var_degrees, var_counts = np.unique(var_degrees, return_counts=True)
-    colors = MODERN_PALETTE[:len(unique_var_degrees)]
+    colors = PlottingUtils.MODERN_PALETTE[: len(unique_var_degrees)]
     ax1.bar(unique_var_degrees, var_counts, color=colors[0], alpha=0.8, edgecolor="black")
     ax1.set_xlabel("Variable Node Degree")
     ax1.set_ylabel("Count")
@@ -462,9 +462,7 @@ def analyze_code_structure(H):
     • Total edges: {np.sum(H):.0f}
     • Density: {np.sum(H)/(m*n):.3f}"""
 
-    ax4.text(0.05, 0.95, stats_text, transform=ax4.transAxes, fontsize=11, 
-             verticalalignment="top", fontfamily="monospace", 
-             bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
+    ax4.text(0.05, 0.95, stats_text, transform=ax4.transAxes, fontsize=11, verticalalignment="top", fontfamily="monospace", bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
     ax4.set_title("Code Statistics")
     ax4.axis("off")
 
@@ -480,29 +478,29 @@ plt.show()
 # --------------------------------------
 # Advanced LDPC Visualization Summary
 # ===================================
-# 
+#
 # This example demonstrated advanced visualization techniques for LDPC codes:
-# 
+#
 # 🔹 Enhanced Tanner Graphs:
 #   • Node sizing based on degree
 #   • Connection weighting by importance
 #   • Degree distribution analysis
-# 
+#
 # 🔹 Belief Propagation Animation:
 #   • Message passing visualization
 #   • Convergence tracking
 #   • LLR evolution over iterations
-# 
+#
 # 🔹 Performance Analysis:
 #   • Iteration count comparison
 #   • SNR sensitivity analysis
 #   • Convergence behavior study
-# 
+#
 # 🔹 Code Structure Analysis:
 #   • Degree distribution patterns
 #   • Sparsity characteristics
 #   • Statistical properties
-# 
+#
 # Key Insights:
 # • Higher iteration counts improve performance but with diminishing returns
 # • Node degree affects convergence behavior

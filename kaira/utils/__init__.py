@@ -7,6 +7,9 @@ from typing import Any, Union
 import torch
 
 from .capacity_analyzer import CapacityAnalyzer
+from .plotting import (  # Core plotting class
+    PlottingUtils,
+)
 from .snr import (
     add_noise_for_snr,
     calculate_snr,
@@ -101,4 +104,5 @@ __all__ = [
     "calculate_snr",
     "add_noise_for_snr",
     "estimate_signal_power",
+    "PlottingUtils",
 ]

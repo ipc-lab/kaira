@@ -82,12 +82,19 @@ repos:
 
   # Type checking with mypy (fixed)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.16.0
     hooks:
       - id: mypy
         # Removed problematic types-all and added specific type stubs
         additional_dependencies:
-          [types-requests, types-PyYAML, types-toml, types-setuptools]
+          [
+            types-requests,
+            types-PyYAML,
+            types-toml,
+            types-setuptools,
+            types-tqdm,
+            types-seaborn,
+          ]
         exclude: "^tests/"
 
   # Python security linter

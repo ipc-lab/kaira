@@ -18,14 +18,12 @@ We'll visualize how different noise levels (SNR) affect signal transmission.
 import numpy as np
 import torch
 
-from examples.utils.plotting import (
-    setup_plotting_style,
+from examples.example_utils.plotting import (
     plot_signal_noise_comparison,
     plot_snr_psnr_comparison,
     plot_snr_vs_mse,
-    plot_noise_level_analysis
+    setup_plotting_style,
 )
-
 from kaira.channels import AWGNChannel
 from kaira.metrics.image import PSNR
 from kaira.metrics.signal import SNR
@@ -114,11 +112,10 @@ for snr_db, channel in awgn_channels:
 
 # Visualization: Signal Degradation with Noise
 # ============================================
-# Compare the original clean signal with signals processed through 
+# Compare the original clean signal with signals processed through
 # AWGN channels at different SNR levels to observe noise effects.
 
-fig = plot_signal_noise_comparison(t, signal, outputs, measured_metrics, 
-                                 "AWGN Channel Effects on Signal Transmission")
+fig = plot_signal_noise_comparison(t, signal, outputs, measured_metrics, "AWGN Channel Effects on Signal Transmission")
 fig.show()
 
 # %%

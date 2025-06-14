@@ -721,6 +721,7 @@ General utility functions for the Kaira library.
    :nosignatures:
 
    CapacityAnalyzer
+   PlottingUtils
 
 
 .. currentmodule:: kaira.utils

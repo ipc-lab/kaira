@@ -9,15 +9,14 @@ between data sources in distributed source coding scenarios
 like Wyner-Ziv coding.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+# Plotting imports
+from examples.example_utils.plotting import setup_plotting_style
 from kaira.data import WynerZivCorrelationDataset, create_binary_tensor, create_uniform_tensor
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
-
-# Plotting imports
-from examples.utils.plotting import setup_plotting_style
-import matplotlib.pyplot as plt
 
 setup_plotting_style()
 
@@ -71,7 +70,7 @@ for sigma in sigma_values:
 # ---------------------------------------------------------
 # Gaussian Correlation Visualization
 # ==================================
-# 
+#
 # Let's visualize the relationship between the source and
 # side information for different noise levels.
 
@@ -108,7 +107,7 @@ plt.show()
 # ---------------------------------------------------------
 # Statistical Dependence Visualization
 # ====================================
-# 
+#
 # Let's plot the joint distribution of X and Y to visualize
 # the correlation strength.
 
@@ -127,9 +126,7 @@ for i, (sigma, side_info) in enumerate(zip(sigma_values, gaussian_side_info)):
 
     # Calculate and display correlation coefficient
     corr_coef = np.corrcoef(source.numpy().flatten(), side_info.numpy().flatten())[0, 1]
-    axes[i].text(0.05, 0.95, f"Correlation: {corr_coef:.4f}", transform=axes[i].transAxes, 
-                fontsize=12, verticalalignment="top", 
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+    axes[i].text(0.05, 0.95, f"Correlation: {corr_coef:.4f}", transform=axes[i].transAxes, fontsize=12, verticalalignment="top", bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
 
     axes[i].grid(True, alpha=0.3)
 

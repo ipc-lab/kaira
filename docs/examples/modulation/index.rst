@@ -159,10 +159,10 @@ Digital modulation schemes and their characteristics in Kaira. These examples sh
 
 .. only:: html
 
-    .. image:: /auto_examples/modulation/images/thumb/sphx_glr_plot_qam_modulation_thumb.png
+    .. image:: /auto_examples/modulation/images/thumb/sphx_glr_plot_qam_modulation_refactored_thumb.png
       :alt: Quadrature Amplitude Modulation (QAM)
 
-    :ref:`sphx_glr_auto_examples_modulation_plot_qam_modulation.py`
+    :ref:`sphx_glr_auto_examples_modulation_plot_qam_modulation_refactored.py`
 
 .. raw:: html
 
@@ -186,4 +186,4 @@ Digital modulation schemes and their characteristics in Kaira. These examples sh
    /auto_examples/modulation/plot_pam_modulation
    /auto_examples/modulation/plot_pi4qpsk_modulation
    /auto_examples/modulation/plot_psk_modulation
-   /auto_examples/modulation/plot_qam_modulation
+   /auto_examples/modulation/plot_qam_modulation_refactored

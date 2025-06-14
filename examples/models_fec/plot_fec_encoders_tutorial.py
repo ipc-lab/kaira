@@ -22,10 +22,10 @@ We'll explore:
 import numpy as np
 import torch
 
-from examples.utils.plotting import (
-    setup_plotting_style,
+from examples.example_utils.plotting import (
+    plot_code_structure_comparison,
     plot_hamming_code_visualization,
-    plot_code_structure_comparison
+    setup_plotting_style,
 )
 
 # Import encoders from kaira
@@ -71,11 +71,7 @@ def print_code_parameters(encoder, name: str) -> None:
 
 def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str) -> None:
     """Visualize a message and its corresponding codeword."""
-    plot_hamming_code_visualization(
-        message=message.numpy(),
-        codeword=codeword.numpy(),
-        title=f"{name} - Message ({len(message)} bits) vs Codeword ({len(codeword)} bits)"
-    )
+    plot_hamming_code_visualization(message=message.numpy(), codeword=codeword.numpy(), title=f"{name} - Message ({len(message)} bits) vs Codeword ({len(codeword)} bits)")
 
 
 # %%
@@ -347,12 +343,7 @@ for name, encoder in encoders.items():
         min_distances.append(None)
 
 # Generate code comparison visualization
-plot_code_structure_comparison(
-    names=names,
-    rates=rates,
-    min_distances=min_distances,
-    title="Comparison of FEC Code Performance"
-)
+plot_code_structure_comparison(names=names, rates=rates, min_distances=min_distances, title="Comparison of FEC Code Performance")
 
 # Code Rates and Minimum Distances Summary:
 print("\nCode Rates and Minimum Distances:")

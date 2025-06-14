@@ -15,17 +15,16 @@ measures of system performance.
 #
 # First, let's import the necessary libraries and set up our environment.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from matplotlib.projections import register_projection
+from matplotlib.projections.polar import PolarAxes
 from scipy import special
 
-from examples.utils.plotting import (
+from examples.example_utils.plotting import (
     setup_plotting_style,
-    plot_ber_performance,
-    plot_constellation_comparison,
-    plot_ber_vs_snr_comparison
 )
-
 from kaira.channels import AWGNChannel, BinarySymmetricChannel, RayleighFadingChannel
 from kaira.utils import seed_everything
 
@@ -521,6 +520,9 @@ channel_data = {"AWGN Channel": [8, 9, 10, 9, 10, 7], "BSC": [6, 7, 10, 7, 10, 6
 
 # Create radar chart
 fig, ax, theta = radar_factory(len(characteristics))
+
+# Define colors for each channel
+colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
 
 # Plot each channel
 for i, (channel, scores) in enumerate(channel_data.items()):

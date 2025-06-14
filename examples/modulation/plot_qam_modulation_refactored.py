@@ -8,24 +8,25 @@ in the Kaira library. We'll explore different QAM orders (4-QAM, 16-QAM, 64-QAM)
 and analyze their performance characteristics.
 """
 
+import matplotlib.pyplot as plt
+
 # %%
 # Imports and Setup
 # --------------------------------
 import numpy as np
 import torch
 
+# Plotting imports
+from examples.example_utils.plotting import (
+    plot_ber_vs_snr_comparison,
+    plot_constellation_comparison,
+    setup_plotting_style,
+)
 from kaira.channels import AWGNChannel
 from kaira.metrics.signal import BER
 from kaira.modulations import QAMDemodulator, QAMModulator
 from kaira.modulations.utils import plot_constellation
 from kaira.utils import snr_to_noise_power
-
-# Plotting imports
-from examples.utils.plotting import (
-    setup_plotting_style,
-    plot_constellation_comparison, 
-    plot_ber_vs_snr_comparison
-)
 
 setup_plotting_style()
 
@@ -70,7 +71,7 @@ ber_metric = BER()
 
 for snr_db in snr_db_range:
     noise_power = snr_to_noise_power(1.0, snr_db)
-    channel = AWGNChannel(avg_noise_power=noise_power)
+    channel = AWGNChannel(avg_noise_power=noise_power.item())
 
     for order in qam_orders:
         # Transmit through channel
@@ -87,8 +88,7 @@ for snr_db in snr_db_range:
 # Plot BER vs SNR Performance
 # -------------------------------------------------
 # Comment: Compare BER performance across different QAM orders
-fig = plot_ber_vs_snr_comparison(snr_db_range, ber_results, qam_orders, 
-                                "BER Performance of Different QAM Orders")
+fig = plot_ber_vs_snr_comparison(snr_db_range, ber_results, qam_orders, "BER Performance of Different QAM Orders")
 fig.show()
 
 # %%
@@ -106,17 +106,15 @@ qam16_symbols = qam16_mod(test_bits)
 noisy_symbols = {}
 for snr_db in test_snr_db:
     noise_power = snr_to_noise_power(1.0, snr_db)
-    channel = AWGNChannel(avg_noise_power=noise_power)
+    channel = AWGNChannel(avg_noise_power=noise_power.item())
     noisy_symbols[snr_db] = channel(qam16_symbols)
 
 # Comment: Demonstrate effect of noise on 16-QAM constellation
-import matplotlib.pyplot as plt
+
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
 for i, snr_db in enumerate(test_snr_db):
-    plot_constellation(noisy_symbols[snr_db].flatten(), 
-                      title=f"16-QAM at {snr_db} dB SNR", 
-                      marker=".", ax=axs[i])
+    plot_constellation(noisy_symbols[snr_db].flatten(), title=f"16-QAM at {snr_db} dB SNR", marker=".", ax=axs[i])
     axs[i].grid(True)
 
 plt.tight_layout()
@@ -126,13 +124,13 @@ fig.show()
 # Spectral Efficiency Comparison
 # ---------------------------------------------------
 # Comment: Compare spectral efficiency across QAM orders
-import matplotlib.pyplot as plt
+
 fig, ax = plt.subplots(figsize=(8, 5))
 
 # Calculate spectral efficiency (bits/symbol)
 spectral_efficiency = [np.log2(order) for order in qam_orders]
 
-bars = ax.bar(range(len(qam_orders)), spectral_efficiency, color='skyblue', edgecolor='navy')
+bars = ax.bar(range(len(qam_orders)), spectral_efficiency, color="skyblue", edgecolor="navy")
 ax.set_xticks(range(len(qam_orders)))
 ax.set_xticklabels([f"{order}-QAM" for order in qam_orders])
 ax.set_ylabel("Spectral Efficiency (bits/symbol)")
@@ -162,5 +160,5 @@ fig.show()
 # - The trade-off between spectral efficiency and error robustness is clearly visible
 # - Noise significantly affects the constellation shape, especially at lower SNR values
 #
-# This demonstrates the fundamental trade-off in digital modulation between 
+# This demonstrates the fundamental trade-off in digital modulation between
 # spectral efficiency and error performance.

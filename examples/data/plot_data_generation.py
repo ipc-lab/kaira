@@ -10,20 +10,19 @@ useful for creating synthetic data for information theory and
 communication systems experiments.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+# Plotting imports
+from examples.example_utils.plotting import setup_plotting_style
 from kaira.data import (
     BinaryTensorDataset,
     UniformTensorDataset,
     create_binary_tensor,
     create_uniform_tensor,
 )
-
-# Plotting imports
-from examples.utils.plotting import setup_plotting_style
-import matplotlib.pyplot as plt
 
 setup_plotting_style()
 
@@ -42,7 +41,7 @@ np.random.seed(42)
 # ---------------------------------------------------------
 # Binary and Uniform Tensor Creation
 # ==================================
-# 
+#
 # Let's start with the basic tensor generation functions.
 # These functions are useful for creating synthetic data with
 # specific distributions.
@@ -64,7 +63,7 @@ uniform_tensor = create_uniform_tensor(size=[1, 1000], low=-2.0, high=2.0)
 # ---------------------------------------------------------
 # Tensor Distribution Visualization
 # =================================
-# 
+#
 # Let's visualize the generated tensors to understand their distributions.
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -91,7 +90,7 @@ plt.show()
 # ---------------------------------------------------------
 # Binary Probability Control Demonstration
 # ========================================
-# 
+#
 # We can control the probability of 1s in the binary tensor.
 # This is useful for simulating different types of sources.
 
@@ -125,7 +124,7 @@ plt.show()
 # ---------------------------------------------------------
 # Dataset Creation and Analysis
 # =============================
-# 
+#
 # Kaira provides dataset classes that wrap the tensor generation
 # for easier batch processing in training loops.
 
@@ -143,9 +142,9 @@ uniform_dataset = UniformTensorDataset(size=[n_samples, feature_dim], low=-1.0, 
 # Binary dataset size: {len(binary_dataset)}
 # Feature dimension: {binary_dataset[0].shape}
 # Average value in binary dataset: {binary_dataset.data.mean().item():.4f}
-# 
+#
 # Uniform dataset size: {len(uniform_dataset)}
-# Feature dimension: {uniform_dataset[0].shape}  
+# Feature dimension: {uniform_dataset[0].shape}
 # Average value in uniform dataset: {uniform_dataset.data.mean().item():.4f}
 
 # %%
@@ -153,7 +152,7 @@ uniform_dataset = UniformTensorDataset(size=[n_samples, feature_dim], low=-1.0, 
 # ---------------------------------------------------------
 # Dataset Sample Visualization
 # ============================
-# 
+#
 # Let's visualize some samples from our datasets.
 
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
@@ -184,7 +183,7 @@ plt.show()
 # ---------------------------------------------------------
 # Mini-Batch Processing with DataLoader
 # =====================================
-# 
+#
 # We can use the PyTorch DataLoader with our dataset classes
 # to create mini-batches for training.
 
@@ -225,7 +224,7 @@ plt.show()
 # ---------------------------------------------------------
 # Channel Coding Simulation Example
 # =================================
-# 
+#
 # Let's demonstrate a practical use case where we generate
 # binary data for a simple channel coding simulation.
 
@@ -307,7 +306,7 @@ plt.show()
 # ------------------
 # Data Generation Summary
 # ======================
-# 
+#
 # This example demonstrated the data generation utilities in Kaira:
 #
 # Key Features:
@@ -319,7 +318,7 @@ plt.show()
 #
 # These utilities provide a foundation for:
 # • Information theory experiments
-# • Communication system simulations  
+# • Communication system simulations
 # • Machine learning data preparation
 # • Statistical analysis and visualization
 plt.colorbar(ticks=[0, 1], orientation="vertical", pad=0.05)

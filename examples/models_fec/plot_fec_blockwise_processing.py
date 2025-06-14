@@ -12,15 +12,14 @@ and interleaved coding.
 import numpy as np
 import torch
 
-from kaira.models.fec.utils import apply_blockwise
-
-# Plotting imports  
-from examples.utils.plotting import (
-    setup_plotting_style, 
+# Plotting imports
+from examples.example_utils.plotting import (
     plot_blockwise_operation,
+    plot_hamming_code_visualization,
     plot_parity_check_visualization,
-    plot_hamming_code_visualization
+    setup_plotting_style,
 )
+from kaira.models.fec.utils import apply_blockwise
 
 setup_plotting_style()
 
@@ -118,6 +117,7 @@ print(f"Data with parity bits (block-wise): {blocks_with_parity.view(-1)}")
 # Now let's simulate some transmission errors and see how parity bits help
 # detect them.
 
+
 # Function to check parity
 def check_parity(block):
     """Check if a block has even parity."""
@@ -155,9 +155,7 @@ for i, block in enumerate(corrupted_blocks):
 # Let's visualize the original, encoded, and corrupted data, highlighting where
 # errors were introduced and which blocks had parity violations.
 
-fig = plot_parity_check_visualization(
-    data, encoded_data, corrupted_data, block_size, error_positions, corrupted_blocks
-)
+fig = plot_parity_check_visualization(data, encoded_data, corrupted_data, block_size, error_positions, corrupted_blocks)
 fig.show()
 
 # %%

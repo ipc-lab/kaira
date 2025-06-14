@@ -21,14 +21,13 @@ We'll explore the three main binary channel models:
 import numpy as np
 import torch
 
-from examples.utils.plotting import (
-    setup_plotting_style,
+from examples.example_utils.plotting import (
     plot_binary_channel_comparison,
+    plot_channel_capacity_analysis,
     plot_channel_error_rates,
     plot_transition_matrices,
-    plot_channel_capacity_analysis
+    setup_plotting_style,
 )
-
 from kaira.channels import BinaryErasureChannel, BinarySymmetricChannel, BinaryZChannel
 
 # Set random seed for reproducibility
@@ -75,7 +74,7 @@ for p in error_probs:
 
     bsc_outputs.append((p, output, error_rate))
     # BSC Channel Analysis Results
-    # ===========================  
+    # ===========================
     # BSC (p={p}): Errors: {errors}/{num_bits}, Error rate: {error_rate:.4f}
 
 # %%
@@ -152,7 +151,7 @@ with torch.no_grad():
     bsc_output = bsc(binary_data).numpy()[0]
 channel_outputs.append(("BSC", bsc_output, bsc_p))
 
-# BEC output (high erasure probability for visibility)  
+# BEC output (high erasure probability for visibility)
 bec_p = 0.2
 bec = BinaryErasureChannel(erasure_prob=bec_p)
 with torch.no_grad():
@@ -168,9 +167,7 @@ channel_outputs.append(("Z-Channel", z_output, z_p))
 
 # Visualize channel effects
 original_data = binary_data[0].numpy()
-fig = plot_binary_channel_comparison(original_data, channel_outputs, 
-                                   segment_start, segment_length,
-                                   "Binary Channel Effects Comparison")
+fig = plot_binary_channel_comparison(original_data, channel_outputs, segment_start, segment_length, "Binary Channel Effects Comparison")
 fig.show()
 
 # %%
@@ -180,7 +177,7 @@ fig.show()
 
 # Channel Error Rate Analysis
 # ===========================
-# Compare theoretical vs observed error rates across different 
+# Compare theoretical vs observed error rates across different
 # channel types to validate the implementation accuracy.
 
 # Prepare BSC error rate data
@@ -188,17 +185,15 @@ theoretical_bsc = error_probs  # Theoretical error rate equals p
 observed_bsc = [err_rate for _, _, err_rate in bsc_outputs]
 
 # Plot BSC error rates
-fig1 = plot_channel_error_rates(error_probs, theoretical_bsc, observed_bsc, 
-                               ["BSC"], "Binary Symmetric Channel Error Rates")
+fig1 = plot_channel_error_rates(error_probs, theoretical_bsc, observed_bsc, ["BSC"], "Binary Symmetric Channel Error Rates")
 fig1.show()
 
-# Prepare BEC erasure rate data  
+# Prepare BEC erasure rate data
 theoretical_bec = erasure_probs  # Theoretical erasure rate equals p
 observed_bec = [erasure_rate for _, _, erasure_rate in bec_outputs]
 
 # Plot BEC erasure rates
-fig2 = plot_channel_error_rates(erasure_probs, theoretical_bec, observed_bec,
-                               ["BEC"], "Binary Erasure Channel Erasure Rates") 
+fig2 = plot_channel_error_rates(erasure_probs, theoretical_bec, observed_bec, ["BEC"], "Binary Erasure Channel Erasure Rates")
 fig2.show()
 
 # Prepare Z-Channel error rate data
@@ -208,8 +203,7 @@ theoretical_z = [p * p_one for p in z_error_probs]
 observed_z = [err_rate * p_one for _, _, err_rate in z_outputs]
 
 # Plot Z-Channel error rates
-fig3 = plot_channel_error_rates(z_error_probs, theoretical_z, observed_z,
-                               ["Z-Channel"], "Z-Channel Error Rates")
+fig3 = plot_channel_error_rates(z_error_probs, theoretical_z, observed_z, ["Z-Channel"], "Z-Channel Error Rates")
 fig3.show()
 
 # %%
@@ -234,11 +228,7 @@ p_z = 0.2
 z_matrix = np.array([[1, 0], [p_z, 1 - p_z]])
 
 # Plot transition matrices
-matrices = [
-    ("Binary Symmetric Channel", bsc_matrix, p_bsc),
-    ("Binary Erasure Channel", bec_matrix, p_bec),
-    ("Z-Channel", z_matrix, p_z)
-]
+matrices = [("Binary Symmetric Channel", bsc_matrix, p_bsc), ("Binary Erasure Channel", bec_matrix, p_bec), ("Z-Channel", z_matrix, p_z)]
 
 fig4 = plot_transition_matrices(matrices, "Binary Channel Transition Matrices")
 fig4.show()
@@ -256,6 +246,7 @@ fig4.show()
 # Parameter ranges for capacity analysis
 p_range = np.linspace(0, 1, 51)
 
+
 # Calculate capacities for each channel type
 def calculate_bsc_capacity(p):
     """Calculate BSC capacity: C = 1 - H(p)"""
@@ -263,12 +254,14 @@ def calculate_bsc_capacity(p):
         return 1.0 if p == 0 else 0.0
     return 1 + p * np.log2(p) + (1 - p) * np.log2(1 - p)
 
+
 def calculate_bec_capacity(p):
     """Calculate BEC capacity: C = 1 - p"""
     return 1 - p
 
+
 def calculate_z_capacity(p):
-    """Calculate Z-channel capacity"""
+    """Calculate Z-channel capacity."""
     if p == 0:
         return 1.0
     if p == 1:
@@ -276,20 +269,16 @@ def calculate_z_capacity(p):
     # Z-channel capacity formula
     return 1 + (1 - p) * np.log2(1 - p) + p * np.log2(p)
 
+
 # Calculate capacities
 bsc_capacities = np.array([calculate_bsc_capacity(p) for p in p_range])
 bec_capacities = np.array([calculate_bec_capacity(p) for p in p_range])
 z_capacities = np.array([calculate_z_capacity(p) for p in p_range])
 
 # Plot capacity analysis
-capacities = {
-    "BSC": bsc_capacities,
-    "BEC": bec_capacities,
-    "Z-Channel": z_capacities
-}
+capacities = {"BSC": bsc_capacities, "BEC": bec_capacities, "Z-Channel": z_capacities}
 
-fig5 = plot_channel_capacity_analysis(p_range, capacities, 
-                                    "Binary Channel Capacity Analysis")
+fig5 = plot_channel_capacity_analysis(p_range, capacities, "Binary Channel Capacity Analysis")
 fig5.show()
 
 # %%

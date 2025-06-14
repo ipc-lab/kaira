@@ -16,13 +16,12 @@ can be sequentially applied to meet practical transmission specifications.
 import numpy as np
 import torch
 
-from examples.utils.plotting import (
+from examples.example_utils.plotting import (
+    plot_comprehensive_constraint_analysis,
     plot_constraint_chain_effects,
     plot_spectral_constraint_effects,
-    plot_comprehensive_constraint_analysis,
-    setup_plotting_style
+    setup_plotting_style,
 )
-
 from kaira.constraints import (
     PAPRConstraint,
     PeakAmplitudeConstraint,
@@ -70,7 +69,7 @@ original_props = measure_signal_properties(signal)
 # Original Signal Properties:
 # - Shape: signal.shape
 # - Power: original_props['mean_power']
-# - PAPR: original_props['papr'] (original_props['papr_db'] dB)  
+# - PAPR: original_props['papr'] (original_props['papr_db'] dB)
 # - Peak Amplitude: original_props['peak_amplitude']
 print("Original Signal Properties:")
 print(f"  Shape: {signal.shape}")
@@ -106,7 +105,7 @@ props3 = measure_signal_properties(signal3)
 # - Power: props1['mean_power']
 # - PAPR: props1['papr'] (props1['papr_db'] dB)
 # - Peak Amplitude: props1['peak_amplitude']
-# 
+#
 # After PAPR Constraint:
 # - Power: props2['mean_power']
 # - PAPR: props2['papr'] (props2['papr_db'] dB)
@@ -162,29 +161,12 @@ print(f"  Peak Amplitude: {props_combined['peak_amplitude']:.4f}")
 t = np.arange(signal.shape[1]) / (sample_rate * n_subcarriers)
 
 # Create list of signals and their properties for visualization
-signals_list = [
-    ("Original", signal[0].numpy()),
-    ("Power Constraint", signal1[0].numpy()),
-    ("+ PAPR Constraint", signal2[0].numpy()),
-    ("+ Amplitude Constraint", signal3[0].numpy()),
-    ("Combined Constraints", signal_combined[0].numpy())
-]
+signals_list = [("Original", signal[0].numpy()), ("Power Constraint", signal1[0].numpy()), ("+ PAPR Constraint", signal2[0].numpy()), ("+ Amplitude Constraint", signal3[0].numpy()), ("Combined Constraints", signal_combined[0].numpy())]
 
-properties_list = [
-    original_props,
-    props1,
-    props2,
-    props3,
-    props_combined
-]
+properties_list = [original_props, props1, props2, props3, props_combined]
 
 # Generate constraint chain visualization
-plot_constraint_chain_effects(
-    signals_list=signals_list,
-    properties_list=properties_list,
-    t=t,
-    title="Sequential Constraint Application Effects"
-)
+plot_constraint_chain_effects(signals_list=signals_list, properties_list=properties_list, t=t, title="Sequential Constraint Application Effects")
 
 # %%
 # Using apply_constraint_chain with Verbose Output
@@ -255,13 +237,7 @@ signal_spectral_spectrum = torch.abs(signal_spectral_freq) ** 2
 
 # Generate spectral constraint visualization
 freq = np.fft.fftfreq(n_freq) * n_freq
-plot_spectral_constraint_effects(
-    original_spectrum=signal_spectrum.numpy(),
-    constrained_spectrum=signal_spectral_spectrum.numpy(),
-    mask=mask.numpy(),
-    freq=freq,
-    title="Spectral Mask Constraint Effects"
-)
+plot_spectral_constraint_effects(original_spectrum=signal_spectrum.numpy(), constrained_spectrum=signal_spectral_spectrum.numpy(), mask=mask.numpy(), freq=freq, title="Spectral Mask Constraint Effects")
 
 # %%
 # Combining All Constraints Together
@@ -292,17 +268,7 @@ print(f"  Peak Amplitude: {props_all['peak_amplitude']:.4f}")
 
 # Create comprehensive visualization of all constraints effects
 plot_segment = slice(0, 200)
-plot_comprehensive_constraint_analysis(
-    original_signal=signal[0].numpy(),
-    constrained_signal=signal_all[0].numpy(),
-    original_spectrum=signal_spectrum.numpy(),
-    constrained_spectrum=signal_all_spectrum.numpy(),
-    mask=mask.numpy(),
-    freq=freq,
-    t=t,
-    props=props_all,
-    plot_segment=plot_segment
-)
+plot_comprehensive_constraint_analysis(original_signal=signal[0].numpy(), constrained_signal=signal_all[0].numpy(), original_spectrum=signal_spectrum.numpy(), constrained_spectrum=signal_all_spectrum.numpy(), mask=mask.numpy(), freq=freq, t=t, props=props_all, plot_segment=plot_segment)
 
 # %%
 # Conclusion

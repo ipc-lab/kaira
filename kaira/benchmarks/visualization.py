@@ -106,7 +106,10 @@ class BenchmarkVisualizer:
             ax.grid(True, alpha=0.3)
 
             # Color bars based on throughput
-            colors = plt.cm.viridis(torch.linspace(0, 1, len(bars)))
+            import matplotlib.colors as mcolors
+            import numpy as np
+
+            colors = mcolors.LinearSegmentedColormap.from_list("viridis", ["purple", "blue", "green", "yellow"])(np.linspace(0, 1, len(bars)))
             for bar, color in zip(bars, colors):
                 bar.set_color(color)
 
@@ -300,7 +303,10 @@ class BenchmarkVisualizer:
 
         # Color bars by execution time
         if execution_times:
-            colors = plt.cm.plasma(torch.linspace(0, 1, len(bars)))
+            import matplotlib.colors as mcolors
+            import numpy as np
+
+            colors = mcolors.LinearSegmentedColormap.from_list("plasma", ["purple", "red", "orange", "yellow"])(np.linspace(0, 1, len(bars)))
             for bar, color in zip(bars, colors):
                 bar.set_color(color)
 

@@ -14,20 +14,17 @@ from typing import Dict, List, Literal
 import numpy as np
 import torch
 
-from examples.utils.plotting import (
-    setup_plotting_style,
-    plot_ber_performance,
-    plot_ber_vs_snr_comparison,
+from examples.example_utils.plotting import (
     plot_bit_error_visualization,
-    plot_error_rate_comparison,
+    plot_bler_vs_snr_analysis,
     plot_block_error_visualization,
+    plot_error_rate_comparison,
+    plot_multi_qam_ber_performance,
+    plot_multiple_metrics_comparison,
     plot_qam_constellation_with_errors,
     plot_symbol_error_analysis,
-    plot_multi_qam_ber_performance,
-    plot_bler_vs_snr_analysis,
-    plot_multiple_metrics_comparison
+    setup_plotting_style,
 )
-
 from kaira.channels import AWGNChannel
 from kaira.metrics.signal import (
     BitErrorRate,
@@ -165,7 +162,7 @@ symbol_bits = qam_bits.reshape(1, n_symbols, bits_per_symbol)
 received_symbol_bits = received_bits.reshape(1, n_symbols, bits_per_symbol)
 qam_ser = ser_metric(received_symbol_bits, symbol_bits)
 
-# QAM Modulation Performance Results  
+# QAM Modulation Performance Results
 # ==================================
 # 16-QAM BER: {qam_ber.item():.5f}
 # 16-QAM SER: {qam_ser.item():.5f}

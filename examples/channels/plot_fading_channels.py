@@ -12,19 +12,18 @@ flat fading where all frequency components of the signal experience the same
 magnitude of fading.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from scipy import signal
 
+# Plotting imports
+from examples.example_utils.plotting import setup_plotting_style
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
 from kaira.metrics.signal import BitErrorRate
 from kaira.modulations import QPSKModulator
 from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.utils import snr_to_noise_power
-
-# Plotting imports
-from examples.utils.plotting import setup_plotting_style
-import matplotlib.pyplot as plt
 
 setup_plotting_style()
 
@@ -43,7 +42,7 @@ np.random.seed(42)
 # ------------------------------------
 # QPSK Signal Generation
 # =====================
-# 
+#
 # Let's use Kaira's QPSKModulator to generate QPSK symbols.
 
 # Create a QPSK modulator
@@ -90,7 +89,7 @@ plt.show()
 # ------------------------------------------
 # Channel Configuration and Setup
 # ===============================
-# 
+#
 # We'll compare a perfect channel (no distortion), an AWGN channel (noise only),
 # and a flat fading channel (fading + noise).
 

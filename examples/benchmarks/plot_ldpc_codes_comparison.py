@@ -21,6 +21,7 @@ We test multiple LDPC code configurations with different:
 import time
 from typing import Any, Dict, List, Tuple
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -652,7 +653,7 @@ if rptu_codes:
     if standard_counts:
         standards = list(standard_counts.keys())
         counts = list(standard_counts.values())
-        colors = plt.cm.get_cmap("Set3")(np.linspace(0, 1, len(standards)))
+        colors = cm.get_cmap("Set3")(np.linspace(0, 1, len(standards)))
 
         wedges, texts, autotexts = ax4.pie(counts, labels=standards, colors=colors, autopct="%1.0f", startangle=90)
         ax4.set_title("Professional: Standards\nCompliance", fontsize=12, fontweight="bold")
@@ -884,7 +885,7 @@ if rptu_codes:
     ax1 = fig_standards.add_subplot(gs_standards[0, 0])
     standards_names = list(standards_data.keys())
     standards_counts = [len(codes) for codes in standards_data.values()]
-    colors = plt.cm.get_cmap("Set3")(np.linspace(0, 1, len(standards_names)))
+    colors = cm.get_cmap("Set3")(np.linspace(0, 1, len(standards_names)))
 
     wedges, texts, autotexts = ax1.pie(standards_counts, labels=standards_names, colors=colors, autopct="%1.0f", startangle=90)
     ax1.set_title("Standards Distribution\nin Benchmark", fontsize=12, fontweight="bold")
