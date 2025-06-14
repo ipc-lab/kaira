@@ -268,7 +268,6 @@ print("- Better performance in Gaussian noise channels (AWGN)")
 #
 # Syndrome-based decoding is a common technique for linear block codes.
 
-print("\n=========== Part 3: Syndrome-Based Decoding ===========")
 
 # %%
 # Hamming Code with Syndrome Lookup Decoding
@@ -329,8 +328,6 @@ visualize_error_correction(message, codeword, received_2_errors, decoded_2_error
 # -----------------------------------------------------------------------------------
 #
 # More powerful codes require more sophisticated decoding algorithms.
-
-print("\n=========== Part 4: Advanced Algebraic Decoders ===========")
 
 # %%
 # BCH Code with Berlekamp-Massey Algorithm
@@ -406,8 +403,6 @@ print("- Widely used in digital communications, data storage, and satellite syst
 #
 # Maximum likelihood decoding finds the most likely transmitted codeword.
 
-print("\n=========== Part 5: Maximum Likelihood Decoding ===========")
-
 # %%
 # Brute Force Maximum Likelihood Decoder
 # ------------------------------------------------------------------------
@@ -453,8 +448,6 @@ print("- Only practical for small codes")
 # -----------------------------------------------------------------------------------
 #
 # Let's compare the performance of different decoders in noisy channels.
-
-print("\n=========== Part 6: Performance Evaluation ===========")
 
 # %%
 # Performance Comparison in AWGN Channel

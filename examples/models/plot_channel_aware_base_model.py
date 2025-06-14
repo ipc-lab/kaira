@@ -81,10 +81,10 @@ output_dim = 16
 csi_dim = 2
 model = SimpleChannelAwareEncoder(input_dim, output_dim, csi_dim)
 
-print("Created SimpleChannelAwareEncoder:")
-print(f"  Input dimension: {input_dim}")
-print(f"  Output dimension: {output_dim}")
-print(f"  CSI dimension: {csi_dim}")
+# Created SimpleChannelAwareEncoder:
+# Input dimension: {input_dim}
+# Output dimension: {output_dim}
+# CSI dimension: {csi_dim}
 
 # %%
 # Demonstrating CSI Validation and Normalization
@@ -96,36 +96,36 @@ batch_size = 8
 x = torch.randn(batch_size, input_dim)
 
 # Different CSI examples
-print("\n=== CSI Validation Examples ===")
-
 # Valid CSI
 csi_valid = torch.tensor([[10.0, 0.5], [15.0, 0.8], [5.0, 0.3], [20.0, 0.9], [12.0, 0.6], [8.0, 0.4], [18.0, 0.7], [14.0, 0.65]])
-print(f"Valid CSI shape: {csi_valid.shape}")
+# Valid CSI shape: {csi_valid.shape}
 
 try:
     validated_csi = model.validate_csi(csi_valid)
     print("✓ CSI validation passed")
+except ValueError as e:
+    # ✗ CSI validation failed due to value error
+    print("✗ CSI validation failed: " + str(e))
+    validated_csi = None
 except Exception as e:
-    print(f"✗ CSI validation failed: {e}")
+    # ✗ CSI validation failed due to unexpected error
+    print("✗ Unexpected error during CSI validation: " + str(e))
+    validated_csi = None
 
 # Test normalization
-print("\n=== CSI Normalization Examples ===")
-
 # MinMax normalization
 normalized_minmax = model.normalize_csi(csi_valid, method="minmax", target_range=(0, 1))
-print(f"Original CSI range: [{csi_valid.min():.2f}, {csi_valid.max():.2f}]")
-print(f"MinMax normalized range: [{normalized_minmax.min():.2f}, {normalized_minmax.max():.2f}]")
+# Original CSI range: [{csi_valid.min():.2f}, {csi_valid.max():.2f}]
+# MinMax normalized range: [{normalized_minmax.min():.2f}, {normalized_minmax.max():.2f}]
 
 # Z-score normalization
 normalized_zscore = model.normalize_csi(csi_valid, method="zscore")
-print(f"Z-score normalized mean: {normalized_zscore.mean():.4f}, std: {normalized_zscore.std():.4f}")
+# Z-score normalized mean: {normalized_zscore.mean():.4f}, std: {normalized_zscore.std():.4f}
 
 # %%
 # Working with the AFModule
 # -------------------------
 # The AFModule has been updated to use ChannelAwareBaseModel. Let's demonstrate its usage.
-
-print("\n=== AFModule (Channel-Aware) Example ===")
 
 # Create AFModule
 N = 64  # Number of feature channels
@@ -134,42 +134,40 @@ af_module = AFModule(N=N, csi_length=csi_length)
 
 # Create feature maps (4D tensor for image-like data)
 feature_maps = torch.randn(batch_size, N, 8, 8)
-print(f"Feature maps shape: {feature_maps.shape}")
+# Feature maps shape: {feature_maps.shape}
 
 # Create CSI for AFModule (SNR values in dB)
 snr_values = torch.tensor([10.0, 15.0, 5.0, 20.0, 12.0, 8.0, 18.0, 14.0])
 csi_af = snr_values.unsqueeze(1)  # Shape: [batch_size, 1]
-print(f"CSI shape for AFModule: {csi_af.shape}")
+# CSI shape for AFModule: {csi_af.shape}
 
 # Apply AFModule
 with torch.no_grad():
     modulated_features = af_module(feature_maps, csi=csi_af)
 
-print(f"Modulated features shape: {modulated_features.shape}")
-print(f"Feature modulation factor range: [{(modulated_features/feature_maps).min():.3f}, {(modulated_features/feature_maps).max():.3f}]")
+# Modulated features shape: {modulated_features.shape}
+# Feature modulation factor range: [{(modulated_features/feature_maps).min():.3f}, {(modulated_features/feature_maps).max():.3f}]
 
 # %%
 # CSI Feature Extraction
 # ----------------------
 # The base class provides methods to extract useful features from CSI.
 
-print("\n=== CSI Feature Extraction ===")
-
 csi_features = model.extract_csi_features(csi_valid)
-print("Extracted CSI features:")
+# Extracted CSI features:
 for feature_name, feature_value in csi_features.items():
     if isinstance(feature_value, torch.Tensor):
         if feature_value.numel() == 1:
-            print(f"  {feature_name}: {feature_value.item():.4f}")
+            # Single-value feature: {feature_name}: {feature_value.item():.4f}
+            pass
         else:
-            print(f"  {feature_name}: {feature_value.tolist()}")
+            # Multi-value feature: {feature_name}: {feature_value.tolist()}
+            pass
 
 # %%
 # Visualization of CSI Effects
 # ----------------------------
 # Let's visualize how different CSI values affect model outputs.
-
-print("\n=== Visualizing CSI Effects ===")
 
 # Generate a range of CSI values
 snr_range = torch.linspace(-5, 25, 31)  # SNR from -5 to 25 dB
@@ -204,7 +202,7 @@ axes[0, 0].grid(True, alpha=0.3)
 # Plot 2: First few output dimensions vs SNR
 actual_output_dim = outputs.shape[1] if outputs.ndim > 1 else 1
 for i in range(min(4, actual_output_dim)):
-    axes[0, 1].plot(snr_range.numpy(), outputs[:, i], label=f"Dim {i+1}")
+    axes[0, 1].plot(snr_range.numpy(), outputs[:, i], label="Dim " + str(i + 1))
 axes[0, 1].set_xlabel("SNR (dB)")
 axes[0, 1].set_ylabel("Output Value")
 axes[0, 1].set_title("Output Dimensions vs CSI (SNR)")
@@ -260,8 +258,6 @@ plt.show()
 # ---------------------------------
 # Demonstrate how to extract and use CSI from channel outputs.
 
-print("\n=== Integration with Channels ===")
-
 # Create channels that might provide CSI
 awgn_channel = AWGNChannel(snr_db=15.0)
 fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=50, snr_db=10.0)
@@ -273,24 +269,24 @@ test_signal = torch.randn(batch_size, 32) + 1j * torch.randn(batch_size, 32)
 awgn_output = awgn_channel(test_signal)
 fading_output = fading_channel(test_signal)
 
-print(f"AWGN channel output shape: {awgn_output.shape}")
-print(f"Fading channel output shape: {fading_output.shape}")
+# AWGN channel output shape: {awgn_output.shape}
+# Fading channel output shape: {fading_output.shape}
 
 # Try to extract CSI (channels might not provide it directly)
 awgn_csi = model.extract_csi_from_channel_output(awgn_output)
 fading_csi = model.extract_csi_from_channel_output(fading_output)
 
-print(f"Extracted CSI from AWGN: {awgn_csi}")
-print(f"Extracted CSI from Fading: {fading_csi}")
+# Extracted CSI from AWGN: {awgn_csi}
+# Extracted CSI from Fading: {fading_csi}
 
 # Create CSI manually based on channel properties
 if hasattr(awgn_channel, "snr_db"):
     manual_awgn_csi = torch.full((batch_size, 1), awgn_channel.snr_db)
-    print(f"Manual AWGN CSI: {manual_awgn_csi.mean().item():.1f} dB")
+    print("Manual AWGN CSI: " + str(manual_awgn_csi.mean().item()) + " dB")
 
 if hasattr(fading_channel, "snr_db"):
     manual_fading_csi = torch.full((batch_size, 1), fading_channel.snr_db)
-    print(f"Manual Fading CSI: {manual_fading_csi.mean().item():.1f} dB")
+    print("Manual Fading CSI: " + str(manual_fading_csi.mean().item()) + " dB")
 
 # %%
 # Best Practices Summary

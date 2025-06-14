@@ -181,8 +181,6 @@ codeword = custom_encoder(message)
 # Cyclic codes have the property that any cyclic shift of a codeword is also a codeword.
 # BCH codes are a class of cyclic codes with excellent error correction capabilities.
 
-print("\n=========== Part 3: Cyclic Codes and BCH Codes ===========")
-
 # %%
 # Cyclic Code
 # --------------------
@@ -232,8 +230,6 @@ print(f"Encoded codeword: {codeword.int().tolist()}")
 #
 # Reed-Solomon codes are particularly good at correcting burst errors.
 
-print("\n=========== Part 4: Reed-Solomon Codes ===========")
-
 # %%
 # Reed-Solomon Code
 # -------------------------------
@@ -260,8 +256,6 @@ print(f"RS can correct up to {rs_encoder.error_correction_capability} symbol err
 # ------------------------------------------------
 #
 # Now let's explore some advanced features of FEC codes.
-
-print("\n=========== Part 5: Advanced Features ===========")
 
 # %%
 # Systematic Encoding
@@ -310,8 +304,6 @@ for i in range(len(messages)):
 # ------------------------------------------------
 #
 # Finally, let's compare the performance characteristics of different codes.
-
-print("\n=========== Part 6: Performance Evaluation ===========")
 
 # %%
 # Comparing Code Rates

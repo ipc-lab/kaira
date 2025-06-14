@@ -87,7 +87,7 @@ class UplinkMACModel(BaseModel):
 # %%
 # Setup Parameters
 # --------------------------------------------------------------------------
-print("=== UplinkMACChannel Integration Example ===\n")
+# === UplinkMACChannel Integration Example ===
 
 # System parameters
 num_users = 3
@@ -100,19 +100,19 @@ coherence_time = 10
 avg_noise_power = 0.1
 snr_db = 12.0
 
-print("System Configuration:")
-print(f"- Number of users: {num_users}")
-print(f"- Message dimension: {message_dim}")
-print(f"- Code dimension: {code_dim}")
-print(f"- Batch size: {batch_size}")
-print(f"- SNR: {snr_db} dB")
-print(f"- Coherence time: {coherence_time}")
-print(f"- Average noise power: {avg_noise_power}\n")
+# System Configuration:
+# - Number of users: {num_users}
+# - Message dimension: {message_dim}
+# - Code dimension: {code_dim}
+# - Batch size: {batch_size}
+# - SNR: {snr_db} dB
+# - Coherence time: {coherence_time}
+# - Average noise power: {avg_noise_power}
 
 # %%
 # Scenario 1: Shared Channel Configuration
 # --------------------------------------------------------------------------
-print("--- Scenario 1: Shared Channel Configuration ---")
+# --- Scenario 1: Shared Channel Configuration ---
 
 # Create a shared Rayleigh fading channel for all users
 shared_channel = RayleighFadingChannel(coherence_time=coherence_time, avg_noise_power=avg_noise_power)
@@ -147,15 +147,15 @@ total_mse_shared = 0
 for i in range(num_users):
     user_mse = mse_loss(reconstructed_messages[i], user_messages[i]).item()
     total_mse_shared += user_mse
-    print(f"User {i+1} MSE (Shared Channel): {user_mse:.6f}")
+    # User {i+1} MSE (Shared Channel): {user_mse:.6f}
 
 avg_mse_shared = total_mse_shared / num_users
-print(f"Average MSE (Shared Channel): {avg_mse_shared:.6f}\n")
+# Average MSE (Shared Channel): {avg_mse_shared:.6f}
 
 # %%
 # Scenario 2: Per-User Channel Configuration
 # --------------------------------------------------------------------------
-print("--- Scenario 2: Per-User Channel Configuration ---")
+# --- Scenario 2: Per-User Channel Configuration ---
 
 # Create individual channels for each user with different characteristics
 per_user_channels = [
@@ -187,21 +187,21 @@ total_mse_per_user = 0
 for i in range(num_users):
     user_mse = mse_loss(reconstructed_messages_per_user[i], user_messages[i]).item()
     total_mse_per_user += user_mse
-    print(f"User {i+1} MSE (Per-User Channel): {user_mse:.6f}")
+    # User {i+1} MSE (Per-User Channel): {user_mse:.6f}
 
 avg_mse_per_user = total_mse_per_user / num_users
-print(f"Average MSE (Per-User Channel): {avg_mse_per_user:.6f}\n")
+# Average MSE (Per-User Channel): {avg_mse_per_user:.6f}
 
 # %%
 # Scenario 3: Combining Methods Comparison
 # --------------------------------------------------------------------------
-print("--- Scenario 3: Combining Methods Comparison ---")
+# --- Scenario 3: Combining Methods Comparison ---
 
 combining_methods = ["sum", "weighted_sum"]
 combine_results = {}
 
 for method in combining_methods:
-    print(f"Testing combining method: {method}")
+    # Testing combining method: {method}
 
     # Create channels for this test
     test_channels = [FlatFadingChannel(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power) for _ in range(num_users)]
@@ -230,12 +230,12 @@ for method in combining_methods:
 
     avg_mse_test = total_mse_test / num_users
     combine_results[method] = avg_mse_test
-    print(f"  Average MSE with {method}: {avg_mse_test:.6f}")
+    # Average MSE with {method}: {avg_mse_test:.6f}
 
 # %%
 # Scenario 4: Dynamic Parameter Updates
 # --------------------------------------------------------------------------
-print("\n--- Scenario 4: Dynamic Parameter Updates ---")
+# --- Scenario 4: Dynamic Parameter Updates ---
 
 # Create UplinkMACChannel for dynamic updates
 dynamic_channels = [FlatFadingChannel(fading_type="rayleigh", coherence_time=coherence_time, avg_noise_power=avg_noise_power) for _ in range(num_users)]
@@ -254,7 +254,7 @@ snr_values = [5.0, 10.0, 15.0, 20.0]
 mse_results_dynamic = []
 
 for snr in snr_values:
-    print(f"Testing at SNR = {snr} dB...")
+    # Testing at SNR = {snr} dB...
 
     # Update individual channel parameters dynamically
     new_noise_power = 0.1 * (10 ** (-snr / 10))  # Adjust noise based on SNR
@@ -282,7 +282,7 @@ for snr in snr_values:
 
     avg_mse_dynamic = total_mse_dynamic / num_users
     mse_results_dynamic.append(avg_mse_dynamic)
-    print(f"  Average MSE: {avg_mse_dynamic:.6f}")
+    # Average MSE: {avg_mse_dynamic:.6f}
 
 # %%
 # Plotting Results

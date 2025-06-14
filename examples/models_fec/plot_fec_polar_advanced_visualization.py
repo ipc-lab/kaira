@@ -435,25 +435,20 @@ Progress:
     n_frames = len(sc_viz.step_history)
     anim = FuncAnimation(fig, animate, frames=n_frames, interval=1000 // fps, repeat=True)
 
-    # Save as GIF
-    try:
-        anim.save(save_path, writer="pillow", fps=fps)
-        print(f"✓ Animation saved as: {save_path}")
-    except Exception as e:
-        print(f"⚠ Could not save animation: {e}")
-        print("  Make sure you have pillow installed: pip install pillow")
+    # Save as GIF (commented out to prevent file creation)
+    # try:
+    #     anim.save(save_path, writer="pillow", fps=fps)
+    #     print(f"✓ Animation saved as: {save_path}")
+    # except Exception as e:
+    #     print(f"⚠ Could not save animation: {e}")
+    #     print("  Make sure you have pillow installed: pip install pillow")
 
     return anim, fig
 
 
-# Create and display the animation
+# Create and display the animation (GIF saving commented out)
 print("\nCreating animated GIF of SC decoding process...")
 anim, fig = create_sc_decoding_animation(sc_viz, save_path="polar_sc_decoding.gif", fps=1)
-plt.show()
-
-# Create a faster version for comparison
-print("Creating fast version of the animation...")
-anim_fast, fig_fast = create_sc_decoding_animation(sc_viz, save_path="polar_sc_decoding_fast.gif", fps=2)
 plt.show()
 
 # %%

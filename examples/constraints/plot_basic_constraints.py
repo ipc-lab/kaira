@@ -336,7 +336,6 @@ papr_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in papr_r
 avg_power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in avg_power_results.items()}
 
 # Compare constraints side by side
-print("\n=== Signal Properties Comparison ===")
 fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
 fig.suptitle("Signal Properties Analysis - All Constraints", fontsize=16, fontweight="bold")
 
