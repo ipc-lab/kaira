@@ -272,8 +272,9 @@ def test_direct_setup_import(mock_setup):
     with mock.patch("builtins.open") as mock_open:
         # Configure the mock to return appropriate content for different files
         def side_effect(filename, *args, **kwargs):
+            filename_str = str(filename)  # Convert PosixPath to string
             for mock_path, content in mock_file_contents.items():
-                if filename.endswith(mock_path):
+                if filename_str.endswith(mock_path):
                     file_mock = mock.MagicMock()
                     file_mock.__enter__.return_value.read.return_value = content
                     return file_mock
@@ -385,8 +386,9 @@ def test_version_info_not_found_error():
     with mock.patch("builtins.open") as mock_open:
         # Configure mock to return appropriate content for different files
         def side_effect(filename, *args, **kwargs):
+            filename_str = str(filename)  # Convert PosixPath to string
             for mock_path, content in mock_file_contents.items():
-                if filename.endswith(mock_path):
+                if filename_str.endswith(mock_path):
                     file_mock = mock.MagicMock()
                     file_mock.__enter__.return_value.read.return_value = content
                     return file_mock
