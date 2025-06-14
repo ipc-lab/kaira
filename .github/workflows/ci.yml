@@ -48,6 +48,14 @@ jobs:
         run: |
           echo "🔧 Installing BPG (Better Portable Graphics) tools..."
 
+          # Create local bin directory for BPG tools
+          BPG_BIN_DIR="$HOME/.local/bin"
+          mkdir -p "$BPG_BIN_DIR"
+
+          # Add to PATH for this session and future steps
+          echo "$BPG_BIN_DIR" >> $GITHUB_PATH
+          export PATH="$BPG_BIN_DIR:$PATH"
+
           # Check if BPG tools are already installed
           if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
             echo "✅ BPG tools already installed"
@@ -55,9 +63,14 @@ jobs:
           else
             echo "📦 Installing BPG tools from source..."
 
-            # Install required dependencies
-            sudo apt-get update
-            sudo apt-get install -y build-essential cmake libjpeg-dev libpng-dev libtiff-dev
+            # Check if build tools are available, skip dependency installation if not root
+            if ! command -v gcc &> /dev/null || ! command -v make &> /dev/null; then
+              echo "⚠️ Build tools not available, attempting to continue without installing dependencies..."
+              echo "🔍 Available compilers:"
+              which gcc || echo "gcc not found"
+              which clang || echo "clang not found"
+              which make || echo "make not found"
+            fi
 
             # Download and compile BPG
             cd /tmp
@@ -65,19 +78,27 @@ jobs:
             tar xzf bpg-0.9.8.tar.gz
             cd bpg-0.9.8
 
-            # Compile BPG tools
-            make
+            # Try to compile BPG tools
+            echo "🔨 Compiling BPG tools..."
+            if make; then
+              echo "✅ BPG compilation successful"
 
-            # Install to system
-            sudo cp bpgenc bpgdec /usr/local/bin/
-            sudo chmod +x /usr/local/bin/bpgenc /usr/local/bin/bpgdec
+              # Install to user bin directory
+              cp bpgenc bpgdec "$BPG_BIN_DIR/"
+              chmod +x "$BPG_BIN_DIR/bpgenc" "$BPG_BIN_DIR/bpgdec"
 
-            # Verify installation
-            if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
-              echo "✅ BPG tools installed successfully"
-              bpgenc 2>&1 | head -n 3 || true
+              # Verify installation
+              if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+                echo "✅ BPG tools installed successfully to $BPG_BIN_DIR"
+                bpgenc 2>&1 | head -n 3 || true
+              else
+                echo "❌ BPG tools installation failed - not found in PATH"
+                exit 1
+              fi
             else
-              echo "❌ BPG tools installation failed"
+              echo "❌ BPG compilation failed"
+              echo "🔍 Checking for required dependencies..."
+              pkg-config --exists libjpeg libpng libtiff-4 || echo "Some image libraries may be missing"
               exit 1
             fi
           fi
