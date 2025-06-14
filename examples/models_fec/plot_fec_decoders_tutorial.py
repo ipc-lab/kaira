@@ -48,10 +48,10 @@ torch.manual_seed(42)
 np.random.seed(42)
 
 # %%
-# ====== Functions
+# Helper Functions
 # ---------------------------
 #
-# Let's define some ====== functions to display decoder information and visualize
+# Let's define some helper functions to display decoder information and visualize
 # the error correction process.
 
 
@@ -131,26 +131,17 @@ def introduce_errors(codeword: torch.Tensor, error_positions: list[int] | None =
 # without requesting retransmission. This is achieved by adding redundancy during encoding.
 # The decoder's job is to exploit this redundancy to recover the original message.
 
-print("\n=========== Introduction to FEC Decoding ===========")
-print("Forward Error Correction (FEC) allows receivers to correct errors in transmitted data")
-print("without requesting retransmission. This is achieved by adding redundancy during encoding.")
-print("The decoder's job is to exploit this redundancy to recover the original message.")
-
 # %%
 # Part 1: Basic FEC Decoding Concepts
 # -----------------------------------------------------------------------------------
 #
 # Let's start with basic decoding approaches for simple codes.
 
-print("\n=========== Part 1: Basic FEC Decoding Concepts ===========")
-
 # %%
 # Repetition Code with Majority Logic Decoding
 # -----------------------------------------------------------------------------------
 #
 # For repetition codes, we can use majority logic decoding to recover the original message.
-
-print("\n1.1 Repetition Code with Majority Logic Decoding")
 rep_encoder = RepetitionCodeEncoder(repetitions=3)
 message = torch.tensor([1.0, 0.0, 1.0, 1.0, 0.0])
 codeword = rep_encoder(message)
@@ -159,9 +150,9 @@ codeword = rep_encoder(message)
 error_positions = [2, 7, 12]  # Error in 1st bit of 2nd message bit, 1st bit of 3rd message bit, etc.
 received = introduce_errors(codeword, error_positions=error_positions)
 
-print(f"Original message: {message.int().tolist()}")
-print(f"Encoded codeword: {codeword.int().tolist()}")
-print(f"Received with errors: {received.int().tolist()} (errors at positions {error_positions})")
+# Original message: [1, 0, 1, 1, 0]
+# Encoded codeword: [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+# Received with errors: [1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0] (errors at positions [2, 7, 12])
 
 
 # Majority logic decoding for repetition code
@@ -182,8 +173,8 @@ def repetition_decode(received, repetitions=3):
 
 
 decoded = repetition_decode(received, repetitions=3)
-print(f"Decoded message: {decoded.int().tolist()}")
-print(f"Correct?: {torch.all(message == decoded).item()}")
+# Decoded message: [1, 0, 1, 1, 0]
+# Correct?: True
 
 visualize_error_correction(message, codeword, received, decoded, "Repetition Code (3x) with Majority Logic Decoding")
 
@@ -193,8 +184,6 @@ visualize_error_correction(message, codeword, received, decoded, "Repetition Cod
 #
 # Single parity check codes can only detect single errors, but with soft-decision decoding,
 # we can make educated guesses about the most likely correct message.
-
-print("\n1.2 Single Parity Check Code with Parity Check Decoding")
 
 spc_encoder = SingleParityCheckCodeEncoder(dimension=4)  # Specify the dimension parameter
 message = torch.tensor([1.0, 0.0, 1.0, 1.0])
@@ -219,11 +208,11 @@ soft_decoded = spc_decoder(soft_received)
 # Convert back to binary
 decoded = (soft_decoded > 0).float()
 
-print(f"Decoded message: {decoded.int().tolist()}")
-print(f"Correct?: {torch.all(message == decoded).item()}")
-
-print("\nNote: Single parity check codes can only detect, not correct errors in general.")
-print("However, with soft information and the Wagner decoder, we can make error correction more likely.")
+# Decoded message: [1, 0, 1, 1]
+# Correct?: True
+#
+# Note: Single parity check codes can only detect, not correct errors in general.
+# However, with soft information and the Wagner decoder, we can make error correction more likely.
 
 # %%
 # Part 2: Hard-Decision vs. Soft-Decision Decoding
@@ -231,15 +220,11 @@ print("However, with soft information and the Wagner decoder, we can make error 
 #
 # Now we'll explore the difference between hard-decision and soft-decision decoding.
 
-print("\n=========== Part 2: Hard-Decision vs. Soft-Decision Decoding ===========")
-
 # %%
 # Soft-Decision Decoding with Wagner's Algorithm
 # ----------------------------------------------------------------------------------------
 #
 # Wagner's algorithm is a soft-decision decoder for single parity check codes.
-
-print("\n2.1 Soft-Decision Decoding with Wagner's Algorithm")
 
 # First, create a simple single parity check code
 spc_encoder = SingleParityCheckCodeEncoder(dimension=5)  # Specify the dimension parameter

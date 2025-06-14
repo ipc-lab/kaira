@@ -307,9 +307,11 @@ p_range = np.linspace(0, 1, 51)
 
 # Calculate capacities for each channel type
 def calculate_bsc_capacity(p):
-    """Calculate BSC capacity: C = 1 - H(p)"""
+    """Calculate BSC capacity: C = 1 - H(p) where H(p) is binary entropy"""
     if p == 0 or p == 1:
         return 1.0 if p == 0 else 0.0
+    # Binary entropy H(p) = -p*log2(p) - (1-p)*log2(1-p)
+    # BSC capacity C = 1 - H(p)
     return 1 + p * np.log2(p) + (1 - p) * np.log2(1 - p)
 
 
@@ -323,9 +325,18 @@ def calculate_z_capacity(p):
     if p == 0:
         return 1.0
     if p == 1:
+        return np.log2(2) - 1  # log2(2) = 1, so this is 0
+
+    # Z-channel capacity: C = log2(1 + (1-p)^(1-p) * p^p)
+    # This is the correct formula for Z-channel capacity
+    try:
+        term1 = (1 - p) ** (1 - p) if (1 - p) > 0 else 0
+        term2 = p**p if p > 0 else 1
+        capacity = np.log2(1 + term1 * term2)
+        return capacity
+    except (ValueError, ZeroDivisionError):
+        # Handle edge cases
         return 0.0
-    # Z-channel capacity formula
-    return 1 + (1 - p) * np.log2(1 - p) + p * np.log2(p)
 
 
 # Calculate capacities

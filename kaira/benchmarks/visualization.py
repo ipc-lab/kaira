@@ -57,7 +57,19 @@ class BenchmarkVisualizer:
 
         ax.set_xlabel("SNR (dB)", fontsize=12)
         ax.set_ylabel("Bit Error Rate", fontsize=12)
-        ax.set_title(f'BER Performance - {results.get("benchmark_name", "Unknown")}', fontsize=14)
+
+        # Determine title from benchmark name or context
+        benchmark_name = results.get("benchmark_name", "")
+        if not benchmark_name:
+            # Try to infer from other fields
+            if "modulation" in results:
+                benchmark_name = f"BER Simulation ({results['modulation'].upper()})"
+            elif "constellation_size" in results:
+                benchmark_name = f"{results['constellation_size']}-QAM BER"
+            else:
+                benchmark_name = "BER Performance"
+
+        ax.set_title(f"BER Performance - {benchmark_name}", fontsize=14)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=11)
 

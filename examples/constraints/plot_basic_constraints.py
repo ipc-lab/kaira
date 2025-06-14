@@ -179,9 +179,75 @@ for name, signal in signals.items():
 # Visualize PAPR Constraint Results
 # ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
-ax.text(0.5, 0.5, "PAPR Constraint Analysis\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
-ax.set_title("PAPR Constraint Results", fontsize=16, fontweight="bold")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("PAPR Constraint Analysis", fontsize=16, fontweight="bold")
+
+# Plot original vs PAPR constrained signals
+ax1 = axes[0, 0]
+for i, (name, signal) in enumerate(signals.items()):
+    original_np = signal.squeeze().numpy()
+    papr_constrained_np = papr_results[name]
+
+    ax1.plot(t[:200], original_np[:200], color=PlottingUtils.MODERN_PALETTE[i], linewidth=2, label=f"{name} (Original)", alpha=0.7)
+    ax1.plot(t[:200], papr_constrained_np[:200], color=PlottingUtils.MODERN_PALETTE[i], linewidth=2, label=f"{name} (PAPR Constrained)", linestyle="--", alpha=0.9)
+
+ax1.set_title("Original vs PAPR Constrained Signals")
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Amplitude")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# Plot PAPR comparison
+ax2 = axes[0, 1]
+signal_names = list(signals.keys())
+original_paprs = [measure_signal_properties(signals[name])["papr"] for name in signal_names]
+constrained_paprs = [measure_signal_properties(torch.tensor(papr_results[name]).unsqueeze(0))["papr"] for name in signal_names]
+
+x_pos = np.arange(len(signal_names))
+width = 0.35
+ax2.bar(x_pos - width / 2, original_paprs, width, label="Original", color=PlottingUtils.MODERN_PALETTE[0], alpha=0.7)
+ax2.bar(x_pos + width / 2, constrained_paprs, width, label="PAPR Constrained", color=PlottingUtils.MODERN_PALETTE[1], alpha=0.7)
+ax2.axhline(y=max_papr, color="red", linestyle="--", label=f"Max PAPR ({max_papr})")
+ax2.set_title("PAPR Comparison")
+ax2.set_xlabel("Signal Type")
+ax2.set_ylabel("PAPR")
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels(signal_names)
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+# Plot amplitude distribution before/after constraint
+ax3 = axes[1, 0]
+for i, name in enumerate(signal_names):
+    original_np = signals[name].squeeze().numpy()
+    constrained_np = papr_results[name]
+
+    ax3.hist(original_np, bins=30, alpha=0.5, density=True, label=f"{name} (Original)", color=PlottingUtils.MODERN_PALETTE[i])
+    ax3.hist(constrained_np, bins=30, alpha=0.5, density=True, label=f"{name} (Constrained)", color=PlottingUtils.MODERN_PALETTE[i], linestyle="--", histtype="step", linewidth=2)
+
+ax3.set_title("Amplitude Distribution")
+ax3.set_xlabel("Amplitude")
+ax3.set_ylabel("Density")
+ax3.legend()
+ax3.grid(True, alpha=0.3)
+
+# Power vs PAPR trade-off
+ax4 = axes[1, 1]
+original_powers = [measure_signal_properties(signals[name])["mean_power"] for name in signal_names]
+constrained_powers = [measure_signal_properties(torch.tensor(papr_results[name]).unsqueeze(0))["mean_power"] for name in signal_names]
+
+power_changes = [(const - orig) / orig * 100 for orig, const in zip(original_powers, constrained_powers)]
+papr_reductions = [(orig - const) / orig * 100 for orig, const in zip(original_paprs, constrained_paprs)]
+
+ax4.scatter(power_changes, papr_reductions, s=100, c=range(len(signal_names)), cmap="viridis", alpha=0.7, edgecolors="black")
+for i, name in enumerate(signal_names):
+    ax4.annotate(name, (power_changes[i], papr_reductions[i]), xytext=(5, 5), textcoords="offset points", fontsize=10)
+
+ax4.set_title("Power vs PAPR Trade-off")
+ax4.set_xlabel("Power Change (%)")
+ax4.set_ylabel("PAPR Reduction (%)")
+ax4.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%
@@ -259,11 +325,96 @@ power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in power
 papr_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in papr_results.items()}
 avg_power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in avg_power_results.items()}
 
-# Compare total power constraint
-print("\n=== Comparing Total Power Constraint ===")
-fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
-ax.text(0.5, 0.5, "Signal Properties Comparison\n(Visualization placeholder)", ha="center", va="center", transform=ax.transAxes, fontsize=14)
-ax.set_title("Signal Properties Analysis", fontsize=16, fontweight="bold")
+# %%
+# Signal Properties Comparison
+# --------------------------------------------
+# Visualize how different constraints affect signal properties
+
+# Convert constrained signals back to tensors for comparison
+power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in power_results.items()}
+papr_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in papr_results.items()}
+avg_power_signals = {name: torch.tensor(data).reshape(1, -1) for name, data in avg_power_results.items()}
+
+# Compare constraints side by side
+print("\n=== Signal Properties Comparison ===")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("Signal Properties Analysis - All Constraints", fontsize=16, fontweight="bold")
+
+# Collect properties for all signals and constraints
+signal_names = list(signals.keys())
+properties = {
+    "Original": [measure_signal_properties(signals[name]) for name in signal_names],
+    "Total Power": [measure_signal_properties(power_signals[name]) for name in signal_names],
+    "PAPR": [measure_signal_properties(papr_signals[name]) for name in signal_names],
+    "Avg Power": [measure_signal_properties(avg_power_signals[name]) for name in signal_names],
+}
+
+# Power comparison across all constraints
+ax1 = axes[0, 0]
+x_pos = np.arange(len(signal_names))
+width = 0.2
+for i, (constraint_name, props_list) in enumerate(properties.items()):
+    powers = [props["mean_power"] for props in props_list]
+    ax1.bar(x_pos + i * width, powers, width, label=constraint_name, color=PlottingUtils.MODERN_PALETTE[i], alpha=0.7)
+
+ax1.set_title("Power Comparison Across Constraints")
+ax1.set_xlabel("Signal Type")
+ax1.set_ylabel("Mean Power")
+ax1.set_xticks(x_pos + width * 1.5)
+ax1.set_xticklabels(signal_names)
+ax1.legend()
+ax1.grid(True, alpha=0.3)
+
+# PAPR comparison across all constraints
+ax2 = axes[0, 1]
+for i, (constraint_name, props_list) in enumerate(properties.items()):
+    paprs = [props["papr"] for props in props_list]
+    ax2.bar(x_pos + i * width, paprs, width, label=constraint_name, color=PlottingUtils.MODERN_PALETTE[i], alpha=0.7)
+
+ax2.set_title("PAPR Comparison Across Constraints")
+ax2.set_xlabel("Signal Type")
+ax2.set_ylabel("PAPR")
+ax2.set_xticks(x_pos + width * 1.5)
+ax2.set_xticklabels(signal_names)
+ax2.legend()
+ax2.grid(True, alpha=0.3)
+
+# Peak amplitude comparison
+ax3 = axes[1, 0]
+for i, (constraint_name, props_list) in enumerate(properties.items()):
+    peak_amps = [props["peak_amplitude"] for props in props_list]
+    ax3.bar(x_pos + i * width, peak_amps, width, label=constraint_name, color=PlottingUtils.MODERN_PALETTE[i], alpha=0.7)
+
+ax3.set_title("Peak Amplitude Comparison")
+ax3.set_xlabel("Signal Type")
+ax3.set_ylabel("Peak Amplitude")
+ax3.set_xticks(x_pos + width * 1.5)
+ax3.set_xticklabels(signal_names)
+ax3.legend()
+ax3.grid(True, alpha=0.3)
+
+# Constraint effectiveness summary
+ax4 = axes[1, 1]
+# Calculate how well each constraint achieves its target
+effectiveness_data = {
+    "Total Power": [abs(target_power - props["mean_power"]) / target_power for props in properties["Total Power"]],
+    "PAPR": [max(0, props["papr"] - max_papr) / max_papr for props in properties["PAPR"]],
+    "Avg Power": [abs(avg_power - props["mean_power"]) / avg_power for props in properties["Avg Power"]],
+}
+
+x_pos_eff = np.arange(len(signal_names))
+width_eff = 0.25
+for i, (constraint_name, effectiveness) in enumerate(effectiveness_data.items()):
+    ax4.bar(x_pos_eff + i * width_eff, effectiveness, width_eff, label=f"{constraint_name} Error", color=PlottingUtils.MODERN_PALETTE[i + 1], alpha=0.7)
+
+ax4.set_title("Constraint Compliance (Lower is Better)")
+ax4.set_xlabel("Signal Type")
+ax4.set_ylabel("Relative Error")
+ax4.set_xticks(x_pos_eff + width_eff)
+ax4.set_xticklabels(signal_names)
+ax4.legend()
+ax4.grid(True, alpha=0.3)
+
 fig.show()
 
 # %%

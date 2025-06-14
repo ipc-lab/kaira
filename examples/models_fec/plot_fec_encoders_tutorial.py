@@ -87,8 +87,6 @@ def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str)
 #
 # Let's start with the simplest FEC codes: repetition codes and single parity check codes.
 
-print("\n=========== Part 1: Basic Block Codes ===========")
-
 # %%
 # Repetition Code
 # ------------------------
@@ -101,11 +99,11 @@ print_code_parameters(rep_encoder, "Repetition Code (3x)")
 
 # Create a simple message
 message = torch.tensor([1.0, 0.0, 1.0, 1.0, 0.0])
-print(f"Original message: {message.int().tolist()}")
+# Original message: [1, 0, 1, 1, 0]
 
 # Encode using repetition code
 codeword = rep_encoder(message)
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Encoded codeword: [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0]
 
 # Visualize the encoding
 visualize_codeword(message, codeword, "Repetition Code (3x)")
@@ -123,9 +121,9 @@ print_code_parameters(spc_encoder, "Single Parity Check Code")
 # Encode using single parity check code
 message = torch.tensor([1.0, 1.0, 0.0, 1.0])
 codeword = spc_encoder(message)
-print(f"Original message: {message.int().tolist()}")
-print(f"Encoded codeword: {codeword.int().tolist()}")
-print(f"Parity bit: {codeword[-1].int().item()}")  # Should be 1 to make even parity
+# Original message: [1, 1, 0, 1]
+# Encoded codeword: [1, 1, 0, 1, 1]
+# Parity bit: 1 (to make even parity)
 
 # %%
 # Part 2: Linear Block Codes
@@ -133,8 +131,6 @@ print(f"Parity bit: {codeword[-1].int().item()}")  # Should be 1 to make even pa
 #
 # Linear block codes are more sophisticated and offer better error correction
 # capabilities while maintaining good code rates.
-
-print("\n=========== Part 2: Linear Block Codes ===========")
 
 # %%
 # Hamming Code
@@ -148,16 +144,18 @@ print_code_parameters(hamming_encoder, "Hamming(7,4) Code")
 
 # Create a message
 message = torch.tensor([1.0, 0.0, 1.0, 1.0])
-print(f"Original message: {message.int().tolist()}")
+# Original message: [1, 0, 1, 1]
 
 # Encode using Hamming code
 codeword = hamming_encoder(message)
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Encoded codeword: [1, 0, 1, 1, 1, 0, 1]
 
 # Display the generator matrix
-print("Generator Matrix G:")
-if hasattr(hamming_encoder, "generator_matrix"):
-    print(hamming_encoder.generator_matrix.int().numpy())
+# Generator Matrix G:
+# [[1 0 0 0 1 1 0]
+#  [0 1 0 0 1 0 1]
+#  [0 0 1 0 0 1 1]
+#  [0 0 0 1 1 1 1]]
 
 # %%
 # Custom Linear Block Code
@@ -173,8 +171,8 @@ print_code_parameters(custom_encoder, "Custom (6,3) Linear Block Code")
 
 message = torch.tensor([1.0, 1.0, 0.0])
 codeword = custom_encoder(message)
-print(f"Original message: {message.int().tolist()}")
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Original message: [1, 1, 0]
+# Encoded codeword: [1, 1, 0, 1, 0, 1]
 
 # %%
 # Part 3: Cyclic Codes and BCH Codes

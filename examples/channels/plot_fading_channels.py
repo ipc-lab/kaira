@@ -78,10 +78,32 @@ for i in range(n_symbols):
 # First 5 complex symbols: {qpsk_symbols[:5]}
 
 # Show the QPSK constellation diagram
-fig, ax = plt.subplots(figsize=(6, 6))
-qpsk_modulator.plot_constellation()
-ax.set_title("QPSK Constellation")
-ax.grid(True)
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Create QPSK constellation points manually
+qpsk_points = np.array([1 + 1j, -1 + 1j, -1 - 1j, 1 - 1j]) / np.sqrt(2)  # Normalized QPSK
+labels = ["00", "10", "11", "01"]
+
+# Plot constellation points
+ax.scatter(qpsk_points.real, qpsk_points.imag, s=100, c="red", marker="o", edgecolors="black", linewidth=2)
+
+# Add labels for each point
+for point, label in zip(qpsk_points, labels):
+    ax.annotate(label, (point.real, point.imag), xytext=(10, 10), textcoords="offset points", fontsize=12, fontweight="bold")
+
+# Set up the plot
+ax.set_xlabel("In-phase (I)", fontweight="bold")
+ax.set_ylabel("Quadrature (Q)", fontweight="bold")
+ax.set_title("QPSK Constellation", fontweight="bold", fontsize=14)
+ax.grid(True, alpha=0.3)
+ax.axis("equal")
+ax.set_xlim(-1.5, 1.5)
+ax.set_ylim(-1.5, 1.5)
+
+# Add axes through origin
+ax.axhline(y=0, color="k", linewidth=0.5)
+ax.axvline(x=0, color="k", linewidth=0.5)
+
 plt.tight_layout()
 plt.show()
 
@@ -182,29 +204,30 @@ plt.show()
 # --------------------------------------------------
 # Let's analyze how fading affects the amplitude distribution of the symbols.
 
-# Calculate amplitudes - ensure we're using real values
-perfect_amp = np.abs(perfect_complex).real
-awgn_amp = np.abs(awgn_complex).real
-fading_amp = np.abs(fading_complex).real
+# Calculate amplitudes correctly
+perfect_amp = np.abs(perfect_complex)
+awgn_amp = np.abs(awgn_complex)
+fading_amp = np.abs(fading_complex)
+
 plt.figure(figsize=(12, 5))
 
 # Histogram of amplitudes
 plt.subplot(1, 2, 1)
-plt.hist(perfect_amp, bins=30, alpha=0.3, label="Perfect Channel", density=True)
-plt.hist(awgn_amp, bins=30, alpha=0.3, label="AWGN Channel", density=True)
-plt.hist(fading_amp, bins=30, alpha=0.3, label="Fading Channel", density=True)
-plt.grid(True)
-plt.xlabel("Symbol Amplitude")
-plt.ylabel("Probability Density")
-plt.title("Symbol Amplitude Distribution")
+plt.hist(perfect_amp, bins=30, alpha=0.6, label="Perfect Channel", density=True, color="blue")
+plt.hist(awgn_amp, bins=30, alpha=0.6, label="AWGN Channel", density=True, color="green")
+plt.hist(fading_amp, bins=30, alpha=0.6, label="Fading Channel", density=True, color="red")
+plt.grid(True, alpha=0.3)
+plt.xlabel("Symbol Amplitude", fontweight="bold")
+plt.ylabel("Probability Density", fontweight="bold")
+plt.title("Symbol Amplitude Distribution", fontweight="bold")
 plt.legend()
 
 # Theoretical vs. Empirical Rayleigh Distribution
+plt.subplot(1, 2, 2)
 x = np.linspace(0, 3, 1000)
 # Rayleigh PDF: (x/σ²) * exp(-x²/(2σ²))
 # For unit variance Rayleigh, σ² = 1/2
 rayleigh_pdf = x * np.exp(-(x**2) / 2)
-plt.subplot(1, 2, 2)
 plt.hist(fading_amp, bins=30, alpha=0.5, density=True, label="Empirical (Fading Channel)")
 plt.plot(x, rayleigh_pdf, "r-", linewidth=2, label="Theoretical Rayleigh")
 plt.grid(True)
@@ -362,18 +385,20 @@ plt.show()
 # -------------------------------------------------------------------------
 # Let's analyze the frequency characteristics of the fading process.
 
-# Calculate PSD using FFT
+# Calculate PSD using Welch's method
+# Ensure nperseg is not larger than input length
+input_length = len(fading_magnitude)
+nperseg = min(256, input_length // 4)  # Use at most 1/4 of input length
 
-# Use Welch's method to estimate PSD
-f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=256)
+f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=nperseg)
 
 plt.figure(figsize=(10, 5))
-plt.semilogy(f, psd, linewidth=2)
-plt.grid(True)
-plt.xlabel("Normalized Frequency")
-plt.ylabel("Power Spectral Density")
-plt.title("PSD of Rayleigh Fading Process")
-plt.axvline(x=0.05, color="r", linestyle="--", label="Doppler Frequency (0.05)")
+plt.semilogy(f, psd, linewidth=2, color="blue")
+plt.grid(True, alpha=0.3)
+plt.xlabel("Normalized Frequency", fontweight="bold")
+plt.ylabel("Power Spectral Density", fontweight="bold")
+plt.title("PSD of Rayleigh Fading Process", fontweight="bold")
+plt.axvline(x=0.05, color="r", linestyle="--", linewidth=2, label="Doppler Frequency (0.05)")
 plt.legend()
 plt.tight_layout()
 plt.show()

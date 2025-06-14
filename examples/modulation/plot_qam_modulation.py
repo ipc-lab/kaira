@@ -34,14 +34,14 @@ np.random.seed(42)
 # %%
 # Create QAM Modulators with Different Orders
 # --------------------------------------------------------------------------------
-qam_orders: list[int] = [4, 16, 64]
+qam_orders: list[int] = [4, 16, 64, 256]
 n_symbols = 1000
 
 modulators: dict[int, QAMModulator] = {order: QAMModulator(order=order) for order in qam_orders}  # type: ignore
 demodulators: dict[int, QAMDemodulator] = {order: QAMDemodulator(order=order) for order in qam_orders}  # type: ignore
 
 # Generate random bits for each QAM order
-bits_per_symbol = {4: 2, 16: 4, 64: 6}  # 4-QAM (same as QPSK)  # 16-QAM  # 64-QAM
+bits_per_symbol = {4: 2, 16: 4, 64: 6, 256: 8}  # 4-QAM (same as QPSK)  # 16-QAM  # 64-QAM  # 256-QAM
 
 input_bits = {}
 modulated_symbols = {}

@@ -59,10 +59,10 @@ received_bits = torch.logical_xor(bits, errors).int()
 # Calculate BER
 ber_value = ber_metric(received_bits, bits)
 
-# Performance Results: Basic Error Rate Analysis
-# ==============================================
-# True error probability: {error_probability}
-# Measured BER: {ber_value.item():.5f}
+print("Performance Results: Basic Error Rate Analysis")
+print("=" * 46)
+print(f"True error probability: {error_probability}")
+print(f"Measured BER: {ber_value.item():.5f}")
 
 # %%
 # Visualize bit errors
@@ -91,10 +91,10 @@ bler_value = bler_metric(received_block_bits, block_bits)
 # Calculate FER (treating each block as a frame)
 fer_value = fer_metric(received_block_bits, block_bits)
 
-# Block and Frame Error Analysis Results
-# =====================================
-# Block Error Rate: {bler_value.item():.5f}
-# Frame Error Rate: {fer_value.item():.5f}  # For this example, FER and BLER are the same
+print("Block and Frame Error Analysis Results")
+print("=" * 38)
+print(f"Block Error Rate: {bler_value.item():.5f}")
+print(f"Frame Error Rate: {fer_value.item():.5f}")  # For this example, FER and BLER are the same
 
 # %%
 # Visualize the difference between bit errors and block errors
@@ -152,10 +152,10 @@ symbol_bits = qam_bits.reshape(1, n_symbols, bits_per_symbol)
 received_symbol_bits = received_bits.reshape(1, n_symbols, bits_per_symbol)
 qam_ser = ser_metric(received_symbol_bits, symbol_bits)
 
-# QAM Modulation Performance Results
-# ==================================
-# 16-QAM BER: {qam_ber.item():.5f}
-# 16-QAM SER: {qam_ser.item():.5f}
+print("QAM Modulation Performance Results")
+print("=" * 34)
+print(f"16-QAM BER: {qam_ber.item():.5f}")
+print(f"16-QAM SER: {qam_ser.item():.5f}")
 
 # %%
 # Visualize QAM constellation and received symbols

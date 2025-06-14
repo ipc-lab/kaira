@@ -84,32 +84,49 @@ def run_visualization_example():
     # Create comparison plot if we have multiple results
     print("\n5. Running parameter comparison...")
 
-    # Compare different modulation schemes
-    modulations = ["bpsk", "qpsk", "16qam"]
+    # Compare different modulation schemes using appropriate benchmarks
     comparison_results = []
+    modulation_labels = []
 
-    for mod in modulations:
-        print(f"   Running {mod.upper()} simulation...")
-        mod_benchmark = get_benchmark("ber_simulation")(modulation=mod)
-        mod_result = runner.run_benchmark(mod_benchmark, snr_range=list(range(0, 16, 2)), num_bits=20000)
-        comparison_results.append(mod_result.metrics)
+    # BPSK using BER simulation benchmark
+    print("   Running BPSK simulation...")
+    bpsk_benchmark = get_benchmark("ber_simulation")(modulation="bpsk")
+    bpsk_result = runner.run_benchmark(bpsk_benchmark, snr_range=list(range(0, 16, 2)), num_bits=20000)
+    comparison_results.append(bpsk_result.metrics)
+    modulation_labels.append("BPSK")
+
+    # 4-QAM (QPSK) using QAM benchmark
+    print("   Running QPSK simulation...")
+    qpsk_benchmark = get_benchmark("qam_ber")(constellation_size=4)
+    qpsk_result = runner.run_benchmark(qpsk_benchmark, snr_range=list(range(0, 16, 2)), num_symbols=10000)
+    comparison_results.append(qpsk_result.metrics)
+    modulation_labels.append("QPSK")
+
+    # 16-QAM using QAM benchmark
+    print("   Running 16-QAM simulation...")
+    qam16_benchmark = get_benchmark("qam_ber")(constellation_size=16)
+    qam16_result = runner.run_benchmark(qam16_benchmark, snr_range=list(range(0, 16, 2)), num_symbols=10000)
+    comparison_results.append(qam16_result.metrics)
+    modulation_labels.append("16-QAM")
 
     # Plot comparison
     print("\n6. Creating modulation comparison plot...")
     # Create individual BER plots for each modulation scheme
-    for i, (mod, result_metrics) in enumerate(zip(modulations, comparison_results)):
-        plot_name = f"ber_curve_{mod}.png"
+    for i, (mod_label, result_metrics) in enumerate(zip(modulation_labels, comparison_results)):
+        plot_name = f"ber_curve_{mod_label.lower().replace('-', '')}.png"
         visualizer.plot_ber_curve(result_metrics, save_path=str(output_dir / plot_name))
-        print(f"✓ {mod.upper()} BER curve saved to visualization_results/{plot_name}")
+        print(f"✓ {mod_label} BER curve saved to visualization_results/{plot_name}")
 
     # Create a combined comparison plot manually using matplotlib
     plt.figure(figsize=(12, 8))
-    for mod, result_metrics in zip(modulations, comparison_results):
+    for mod_label, result_metrics in zip(modulation_labels, comparison_results):
         snr_range = result_metrics.get("snr_range", [])
         if "ber_simulated" in result_metrics:
-            plt.semilogy(snr_range, result_metrics["ber_simulated"], "o-", label=f"{mod.upper()} (Simulated)", linewidth=2, markersize=6)
+            plt.semilogy(snr_range, result_metrics["ber_simulated"], "o-", label=f"{mod_label} (Simulated)", linewidth=2, markersize=6)
+        elif "ber_results" in result_metrics:
+            plt.semilogy(snr_range, result_metrics["ber_results"], "o-", label=f"{mod_label} (Simulated)", linewidth=2, markersize=6)
         if "ber_theoretical" in result_metrics:
-            plt.semilogy(snr_range, result_metrics["ber_theoretical"], "--", label=f"{mod.upper()} (Theoretical)", linewidth=2)
+            plt.semilogy(snr_range, result_metrics["ber_theoretical"], "--", label=f"{mod_label} (Theoretical)", linewidth=2)
 
     plt.xlabel("SNR (dB)", fontsize=12)
     plt.ylabel("Bit Error Rate", fontsize=12)

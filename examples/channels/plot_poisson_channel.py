@@ -375,29 +375,47 @@ def compute_local_snr(signal, noise, signal_levels):
 poisson_snr = compute_local_snr(poisson_profile["ramp_signal"], poisson_profile["ramp_noise"], signal_levels)
 awgn_snr = compute_local_snr(awgn_profile["ramp_signal"], awgn_profile["ramp_noise"], signal_levels)
 
-# Plot SNR vs signal level
-if poisson_snr and awgn_snr:
+# Create the plot
+plt.figure(figsize=(10, 6))
+
+# Initialize flag to track if any data was plotted
+data_plotted = False
+
+# Plot SNR vs signal level if we have data
+if poisson_snr:
     p_centers, p_snr_db = zip(*poisson_snr)
+    plt.plot(p_centers, p_snr_db, "ro-", linewidth=2, markersize=6, label="Poisson Channel")
+    data_plotted = True
+
+if awgn_snr:
     a_centers, a_snr_db = zip(*awgn_snr)
+    plt.plot(a_centers, a_snr_db, "go-", linewidth=2, markersize=6, label="AWGN Channel")
+    data_plotted = True
 
-    plt.plot(p_centers, p_snr_db, "ro-", label="Poisson Channel")
-    plt.plot(a_centers, a_snr_db, "go-", label="AWGN Channel")
+# Always plot theoretical curves for reference
+x = np.linspace(0.1, 1.0, 100)
+# For Poisson: SNR = signal (since noise variance = signal for Poisson)
+poisson_theory_snr = 10 * np.log10(rate * x)
+# For AWGN: SNR = x^2 / noise_power = x^2 * rate (for equivalent SNR)
+awgn_theory_snr = 10 * np.log10(x**2 * rate)
 
-    # Plot theoretical curves
-    x = np.linspace(0.1, 1.0, 100)
-    # For Poisson: SNR = rate * x (signal ^ 2 / signal = signal)
-    poisson_theory_snr = 10 * np.log10(rate * x)
-    # For AWGN: SNR = x^2 / (1/rate) = x^2 * rate
-    awgn_theory_snr = 10 * np.log10(x**2 * rate)
+plt.plot(x, poisson_theory_snr, "r--", alpha=0.7, linewidth=2, label="Poisson Theory")
+plt.plot(x, awgn_theory_snr, "g--", alpha=0.7, linewidth=2, label="AWGN Theory")
+data_plotted = True
 
-    plt.plot(x, poisson_theory_snr, "r--", alpha=0.7, label="Poisson Theory")
-    plt.plot(x, awgn_theory_snr, "g--", alpha=0.7, label="AWGN Theory")
+plt.grid(True, alpha=0.3)
+plt.title(f"Local SNR vs Signal Level (Rate = {rate})", fontweight="bold", fontsize=14)
+plt.xlabel("Signal Intensity", fontweight="bold")
+plt.ylabel("SNR (dB)", fontweight="bold")
 
-plt.grid(True)
-plt.title(f"Local SNR vs. Signal Level (Rate = {rate})")
-plt.xlabel("Signal Intensity")
-plt.ylabel("SNR (dB)")
-plt.legend()
+# Only call legend if we actually plotted something
+if data_plotted:
+    plt.legend()
+else:
+    plt.text(0.5, 0.5, "No data available for plotting", transform=plt.gca().transAxes, ha="center", va="center", fontsize=12)
+
+plt.tight_layout()
+plt.show()
 plt.tight_layout()
 plt.show()
 
