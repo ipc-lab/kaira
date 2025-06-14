@@ -27,7 +27,7 @@ PlottingUtils.setup_plotting_style()
 # Setting up
 # --------------------------------------
 # LDPC Code Configuration and Reproducibility Setup
-# =============================================
+# ============================================================
 #
 # First, we set a random seed to ensure reproducibility and
 # configure our visualization settings.
@@ -163,7 +163,7 @@ for bp_iters in iterations_values:
 # Performance Analysis
 # -----------------------------------
 # Error Rate Performance Visualization
-# ===================================
+# ===============================================
 #
 # Let's visualize the performance of our LDPC code with different numbers
 # of belief propagation iterations across various SNR levels.
@@ -190,7 +190,7 @@ plt.show()
 # Single Message Example
 # ------------------------------------
 # Individual Message Processing Demonstration
-# =========================================
+# ===================================================
 #
 # Let's walk through the encoding, transmission, and decoding process
 # for a single message to better understand the flow.
@@ -273,6 +273,7 @@ plt.show()
 # improves with increased SNR and more decoding iterations.
 #
 # Key Insights:
+#
 # - LDPC codes are widely used in modern communication systems due to
 #   their excellent error-correcting capabilities that approach the
 #   Shannon limit

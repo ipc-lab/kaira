@@ -23,7 +23,7 @@ PlottingUtils.setup_plotting_style()
 # Setting up
 # ----------------------
 # Block-wise Processing Configuration
-# ==================================
+# ========================================================
 
 # First, we set a random seed to ensure reproducibility of results.
 torch.manual_seed(42)
@@ -371,10 +371,12 @@ fig.show()
 # error correction (FEC) coding:
 #
 # Key points:
+#
 # - Block-wise processing is fundamental to many error correction schemes
 # - The `apply_blockwise` function provides a convenient way to apply operations
 #   on blocks of data
 # - We demonstrated several practical applications of block-wise processing:
+#
 #   - Simple parity-based error detection
 #   - Complex operations that return multiple values
 #   - Implementation of a (7,4) Hamming code for error correction
@@ -383,6 +385,7 @@ fig.show()
 # like BCH, Reed-Solomon, and LDPC codes, which can correct multiple errors per block.
 #
 # References:
+#
 # - :cite:`lin2004error` - Provides detailed treatments of block coding and parity checks
 # - :cite:`moon2005error` - Covers mathematical methods for various error correction codes
 # - :cite:`golay1949notes` - Historical paper on efficient coding techniques

@@ -42,7 +42,7 @@ np.random.seed(42)
 # Generate QPSK Signal
 # ------------------------------------
 # QPSK Signal Generation
-# =====================
+# ==============================
 #
 # Let's use Kaira's QPSKModulator to generate QPSK symbols.
 

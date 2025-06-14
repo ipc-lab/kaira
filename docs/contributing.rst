@@ -86,6 +86,7 @@ Development Workflow
 
        # Exclude slow tests
        pytest tests/ -m "not slow"
+
    - Run pre-commit checks: `pre-commit run -a`
 
 4. **Submitting a pull request:**

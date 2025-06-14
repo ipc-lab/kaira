@@ -62,7 +62,7 @@ plt.show()
 # Belief Propagation Animation
 # --------------------------------------
 # Belief Propagation Message Passing Visualization
-# ===============================================
+# ==============================================================
 
 
 class BeliefPropagationVisualizer:
@@ -183,9 +183,9 @@ for iteration in [0, 1, 3, 5]:
 
 # %%
 # Performance Comparison with Different Parameters
-# ------------------------------------------------
+# ---------------------------------------------------------
 # LDPC Iteration Benefits Analysis
-# ===============================
+# ============================================
 
 
 def compare_ldpc_performance():

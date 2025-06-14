@@ -306,7 +306,7 @@ plt.show()
 # Conclusion
 # ------------------
 # Data Generation Summary
-# ======================
+# ====================================
 #
 # This example demonstrated the data generation utilities in Kaira:
 #
