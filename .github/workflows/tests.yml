@@ -156,11 +156,11 @@ jobs:
             BPG_DOWNLOADED=false
 
             # Primary source
-            if wget -q --timeout=10 https://bellard.org/bpg/bpg-0.9.8.tar.gz 2>/dev/null; then
+            if wget -q --timeout=10 https://bellard.org/bpg/libbpg-0.9.8.tar.gz 2>/dev/null; then
               echo "✅ Downloaded BPG source from primary location"
               BPG_DOWNLOADED=true
             # Fallback: try curl
-            elif curl -sL --max-time 10 https://bellard.org/bpg/bpg-0.9.8.tar.gz -o bpg-0.9.8.tar.gz 2>/dev/null; then
+            elif curl -sL --max-time 10 https://bellard.org/bpg/libbpg-0.9.8.tar.gz -o bpg-0.9.8.tar.gz 2>/dev/null; then
               echo "✅ Downloaded BPG source using curl"
               BPG_DOWNLOADED=true
             # Alternative source (if available)
