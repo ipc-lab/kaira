@@ -1,6 +1,6 @@
 """Phase-Shift Keying (PSK) modulation schemes."""
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
 import torch
@@ -56,7 +56,7 @@ class BPSKModulator(BaseModulator):
         else:
             return 1.0 - 2.0 * x.float()
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the BPSK constellation diagram.
 
         Args:
@@ -192,7 +192,7 @@ class QPSKModulator(BaseModulator):
         # Map indices to symbols
         return self.constellation[indices]
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the QPSK constellation diagram.
 
         Args:
@@ -269,11 +269,13 @@ class QPSKDemodulator(BaseDemodulator):
         else:
             # Support both scalar and tensor noise variance
             if not isinstance(noise_var, torch.Tensor):
-                noise_var = torch.tensor(noise_var, device=y.device)
+                noise_var_tensor = torch.tensor(noise_var, device=y.device)
+            else:
+                noise_var_tensor = noise_var
 
             # Handle broadcasting dimensions for noise_var
-            if noise_var.dim() == 0:  # scalar
-                noise_var = noise_var.expand(*batch_shape, symbol_shape)
+            if noise_var_tensor.dim() == 0:  # scalar
+                noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for bit positions
             llrs = torch.zeros((*batch_shape, symbol_shape, 2), device=y.device)
@@ -487,7 +489,7 @@ class PSKModulator(BaseModulator):
 
         return symbols
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the PSK constellation diagram.
 
         Args:
@@ -577,11 +579,13 @@ class PSKDemodulator(BaseDemodulator):
         else:
             # Soft decision: LLR calculation
             if not isinstance(noise_var, torch.Tensor):
-                noise_var = torch.tensor(noise_var, device=y.device)
+                noise_var_tensor = torch.tensor(noise_var, device=y.device)
+            else:
+                noise_var_tensor = noise_var
 
             # Handle broadcasting dimensions for noise_var
-            if noise_var.dim() == 0:  # scalar
-                noise_var = noise_var.expand(*batch_shape, symbol_shape)
+            if noise_var_tensor.dim() == 0:  # scalar
+                noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
             llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
@@ -604,10 +608,10 @@ class PSKDemodulator(BaseDemodulator):
                         # Get the received symbol
                         if batch_shape:
                             sym = y[b_idx][s_idx]
-                            nvar = noise_var[b_idx][s_idx]
+                            nvar = noise_var_tensor[b_idx][s_idx]
                         else:
                             sym = y[s_idx]
-                            nvar = noise_var[s_idx]
+                            nvar = noise_var_tensor[s_idx]
 
                         # Calculate distances to constellation points
                         dist_0 = torch.min(torch.abs(sym - const_bit_0) ** 2) / nvar

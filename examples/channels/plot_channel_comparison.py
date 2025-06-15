@@ -136,8 +136,20 @@ binary_results = apply_channels(binary_data_torch, binary_channels, binary_names
 fig, axes = plt.subplots(2, 3, figsize=(18, 10))
 axes = axes.flatten()
 
-# Add an "Original" plot
-axes[0].scatter(np.arange(100), continuous_data[:100], color=colors[0], alpha=0.7, s=40)
+
+# Add an "Original" plot with safe conversion
+def safe_data_conversion(data, slice_obj=None):
+    """Safely convert data to numpy array for plotting."""
+    if slice_obj is not None:
+        data = data[slice_obj]
+    data_np = data.numpy() if isinstance(data, torch.Tensor) else data
+    if np.iscomplexobj(data_np):
+        data_np = data_np.real
+    return data_np
+
+
+original_data_safe = safe_data_conversion(continuous_data, slice(100))
+axes[0].scatter(np.arange(100), original_data_safe, color=colors[0], alpha=0.7, s=40)
 axes[0].set_title("Original Signal", fontsize=14)
 axes[0].set_xlabel("Sample Index", fontsize=12)
 axes[0].set_ylabel("Signal Value", fontsize=12)
@@ -323,7 +335,7 @@ fig = plt.figure(figsize=(12, 10))
 ax = fig.add_subplot(111, projection="3d")
 
 # Plot the surface
-surf = ax.plot_surface(signal_grid, noise_grid, ber_grid, cmap=cmap, edgecolor="none", alpha=0.8)
+surf = ax.plot_surface(signal_grid, noise_grid, ber_grid, cmap=cmap, edgecolor="none", alpha=0.8)  # type: ignore[attr-defined]
 
 # Add a color bar
 fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Bit Error Rate")
@@ -331,11 +343,11 @@ fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Bit Error Rate")
 # Set labels and title
 ax.set_xlabel("Signal Power", fontsize=12)
 ax.set_ylabel("Noise Variance", fontsize=12)
-ax.set_zlabel("Bit Error Rate", fontsize=12)
+ax.set_zlabel("Bit Error Rate", fontsize=12)  # type: ignore[attr-defined]
 ax.set_title("Theoretical Bit Error Rate for AWGN Channel\nwith varying Signal Power and Noise", fontsize=16)
 
 # Adjust the viewing angle
-ax.view_init(elev=30, azim=45)
+ax.view_init(elev=30, azim=45)  # type: ignore[attr-defined]
 
 plt.tight_layout()
 plt.show()
@@ -437,14 +449,45 @@ awgn_5db = AWGNChannel(snr_db=5)
 awgn_15db = AWGNChannel(snr_db=15)
 fading_10db = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, snr_db=10)
 
-# Process data through channels
-qpsk_awgn_5db = awgn_5db(qpsk_data).numpy()
-qpsk_awgn_15db = awgn_15db(qpsk_data).numpy()
-qpsk_fading = fading_10db(qpsk_data).numpy()
 
-qam_awgn_5db = awgn_5db(qam_data).numpy()
-qam_awgn_15db = awgn_15db(qam_data).numpy()
-qam_fading = fading_10db(qam_data).numpy()
+# Helper function to safely convert channel output to real-valued numpy array
+def safe_numpy_conversion(tensor_data):
+    """Convert tensor to numpy array, handling complex values properly.
+
+    This function ensures that any complex-valued outputs from channels
+    are properly converted to real values before being used in matplotlib
+    plots, preventing ComplexWarning messages.
+
+    Parameters
+    ----------
+    tensor_data : torch.Tensor
+        The tensor data to convert, which may contain complex values.
+
+    Returns
+    -------
+    numpy.ndarray
+        Real-valued numpy array suitable for plotting.
+    """
+    numpy_data = tensor_data.numpy()
+    if np.iscomplexobj(numpy_data):
+        # If complex, take the real part (constellation plots expect real I/Q components)
+        # Note: For constellation diagrams, the complex data should already be in I/Q format
+        # where real/imag parts are stored as separate columns, so this is a fallback
+        numpy_data = numpy_data.real
+        # Only warn if the imaginary part contains significant values
+        if tensor_data.dtype in [torch.complex64, torch.complex128]:
+            print(f"Info: Complex tensor converted to real part for plotting. " f"Shape: {numpy_data.shape}")
+    return numpy_data
+
+
+# Process data through channels
+qpsk_awgn_5db = safe_numpy_conversion(awgn_5db(qpsk_data))
+qpsk_awgn_15db = safe_numpy_conversion(awgn_15db(qpsk_data))
+qpsk_fading = safe_numpy_conversion(fading_10db(qpsk_data))
+
+qam_awgn_5db = safe_numpy_conversion(awgn_5db(qam_data))
+qam_awgn_15db = safe_numpy_conversion(awgn_15db(qam_data))
+qam_fading = safe_numpy_conversion(fading_10db(qam_data))
 
 # Create constellation plots
 fig, axes = plt.subplots(2, 4, figsize=(20, 10))

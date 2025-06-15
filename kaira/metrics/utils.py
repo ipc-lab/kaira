@@ -97,21 +97,18 @@ def visualize_metrics_comparison(
                 errors.append(0)
 
         # Plot bars with error bars, but only include yerr if any errors are non-zero
-        bar_kwargs = {
-            "width": bar_width,
-            "label": label,
-        }
+        x_positions = bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2
 
         # Only include yerr if there are any non-zero error values
         if any(errors):
-            bar_kwargs["yerr"] = errors
-            bar_kwargs["capsize"] = 5
-
-        plt.bar(bar_indices + i * bar_width - (len(results_list) - 1) * bar_width / 2, means, **bar_kwargs)
+            plt.bar(x_positions, means, width=bar_width, label=label, yerr=errors, capsize=5)
+        else:
+            plt.bar(x_positions, means, width=bar_width, label=label)
 
         plt.xlabel("Metrics")
         plt.ylabel("Value")
-        plt.title(title)
+        if title is not None:
+            plt.title(title)
         plt.xticks(bar_indices, common_metrics, rotation=45)
 
     # Only show legend if there are labels to display and actual artists exist

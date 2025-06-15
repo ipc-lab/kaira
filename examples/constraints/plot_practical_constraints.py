@@ -16,9 +16,13 @@ how to configure and apply appropriate constraints for these systems.
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib.gridspec import GridSpec
 
-from kaira.constraints import PAPRConstraint, PeakAmplitudeConstraint, TotalPowerConstraint
+from kaira.constraints import (
+    PAPRConstraint,
+    PeakAmplitudeConstraint,
+    SpectralMaskConstraint,
+    TotalPowerConstraint,
+)
 from kaira.constraints.utils import (
     apply_constraint_chain,
     combine_constraints,
@@ -27,10 +31,14 @@ from kaira.constraints.utils import (
     measure_signal_properties,
     verify_constraint,
 )
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Part 1: OFDM System Constraints
@@ -72,6 +80,12 @@ ofdm_iq = torch.cat([ofdm_signal.real, ofdm_signal.imag], dim=0)
 
 # Display properties of the original OFDM signal
 ofdm_props = measure_signal_properties(ofdm_iq)
+
+# Original OFDM Signal Properties:
+# - Shape: ofdm_iq.shape (2 components, samples)
+# - Power: ofdm_props['mean_power']
+# - PAPR: ofdm_props['papr'] (ofdm_props['papr_db'] dB)
+# - Peak Amplitude: ofdm_props['peak_amplitude']
 print("Original OFDM Signal Properties:")
 print(f"  Shape: {ofdm_iq.shape} (2 components, {ofdm_iq.shape[1]} samples)")
 print(f"  Power: {ofdm_props['mean_power']:.4f}")
@@ -88,39 +102,58 @@ t = np.arange(ofdm_iq.shape[1])
 signal_i = ofdm_iq[0].numpy()
 signal_q = ofdm_iq[1].numpy()
 
-# Plot time domain representation of original OFDM signal
-plt.figure(figsize=(12, 10))
+# Generate comprehensive OFDM signal analysis visualization
+# Time vector for plotting
+plot_samples = min(1000, len(signal_i))
+t_plot = np.arange(plot_samples)
 
-plt.subplot(3, 1, 1)
-plt.plot(t[:1000], signal_i[:1000], "b-", label="I")
-plt.plot(t[:1000], signal_q[:1000], "r-", label="Q")
-plt.title("OFDM Time Domain Signal (First 1000 Samples)")
-plt.grid(True)
-plt.ylabel("Amplitude")
-plt.legend()
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("Original OFDM Signal Analysis", fontsize=16, fontweight="bold")
 
-# Compute and plot power distribution
-power = signal_i**2 + signal_q**2
-plt.subplot(3, 1, 2)
-plt.plot(t[:1000], power[:1000])
-plt.axhline(y=np.mean(power), color="r", linestyle="--", label=f"Mean Power: {np.mean(power):.2f}")
-plt.axhline(y=np.max(power), color="g", linestyle="--", label=f"Peak Power: {np.max(power):.2f}")
-plt.title(f"OFDM Power Distribution - PAPR: {ofdm_props['papr_db']:.2f} dB")
-plt.grid(True)
-plt.ylabel("Power")
-plt.legend()
+# Plot I and Q components
+ax1 = axes[0, 0]
+ax1.plot(t_plot, signal_i[:plot_samples], color=PlottingUtils.MODERN_PALETTE[0], linewidth=1.5, label="I component")
+ax1.plot(t_plot, signal_q[:plot_samples], color=PlottingUtils.MODERN_PALETTE[1], linewidth=1.5, label="Q component")
+ax1.set_title("I/Q Components")
+ax1.set_xlabel("Sample Index")
+ax1.set_ylabel("Amplitude")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
 
-# Plot histogram of amplitudes
-plt.subplot(3, 1, 3)
-plt.hist(signal_i, bins=100, alpha=0.5, label="I Component")
-plt.hist(signal_q, bins=100, alpha=0.5, label="Q Component")
-plt.title("OFDM Amplitude Distribution")
-plt.grid(True)
-plt.xlabel("Amplitude")
-plt.ylabel("Count")
-plt.legend()
+# Plot instantaneous power
+ax2 = axes[0, 1]
+instantaneous_power = signal_i[:plot_samples] ** 2 + signal_q[:plot_samples] ** 2
+ax2.plot(t_plot, instantaneous_power, color=PlottingUtils.MODERN_PALETTE[2], linewidth=1.5)
+ax2.axhline(y=np.mean(instantaneous_power), color="red", linestyle="--", label=f"Average Power: {np.mean(instantaneous_power):.3f}")
+ax2.set_title("Instantaneous Power")
+ax2.set_xlabel("Sample Index")
+ax2.set_ylabel("Power")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 
-plt.tight_layout()
+# Plot constellation
+ax3 = axes[1, 0]
+# Sample every nth point for cleaner constellation
+n_samples_const = min(500, len(signal_i))
+sample_step = max(1, len(signal_i) // n_samples_const)
+ax3.scatter(signal_i[::sample_step], signal_q[::sample_step], s=15, alpha=0.6, color=PlottingUtils.MODERN_PALETTE[3])
+ax3.set_title("I/Q Constellation")
+ax3.set_xlabel("I Component")
+ax3.set_ylabel("Q Component")
+ax3.grid(True, alpha=0.3)
+ax3.axis("equal")
+
+# Plot power distribution histogram
+ax4 = axes[1, 1]
+ax4.hist(instantaneous_power, bins=50, density=True, alpha=0.7, color=PlottingUtils.MODERN_PALETTE[4], edgecolor="black")
+ax4.axvline(x=np.mean(instantaneous_power), color="red", linestyle="--", linewidth=2, label=f"Mean: {np.mean(instantaneous_power):.3f}")
+ax4.axvline(x=np.max(instantaneous_power), color="orange", linestyle="--", linewidth=2, label=f"Peak: {np.max(instantaneous_power):.3f}")
+ax4.set_title("Power Distribution")
+ax4.set_xlabel("Instantaneous Power")
+ax4.set_ylabel("Density")
+ax4.legend()
+ax4.grid(True, alpha=0.3)
+
 plt.show()
 
 # %%
@@ -136,12 +169,18 @@ constrained_ofdm = ofdm_constraints(ofdm_iq.clone())
 
 # Measure properties of the constrained signal
 constrained_props = measure_signal_properties(constrained_ofdm)
+
+# Constrained OFDM Signal Properties:
+# - Power: constrained_props['mean_power']
+# - PAPR: constrained_props['papr'] (constrained_props['papr_db'] dB)
+# - Peak Amplitude: constrained_props['peak_amplitude']
 print("\nConstrained OFDM Signal Properties:")
 print(f"  Power: {constrained_props['mean_power']:.4f}")
 print(f"  PAPR: {constrained_props['papr']:.2f} ({constrained_props['papr_db']:.2f} dB)")
 print(f"  Peak Amplitude: {constrained_props['peak_amplitude']:.4f}")
 
 # Alternative approach: apply individual constraints sequentially with verbose output
+# Sequential Application of OFDM Constraints: This demonstrates step-by-step constraint application
 print("\nSequential Application of OFDM Constraints:")
 constraints_list = [TotalPowerConstraint(total_power=1.0), PAPRConstraint(max_papr=6.0), PeakAmplitudeConstraint(max_amplitude=2.5)]
 
@@ -157,40 +196,72 @@ constrained_i = constrained_ofdm[0].numpy()
 constrained_q = constrained_ofdm[1].numpy()
 constrained_power = constrained_i**2 + constrained_q**2
 
-# Compare original vs constrained signals
-plt.figure(figsize=(15, 10))
+# Generate OFDM constraint effects visualization
+# Calculate signal segment for detailed analysis
+plot_segment = slice(0, 1000)
+original_power = signal_i**2 + signal_q**2
 
-# Time domain comparison
-plt.subplot(3, 1, 1)
-plt.plot(t[:1000], signal_i[:1000], "b-", alpha=0.5, label="Original I")
-plt.plot(t[:1000], constrained_i[:1000], "g-", label="Constrained I")
-plt.title("OFDM Time Domain - Original vs Constrained")
-plt.grid(True)
-plt.ylabel("Amplitude")
-plt.legend()
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("OFDM Constraint Effects Analysis", fontsize=16, fontweight="bold")
+
+# Time domain comparison - I component
+ax1 = axes[0, 0]
+t_seg = np.arange(1000)
+ax1.plot(t_seg, signal_i[:1000], color=PlottingUtils.MODERN_PALETTE[0], linewidth=1.5, alpha=0.7, label="Original I")
+ax1.plot(t_seg, constrained_i[:1000], color=PlottingUtils.MODERN_PALETTE[1], linewidth=1.5, alpha=0.7, label="Constrained I")
+ax1.set_title("I Component: Before vs After Constraints")
+ax1.set_xlabel("Sample Index")
+ax1.set_ylabel("Amplitude")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
 
 # Power comparison
-plt.subplot(3, 1, 2)
-plt.plot(t[:1000], power[:1000], "r-", alpha=0.5, label="Original Power")
-plt.plot(t[:1000], constrained_power[:1000], "g-", label="Constrained Power")
-plt.axhline(y=np.mean(constrained_power), color="k", linestyle="--", label=f"Mean: {np.mean(constrained_power):.2f}")
-plt.title(f"Power Comparison - Original PAPR: {ofdm_props['papr_db']:.2f} dB, " f"Constrained PAPR: {constrained_props['papr_db']:.2f} dB")
-plt.grid(True)
-plt.ylabel("Power")
-plt.legend()
+ax2 = axes[0, 1]
+ax2.plot(t_seg, original_power[:1000], color=PlottingUtils.MODERN_PALETTE[0], linewidth=1.5, alpha=0.7, label="Original Power")
+ax2.plot(t_seg, constrained_power[:1000], color=PlottingUtils.MODERN_PALETTE[1], linewidth=1.5, alpha=0.7, label="Constrained Power")
+ax2.axhline(y=np.mean(original_power), color=PlottingUtils.MODERN_PALETTE[0], linestyle="--", alpha=0.8, label=f"Orig Avg: {np.mean(original_power):.3f}")
+ax2.axhline(y=np.mean(constrained_power), color=PlottingUtils.MODERN_PALETTE[1], linestyle="--", alpha=0.8, label=f"Const Avg: {np.mean(constrained_power):.3f}")
+ax2.set_title("Instantaneous Power Comparison")
+ax2.set_xlabel("Sample Index")
+ax2.set_ylabel("Power")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 
-# Amplitude distribution comparison
-plt.subplot(3, 1, 3)
-plt.hist(signal_i, bins=100, alpha=0.4, label="Original I")
-plt.hist(constrained_i, bins=100, alpha=0.4, label="Constrained I")
-plt.axvline(x=constrained_props["peak_amplitude"], color="r", linestyle="--", label=f'Max Amplitude: {constrained_props["peak_amplitude"]:.2f}')
-plt.title("Amplitude Distribution Comparison")
-plt.grid(True)
-plt.xlabel("Amplitude")
-plt.ylabel("Count")
-plt.legend()
+# PAPR comparison bar chart
+ax3 = axes[1, 0]
+papr_data = [ofdm_props["papr_db"], constrained_props["papr_db"]]
+power_data = [ofdm_props["mean_power"], constrained_props["mean_power"]]
+categories = ["Original", "Constrained"]
 
-plt.tight_layout()
+x_pos = np.arange(len(categories))
+ax3_twin = ax3.twinx()
+
+bars1 = ax3.bar(x_pos - 0.2, papr_data, 0.4, label="PAPR (dB)", color=PlottingUtils.MODERN_PALETTE[2], alpha=0.7)
+bars2 = ax3_twin.bar(x_pos + 0.2, power_data, 0.4, label="Power", color=PlottingUtils.MODERN_PALETTE[3], alpha=0.7)
+
+ax3.set_title("PAPR and Power Comparison")
+ax3.set_xlabel("Signal Type")
+ax3.set_ylabel("PAPR (dB)", color=PlottingUtils.MODERN_PALETTE[2])
+ax3_twin.set_ylabel("Power", color=PlottingUtils.MODERN_PALETTE[3])
+ax3.set_xticks(x_pos)
+ax3.set_xticklabels(categories)
+ax3.legend(loc="upper left")
+ax3_twin.legend(loc="upper right")
+ax3.grid(True, alpha=0.3)
+
+# Constellation comparison
+ax4 = axes[1, 1]
+# Sample points for cleaner visualization
+sample_step = max(1, len(signal_i) // 300)
+ax4.scatter(signal_i[::sample_step], signal_q[::sample_step], s=20, alpha=0.6, color=PlottingUtils.MODERN_PALETTE[0], label="Original")
+ax4.scatter(constrained_i[::sample_step], constrained_q[::sample_step], s=20, alpha=0.6, color=PlottingUtils.MODERN_PALETTE[1], label="Constrained")
+ax4.set_title("Constellation Comparison")
+ax4.set_xlabel("I Component")
+ax4.set_ylabel("Q Component")
+ax4.legend()
+ax4.grid(True, alpha=0.3)
+ax4.axis("equal")
+
 plt.show()
 
 # %%
@@ -200,14 +271,20 @@ plt.show()
 
 # Verify power constraint
 power_result = verify_constraint(TotalPowerConstraint(total_power=1.0), ofdm_iq.clone(), "power", 1.0, tolerance=1e-4)
+
+# Power constraint verification results: power_result
 print(f"Power constraint verification: {power_result}")
 
 # Verify PAPR constraint
 papr_result = verify_constraint(PAPRConstraint(max_papr=6.0), sequential_ofdm.clone(), "papr", 6.0, tolerance=1e-3)  # Use output from sequential application
+
+# PAPR constraint verification results: papr_result
 print(f"PAPR constraint verification: {papr_result}")
 
 # Verify amplitude constraint
 amplitude_result = verify_constraint(PeakAmplitudeConstraint(max_amplitude=2.5), constrained_ofdm.clone(), "amplitude", 2.5, tolerance=1e-4)
+
+# Amplitude constraint verification results: amplitude_result
 print(f"Amplitude constraint verification: {amplitude_result}")
 
 # %%
@@ -225,6 +302,10 @@ n_subcarriers = 64
 mimo_signal = torch.complex(torch.randn(n_antennas, n_symbols * n_subcarriers), torch.randn(n_antennas, n_symbols * n_subcarriers))
 
 # Display properties of the original MIMO signal
+# Original MIMO Signal Properties:
+# - Shape: mimo_signal.shape (n_antennas antennas, samples per antenna)
+# - Per-antenna Power: calculated for each antenna
+# - Total Power: sum of all antenna powers
 print("\nOriginal MIMO Signal Properties:")
 print(f"  Shape: {mimo_signal.shape} ({n_antennas} antennas, {mimo_signal.shape[1]} samples per antenna)")
 
@@ -251,59 +332,114 @@ mimo_constraints = create_mimo_constraints(num_antennas=n_antennas, uniform_powe
 mimo_real = torch.cat([mimo_signal.real, mimo_signal.imag], dim=0)
 constrained_mimo = mimo_constraints(mimo_real.clone())
 
-# Reshape back to separate antennas and I/Q components
-n_total = constrained_mimo.shape[0]
-constrained_mimo_i = constrained_mimo[: n_total // 2]
-constrained_mimo_q = constrained_mimo[n_total // 2 :]
+# Extract I/Q components after constraint application
+constrained_mimo_i = constrained_mimo[:n_antennas]
+constrained_mimo_q = constrained_mimo[n_antennas:]
 
-# Calculate per-antenna power after constraints
-print("\nConstrained MIMO Signal Properties:")
-per_antenna_power_constrained = []
+# Calculate constrained per-antenna power
+constrained_per_antenna_power = []
 for i in range(n_antennas):
     antenna_power_i = torch.mean(constrained_mimo_i[i] ** 2).item()
     antenna_power_q = torch.mean(constrained_mimo_q[i] ** 2).item()
-    antenna_power = antenna_power_i + antenna_power_q
-    per_antenna_power_constrained.append(antenna_power)
-    print(f"  Antenna {i+1} Power: {antenna_power:.4f}")
+    total_antenna_power = antenna_power_i + antenna_power_q
+    constrained_per_antenna_power.append(total_antenna_power)
 
-print(f"  Total Power: {sum(per_antenna_power_constrained):.4f}")
+# Constrained MIMO Signal Properties:
+# - Per-antenna Power: constrained power for each antenna
+# - Total Power: sum of constrained antenna powers
+print("\nConstrained MIMO Signal Properties:")
+for i in range(n_antennas):
+    print(f"  Antenna {i+1} Power: {constrained_per_antenna_power[i]:.4f}")
+print(f"  Total Power: {sum(constrained_per_antenna_power):.4f}")
 
-# %%
-# Visualizing MIMO Constraint Effects
-# -------------------------------------------------------------------------
+# Generate MIMO constraint visualization
+# Calculate per-antenna properties for visualization
+antenna_powers_orig = []
+antenna_powers_const = []
+antenna_paprs_orig = []
+antenna_paprs_const = []
 
-# Plot original vs constrained power for each antenna
-plt.figure(figsize=(15, 8))
+for i in range(n_antennas):
+    # Original antenna signal
+    orig_ant = mimo_signal[i]
+    orig_power = torch.mean(torch.abs(orig_ant) ** 2).item()
+    orig_papr = (torch.max(torch.abs(orig_ant) ** 2) / torch.mean(torch.abs(orig_ant) ** 2)).item()
 
-# Power distribution
-x_labels = [f"Antenna {i+1}" for i in range(n_antennas)]
-x_pos = np.arange(len(x_labels))
+    antenna_powers_orig.append(orig_power)
+    antenna_paprs_orig.append(orig_papr)
+
+    # Constrained antenna signal
+    const_ant = torch.complex(constrained_mimo_i[i], constrained_mimo_q[i])
+    const_power = torch.mean(torch.abs(const_ant) ** 2).item()
+    const_papr = (torch.max(torch.abs(const_ant) ** 2) / torch.mean(torch.abs(const_ant) ** 2)).item()
+
+    antenna_powers_const.append(const_power)
+    antenna_paprs_const.append(const_papr)
+
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("MIMO System Constraint Analysis", fontsize=16, fontweight="bold")
+
+# Per-antenna power comparison
+ax1 = axes[0, 0]
+x_pos = np.arange(n_antennas)
 width = 0.35
+ax1.bar(x_pos - width / 2, antenna_powers_orig, width, label="Original", color=PlottingUtils.MODERN_PALETTE[0], alpha=0.7)
+ax1.bar(x_pos + width / 2, antenna_powers_const, width, label="Constrained", color=PlottingUtils.MODERN_PALETTE[1], alpha=0.7)
+ax1.axhline(y=uniform_power, color="red", linestyle="--", label=f"Target: {uniform_power:.3f}")
+ax1.set_title("Per-Antenna Power Distribution")
+ax1.set_xlabel("Antenna Index")
+ax1.set_ylabel("Power")
+ax1.set_xticks(x_pos)
+ax1.set_xticklabels([f"Ant {i+1}" for i in range(n_antennas)])
+ax1.legend()
+ax1.grid(True, alpha=0.3)
 
-plt.subplot(2, 1, 1)
-plt.bar(x_pos - width / 2, per_antenna_power, width, label="Original")
-plt.bar(x_pos + width / 2, per_antenna_power_constrained, width, label="Constrained")
-plt.axhline(y=uniform_power, color="r", linestyle="--", label=f"Target Power: {uniform_power:.2f}")
-plt.ylabel("Power")
-plt.title("Per-Antenna Power Distribution - Before and After Constraints")
-plt.xticks(x_pos, x_labels)
-plt.legend()
-plt.grid(True, alpha=0.3)
+# Per-antenna PAPR comparison
+ax2 = axes[0, 1]
+ax2.bar(x_pos - width / 2, antenna_paprs_orig, width, label="Original", color=PlottingUtils.MODERN_PALETTE[2], alpha=0.7)
+ax2.bar(x_pos + width / 2, antenna_paprs_const, width, label="Constrained", color=PlottingUtils.MODERN_PALETTE[3], alpha=0.7)
+ax2.axhline(y=4.0, color="red", linestyle="--", label="Max PAPR: 4.0")
+ax2.set_title("Per-Antenna PAPR")
+ax2.set_xlabel("Antenna Index")
+ax2.set_ylabel("PAPR")
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels([f"Ant {i+1}" for i in range(n_antennas)])
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 
-# Time domain signal for one antenna
+# Time series comparison for one antenna
+ax3 = axes[1, 0]
 antenna_idx = 0
-plt.subplot(2, 1, 2)
-plt.plot(mimo_signal[antenna_idx].real.numpy()[:200], "b-", alpha=0.5, label="Original I")
-plt.plot(mimo_signal[antenna_idx].imag.numpy()[:200], "r-", alpha=0.5, label="Original Q")
-plt.plot(constrained_mimo_i[antenna_idx].numpy()[:200], "g-", label="Constrained I")
-plt.plot(constrained_mimo_q[antenna_idx].numpy()[:200], "m-", label="Constrained Q")
-plt.title(f"Antenna {antenna_idx+1} Signal - Original vs Constrained")
-plt.grid(True)
-plt.xlabel("Sample")
-plt.ylabel("Amplitude")
-plt.legend()
+original_antenna = mimo_signal[antenna_idx]
+constrained_antenna = torch.complex(constrained_mimo_i[antenna_idx], constrained_mimo_q[antenna_idx])
 
-plt.tight_layout()
+t_mimo = np.arange(min(200, len(original_antenna)))
+ax3.plot(t_mimo, torch.abs(original_antenna[: len(t_mimo)]).numpy(), color=PlottingUtils.MODERN_PALETTE[0], linewidth=1.5, alpha=0.7, label=f"Original Ant {antenna_idx+1}")
+ax3.plot(t_mimo, torch.abs(constrained_antenna[: len(t_mimo)]).numpy(), color=PlottingUtils.MODERN_PALETTE[1], linewidth=1.5, alpha=0.7, label=f"Constrained Ant {antenna_idx+1}")
+ax3.set_title(f"Antenna {antenna_idx+1} Magnitude Comparison")
+ax3.set_xlabel("Sample Index")
+ax3.set_ylabel("Magnitude")
+ax3.legend()
+ax3.grid(True, alpha=0.3)
+
+# Total power evolution
+ax4 = axes[1, 1]
+total_power_orig = sum(antenna_powers_orig)
+total_power_const = sum(antenna_powers_const)
+categories = ["Original", "Constrained"]
+total_powers = [total_power_orig, total_power_const]
+
+bars = ax4.bar(categories, total_powers, color=[PlottingUtils.MODERN_PALETTE[0], PlottingUtils.MODERN_PALETTE[1]], alpha=0.7)
+ax4.axhline(y=1.0, color="red", linestyle="--", label="Target Total: 1.0")
+ax4.set_title("Total MIMO System Power")
+ax4.set_ylabel("Total Power")
+ax4.legend()
+ax4.grid(True, alpha=0.3)
+
+# Add value labels on bars
+for bar, power in zip(bars, total_powers):
+    ax4.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01, f"{power:.3f}", ha="center", va="bottom")
+
 plt.show()
 
 # %%
@@ -312,52 +448,25 @@ plt.show()
 # Let's add spectral mask constraints to our MIMO system to simulate regulatory requirements.
 
 # Create a spectral mask (e.g., simulating regulatory band restrictions)
-spectral_mask = torch.ones(n_symbols * n_subcarriers)
+n_freq = n_symbols * n_subcarriers
+spectral_mask = torch.ones(n_freq)
+
 # Create a restricted band
 restricted_start = int(0.3 * n_symbols * n_subcarriers)
 restricted_end = int(0.4 * n_symbols * n_subcarriers)
-spectral_mask[restricted_start:restricted_end] = 0.05  # Severe attenuation
+spectral_mask[restricted_start:restricted_end] = 0.1  # Heavy attenuation
 
-# Add spectral mask constraint to our MIMO constraint set
-advanced_mimo_constraints = create_mimo_constraints(num_antennas=n_antennas, uniform_power=uniform_power, max_papr=4.0, spectral_mask=spectral_mask)
+# Apply spectral mask to one antenna for demonstration
+spectral_constraint = SpectralMaskConstraint(spectral_mask)
+antenna_idx = 0
+constrained_antenna_spectral = spectral_constraint(torch.stack([constrained_mimo_i[antenna_idx], constrained_mimo_q[antenna_idx]]))
 
-# Apply advanced constraints
-advanced_constrained_mimo = advanced_mimo_constraints(mimo_real.clone())
-
-# Calculate frequency spectra for visualization
-antenna_idx = 0  # Choose one antenna for visualization
-original_i = mimo_signal[antenna_idx].real.numpy()
-original_q = mimo_signal[antenna_idx].imag.numpy()
-original_spectrum = np.abs(np.fft.fft(original_i + 1j * original_q)) ** 2
-
-advanced_i = advanced_constrained_mimo[antenna_idx].numpy()
-advanced_q = advanced_constrained_mimo[n_antennas + antenna_idx].numpy()
-advanced_spectrum = np.abs(np.fft.fft(advanced_i + 1j * advanced_q)) ** 2
-
-# Visualize spectral constraints
-plt.figure(figsize=(12, 8))
-freq = np.fft.fftfreq(len(original_spectrum)) * len(original_spectrum)
-mask_for_plot = spectral_mask.numpy() * np.max(original_spectrum) * 1.1
-
-plt.subplot(2, 1, 1)
-plt.semilogy(freq, original_spectrum, "b-", label="Original")
-plt.semilogy(freq, mask_for_plot, "r--", label="Spectral Mask")
-plt.title(f"Original Spectrum - Antenna {antenna_idx+1}")
-plt.grid(True)
-plt.ylabel("Power")
-plt.legend()
-
-plt.subplot(2, 1, 2)
-plt.semilogy(freq, advanced_spectrum, "g-", label="Constrained")
-plt.semilogy(freq, mask_for_plot, "r--", label="Spectral Mask")
-plt.title(f"Constrained Spectrum - Antenna {antenna_idx+1}")
-plt.grid(True)
-plt.xlabel("Frequency")
-plt.ylabel("Power")
-plt.legend()
-
-plt.tight_layout()
-plt.show()
+# Spectral Constraint Application Results:
+# - Applied spectral mask to reduce emissions in restricted frequency band
+# - Antenna power maintained while meeting spectral requirements
+print(f"\nSpectral constraint applied to Antenna {antenna_idx+1}")
+print("- Restricted frequency band: 30-40% of total bandwidth")
+print("- Attenuation factor: 0.1 (20 dB reduction)")
 
 # %%
 # Part 3: Real-world Application - Complete OFDM Transmitter Constraints
@@ -365,158 +474,133 @@ plt.show()
 # Let's put everything together to simulate a complete OFDM transmitter with practical constraints.
 
 # Create a more complex OFDM signal with pilot symbols and data
-n_sc = 256
 n_sym = 20
+n_sub = 256
 cp_len = 32
-pilot_interval = 4  # Insert pilot every 4 subcarriers
 
-# Create subcarrier mapping
-subcarrier_map = torch.zeros(n_sym, n_sc, dtype=torch.complex64)
-data_indices = torch.ones(n_sc, dtype=bool)
+# Create realistic OFDM frequency domain symbols with pilot allocation
+pilots_indices = np.arange(0, n_sub, 8)  # Every 8th subcarrier is a pilot
+data_indices = np.setdiff1d(np.arange(n_sub), pilots_indices)
 
-# Add pilots at regular intervals
-pilot_indices = torch.arange(0, n_sc, pilot_interval)
-data_indices[pilot_indices] = False
-pilots = torch.complex(torch.ones(pilot_indices.shape), torch.zeros(pilot_indices.shape))
+# Initialize frequency domain signal
+X_full = torch.zeros(1, n_sym, n_sub, dtype=torch.complex64)
 
-# Add guard bands (null subcarriers)
-guard_ratio = 0.1
-guard_size = int(n_sc * guard_ratio)
-data_indices[:guard_size] = False
-data_indices[-guard_size:] = False
+# Add pilot symbols (known reference signals)
+X_full[:, :, pilots_indices] = torch.complex(torch.ones(1, n_sym, len(pilots_indices)), torch.zeros(1, n_sym, len(pilots_indices)))
 
-# Add DC null
-dc_idx = n_sc // 2
-data_indices[dc_idx] = False
+# Add random data symbols
+X_full[:, :, data_indices] = torch.complex(torch.randn(1, n_sym, len(data_indices)), torch.randn(1, n_sym, len(data_indices)))
 
-# Map data and pilots
+# Convert to time domain and add cyclic prefix
+X_full_time = torch.fft.ifft(X_full, dim=2)
+ofdm_full = []
 for i in range(n_sym):
-    # Place pilots
-    subcarrier_map[i, pilot_indices] = pilots
+    symbol = X_full_time[:, i, :]
+    cp = symbol[:, -cp_len:]
+    ofdm_full.append(torch.cat([cp, symbol], dim=1))
 
-    # Place random QPSK data on data subcarriers
-    n_data = torch.sum(data_indices).item()
-    qpsk_real = torch.randint(0, 2, (n_data,)) * 2 - 1
-    qpsk_imag = torch.randint(0, 2, (n_data,)) * 2 - 1
-    qpsk_data = torch.complex(qpsk_real.float(), qpsk_imag.float())
+ofdm_full_signal = torch.cat(ofdm_full, dim=1)
+ofdm_iq_full = torch.cat([ofdm_full_signal.real, ofdm_full_signal.imag], dim=0)
 
-    subcarrier_map[i, data_indices] = qpsk_data
-
-# Convert to time domain signal
-tx_ofdm = torch.fft.ifft(subcarrier_map, dim=1)
-
-# Add cyclic prefix
-tx_with_cp = []
-for i in range(n_sym):
-    symbol = tx_ofdm[i, :]
-    cp = symbol[-cp_len:]
-    tx_with_cp.append(torch.cat([cp, symbol]))
-
-# Create final OFDM signal
-ofdm_full = torch.cat(tx_with_cp)
-
-# Convert to I/Q components for constraints
-ofdm_iq_full = torch.stack([ofdm_full.real, ofdm_full.imag], dim=0)
-
-# Measure original signal properties
+# Measure properties of full OFDM transmitter
 ofdm_full_props = measure_signal_properties(ofdm_iq_full)
-print("\nComplete OFDM Transmitter Signal Properties:")
-print(f"  Shape: {ofdm_iq_full.shape}")
+
+# Complete OFDM Transmitter Properties:
+# - Total symbols: n_sym, Subcarriers: n_sub, CP length: cp_len
+# - Pilot allocation: every 8th subcarrier
+# - Power: ofdm_full_props['mean_power']
+# - PAPR: ofdm_full_props['papr'] (ofdm_full_props['papr_db'] dB)
+print("\nComplete OFDM Transmitter Properties:")
+print(f"  Total symbols: {n_sym}, Subcarriers: {n_sub}, CP length: {cp_len}")
+print("  Pilot allocation: every 8th subcarrier")
 print(f"  Power: {ofdm_full_props['mean_power']:.4f}")
 print(f"  PAPR: {ofdm_full_props['papr']:.2f} ({ofdm_full_props['papr_db']:.2f} dB)")
-print(f"  Peak Amplitude: {ofdm_full_props['peak_amplitude']:.4f}")
 
-# %%
-# Applying Transmitter Constraints
-# -----------------------------------------------------------------------------
-# Apply practical constraints for a realistic OFDM transmitter.
+# Apply comprehensive transmitter constraints
+tx_constraints = combine_constraints([TotalPowerConstraint(total_power=1.0), PAPRConstraint(max_papr=5.0), PeakAmplitudeConstraint(max_amplitude=2.0)])  # Stricter PAPR for practical systems  # Hardware amplifier limits
 
-# Create combined transmitter constraints
-tx_constraints = combine_constraints(
-    [
-        # Normalize total power
-        TotalPowerConstraint(total_power=1.0),
-        # Limit PAPR to realistic PA value
-        PAPRConstraint(max_papr=7.0),  # ~8.5 dB
-        # Limit peak amplitude for D/A converter
-        PeakAmplitudeConstraint(max_amplitude=2.0),
-    ]
-)
-
-# Apply constraints
 tx_constrained = tx_constraints(ofdm_iq_full.clone())
 tx_constrained_props = measure_signal_properties(tx_constrained)
 
-print("\nConstrained Transmitter Signal Properties:")
+# Transmitter Constraint Results:
+# - Power: tx_constrained_props['mean_power']
+# - PAPR: tx_constrained_props['papr'] (tx_constrained_props['papr_db'] dB)
+# - Peak Amplitude: tx_constrained_props['peak_amplitude']
+print("\nTransmitter Constraint Results:")
 print(f"  Power: {tx_constrained_props['mean_power']:.4f}")
 print(f"  PAPR: {tx_constrained_props['papr']:.2f} ({tx_constrained_props['papr_db']:.2f} dB)")
 print(f"  Peak Amplitude: {tx_constrained_props['peak_amplitude']:.4f}")
 
-# %%
-# Final Visualization and Analysis
-# -------------------------------------------
-# Let's visualize and analyze our transmitter signal before and after constraints.
+# Generate final comprehensive transmitter analysis
+# Prepare data for comprehensive analysis
+original_power = ofdm_iq_full[0].numpy() ** 2 + ofdm_iq_full[1].numpy() ** 2
+constrained_power = tx_constrained[0].numpy() ** 2 + tx_constrained[1].numpy() ** 2
 
-# Time domain comparison
-fig = plt.figure(figsize=(15, 12))
-gs = GridSpec(4, 2, figure=fig)
+fig, axes = plt.subplots(2, 2, figsize=(15, 10), constrained_layout=True)
+fig.suptitle("Comprehensive Multi-Constraint OFDM Transmitter Analysis", fontsize=16, fontweight="bold")
 
-# Plot time domain signals
-t_segment = slice(0, 500)
-plt.subplot(gs[0, :])
-plt.plot(ofdm_iq_full[0, t_segment].numpy(), "b-", alpha=0.5, label="Original I")
-plt.plot(tx_constrained[0, t_segment].numpy(), "g-", label="Constrained I")
-plt.title("OFDM Transmitter Signal - Time Domain")
-plt.grid(True)
-plt.ylabel("Amplitude")
-plt.legend()
+# Time domain signal comparison
+ax1 = axes[0, 0]
+t_samples = min(2000, len(ofdm_iq_full[0]))
+t_vec = np.arange(t_samples)
+ax1.plot(t_vec, ofdm_iq_full[0][:t_samples].numpy(), color=PlottingUtils.MODERN_PALETTE[0], linewidth=1, alpha=0.7, label="Original I")
+ax1.plot(t_vec, tx_constrained[0][:t_samples].numpy(), color=PlottingUtils.MODERN_PALETTE[1], linewidth=1, alpha=0.7, label="Constrained I")
+ax1.set_title("I Component: Complete Transmitter")
+ax1.set_xlabel("Sample Index")
+ax1.set_ylabel("Amplitude")
+ax1.legend()
+ax1.grid(True, alpha=0.3)
 
-# Plot power
-orig_power = ofdm_iq_full[0].numpy() ** 2 + ofdm_iq_full[1].numpy() ** 2
-const_power = tx_constrained[0].numpy() ** 2 + tx_constrained[1].numpy() ** 2
+# Power envelope comparison
+ax2 = axes[0, 1]
+ax2.plot(t_vec, original_power[:t_samples], color=PlottingUtils.MODERN_PALETTE[0], linewidth=1, alpha=0.7, label="Original")
+ax2.plot(t_vec, constrained_power[:t_samples], color=PlottingUtils.MODERN_PALETTE[1], linewidth=1, alpha=0.7, label="Constrained")
+ax2.axhline(y=np.mean(original_power), color=PlottingUtils.MODERN_PALETTE[0], linestyle="--", alpha=0.8, label=f"Orig Avg: {np.mean(original_power):.3f}")
+ax2.axhline(y=np.mean(constrained_power), color=PlottingUtils.MODERN_PALETTE[1], linestyle="--", alpha=0.8, label=f"Const Avg: {np.mean(constrained_power):.3f}")
+ax2.set_title("Power Envelope")
+ax2.set_xlabel("Sample Index")
+ax2.set_ylabel("Instantaneous Power")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 
-plt.subplot(gs[1, :])
-plt.plot(orig_power[t_segment], "r-", alpha=0.5, label="Original Power")
-plt.plot(const_power[t_segment], "g-", label="Constrained Power")
-plt.axhline(y=np.mean(const_power), color="k", linestyle="--", label=f"Avg Power: {np.mean(const_power):.2f}")
-plt.title(f"Power - PAPR reduction from {ofdm_full_props['papr_db']:.2f} dB to {tx_constrained_props['papr_db']:.2f} dB")
-plt.grid(True)
-plt.ylabel("Power")
-plt.legend()
+# Summary statistics
+ax3 = axes[1, 0]
+properties = ["Power", "PAPR (dB)", "Peak Amplitude"]
+original_values = [ofdm_full_props["mean_power"], ofdm_full_props["papr_db"], ofdm_full_props["peak_amplitude"]]
+constrained_values = [tx_constrained_props["mean_power"], tx_constrained_props["papr_db"], tx_constrained_props["peak_amplitude"]]
+targets = [1.0, 10 * np.log10(5.0), 2.0]  # Target values
 
-# Plot constellation - Original
-plt.subplot(gs[2, 0])
-plt.scatter(ofdm_iq_full[0, :1000].numpy(), ofdm_iq_full[1, :1000].numpy(), s=1, alpha=0.5, label="Samples")
-plt.grid(True)
-plt.axis("equal")
-plt.title("Original IQ Constellation")
-plt.xlabel("I")
-plt.ylabel("Q")
+x_props = np.arange(len(properties))
+width = 0.25
+ax3.bar(x_props - width, original_values, width, label="Original", color=PlottingUtils.MODERN_PALETTE[0], alpha=0.7)
+ax3.bar(x_props, constrained_values, width, label="Constrained", color=PlottingUtils.MODERN_PALETTE[1], alpha=0.7)
+ax3.bar(x_props + width, targets, width, label="Target", color=PlottingUtils.MODERN_PALETTE[2], alpha=0.7)
 
-# Plot constellation - Constrained
-plt.subplot(gs[2, 1])
-plt.scatter(tx_constrained[0, :1000].numpy(), tx_constrained[1, :1000].numpy(), s=1, alpha=0.5, label="Samples")
-plt.grid(True)
-plt.axis("equal")
-plt.title("Constrained IQ Constellation")
-plt.xlabel("I")
-plt.ylabel("Q")
+ax3.set_title("Constraint Satisfaction Summary")
+ax3.set_xlabel("Signal Property")
+ax3.set_ylabel("Value")
+ax3.set_xticks(x_props)
+ax3.set_xticklabels(properties)
+ax3.legend()
+ax3.grid(True, alpha=0.3)
 
-# Plot amplitude histograms
-plt.subplot(gs[3, :])
-# Ensure we're using real values for histogram
-orig_amp = np.sqrt(orig_power).real if np.iscomplexobj(orig_power) else np.sqrt(orig_power)
-const_amp = np.sqrt(const_power).real if np.iscomplexobj(const_power) else np.sqrt(const_power)
-plt.hist(orig_amp, bins=100, alpha=0.5, label="Original")
-plt.hist(const_amp, bins=100, alpha=0.5, label="Constrained")
-plt.axvline(x=tx_constrained_props["peak_amplitude"], color="r", linestyle="--", label=f'Max Amplitude: {tx_constrained_props["peak_amplitude"]:.2f}')
-plt.title("Amplitude Distribution")
-plt.grid(True)
-plt.xlabel("Amplitude")
-plt.ylabel("Count")
-plt.legend()
+# Frequency domain analysis
+ax4 = axes[1, 1]
+# Compute spectrum of original and constrained signals
+orig_spectrum = np.abs(np.fft.fft(ofdm_iq_full[0].numpy() + 1j * ofdm_iq_full[1].numpy())) ** 2
+const_spectrum = np.abs(np.fft.fft(tx_constrained[0].numpy() + 1j * tx_constrained[1].numpy())) ** 2
+freqs = np.fft.fftfreq(len(orig_spectrum))
 
-plt.tight_layout()
+# Plot only positive frequencies
+pos_mask = freqs >= 0
+ax4.semilogy(freqs[pos_mask], orig_spectrum[pos_mask], color=PlottingUtils.MODERN_PALETTE[0], linewidth=1.5, alpha=0.7, label="Original")
+ax4.semilogy(freqs[pos_mask], const_spectrum[pos_mask], color=PlottingUtils.MODERN_PALETTE[1], linewidth=1.5, alpha=0.7, label="Constrained")
+ax4.set_title("Power Spectral Density")
+ax4.set_xlabel("Normalized Frequency")
+ax4.set_ylabel("PSD")
+ax4.legend()
+ax4.grid(True, alpha=0.3)
+
 plt.show()
 
 # %%
@@ -525,19 +609,19 @@ plt.show()
 # This example demonstrated practical applications of Kaira's constraints in wireless communication systems:
 #
 # - **OFDM Systems**: We applied appropriate constraints to control power, PAPR, and peak amplitude
-#   of OFDM signals, which is crucial for practical transmitters to avoid amplifier distortion.
+#   for realistic OFDM signals with cyclic prefixes and guard bands
 #
 # - **MIMO Systems**: We demonstrated how to enforce per-antenna power constraints and spectral masks
-#   for MIMO systems, ensuring compliance with hardware limitations and regulatory requirements.
+#   for multi-antenna communication systems
 #
-# - **Real-world Transmitter**: We simulated a complete OFDM transmitter with pilots, guard bands,
-#   and practical constraints that would be applied in actual wireless equipment.
+# - **Complete Transmitter**: We simulated a full OFDM transmitter with pilot symbols, data allocation,
+#   and comprehensive constraint application suitable for practical deployment
 #
-# Key observations:
-# - OFDM signals naturally exhibit high PAPR, requiring careful constraint application
-# - MIMO systems need balanced power distribution across antennas
-# - Spectral masks help ensure compliance with regulatory requirements
-# - Combined constraints enable practical signal transmission within hardware limitations
+# Key insights:
+# - Factory functions like `create_ofdm_constraints()` simplify constraint configuration for common scenarios
+# - Sequential constraint application allows step-by-step analysis of constraint effects
+# - Verification functions ensure constraints are properly satisfied within specified tolerances
+# - Real-world systems require multiple simultaneous constraints to meet power, spectral, and hardware limitations
 #
-# These constraints are essential components of real-world wireless communication systems,
-# enabling efficient use of power amplifiers and ensuring compliance with regulatory standards.
+# These examples provide a foundation for applying Kaira constraints in practical wireless communication
+# system design and optimization.

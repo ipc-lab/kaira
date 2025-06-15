@@ -121,9 +121,9 @@ Kaira includes support for BPG (Better Portable Graphics) image compression thro
    .. code-block:: bash
 
       # Download and compile from source
-      wget https://bellard.org/bpg/bpg-0.9.8.tar.gz
-      tar xzf bpg-0.9.8.tar.gz
-      cd bpg-0.9.8
+      wget https://bellard.org/bpg/libbpg-0.9.8.tar.gz
+      tar xzf libbpg-0.9.8.tar.gz
+      cd libbpg-0.9.8
       make
       sudo make install
 

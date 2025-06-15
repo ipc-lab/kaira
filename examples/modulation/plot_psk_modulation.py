@@ -122,8 +122,9 @@ n_test_symbols = 1000
 
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
-for i, snr_db in enumerate(test_snr_db):
-    noise_power = snr_to_noise_power(1.0, snr_db)
+for i, snr_db_val in enumerate(test_snr_db):
+    current_snr_db: int = int(snr_db_val)
+    noise_power = snr_to_noise_power(1.0, float(current_snr_db))
     channel = AWGNChannel(avg_noise_power=noise_power)
 
     # Generate and modulate random QPSK symbols
@@ -131,7 +132,7 @@ for i, snr_db in enumerate(test_snr_db):
     qpsk_symbols = qpsk_mod(test_bits)
     received_symbols = channel(qpsk_symbols)
 
-    plot_constellation(received_symbols.flatten(), title=f"QPSK at {snr_db} dB SNR", marker=".", ax=axs[i])
+    plot_constellation(received_symbols.flatten(), title=f"QPSK at {current_snr_db} dB SNR", marker=".", ax=axs[i])
     axs[i].grid(True)
 
 plt.tight_layout()

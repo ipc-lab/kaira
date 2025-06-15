@@ -1,6 +1,6 @@
 """Π/4-QPSK modulation scheme."""
 
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import matplotlib.pyplot as plt  # type: ignore
 import torch
@@ -144,7 +144,7 @@ class Pi4QPSKModulator(BaseModulator):
         """Reset internal state (constellation alternation)."""
         self._use_rotated.fill_(False)
 
-    def plot_constellation(self, **kwargs) -> plt.Figure:
+    def plot_constellation(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """Plot the π/4-QPSK constellation diagram.
 
         Args:
@@ -244,12 +244,14 @@ class Pi4QPSKDemodulator(BaseDemodulator):
             # Handle noise variance
             if noise_var is not None:
                 if not isinstance(noise_var, torch.Tensor):
-                    noise_var = torch.tensor(noise_var, device=y.device)
-                if noise_var.dim() == 0:  # scalar
-                    noise_var = noise_var.expand(*batch_shape, symbol_shape)
+                    noise_var_tensor = torch.tensor(noise_var, device=y.device)
+                else:
+                    noise_var_tensor = noise_var
+                if noise_var_tensor.dim() == 0:  # scalar
+                    noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape)
             else:
                 # Default noise variance for soft decisions when not provided
-                noise_var = torch.ones(*batch_shape, symbol_shape, device=y.device)
+                noise_var_tensor = torch.ones(*batch_shape, symbol_shape, device=y.device)
 
         # Demodulate each symbol using the appropriate constellation
         use_rotated = self._use_rotated.clone()
@@ -282,10 +284,7 @@ class Pi4QPSKDemodulator(BaseDemodulator):
                             output_bits[i, :] = self.modulator.bit_patterns[b]
             else:
                 # Soft decision (LLR calculation)
-                if noise_var is not None:  # Add type check before indexing
-                    current_noise_var = noise_var[..., i] if batch_shape else noise_var[i]
-                else:
-                    raise ValueError("noise_var cannot be None when soft_output is enabled")
+                current_noise_var = noise_var_tensor[..., i] if batch_shape else noise_var_tensor[i]
 
                 # Calculate LLRs for each bit position
                 for bit_idx in range(2):

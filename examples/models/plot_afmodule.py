@@ -314,19 +314,22 @@ plt.show()
 
 # %%
 # Conclusion
-# ---------------
+# ----------
+#
 # In this example, we explored the Attention-Feature Module (AFModule), a component
 # designed to help neural networks adapt to varying channel conditions in wireless
 # communication systems.
 #
-# Key points:
-# - AFModule recalibrates feature maps based on channel state information
-# - It can work with different input tensor dimensions (2D, 3D, 4D)
-# - It helps maintain performance across different channel conditions (like varying SNRs)
-# - The module can adapt to different feature sizes dynamically
+# **Key Points:**
+#
+# * AFModule recalibrates feature maps based on channel state information
+# * It can work with different input tensor dimensions (2D, 3D, 4D)
+# * It helps maintain performance across different channel conditions (like varying SNRs)
+# * The module can adapt to different feature sizes dynamically
 #
 # The AFModule is particularly useful in deep learning-based communication systems
 # that need to operate reliably in varying channel conditions.
 #
-# References:
-# - :cite:`xu2021wireless`
+# **References:**
+#
+# * :cite:`xu2021wireless`

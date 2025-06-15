@@ -672,17 +672,20 @@ class SoftBitEnsembleThresholder(SoftBitThresholder):
         self.voting = voting
 
         # Configure weights for weighted voting
+        weight_tensor: Optional[torch.Tensor] = None
         if weights is not None:
             if isinstance(weights, list):
-                weights = torch.tensor(weights, dtype=torch.float32)
+                weight_tensor = torch.tensor(weights, dtype=torch.float32)
+            else:
+                weight_tensor = weights
 
-            if len(weights) != len(thresholders):
-                raise ValueError(f"Number of weights ({len(weights)}) must match " f"number of thresholders ({len(thresholders)})")
+            if len(weight_tensor) != len(thresholders):
+                raise ValueError(f"Number of weights ({len(weight_tensor)}) must match " f"number of thresholders ({len(thresholders)})")
 
             # Normalize weights to sum to 1.0
-            weights = weights / weights.sum()
+            weight_tensor = weight_tensor / weight_tensor.sum()
 
-        self.register_buffer("weights", weights if weights is not None else torch.ones(len(thresholders)))
+        self.register_buffer("weights", weight_tensor if weight_tensor is not None else torch.ones(len(thresholders)))
 
     def forward(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         """Apply ensemble thresholding to convert soft bit values to hard decisions.

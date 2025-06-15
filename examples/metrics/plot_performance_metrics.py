@@ -17,26 +17,20 @@ measures of system performance.
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
-from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 from scipy import special
 
 from kaira.channels import AWGNChannel, BinarySymmetricChannel, RayleighFadingChannel
 from kaira.utils import seed_everything
+from kaira.utils.plotting import PlottingUtils
 
 # Set seeds for reproducibility
 seed_everything(42)
 
-# Set a visually appealing style
-plt.style.use("seaborn-v0_8-whitegrid")
-sns.set_context("notebook", font_scale=1.2)
-
-# Create a custom colormap for attractive visualizations
-colors = ["#4C72B0", "#55A868", "#C44E52", "#8172B3", "#CCB974", "#64B5CD"]
-cmap = LinearSegmentedColormap.from_list("kaira_cmap", colors)
+# Configure plotting style
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Theoretical vs. Simulated BER Curves
@@ -525,6 +519,9 @@ channel_data = {"AWGN Channel": [8, 9, 10, 9, 10, 7], "BSC": [6, 7, 10, 7, 10, 6
 # Create radar chart
 fig, ax, theta = radar_factory(len(characteristics))
 
+# Define colors for each channel
+colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
 # Plot each channel
 for i, (channel, scores) in enumerate(channel_data.items()):
     color = colors[i]
@@ -627,20 +624,20 @@ def rician_outage_prob(snr_db, rate, K_factor):
 
 
 # Rates to compare
-rates = [1, 2, 4]  # bits/channel use
+outage_rates = [1, 2, 4]  # bits/channel use
 
 # K-factor for Rician fading
 K_factor = 5  # dB
 
 # Calculate outage probabilities
 rayleigh_outage = []
-for rate in rates:
+for rate in outage_rates:
     rayleigh_outage.append([rayleigh_outage_prob(snr, rate) for snr in snr_db_range])
 
 # Plotting
 plt.figure(figsize=(12, 8))
 
-for i, rate in enumerate(rates):
+for i, rate in enumerate(outage_rates):
     plt.semilogy(snr_db_range, rayleigh_outage[i], linewidth=3, label=f"Rate = {rate} bits/use (Rayleigh)")
 
 # Add outage capacity curve (when rate = log2(1+SNR))

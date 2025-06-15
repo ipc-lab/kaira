@@ -166,7 +166,7 @@ plt.figure(figsize=(12, 6))
 # Create histogram of phase errors
 plt.subplot(1, 2, 1)
 for phase_std, errors in phase_errors:
-    plt.hist(errors, bins=50, range=[-np.pi, np.pi], density=True, alpha=0.7, label=f"σ = {phase_std} rad")
+    plt.hist(errors, bins=50, range=(-np.pi, np.pi), density=True, alpha=0.7, label=f"σ = {phase_std} rad")
 
 plt.grid(True)
 plt.xlim([-np.pi, np.pi])

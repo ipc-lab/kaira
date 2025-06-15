@@ -720,7 +720,7 @@ General utility functions for the Kaira library.
    :template: class.rst
    :nosignatures:
 
-   CapacityAnalyzer
+   PlottingUtils
 
 
 .. currentmodule:: kaira.utils

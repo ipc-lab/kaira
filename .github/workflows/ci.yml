@@ -44,6 +44,183 @@ jobs:
             ${{ runner.os }}-ci-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-ci-pip-
 
+      - name: Cache BPG tools
+        uses: actions/cache@v4
+        id: bpg-cache
+        with:
+          path: ~/.local/bin/bpg*
+          key: ${{ runner.os }}-bpg-tools-v1
+          restore-keys: |
+            ${{ runner.os }}-bpg-tools-
+
+      - name: Install system dependencies
+        run: |
+          echo "🔧 Installing system dependencies for BPG..."
+
+          # Check if we can use sudo without password
+          if sudo -n true 2>/dev/null; then
+            echo "📦 Installing system packages with sudo..."
+            sudo apt-get update -qq
+            sudo apt-get install -y libtiff5-dev pkg-config wget build-essential
+            echo "✅ System dependencies installed via apt"
+          else
+            echo "⚠️ Cannot use sudo - checking for existing dependencies..."
+
+            # Check if required tools/libraries are already available
+            MISSING_DEPS=()
+
+            # Check for essential build tools
+            if ! command -v gcc &> /dev/null; then
+              MISSING_DEPS+=("gcc")
+            fi
+            if ! command -v make &> /dev/null; then
+              MISSING_DEPS+=("make")
+            fi
+            if ! command -v wget &> /dev/null && ! command -v curl &> /dev/null; then
+              MISSING_DEPS+=("wget or curl")
+            fi
+
+            # Check for pkg-config and libraries
+            if ! command -v pkg-config &> /dev/null; then
+              MISSING_DEPS+=("pkg-config")
+            fi
+            if ! pkg-config --exists libtiff-4 2>/dev/null; then
+              MISSING_DEPS+=("libtiff-dev")
+            fi
+
+            if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
+              echo "✅ All required dependencies are already available"
+            else
+              echo "❌ Missing dependencies: ${MISSING_DEPS[*]}"
+              echo "📝 BPG compilation may fail due to missing system dependencies"
+              echo "💡 Consider configuring passwordless sudo for the runner user"
+              echo "   or pre-installing: libtiff5-dev pkg-config wget build-essential"
+
+              # Try alternative installation methods
+              echo "🔄 Attempting alternative installation methods..."
+
+              # Try using conda if available
+              if command -v conda &> /dev/null; then
+                echo "📦 Trying conda installation..."
+                conda install -c conda-forge libtiff pkg-config -y || echo "⚠️ Conda install failed"
+              fi
+
+              # Try using homebrew if available (for macOS runners)
+              if command -v brew &> /dev/null; then
+                echo "📦 Trying homebrew installation..."
+                brew install libtiff pkg-config || echo "⚠️ Homebrew install failed"
+              fi
+            fi
+          fi
+
+      - name: Install BPG tools
+        run: |
+          echo "🔧 Installing BPG (Better Portable Graphics) tools..."
+
+          # Create local bin directory for BPG tools
+          BPG_BIN_DIR="$HOME/.local/bin"
+          mkdir -p "$BPG_BIN_DIR"
+
+          # Add to PATH for this session and future steps
+          echo "$BPG_BIN_DIR" >> $GITHUB_PATH
+          export PATH="$BPG_BIN_DIR:$PATH"
+
+          # Check if BPG tools are already installed or cached
+          if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+            echo "✅ BPG tools already installed"
+            bpgenc 2>&1 | head -n 3 || true
+          elif [ "${{ steps.bpg-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ BPG tools restored from cache"
+            chmod +x "$BPG_BIN_DIR"/bpg* 2>/dev/null || true
+          else
+            echo "📦 Installing BPG tools from source..."
+
+            # Check build environment
+            echo "🔍 Checking build environment..."
+            echo "OS: $(uname -s)"
+            echo "Architecture: $(uname -m)"
+            echo "Available compilers:"
+            which gcc && gcc --version | head -1 || echo "gcc not found"
+            which clang && clang --version | head -1 || echo "clang not found"
+            which make && make --version | head -1 || echo "make not found"
+
+            # Check for required libraries
+            echo "🔍 Checking for required libraries..."
+            pkg-config --exists libjpeg && echo "libjpeg: ✅" || echo "libjpeg: ❌"
+            pkg-config --exists libpng && echo "libpng: ✅" || echo "libpng: ❌"
+            pkg-config --exists libtiff-4 && echo "libtiff: ✅" || echo "libtiff: ❌"
+
+            # Download and try to compile BPG (non-blocking)
+            echo "📥 Downloading BPG source..."
+            cd /tmp
+
+            # Try multiple sources for BPG
+            BPG_DOWNLOADED=false
+
+            # Primary source
+            if wget -q --timeout=10 https://bellard.org/bpg/libbpg-0.9.8.tar.gz 2>/dev/null; then
+              echo "✅ Downloaded BPG source from primary location"
+              BPG_DOWNLOADED=true
+            # Fallback: try curl
+            elif curl -sL --max-time 10 https://bellard.org/bpg/libbpg-0.9.8.tar.gz -o bpg-0.9.8.tar.gz 2>/dev/null; then
+              echo "✅ Downloaded BPG source using curl"
+              BPG_DOWNLOADED=true
+            # Alternative source (if available)
+            elif wget -q --timeout=10 https://github.com/mirrorer/libbpg/archive/refs/heads/master.tar.gz -O bpg-master.tar.gz 2>/dev/null; then
+              echo "✅ Downloaded BPG source from alternative location"
+              tar xzf bpg-master.tar.gz
+              mv libbpg-master bpg-0.9.8
+              BPG_DOWNLOADED=true
+            fi
+
+            if [ "$BPG_DOWNLOADED" = true ]; then
+              echo "✅ Downloaded BPG source"
+              tar xzf bpg-0.9.8.tar.gz
+              cd bpg-0.9.8
+
+              # Try to compile BPG tools
+              echo "🔨 Attempting to compile BPG tools..."
+
+              # Redirect make output to avoid stdout issues
+              if make > make_output.log 2>&1; then
+                echo "✅ BPG compilation successful"
+                cat make_output.log | tail -n 10  # Show last 10 lines of build log
+
+                # Install to user bin directory
+                if cp bpgenc bpgdec "$BPG_BIN_DIR/" 2>/dev/null; then
+                  chmod +x "$BPG_BIN_DIR/bpgenc" "$BPG_BIN_DIR/bpgdec"
+
+                  # Verify installation
+                  if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+                    echo "✅ BPG tools installed successfully to $BPG_BIN_DIR"
+                    bpgenc 2>&1 | head -n 3 || true
+                  else
+                    echo "⚠️ BPG tools copied but not found in PATH"
+                  fi
+                else
+                  echo "⚠️ Failed to copy BPG tools to $BPG_BIN_DIR"
+                fi
+              else
+                echo "⚠️ BPG compilation failed - this is non-critical"
+                echo "🔍 Build log (last 20 lines):"
+                cat make_output.log | tail -n 20 || echo "No build log available"
+                echo "📝 BPG-dependent tests will be skipped"
+              fi
+            else
+              echo "⚠️ Failed to download BPG source - this is non-critical"
+              echo "📝 BPG-dependent tests will be skipped"
+            fi
+          fi
+
+          # Final status check
+          if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+            echo "🎉 BPG tools are available for testing"
+          else
+            echo "ℹ️ BPG tools not available - BPG tests will be skipped"
+          fi
+        shell: bash
+        continue-on-error: true
+
       - name: Install dependencies
         run: |
           echo "🔧 Installing dependencies for CI build..."
@@ -69,7 +246,16 @@ jobs:
           pip --version
           pytest --version
 
-          echo "📊 Key installed packages:"
+          echo "� Validating BPG tools..."
+          if command -v bpgenc &> /dev/null && command -v bpgdec &> /dev/null; then
+            echo "✅ BPG tools available"
+            echo "bpgenc location: $(which bpgenc)"
+            echo "bpgdec location: $(which bpgdec)"
+          else
+            echo "❌ BPG tools not found in PATH"
+          fi
+
+          echo "�📊 Key installed packages:"
           pip list | grep -E "(pytest|coverage|sphinx|numpy|scipy)" || true
 
       - name: Test with pytest

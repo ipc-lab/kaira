@@ -13,19 +13,26 @@ magnitude of fading.
 """
 
 import matplotlib.pyplot as plt
-
-# %%
-# Imports and Setup
-# -------------------------------
 import numpy as np
 import torch
-from scipy import signal  # Added here to fix E402 error
+from scipy import signal
 
 from kaira.channels import AWGNChannel, FlatFadingChannel, PerfectChannel
 from kaira.metrics.signal import BitErrorRate
 from kaira.modulations import QPSKModulator
 from kaira.modulations.utils import calculate_theoretical_ber
 from kaira.utils import snr_to_noise_power
+
+# Plotting imports
+from kaira.utils.plotting import PlottingUtils
+
+PlottingUtils.setup_plotting_style()
+
+# %%
+# Imports and Setup
+# -------------------------------
+# Fading Channel Simulation Configuration
+# =======================================
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -34,6 +41,9 @@ np.random.seed(42)
 # %%
 # Generate QPSK Signal
 # ------------------------------------
+# QPSK Signal Generation
+# ==============================
+#
 # Let's use Kaira's QPSKModulator to generate QPSK symbols.
 
 # Create a QPSK modulator
@@ -62,21 +72,47 @@ for i in range(n_symbols):
         idx += 1
     symbol_indices[i] = idx
 
-print(f"Generated {n_symbols} QPSK symbols")
-print(f"Input signal shape: {input_signal.shape}")
-print(f"First 5 complex symbols: {qpsk_symbols[:5]}")
+# QPSK Signal Information:
+# Generated {n_symbols} QPSK symbols
+# Input signal shape: {input_signal.shape}
+# First 5 complex symbols: {qpsk_symbols[:5]}
 
 # Show the QPSK constellation diagram
-plt.figure(figsize=(6, 6))
-qpsk_modulator.plot_constellation()
-plt.title("QPSK Constellation")
-plt.grid(True)
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Create QPSK constellation points manually
+qpsk_points = np.array([1 + 1j, -1 + 1j, -1 - 1j, 1 - 1j]) / np.sqrt(2)  # Normalized QPSK
+labels = ["00", "10", "11", "01"]
+
+# Plot constellation points
+ax.scatter(qpsk_points.real, qpsk_points.imag, s=100, c="red", marker="o", edgecolors="black", linewidth=2)
+
+# Add labels for each point
+for point, label in zip(qpsk_points, labels):
+    ax.annotate(label, (point.real, point.imag), xytext=(10, 10), textcoords="offset points", fontsize=12, fontweight="bold")
+
+# Set up the plot
+ax.set_xlabel("In-phase (I)", fontweight="bold")
+ax.set_ylabel("Quadrature (Q)", fontweight="bold")
+ax.set_title("QPSK Constellation", fontweight="bold", fontsize=14)
+ax.grid(True, alpha=0.3)
+ax.axis("equal")
+ax.set_xlim(-1.5, 1.5)
+ax.set_ylim(-1.5, 1.5)
+
+# Add axes through origin
+ax.axhline(y=0, color="k", linewidth=0.5)
+ax.axvline(x=0, color="k", linewidth=0.5)
+
 plt.tight_layout()
 plt.show()
 
 # %%
 # Define Channel Scenarios
 # ------------------------------------------
+# Channel Configuration and Setup
+# ===============================
+#
 # We'll compare a perfect channel (no distortion), an AWGN channel (noise only),
 # and a flat fading channel (fading + noise).
 
@@ -87,12 +123,13 @@ noise_power = snr_to_noise_power(signal_power, snr_db)
 
 # Create the channels
 perfect_channel = PerfectChannel()
-awgn_channel = AWGNChannel(avg_noise_power=noise_power)
-fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)  # Use Rayleigh fading  # Independent fading for each symbol
+awgn_channel = AWGNChannel(avg_noise_power=float(noise_power.item()))
+fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=float(noise_power.item()))  # Use Rayleigh fading  # Independent fading for each symbol
 
-print(f"Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})")
-print(f"AWGN Channel configuration: {awgn_channel.get_config()}")
-print(f"Fading Channel configuration: {fading_channel.get_config()}")
+# Channel Configuration Results:
+# Created channels with SNR: {snr_db} dB (noise power: {noise_power:.6f})
+# AWGN Channel configuration: {awgn_channel.get_config()}
+# Fading Channel configuration: {fading_channel.get_config()}
 
 # %%
 # Pass Signal Through Channels
@@ -167,29 +204,30 @@ plt.show()
 # --------------------------------------------------
 # Let's analyze how fading affects the amplitude distribution of the symbols.
 
-# Calculate amplitudes - ensure we're using real values
-perfect_amp = np.abs(perfect_complex).real
-awgn_amp = np.abs(awgn_complex).real
-fading_amp = np.abs(fading_complex).real
+# Calculate amplitudes correctly
+perfect_amp = np.abs(perfect_complex)
+awgn_amp = np.abs(awgn_complex)
+fading_amp = np.abs(fading_complex)
+
 plt.figure(figsize=(12, 5))
 
 # Histogram of amplitudes
 plt.subplot(1, 2, 1)
-plt.hist(perfect_amp, bins=30, alpha=0.3, label="Perfect Channel", density=True)
-plt.hist(awgn_amp, bins=30, alpha=0.3, label="AWGN Channel", density=True)
-plt.hist(fading_amp, bins=30, alpha=0.3, label="Fading Channel", density=True)
-plt.grid(True)
-plt.xlabel("Symbol Amplitude")
-plt.ylabel("Probability Density")
-plt.title("Symbol Amplitude Distribution")
+plt.hist(perfect_amp, bins=30, alpha=0.6, label="Perfect Channel", density=True, color="blue")
+plt.hist(awgn_amp, bins=30, alpha=0.6, label="AWGN Channel", density=True, color="green")
+plt.hist(fading_amp, bins=30, alpha=0.6, label="Fading Channel", density=True, color="red")
+plt.grid(True, alpha=0.3)
+plt.xlabel("Symbol Amplitude", fontweight="bold")
+plt.ylabel("Probability Density", fontweight="bold")
+plt.title("Symbol Amplitude Distribution", fontweight="bold")
 plt.legend()
 
 # Theoretical vs. Empirical Rayleigh Distribution
+plt.subplot(1, 2, 2)
 x = np.linspace(0, 3, 1000)
 # Rayleigh PDF: (x/σ²) * exp(-x²/(2σ²))
 # For unit variance Rayleigh, σ² = 1/2
 rayleigh_pdf = x * np.exp(-(x**2) / 2)
-plt.subplot(1, 2, 2)
 plt.hist(fading_amp, bins=30, alpha=0.5, density=True, label="Empirical (Fading Channel)")
 plt.plot(x, rayleigh_pdf, "r-", linewidth=2, label="Theoretical Rayleigh")
 plt.grid(True)
@@ -217,13 +255,14 @@ awgn_ser = []
 fading_ser = []
 
 # For each SNR level, simulate transmission and measure error rate
-for snr_db in snr_range_db:
+for snr_db_value in snr_range_db:
     # Calculate noise power from SNR
-    noise_power = snr_to_noise_power(signal_power, snr_db)
+    snr_db_val = int(snr_db_value)
+    noise_power = snr_to_noise_power(signal_power, float(snr_db_val))
 
     # Create channels with current SNR
-    awgn = AWGNChannel(avg_noise_power=noise_power)
-    fading = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=noise_power)
+    awgn = AWGNChannel(avg_noise_power=float(noise_power.item()))
+    fading = FlatFadingChannel(fading_type="rayleigh", coherence_time=1, avg_noise_power=float(noise_power.item()))
 
     # Pass signal through channels
     with torch.no_grad():
@@ -312,7 +351,7 @@ with torch.no_grad():
 time_input = time_symbols.view(1, -1)
 
 # Create a fading channel with time-correlation
-time_fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=noise_power)  # Fading stays constant for 10 symbols
+time_fading_channel = FlatFadingChannel(fading_type="rayleigh", coherence_time=10, avg_noise_power=float(noise_power.item()))  # Fading stays constant for 10 symbols
 
 # Pass signal through the channel
 with torch.no_grad():
@@ -346,18 +385,20 @@ plt.show()
 # -------------------------------------------------------------------------
 # Let's analyze the frequency characteristics of the fading process.
 
-# Calculate PSD using FFT
+# Calculate PSD using Welch's method
+# Ensure nperseg is not larger than input length
+input_length = len(fading_magnitude)
+nperseg = min(256, input_length // 4)  # Use at most 1/4 of input length
 
-# Use Welch's method to estimate PSD
-f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=256)
+f, psd = signal.welch(fading_magnitude, fs=1.0, nperseg=nperseg)
 
 plt.figure(figsize=(10, 5))
-plt.semilogy(f, psd, linewidth=2)
-plt.grid(True)
-plt.xlabel("Normalized Frequency")
-plt.ylabel("Power Spectral Density")
-plt.title("PSD of Rayleigh Fading Process")
-plt.axvline(x=0.05, color="r", linestyle="--", label="Doppler Frequency (0.05)")
+plt.semilogy(f, psd, linewidth=2, color="blue")
+plt.grid(True, alpha=0.3)
+plt.xlabel("Normalized Frequency", fontweight="bold")
+plt.ylabel("Power Spectral Density", fontweight="bold")
+plt.title("PSD of Rayleigh Fading Process", fontweight="bold")
+plt.axvline(x=0.05, color="r", linestyle="--", linewidth=2, label="Doppler Frequency (0.05)")
 plt.legend()
 plt.tight_layout()
 plt.show()

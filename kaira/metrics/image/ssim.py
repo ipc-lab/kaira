@@ -61,6 +61,13 @@ class StructuralSimilarityIndexMeasure(BaseMetric):
         """
         # Note: *args and **kwargs are not directly used by self.ssim call here
         # but are included for interface consistency.
+
+        # Handle empty tensors gracefully
+        if x.numel() == 0 or y.numel() == 0:
+            # Return empty tensor with appropriate shape
+            batch_size = x.shape[0] if x.numel() >= 0 else 0
+            return torch.tensor([], device=x.device, dtype=x.dtype).view(batch_size)
+
         values = self.ssim(x, y)
 
         # Apply reduction if specified
@@ -155,6 +162,12 @@ class MultiScaleSSIM(BaseMetric):
         # Note: *args and **kwargs are not directly used here
         # but are included for interface consistency.
 
+        # Handle empty tensors gracefully
+        if x.numel() == 0 or y.numel() == 0:
+            # Return empty tensor with appropriate shape
+            batch_size = x.shape[0] if x.numel() >= 0 else 0
+            return torch.tensor([], device=x.device, dtype=x.dtype).view(batch_size)
+
         # Use torchmetrics MS-SSIM implementation
         values = self.ms_ssim(x, y)
 
@@ -178,6 +191,10 @@ class MultiScaleSSIM(BaseMetric):
             *args: Variable length argument list passed to forward.
             **kwargs: Arbitrary keyword arguments passed to forward.
         """
+        # Handle empty tensors gracefully
+        if preds.numel() == 0 or targets.numel() == 0:
+            return  # Skip update for empty tensors
+
         values = self.forward(preds, targets, *args, **kwargs)  # Pass args/kwargs
         if values.numel() == 0:
             return  # Avoid updating with empty values

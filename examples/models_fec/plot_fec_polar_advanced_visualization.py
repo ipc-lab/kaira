@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
+from matplotlib.animation import FuncAnimation
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Circle, FancyArrowPatch
 from tqdm import tqdm
@@ -334,6 +335,121 @@ for step_idx in [0, 2, 4, 7]:
     if step_idx < len(sc_viz.step_history):
         sc_viz.visualize_step(sc_viz.step_history[step_idx])
         plt.show()
+
+# %%
+# Create GIF Animation of Successive Cancellation Decoding
+# ---------------------------------------------------------
+
+
+def create_sc_decoding_animation(sc_viz, save_path="polar_sc_decoding.gif", fps=1):
+    """Create an animated GIF showing the successive cancellation decoding process."""
+
+    # Create figure for animation
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(18, 12), constrained_layout=True)
+
+    def animate(frame):
+        """Animation function for each frame."""
+        # Clear all axes
+        for ax in [ax1, ax2, ax3, ax4]:
+            ax.clear()
+
+        if frame < len(sc_viz.step_history):
+            step_data = sc_viz.step_history[frame]
+
+            # Update title
+            fig.suptitle(f"Successive Cancellation Decoding - Step {frame + 1}/{len(sc_viz.step_history)}", fontsize=16, fontweight="bold")
+
+            # Recreate the visualization for this step
+            current_bit = step_data["current_bit"]
+            decisions = step_data["decisions"]
+            llrs = step_data["llrs"]
+
+            # Decision sequence visualization
+            colors = []
+            for i in range(sc_viz.n):
+                if i <= current_bit:
+                    if i in sc_viz.frozen_bits:
+                        colors.append("#ffcccc")  # Light red for frozen
+                    else:
+                        colors.append("#ccffcc")  # Light green for info
+                else:
+                    colors.append("#f0f0f0")  # Gray for undecided
+
+            bars = ax1.bar(range(sc_viz.n), np.ones(sc_viz.n), color=colors, edgecolor="black", linewidth=1)
+
+            # Add decision values
+            for i, (bar, decision) in enumerate(zip(bars, decisions)):
+                if i <= current_bit:
+                    ax1.text(bar.get_x() + bar.get_width() / 2.0, bar.get_height() / 2.0, f"{int(decision)}", ha="center", va="center", fontweight="bold", fontsize=12)
+                else:
+                    ax1.text(bar.get_x() + bar.get_width() / 2.0, bar.get_height() / 2.0, "?", ha="center", va="center", fontsize=12, alpha=0.5)
+
+            ax1.set_title("Bit Decisions", fontweight="bold")
+            ax1.set_xlabel("Bit Position")
+            ax1.set_ylabel("Decision")
+            ax1.set_ylim(0, 1.2)
+            ax1.set_xticks(range(sc_viz.n))
+
+            # LLR values visualization
+            llr_colors = ["red" if llr < 0 else "blue" for llr in llrs[: current_bit + 1]]
+            llr_colors.extend(["gray"] * (sc_viz.n - current_bit - 1))
+
+            ax2.bar(range(sc_viz.n), np.abs(llrs), color=llr_colors, alpha=0.7, edgecolor="black", linewidth=1)
+            ax2.axhline(y=0, color="black", linestyle="-", alpha=0.3)
+            ax2.set_title("LLR Magnitudes", fontweight="bold")
+            ax2.set_xlabel("Bit Position")
+            ax2.set_ylabel("|LLR|")
+            ax2.set_xticks(range(sc_viz.n))
+
+            # Progress visualization
+            progress_pct = 100 * (current_bit + 1) / sc_viz.n
+            ax3.barh([0], [progress_pct], color="green", alpha=0.7, height=0.5)
+            ax3.barh([0], [100], color="lightgray", alpha=0.3, height=0.5)
+            ax3.set_xlim(0, 100)
+            ax3.set_ylim(-0.5, 0.5)
+            ax3.set_xlabel("Progress (%)")
+            ax3.set_title(f"Decoding Progress: {progress_pct:.1f}%", fontweight="bold")
+            ax3.set_yticks([])
+
+            # Statistics and current step info
+            info_decoded = sum(1 for i in range(current_bit + 1) if i in sc_viz.info_bits)
+            frozen_decoded = sum(1 for i in range(current_bit + 1) if i in sc_viz.frozen_bits)
+
+            stats_text = f"""Decoding Step {frame + 1}:
+
+• Current bit: {current_bit}
+• Bit type: {'Frozen' if current_bit in sc_viz.frozen_bits else 'Information'}
+• Decision: {int(decisions[current_bit])}
+• LLR: {llrs[current_bit]:.3f}
+
+Progress:
+• Info bits decoded: {info_decoded}/{len(sc_viz.info_bits)}
+• Frozen bits processed: {frozen_decoded}/{len(sc_viz.frozen_bits)}
+• Overall: {progress_pct:.1f}% complete"""
+
+            ax4.text(0.05, 0.95, stats_text, transform=ax4.transAxes, fontsize=11, verticalalignment="top", fontfamily="monospace", bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
+            ax4.set_title("Step Information", fontweight="bold")
+            ax4.axis("off")
+
+    # Create animation
+    n_frames = len(sc_viz.step_history)
+    anim = FuncAnimation(fig, animate, frames=n_frames, interval=1000 // fps, repeat=True)
+
+    # Save as GIF (commented out to prevent file creation)
+    # try:
+    #     anim.save(save_path, writer="pillow", fps=fps)
+    #     print(f"✓ Animation saved as: {save_path}")
+    # except Exception as e:
+    #     print(f"⚠ Could not save animation: {e}")
+    #     print("  Make sure you have pillow installed: pip install pillow")
+
+    return anim, fig
+
+
+# Create and display the animation (GIF saving commented out)
+print("\nCreating animated GIF of SC decoding process...")
+anim, fig = create_sc_decoding_animation(sc_viz, save_path="polar_sc_decoding.gif", fps=1)
+plt.show()
 
 # %%
 # Performance Comparison: SC vs BP Decoding

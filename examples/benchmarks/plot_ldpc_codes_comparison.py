@@ -21,6 +21,7 @@ We test multiple LDPC code configurations with different:
 import time
 from typing import Any, Dict, List, Tuple
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -652,15 +653,18 @@ if rptu_codes:
     if standard_counts:
         standards = list(standard_counts.keys())
         counts = list(standard_counts.values())
-        colors = plt.cm.get_cmap("Set3")(np.linspace(0, 1, len(standards)))
+        colors = cm.get_cmap("Set3")(np.linspace(0, 1, len(standards)))
 
-        wedges, texts, autotexts = ax4.pie(counts, labels=standards, colors=colors, autopct="%1.0f", startangle=90)
+        pie_result = ax4.pie(counts, labels=standards, colors=colors.tolist(), autopct="%1.0f", startangle=90)
+        if len(pie_result) == 3:
+            wedges, texts, autotexts = pie_result
+            # Enhance text visibility
+            for autotext in autotexts:
+                autotext.set_color("white")
+                autotext.set_fontweight("bold")
+        else:
+            wedges, texts = pie_result
         ax4.set_title("Professional: Standards\nCompliance", fontsize=12, fontweight="bold")
-
-        # Enhance text visibility
-        for autotext in autotexts:
-            autotext.set_color("white")
-            autotext.set_fontweight("bold")
 
     plt.tight_layout()
     fig_prof.suptitle("Professional RPTU Database Codes: Industry Standards Analysis", fontsize=16, y=1.02)
@@ -812,8 +816,8 @@ snr_idx_for_timing = 2  # Use moderate SNR for timing analysis
 for code_name, ldpc_config in ldpc_codes.items():
     decoding_times = []
     for bp_iters in BENCHMARK_CONFIG["bp_iterations"]:
-        time_val = all_results[code_name][bp_iters]["decoding_time"][snr_idx_for_timing]
-        decoding_times.append(time_val * 1000)  # Convert to milliseconds
+        timing_val: float = float(all_results[code_name][bp_iters]["decoding_time"][snr_idx_for_timing])
+        decoding_times.append(timing_val * 1000)  # Convert to milliseconds
 
     ax1.plot(BENCHMARK_CONFIG["bp_iterations"], decoding_times, "o-", label=code_name, color=ldpc_config["color"], linewidth=2, markersize=8)
 
@@ -831,22 +835,22 @@ snr_idx_tradeoff = np.where(BENCHMARK_CONFIG["snr_db_range"] == snr_for_tradeoff
 
 rates = []
 bers = []
-colors = []
+point_colors = []
 names = []
 
 for code_name, ldpc_config in ldpc_codes.items():
     rates.append(ldpc_config["rate"])
     bers.append(all_results[code_name][bp_iters_for_tradeoff]["ber"][snr_idx_tradeoff])
-    colors.append(ldpc_config["color"])
+    point_colors.append(ldpc_config["color"])
     names.append(code_name)
 
-scatter = ax2.scatter(rates, bers, c=colors, s=100, alpha=0.8, edgecolors="black")
-ax2.set_yscale("log")
+scatter = ax2.scatter(rates, bers, c=point_colors, s=100, alpha=0.8, edgecolors="black")
 
 # Add labels for each point
 for i, name in enumerate(names):
     ax2.annotate(name, (rates[i], bers[i]), xytext=(5, 5), textcoords="offset points", fontsize=9, alpha=0.8)
 
+ax2.set_yscale("log")
 ax2.grid(True, which="both", ls="--", alpha=0.7)
 ax2.set_xlabel("Code Rate", fontsize=12)
 ax2.set_ylabel("BER", fontsize=12)
@@ -884,9 +888,13 @@ if rptu_codes:
     ax1 = fig_standards.add_subplot(gs_standards[0, 0])
     standards_names = list(standards_data.keys())
     standards_counts = [len(codes) for codes in standards_data.values()]
-    colors = plt.cm.get_cmap("Set3")(np.linspace(0, 1, len(standards_names)))
+    colors = cm.get_cmap("Set3")(np.linspace(0, 1, len(standards_names)))
 
-    wedges, texts, autotexts = ax1.pie(standards_counts, labels=standards_names, colors=colors, autopct="%1.0f", startangle=90)
+    pie_result = ax1.pie(standards_counts, labels=standards_names, colors=colors.tolist(), autopct="%1.0f", startangle=90)
+    if len(pie_result) == 3:
+        wedges, texts, autotexts = pie_result
+    else:
+        wedges, texts = pie_result
     ax1.set_title("Standards Distribution\nin Benchmark", fontsize=12, fontweight="bold")
 
     # 2. Code Rate Distribution by Standard

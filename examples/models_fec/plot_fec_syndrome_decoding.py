@@ -221,7 +221,7 @@ gs = GridSpec(3, 1, figure=fig, height_ratios=[1, 0.5, 1], hspace=0.4)
 
 # Plot the original message
 ax1 = fig.add_subplot(gs[0], facecolor=background_color)
-message_colors = [plt.cm.Reds(0.7) if bit == 1 else plt.cm.Blues(0.7) for bit in message]
+message_colors = ["#e74c3c" if bit == 1 else "#3498db" for bit in message]
 bars1 = ax1.bar(np.arange(len(message)), message.numpy(), color=message_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
 # Add value labels
@@ -271,7 +271,7 @@ for i, bit in enumerate(codeword):
         codeword_colors.append(message_colors[i])
     else:
         # Parity bits - use a different color palette
-        codeword_colors.append(plt.cm.Greens(0.7) if bit == 1 else plt.cm.Greens(0.3))
+        codeword_colors.append("#27ae60" if bit == 1 else "#2ecc71")
 
 bars3 = ax3.bar(np.arange(len(codeword)), codeword.numpy(), color=codeword_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -331,10 +331,10 @@ codeword_colors = []
 for i, bit in enumerate(codeword):
     if i < len(message):
         # Information bits
-        codeword_colors.append(plt.cm.Blues(0.7) if bit == 0 else plt.cm.Reds(0.7))
+        codeword_colors.append("#3498db" if bit == 0 else "#e74c3c")
     else:
         # Parity bits
-        codeword_colors.append(plt.cm.Greens(0.3) if bit == 0 else plt.cm.Greens(0.7))
+        codeword_colors.append("#2ecc71" if bit == 0 else "#27ae60")
 
 bars1 = ax1.bar(np.arange(len(codeword)), codeword.numpy(), color=codeword_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -363,9 +363,9 @@ ax2.add_patch(arrow)
 for i in range(len(codeword)):
     if codeword[i] != received[i]:
         # Add lightning bolt symbols for errors
-        error_x = i
-        for j in np.linspace(0.2, 0.8, 3):
-            ax2.text(error_x, j, "⚡", ha="center", va="center", fontsize=20, color=error_bit_color, path_effects=[PathEffects.withStroke(linewidth=3, foreground="white")])
+        error_x: int = int(i)
+        for j_val in np.linspace(0.2, 0.8, 3):
+            ax2.text(error_x, float(j_val), "⚡", ha="center", va="center", fontsize=20, color=error_bit_color, path_effects=[PathEffects.withStroke(linewidth=3, foreground="white")])
     else:
         # Add checkmark symbols for correct transmission
         ax2.text(i, 0.5, "✓", ha="center", va="center", fontsize=16, color=correct_bit_color, alpha=0.7, path_effects=[PathEffects.withStroke(linewidth=2, foreground="white")])
@@ -386,10 +386,10 @@ for i, (orig, rec) in enumerate(zip(codeword, received)):
         # No error - use same color as original
         if i < len(message):
             # Information bits
-            received_colors.append(plt.cm.Blues(0.7) if rec == 0 else plt.cm.Reds(0.7))
+            received_colors.append("#3498db" if rec == 0 else "#e74c3c")
         else:
             # Parity bits
-            received_colors.append(plt.cm.Greens(0.3) if rec == 0 else plt.cm.Greens(0.7))
+            received_colors.append("#2ecc71" if rec == 0 else "#27ae60")
 
 bars3 = ax3.bar(np.arange(len(received)), received.numpy(), color=received_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -412,7 +412,7 @@ ax3.spines["right"].set_visible(False)
 
 # Plot the error pattern
 ax4 = fig.add_subplot(gs[3], facecolor=background_color)
-error_colors = [error_bit_color if err == 1 else plt.cm.Greys(0.3) for err in errors]
+error_colors = [error_bit_color if err == 1 else "#95a5a6" for err in errors]
 bars4 = ax4.bar(np.arange(len(errors)), errors.numpy(), color=error_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
 # Add value labels with better styling
@@ -497,10 +497,10 @@ for i, (orig, rec) in enumerate(zip(codeword, received)):
         # No error - use same color as original
         if i < len(message):
             # Information bits
-            received_colors.append(plt.cm.Blues(0.7) if rec == 0 else plt.cm.Reds(0.7))
+            received_colors.append("#3498db" if rec == 0 else "#e74c3c")
         else:
             # Parity bits
-            received_colors.append(plt.cm.Greens(0.3) if rec == 0 else plt.cm.Greens(0.7))
+            received_colors.append("#2ecc71" if rec == 0 else "#27ae60")
 
 bars1 = ax1.bar(np.arange(len(received)), received.numpy(), color=received_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -535,7 +535,7 @@ ax2.text(0, 1, "H^T =", fontsize=14)
 # Draw the H transpose matrix with improved styling
 for i in range(H_T_np.shape[0]):
     for j in range(H_T_np.shape[1]):
-        color = plt.cm.Purples(0.7) if H_T_np[i, j] == 1 else plt.cm.Greys(0.3)
+        color = "#9b59b6" if H_T_np[i, j] == 1 else "#95a5a6"
         ax2.add_patch(Rectangle((2 + j * 0.5, 1 + i * 0.5), 0.5, 0.5, facecolor=color, edgecolor="black", alpha=0.8))
         ax2.text(2 + j * 0.5 + 0.25, 1 + i * 0.5 + 0.25, str(int(H_T_np[i, j])), ha="center", va="center", fontsize=12, fontweight="bold", color="white" if H_T_np[i, j] == 1 else "black")
 
@@ -544,7 +544,7 @@ ax2.text(6, 2, "=", fontsize=18, fontweight="bold")
 
 # Draw the syndrome vector with animation-like styling
 for i in range(syndrome_np.shape[0]):
-    color = plt.cm.Oranges(0.7) if syndrome_np[i] == 1 else plt.cm.Greys(0.3)
+    color = "#f39c12" if syndrome_np[i] == 1 else "#95a5a6"
     ax2.add_patch(Rectangle((7, 1 + i * 0.5), 0.5, 0.5, facecolor=color, edgecolor="black", alpha=0.8))
     ax2.text(7 + 0.25, 1 + i * 0.5 + 0.25, str(int(syndrome_np[i])), ha="center", va="center", fontsize=12, fontweight="bold", color="white" if syndrome_np[i] == 1 else "black")
 
@@ -593,13 +593,13 @@ for i, row in enumerate(table_data[:6]):
             cell_color = syndrome_color
             text_color = "white"
         elif j == 0:
-            cell_color = plt.cm.Greys(0.3)
+            cell_color = "#95a5a6"
             text_color = "black"
         elif j == 1:
-            cell_color = plt.cm.Blues(0.3)
+            cell_color = "#5dade2"
             text_color = "black"
         else:
-            cell_color = plt.cm.Greys(0.1)
+            cell_color = "#ecf0f1"
             text_color = "black"
 
         ax3.add_patch(Rectangle((j * 2, 1.5 - i * 0.3), 2, 0.3, facecolor=cell_color, edgecolor="black", alpha=0.8))
@@ -642,10 +642,10 @@ codeword_colors = []
 for i, bit in enumerate(decoded_codeword):
     if i < len(message):
         # Information bits
-        codeword_colors.append(plt.cm.Blues(0.7) if bit == 0 else plt.cm.Reds(0.7))
+        codeword_colors.append("#3498db" if bit == 0 else "#e74c3c")
     else:
         # Parity bits
-        codeword_colors.append(plt.cm.Greens(0.3) if bit == 0 else plt.cm.Greens(0.7))
+        codeword_colors.append("#2ecc71" if bit == 0 else "#27ae60")
 
 bars_decoded = ax4.bar(np.arange(len(decoded_codeword)), decoded_codeword.numpy(), color=codeword_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -790,7 +790,7 @@ for i, result in enumerate(results):
             received_colors.append(error_bit_color)
         else:
             # No error - use same color as original
-            received_colors.append(plt.cm.Greys(0.3) if rec == 0 else plt.cm.Greys(0.7))
+            received_colors.append("#95a5a6" if rec == 0 else "#b3b3b3")
 
     bars1 = ax1.bar(np.arange(len(received)), received.numpy(), color=received_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 
@@ -825,7 +825,7 @@ for i, result in enumerate(results):
             decoded_colors.append(error_bit_color)
         else:
             # Correctly transmitted and unchanged
-            decoded_colors.append(plt.cm.Greys(0.3) if dec == 0 else plt.cm.Greys(0.7))
+            decoded_colors.append("#95a5a6" if dec == 0 else "#b3b3b3")
 
     bars2 = ax2.bar(np.arange(len(decoded)), decoded.numpy(), color=decoded_colors, edgecolor="black", linewidth=1.5, alpha=0.8)
 

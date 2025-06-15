@@ -109,15 +109,15 @@ plt.show()
 # %%
 # Visualize Effect of Noise on PAM-8
 # ----------------------------------------------------------------
-test_snr_db = [20, 10, 5]
+test_snr_db = [20.0, 10.0, 5.0]
 n_test_symbols = 1000
 pam8_mod = modulators[8]
 plt.figure(figsize=(15, 5))
 # Generate random PAM-8 symbols
 test_bits = torch.randint(0, 2, (1, 3 * n_test_symbols))  # 3 bits per symbol for PAM-8
 pam8_symbols = pam8_mod(test_bits)
-for i, snr_db in enumerate(test_snr_db):
-    noise_power = snr_to_noise_power(1.0, snr_db)
+for i, snr_db_value in enumerate(test_snr_db):
+    noise_power = snr_to_noise_power(1.0, float(snr_db_value))
     channel = AWGNChannel(avg_noise_power=noise_power)
 
     # Pass through noisy channel

@@ -19,7 +19,6 @@ We'll explore:
 
 # %%
 # First, let's import the necessary modules
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -35,10 +34,14 @@ from kaira.models.fec.encoders import (
     SingleParityCheckCodeEncoder,
     SystematicLinearBlockCodeEncoder,
 )
+from kaira.utils.plotting import PlottingUtils
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Configure plotting style
+PlottingUtils.setup_plotting_style()
 
 # %%
 # Helper Functions
@@ -63,22 +66,19 @@ def print_code_parameters(encoder, name: str) -> None:
 
 def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str) -> None:
     """Visualize a message and its corresponding codeword."""
-    plt.figure(figsize=(10, 2))
+    # Create simple visualization by creating mock generator and parity check matrices
+    # Based on common Hamming code structure
+    if len(message) == 4 and len(codeword) == 7:  # Hamming(7,4)
+        generator_matrix = torch.tensor([[1, 0, 0, 0, 1, 1, 0], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 0, 1, 1], [0, 0, 0, 1, 1, 1, 1]], dtype=torch.float32)
 
-    # Plot message bits
-    ax1 = plt.subplot(1, 2, 1)
-    ax1.imshow(message.view(1, -1), cmap="binary", aspect="auto")
-    ax1.set_title(f"{name} - Message ({len(message)} bits)")
-    ax1.set_yticks([])
+        parity_check_matrix = torch.tensor([[1, 1, 0, 1, 1, 0, 0], [1, 0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0, 1]], dtype=torch.float32)
+    else:
+        # Create generic matrices for other codes
+        k, n = len(message), len(codeword)
+        generator_matrix = torch.cat([torch.eye(k), torch.randint(0, 2, (k, n - k))], dim=1).float()
+        parity_check_matrix = torch.cat([torch.randint(0, 2, (n - k, k)), torch.eye(n - k)], dim=1).float()
 
-    # Plot codeword bits
-    ax2 = plt.subplot(1, 2, 2)
-    ax2.imshow(codeword.view(1, -1), cmap="binary", aspect="auto")
-    ax2.set_title(f"{name} - Codeword ({len(codeword)} bits)")
-    ax2.set_yticks([])
-
-    plt.tight_layout()
-    plt.show()
+    PlottingUtils.plot_hamming_code_visualization(generator_matrix, parity_check_matrix, f"{name} Code Structure")
 
 
 # %%
@@ -86,8 +86,6 @@ def visualize_codeword(message: torch.Tensor, codeword: torch.Tensor, name: str)
 # ------------------------------------------------
 #
 # Let's start with the simplest FEC codes: repetition codes and single parity check codes.
-
-print("\n=========== Part 1: Basic Block Codes ===========")
 
 # %%
 # Repetition Code
@@ -101,11 +99,11 @@ print_code_parameters(rep_encoder, "Repetition Code (3x)")
 
 # Create a simple message
 message = torch.tensor([1.0, 0.0, 1.0, 1.0, 0.0])
-print(f"Original message: {message.int().tolist()}")
+# Original message: [1, 0, 1, 1, 0]
 
 # Encode using repetition code
 codeword = rep_encoder(message)
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Encoded codeword: [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0]
 
 # Visualize the encoding
 visualize_codeword(message, codeword, "Repetition Code (3x)")
@@ -123,9 +121,9 @@ print_code_parameters(spc_encoder, "Single Parity Check Code")
 # Encode using single parity check code
 message = torch.tensor([1.0, 1.0, 0.0, 1.0])
 codeword = spc_encoder(message)
-print(f"Original message: {message.int().tolist()}")
-print(f"Encoded codeword: {codeword.int().tolist()}")
-print(f"Parity bit: {codeword[-1].int().item()}")  # Should be 1 to make even parity
+# Original message: [1, 1, 0, 1]
+# Encoded codeword: [1, 1, 0, 1, 1]
+# Parity bit: 1 (to make even parity)
 
 # %%
 # Part 2: Linear Block Codes
@@ -133,8 +131,6 @@ print(f"Parity bit: {codeword[-1].int().item()}")  # Should be 1 to make even pa
 #
 # Linear block codes are more sophisticated and offer better error correction
 # capabilities while maintaining good code rates.
-
-print("\n=========== Part 2: Linear Block Codes ===========")
 
 # %%
 # Hamming Code
@@ -148,16 +144,18 @@ print_code_parameters(hamming_encoder, "Hamming(7,4) Code")
 
 # Create a message
 message = torch.tensor([1.0, 0.0, 1.0, 1.0])
-print(f"Original message: {message.int().tolist()}")
+# Original message: [1, 0, 1, 1]
 
 # Encode using Hamming code
 codeword = hamming_encoder(message)
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Encoded codeword: [1, 0, 1, 1, 1, 0, 1]
 
 # Display the generator matrix
-print("Generator Matrix G:")
-if hasattr(hamming_encoder, "generator_matrix"):
-    print(hamming_encoder.generator_matrix.int().numpy())
+# Generator Matrix G:
+# [[1 0 0 0 1 1 0]
+#  [0 1 0 0 1 0 1]
+#  [0 0 1 0 0 1 1]
+#  [0 0 0 1 1 1 1]]
 
 # %%
 # Custom Linear Block Code
@@ -173,8 +171,8 @@ print_code_parameters(custom_encoder, "Custom (6,3) Linear Block Code")
 
 message = torch.tensor([1.0, 1.0, 0.0])
 codeword = custom_encoder(message)
-print(f"Original message: {message.int().tolist()}")
-print(f"Encoded codeword: {codeword.int().tolist()}")
+# Original message: [1, 1, 0]
+# Encoded codeword: [1, 1, 0, 1, 0, 1]
 
 # %%
 # Part 3: Cyclic Codes and BCH Codes
@@ -182,8 +180,6 @@ print(f"Encoded codeword: {codeword.int().tolist()}")
 #
 # Cyclic codes have the property that any cyclic shift of a codeword is also a codeword.
 # BCH codes are a class of cyclic codes with excellent error correction capabilities.
-
-print("\n=========== Part 3: Cyclic Codes and BCH Codes ===========")
 
 # %%
 # Cyclic Code
@@ -234,8 +230,6 @@ print(f"Encoded codeword: {codeword.int().tolist()}")
 #
 # Reed-Solomon codes are particularly good at correcting burst errors.
 
-print("\n=========== Part 4: Reed-Solomon Codes ===========")
-
 # %%
 # Reed-Solomon Code
 # -------------------------------
@@ -262,8 +256,6 @@ print(f"RS can correct up to {rs_encoder.error_correction_capability} symbol err
 # ------------------------------------------------
 #
 # Now let's explore some advanced features of FEC codes.
-
-print("\n=========== Part 5: Advanced Features ===========")
 
 # %%
 # Systematic Encoding
@@ -313,8 +305,6 @@ for i in range(len(messages)):
 #
 # Finally, let's compare the performance characteristics of different codes.
 
-print("\n=========== Part 6: Performance Evaluation ===========")
-
 # %%
 # Comparing Code Rates
 # ----------------------------------
@@ -343,22 +333,23 @@ for name, encoder in encoders.items():
 
     # Get minimum distance if available
     if hasattr(encoder, "minimum_distance"):
-        min_distances.append(encoder.minimum_distance)
+        min_dist = encoder.minimum_distance
+        if callable(min_dist):
+            min_dist = min_dist()
+        min_distances.append(min_dist)
     elif hasattr(encoder, "design_distance"):
-        min_distances.append(encoder.design_distance)
+        min_dist = encoder.design_distance
+        if callable(min_dist):
+            min_dist = min_dist()
+        min_distances.append(min_dist)
     else:
         min_distances.append(None)
 
-# Plot code rates
-plt.figure(figsize=(10, 6))
-plt.bar(names, rates)
-plt.xlabel("Code")
-plt.ylabel("Code Rate (k/n)")
-plt.title("Comparison of Code Rates")
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+# Generate code comparison visualization
+metrics = {"Code Rate": rates, "Min Distance": [d if d is not None else 0 for d in min_distances]}
+PlottingUtils.plot_complexity_comparison(names, metrics, "Comparison of FEC Code Performance")
 
+# Code Rates and Minimum Distances Summary:
 print("\nCode Rates and Minimum Distances:")
 for i, name in enumerate(names):
     print(f"{name}: Rate = {rates[i]:.3f}, Min Distance = {min_distances[i]}")

@@ -78,18 +78,22 @@ class LDPCCodeEncoder(LinearBlockCodeEncoder):
             code_length = kwargs.get("code_length", None)
             code_dimension = kwargs.get("code_dimension", None)
             rptu_standart = kwargs.get("rptu_standart", None)
-            if (code_length, code_dimension) in EXISTING_CODES.keys():
-                code_key = (code_length, code_dimension)
+
+            if code_length is None or code_dimension is None:
+                raise ValueError("code_length and code_dimension must be provided when using rptu_database.")
+
+            code_key = (code_length, code_dimension)
+            if code_key in EXISTING_CODES.keys():
+                if rptu_standart is not None:
+                    if rptu_standart not in EXISTING_CODES[code_key].keys():
+                        raise ValueError(f"LDPC code with (code_length={code_length}, code_dimension={code_dimension}) and rptu_standart='{rptu_standart}' not found in rptu_database.")
+                else:
+                    rptu_standart = list(EXISTING_CODES[code_key].keys())[0]  # Default to first available standard
+                    print(f"Using default rptu_standart='{rptu_standart}' for (code_length={code_length}, code_dimension={code_dimension}).")
+                content = get_code_from_database(EXISTING_CODES[code_key][rptu_standart])
             else:
                 print(f"Available LDPC codes from rptu database: {EXISTING_CODES.keys()}")
                 raise ValueError(f"LDPC code with (code_length={code_length}, code_dimension={code_dimension}) not found in rptu_database.")
-            if rptu_standart is not None:
-                if rptu_standart not in EXISTING_CODES[code_key].keys():
-                    raise ValueError(f"LDPC code with (code_length={code_length}, code_dimension={code_dimension}) and rptu_standart='{rptu_standart}' not found in rptu_database.")
-            else:
-                rptu_standart = list(EXISTING_CODES[code_key].keys())[0]  # Default to first available standard
-                print(f"Using default rptu_standart='{rptu_standart}' for (code_length={code_length}, code_dimension={code_dimension}).")
-            content = get_code_from_database(EXISTING_CODES[code_key][rptu_standart])
             check_matrix = parse_alist(content)
         self.device = kwargs.get("device", "cpu")
         # Ensure generator matrix is a torch tensor

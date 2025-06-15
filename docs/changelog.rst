@@ -19,6 +19,44 @@ Added
 
 * Future features and improvements will be listed here
 
+Version 0.2.1 (2025-06-15)
+--------------------------
+
+
+Added
+^^^^^
+
+
+* **Comprehensive Test Suite**: Extensive tests for SSIM and EVM metrics with stateful methods and error handling
+* **PlottingUtils Module**: New centralized plotting utilities for consistent visualization across examples
+* **Enhanced CI/CD Pipeline**: Improved caching, error handling, and BPG tools installation with multiple download sources
+
+Changed
+^^^^^^^
+
+
+* **Code Refactoring**: Improved code structure and readability across examples and tests
+* **Documentation Updates**: Enhanced contributing guidelines and tooltip descriptions
+* **Examples Optimization**: Refactored modulation examples and improved type handling
+* **Visualization Enhancements**: Better animations and visualizations for FEC and LDPC decoding examples
+
+Fixed
+^^^^^
+
+
+* **BPG Download Links**: Updated to use correct source for improved installation reliability
+* **CI Workflow Improvements**: Enhanced system dependency installation with better checks and alternative methods
+* **Error Handling**: Improved error handling in setup.py and file reading logic
+* **Path Handling**: Convert PosixPath to string in mock file handling for consistency
+
+Removed
+^^^^^^^
+
+
+* **CapacityAnalyzer**: Removed for code structure improvements
+* **Redundant Examples**: Cleaned up educational vs professional LDPC codes comparison and repetition code visualization
+* **Patch Coverage**: Removed patch coverage configuration from codecov.yml
+
 Version 0.2.0 (2025-06-10)
 --------------------------
 
