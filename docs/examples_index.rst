@@ -112,7 +112,6 @@ Examples and Tutorials
    examples/metrics/index
    examples/benchmarks/index
    examples/losses/index
-   examples/utils/index
 
 .. only:: html
 
