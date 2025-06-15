@@ -63,8 +63,8 @@ except ImportError as e:
 
 project = "Kaira"
 author = "Kaira Team"
-version = "0.2.0"
-release = "0.2.0"
+version = "0.2.1"
+release = "0.2.1"
 
 copyright = f"{datetime.datetime.now().year}, {author}"
 
