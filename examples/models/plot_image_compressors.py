@@ -172,14 +172,9 @@ except Exception as e:
     traditional_results["JPEG XL"] = None
 
 # %%
-# Neural Compressors (Optional)
+# Neural Compressors
 # ----------------------------
 # Test neural network-based compression models
-
-print("\n" + "=" * 50)
-print("Testing Neural Compressors (Optional)")
-print("=" * 50)
-
 # The example images are 128x128, which needs to be resized for neural compressors
 print(f"Input images shape: {images.shape}")
 
