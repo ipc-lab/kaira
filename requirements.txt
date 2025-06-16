@@ -6,3 +6,5 @@ compressai
 torchaudio
 seaborn
 numpy
+pillow
+pillow-jxl-plugin

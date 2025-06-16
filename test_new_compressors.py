@@ -1,15 +1,21 @@
-"""Test script for JPEG and PNG compressors."""
+"""Test script for JPEG, PNG, JPEG XL, JPEG2000, and WebP compressors."""
 
 import torch
 from PIL import Image
 
 
 # Test the new compressors
-def test_jpeg_png_compressors():
-    """Test JPEG and PNG compressors with sample data."""
+def test_all_compressors():
+    """Test all compressors with sample data."""
 
-    # Import the new compressors
-    from kaira.models.image.compressors import JPEGCompressor, PNGCompressor
+    # Import all the compressors
+    from kaira.models.image.compressors import (
+        JPEG2000Compressor,
+        JPEGCompressor,
+        JPEGXLCompressor,
+        PNGCompressor,
+        WebPCompressor,
+    )
 
     # Create a sample batch of random images
     batch_size = 2
@@ -62,6 +68,69 @@ def test_jpeg_png_compressors():
     print(f"PNG Constrained - Stats: {png_constrained.get_stats()}")
     print()
 
+    print("Testing JPEG XL Compressor...")
+    print("=" * 50)
+
+    # Test JPEG XL with fixed quality
+    jpegxl_compressor = JPEGXLCompressor(quality=85, collect_stats=True, return_bits=True)
+    jpegxl_result, jpegxl_bits = jpegxl_compressor(x)
+
+    print(f"JPEG XL - Input shape: {x.shape}")
+    print(f"JPEG XL - Output shape: {jpegxl_result.shape}")
+    print(f"JPEG XL - Bits per image: {jpegxl_bits}")
+    print(f"JPEG XL - Stats: {jpegxl_compressor.get_stats()}")
+    print()
+
+    # Test JPEG XL with lossless mode
+    jpegxl_lossless = JPEGXLCompressor(quality=100, lossless=True, collect_stats=True, return_bits=True)
+    jpegxl_result_lossless, jpegxl_bits_lossless = jpegxl_lossless(x)
+
+    print(f"JPEG XL Lossless - Bits per image: {jpegxl_bits_lossless}")
+    print(f"JPEG XL Lossless - Stats: {jpegxl_lossless.get_stats()}")
+    print()
+
+    print("Testing JPEG 2000 Compressor...")
+    print("=" * 50)
+
+    # Test JPEG 2000 with fixed quality
+    jpeg2000_compressor = JPEG2000Compressor(quality=85, collect_stats=True, return_bits=True)
+    jpeg2000_result, jpeg2000_bits = jpeg2000_compressor(x)
+
+    print(f"JPEG 2000 - Input shape: {x.shape}")
+    print(f"JPEG 2000 - Output shape: {jpeg2000_result.shape}")
+    print(f"JPEG 2000 - Bits per image: {jpeg2000_bits}")
+    print(f"JPEG 2000 - Stats: {jpeg2000_compressor.get_stats()}")
+    print()
+
+    # Test JPEG 2000 with bit constraint
+    jpeg2000_constrained = JPEG2000Compressor(max_bits_per_image=4000, collect_stats=True, return_bits=True)
+    jpeg2000_result_const, jpeg2000_bits_const = jpeg2000_constrained(x)
+
+    print(f"JPEG 2000 Constrained - Bits per image: {jpeg2000_bits_const}")
+    print(f"JPEG 2000 Constrained - Stats: {jpeg2000_constrained.get_stats()}")
+    print()
+
+    print("Testing WebP Compressor...")
+    print("=" * 50)
+
+    # Test WebP with fixed quality
+    webp_compressor = WebPCompressor(quality=85, collect_stats=True, return_bits=True)
+    webp_result, webp_bits = webp_compressor(x)
+
+    print(f"WebP - Input shape: {x.shape}")
+    print(f"WebP - Output shape: {webp_result.shape}")
+    print(f"WebP - Bits per image: {webp_bits}")
+    print(f"WebP - Stats: {webp_compressor.get_stats()}")
+    print()
+
+    # Test WebP with lossless mode
+    webp_lossless = WebPCompressor(lossless=True, collect_stats=True, return_bits=True)
+    webp_result_lossless, webp_bits_lossless = webp_lossless(x)
+
+    print(f"WebP Lossless - Bits per image: {webp_bits_lossless}")
+    print(f"WebP Lossless - Stats: {webp_lossless.get_stats()}")
+    print()
+
     # Test direct compression/decompression methods
     print("Testing direct compression methods...")
     print("=" * 50)
@@ -89,8 +158,38 @@ def test_jpeg_png_compressors():
     print(f"PNG Direct - Recovered size: {png_recovered.size}")
     print()
 
+    # Test JPEG XL direct methods
+    jpegxl_simple = JPEGXLCompressor(quality=90)
+    jpegxl_data = jpegxl_simple.compress(test_image)
+    jpegxl_recovered = jpegxl_simple.decompress(jpegxl_data)
+
+    print(f"JPEG XL Direct - Original size: {test_image.size}")
+    print(f"JPEG XL Direct - Compressed size: {len(jpegxl_data)} bytes")
+    print(f"JPEG XL Direct - Recovered size: {jpegxl_recovered.size}")
+    print()
+
+    # Test JPEG 2000 direct methods
+    jpeg2000_simple = JPEG2000Compressor(quality=90)
+    jpeg2000_data = jpeg2000_simple.compress(test_image)
+    jpeg2000_recovered = jpeg2000_simple.decompress(jpeg2000_data)
+
+    print(f"JPEG 2000 Direct - Original size: {test_image.size}")
+    print(f"JPEG 2000 Direct - Compressed size: {len(jpeg2000_data)} bytes")
+    print(f"JPEG 2000 Direct - Recovered size: {jpeg2000_recovered.size}")
+    print()
+
+    # Test WebP direct methods
+    webp_simple = WebPCompressor(quality=90)
+    webp_data = webp_simple.compress(test_image)
+    webp_recovered = webp_simple.decompress(webp_data)
+
+    print(f"WebP Direct - Original size: {test_image.size}")
+    print(f"WebP Direct - Compressed size: {len(webp_data)} bytes")
+    print(f"WebP Direct - Recovered size: {webp_recovered.size}")
+    print()
+
     print("All tests completed successfully!")
 
 
 if __name__ == "__main__":
-    test_jpeg_png_compressors()
+    test_all_compressors()

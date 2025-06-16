@@ -477,9 +477,12 @@ Image compressor models, including standard and neural network-based methods.
 
    BPGCompressor
    BaseImageCompressor
+   JPEG2000Compressor
    JPEGCompressor
+   JPEGXLCompressor
    NeuralCompressor
    PNGCompressor
+   WebPCompressor
 
 
 Modulations
