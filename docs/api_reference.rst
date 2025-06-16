@@ -476,7 +476,10 @@ Image compressor models, including standard and neural network-based methods.
    :nosignatures:
 
    BPGCompressor
+   BaseImageCompressor
+   JPEGCompressor
    NeuralCompressor
+   PNGCompressor
 
 
 Modulations
