@@ -91,6 +91,22 @@ Neural network models and architectures for communications, including deep learn
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use all available image compressors in Kaira, including traditional image compression formats (JPEG, PNG, WebP, etc.) and neural compression models. We'll compare their performance in terms of compression ratio and image quality. This example covers: * Traditional image compressors (JPEG, PNG, WebP, JPEG 2000) * Advanced compressors (BPG, JPEG XL) * Neural network-based compressors (optional) * Performance comparison and visualization * Quality vs compression trade-off analysis">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_image_compressors_thumb.png
+      :alt: Image Compressors Comparison
+
+    :ref:`sphx_glr_auto_examples_models_plot_image_compressors.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Image Compressors Comparison</div>
+    </div>
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the MultipleAccessChannelModel for transmitting information from multiple users over a shared channel. This model simulates scenarios where multiple transmitters send signals simultaneously and a single receiver tries to recover all messages.">
 
 .. only:: html
@@ -150,6 +166,7 @@ Neural network models and architectures for communications, including deep learn
    /auto_examples/models/plot_channel_aware_base_model
    /auto_examples/models/plot_complex_projections
    /auto_examples/models/plot_deepjscc_model
+   /auto_examples/models/plot_image_compressors
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_projections_and_cover_tests
    /auto_examples/models/plot_uplink_mac_integration

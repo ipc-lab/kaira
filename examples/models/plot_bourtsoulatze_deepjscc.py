@@ -18,7 +18,7 @@ import torch
 
 from kaira.channels import AWGNChannel, FlatFadingChannel
 from kaira.constraints import TotalPowerConstraint
-from kaira.data.sample_data import load_sample_images
+from kaira.data.sample_data import SampleDataLoader
 from kaira.metrics.image import PSNR, SSIM
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image.bourtsoulatze2019_deepjscc import (
@@ -34,9 +34,16 @@ np.random.seed(42)
 # Loading Sample Images
 # ---------------------------------
 # Load sample images from the CIFAR-10 dataset for our demonstration
+# Using the new class-based approach for better flexibility
 
-images, _ = load_sample_images(dataset="cifar10", num_samples=4)
+# Create a data loader instance
+data_loader = SampleDataLoader()
+
+# Load CIFAR-10 images using the class method
+images, _ = data_loader.load_images(source="dataset", dataset="cifar10", num_samples=4)
 image_size = images.shape[2]  # Should be 32 for CIFAR-10
+
+print(f"Loaded {len(images)} CIFAR-10 images with shape: {images.shape}")
 
 # Display sample images
 plt.figure(figsize=(12, 3))
@@ -45,6 +52,7 @@ for i in range(min(4, len(images))):
     plt.imshow(images[i].permute(1, 2, 0).numpy())
     plt.title(f"Sample {i+1}")
     plt.axis("off")
+plt.suptitle("CIFAR-10 Sample Images", fontsize=14)
 plt.tight_layout()
 
 # %%

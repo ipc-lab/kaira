@@ -7,6 +7,6 @@ from .generation import (
     create_binary_tensor,
     create_uniform_tensor,
 )
-from .sample_data import load_sample_images
+from .sample_data import SampleDataLoader
 
-__all__ = ["create_binary_tensor", "create_uniform_tensor", "BinaryTensorDataset", "UniformTensorDataset", "WynerZivCorrelationDataset", "load_sample_images"]
+__all__ = ["create_binary_tensor", "create_uniform_tensor", "BinaryTensorDataset", "UniformTensorDataset", "WynerZivCorrelationDataset", "SampleDataLoader"]

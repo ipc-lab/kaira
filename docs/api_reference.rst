@@ -698,6 +698,7 @@ Data utilities for Kaira, including data generation and correlation models.
    :nosignatures:
 
    BinaryTensorDataset
+   SampleDataLoader
    UniformTensorDataset
    WynerZivCorrelationDataset
 
@@ -711,7 +712,6 @@ Data utilities for Kaira, including data generation and correlation models.
 
    create_binary_tensor
    create_uniform_tensor
-   load_sample_images
 
 
 Utils

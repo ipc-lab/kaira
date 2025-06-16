@@ -14,7 +14,6 @@ These metrics are particularly useful for:
 """
 
 import os
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 
@@ -24,42 +23,15 @@ import torch
 import torchvision.transforms as T
 from PIL import Image
 
+from kaira.data.sample_data import SampleDataLoader
 from kaira.metrics.image.lpips import LearnedPerceptualImagePatchSimilarity
 from kaira.metrics.image.psnr import PeakSignalNoiseRatio
 from kaira.metrics.image.ssim import MultiScaleSSIM, StructuralSimilarityIndexMeasure
 
-# Sample images path - handle both script and interactive environments
-try:
-    SAMPLE_IMAGES_DIR = Path(__file__).parent / "sample_images"
-except NameError:
-    # Fallback for interactive environments
-    SAMPLE_IMAGES_DIR = Path.cwd() / "sample_images"
-
-
-def load_sample_images(num_images=4):
-    """Load sample test images for demonstration."""
-    transform = T.Compose(
-        [
-            T.Resize((256, 256)),
-            T.ToTensor(),
-        ]
-    )
-
-    images = []
-    for img_file in sorted(SAMPLE_IMAGES_DIR.glob("*.png"))[:num_images]:
-        # Handle both PNG and TIFF formats
-        img = Image.open(str(img_file)).convert("RGB")
-        images.append(transform(img))
-
-    return torch.stack(images)
-
-
-# Ensure test images are available
-if not SAMPLE_IMAGES_DIR.exists() or not list(SAMPLE_IMAGES_DIR.glob("*.*")):
-    raise RuntimeError("Test images not found. Please run:\n" + str(SAMPLE_IMAGES_DIR) + "\n" + "python scripts/download_test_images.py")
-
-# Load sample images
-images = load_sample_images(4)
+# Load sample images using the class-based interface
+data_loader = SampleDataLoader()
+images, image_names = data_loader.load_images(source="test", num_samples=4, target_size=(256, 256))
+print(f"Loaded {len(images)} test images: {image_names}")
 
 # %%
 # Create different types of distortions
