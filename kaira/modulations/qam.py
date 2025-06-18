@@ -20,7 +20,8 @@ class QAMModulator(BaseModulator):
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, 
+                 differentiable: bool = False, *args, **kwargs) -> None:
         """Initialize the QAM modulator.
 
         Args:
@@ -43,6 +44,9 @@ class QAMModulator(BaseModulator):
         self.normalize = normalize
         self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         self._k: int = sqrt_order  # Number of points on each dimension
+        self.differentiable = differentiable
+        if differentiable and not gray_coding:
+            raise ValueError("Differentiable QAM requires Gray coding to be enabled")
 
         # Create QAM constellation
         self._create_constellation()
@@ -69,6 +73,7 @@ class QAMModulator(BaseModulator):
             # Normalize to unit average energy
             energy = torch.mean(torch.abs(constellation) ** 2)
             constellation = constellation / torch.sqrt(energy)
+            self.register_buffer("energy", energy)
 
         # Create bit pattern mapping
         bit_patterns = torch.zeros(self.order, self._bits_per_symbol)
@@ -116,21 +121,35 @@ class QAMModulator(BaseModulator):
         if bit_len % self._bits_per_symbol != 0:
             raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
 
-        # Reshape to groups of bits_per_symbol
-        x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+        if not self.differentiable:
+            # Reshape to groups of bits_per_symbol
+            x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+            # For each group of bits, find the matching constellation point
+            symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
 
-        # For each group of bits, find the matching constellation point
-        symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
+            # Search through bit_patterns for each group of bits to find the matching constellation point
+            for i in range(self.order):
+                # Create a mask for where the current bit pattern matches the input bits
+                # Need to compare across the bits_per_symbol dimension
+                pattern = self.bit_patterns[i].to(x.device)
+                mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
 
-        # Search through bit_patterns for each group of bits to find the matching constellation point
-        for i in range(self.order):
-            # Create a mask for where the current bit pattern matches the input bits
-            # Need to compare across the bits_per_symbol dimension
-            pattern = self.bit_patterns[i].to(x.device)
-            mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
-
-            # Assign the corresponding constellation point
-            symbols[mask] = self.constellation[i]
+                # Assign the corresponding constellation point
+                symbols[mask] = self.constellation[i]
+        else:
+            # Reshape to groups of bits_per_symbol
+            x_reshaped = x.reshape(*batch_shape, -1)
+            _bits_per_symbol = self._bits_per_symbol
+            real_to_add = 2*x_reshaped[:, 0::_bits_per_symbol] - 1
+            imag_to_add = 2*x_reshaped[:, (_bits_per_symbol // 2)::_bits_per_symbol] - 1
+            symbols = (2**(_bits_per_symbol // 2 - 1)) * (real_to_add + 1j * imag_to_add)
+            for j in range(1, _bits_per_symbol // 2):
+                real_to_add = -1 * real_to_add * (2*x_reshaped[:, j::_bits_per_symbol] - 1)
+                imag_to_add = -1 * imag_to_add * (2*x_reshaped[:, (_bits_per_symbol // 2 + j)::_bits_per_symbol] - 1)
+                symbols += (2**(_bits_per_symbol // 2 - j - 1))*(real_to_add + 1j * imag_to_add)
+            if self.normalize:
+                # Normalize to unit average energy
+                symbols = symbols / torch.sqrt(self.energy)
 
         return symbols
 
