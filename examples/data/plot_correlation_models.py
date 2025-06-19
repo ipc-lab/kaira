@@ -42,7 +42,7 @@ np.random.seed(42)
 # First, let's create a source signal
 n_samples = 1
 n_features = 1000
-source = np.random.uniform(0.0, 1.0, size=[n_samples, n_features]).astype(np.float32)
+source = torch.rand(n_samples, n_features)
 
 # We'll create different correlation models to demonstrate the relationships
 # between the source and side information
@@ -141,7 +141,7 @@ plt.show()
 # where bits are flipped with probability p.
 
 # Create a binary source
-binary_source = np.random.binomial(1, 0.5, size=[1, n_features]).astype(np.float32)
+binary_source = torch.randint(0, 2, (1, n_features), dtype=torch.float32)
 
 # Create correlation models with different crossover probabilities
 crossover_probs = [0.05, 0.1, 0.3]
@@ -212,14 +212,17 @@ plt.show()
 def custom_transform(x):
     """A custom correlation model where Y = 0.8*X + 0.2*sin(2πX) This introduces both linear
     correlation and nonlinear distortion."""
-    return 0.8 * x + 0.2 * torch.sin(2 * np.pi * x)
+    # Convert to torch tensor if needed
+    if isinstance(x, np.ndarray):
+        x = torch.from_numpy(x)
+    return 0.8 * x + 0.2 * torch.sin(2 * torch.pi * x)
 
 
 # Create a custom correlation model
 custom_model = WynerZivCorrelationModel(correlation_type="custom", correlation_params={"transform_fn": custom_transform})
 
 # Generate source and correlated side information
-source = np.random.uniform(0.0, 1.0, size=[1, n_features]).astype(np.float32)
+source = torch.rand(1, n_features)
 with torch.no_grad():
     custom_side_info = custom_model(source)
 
@@ -268,12 +271,11 @@ feature_dim = 8
 source_data = np.random.uniform(0.0, 1.0, size=[n_samples, feature_dim]).astype(np.float32)
 
 # Create datasets with different correlation types
-gaussian_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="gaussian", correlation_params={"sigma": 0.2})
+gaussian_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=(feature_dim,), correlation_type="gaussian", correlation_params={"sigma": 0.2})
 
-binary_source = np.random.binomial(1, 0.5, size=[n_samples, feature_dim]).astype(np.float32)
-binary_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="binary", correlation_params={"crossover_prob": 0.1})
+binary_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=(feature_dim,), correlation_type="binary", correlation_params={"crossover_prob": 0.1})
 
-custom_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="custom", correlation_params={"transform_fn": custom_transform})
+custom_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=(feature_dim,), correlation_type="custom", correlation_params={"transform_fn": custom_transform})
 
 print(f"Dataset size: {len(gaussian_dataset)}")
 print(f"Sample keys: {list(gaussian_dataset[0].keys())}")
@@ -343,7 +345,7 @@ plt.show()
 # Generate a larger binary source
 n_samples = 1
 n_bits = 1000
-source_bits = np.random.binomial(1, 0.5, size=[n_samples, n_bits]).astype(np.float32)
+source_bits = torch.randint(0, 2, (n_samples, n_bits), dtype=torch.float32)
 
 # Create correlated side information (BSC with p=0.1)
 correlation_model = WynerZivCorrelationModel(correlation_type="binary", correlation_params={"crossover_prob": 0.1})

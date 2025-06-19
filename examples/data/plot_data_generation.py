@@ -3,9 +3,11 @@
 Data Generation Utilities
 ==========================================
 
-This example demonstrates the new HuggingFace-based data generation utilities in Kaira,
-including binary and uniform datasets creation. These utilities are particularly
-useful for creating synthetic data for information theory and communication systems experiments.
+This example demonstrates the data generation utilities in Kaira,
+including binary and uniform tensor creation, as well as dataset
+classes for batch processing. These utilities are particularly
+useful for creating synthetic data for information theory and
+communication systems experiments.
 """
 
 import matplotlib.pyplot as plt
@@ -138,7 +140,15 @@ print(f"Uniform HF dataset length: {len(uniform_hf_dataset)}")
 
 # Demonstrate batch processing with HF datasets
 def process_batch(dataset, batch_size=10):
-    """Process dataset in batches."""
+    """Process dataset in batches for efficient data loading.
+
+    Args:
+        dataset: The dataset to process
+        batch_size: Size of each batch (default: 10)
+
+    Returns:
+        List of numpy arrays, each containing a batch of data
+    """
     batched_data = []
     for i in range(0, len(dataset), batch_size):
         batch = []
@@ -177,7 +187,15 @@ message_dataset = BinaryTensorDataset(n_samples=batch_size, feature_shape=(messa
 
 # Function to simulate channel noise
 def add_channel_noise(messages, flip_prob):
-    """Add binary symmetric channel noise."""
+    """Add binary symmetric channel noise to messages.
+
+    Args:
+        messages: List of binary messages to add noise to
+        flip_prob: Probability of flipping each bit
+
+    Returns:
+        List of noisy messages with channel errors applied
+    """
     noisy_messages = []
     for msg in messages:
         msg_array = np.array(msg)
@@ -196,7 +214,15 @@ noisy_messages = add_channel_noise(messages, flip_prob)
 
 # Calculate bit error rate
 def calculate_ber(original, noisy):
-    """Calculate bit error rate."""
+    """Calculate bit error rate between original and noisy messages.
+
+    Args:
+        original: List of original binary messages
+        noisy: List of noisy binary messages
+
+    Returns:
+        Float representing the bit error rate (0.0 to 1.0)
+    """
     total_bits = 0
     error_bits = 0
     for orig, noise in zip(original, noisy):
@@ -237,34 +263,69 @@ plt.show()
 # Dataset Filtering and Mapping
 # =============================
 #
-# HuggingFace datasets support advanced operations like filtering and mapping.
+# Dataset analysis and filtering operations.
 
 # Create a larger dataset for demonstration
 large_dataset = BinaryTensorDataset(n_samples=1000, feature_shape=(10,), prob=0.3)
 
+print(f"Original dataset size: {len(large_dataset)}")
 
 # Filter samples based on sum (number of 1s)
-def filter_by_sum(example):
-    """Keep only samples with sum >= 3."""
-    return sum(example["data"]) >= 3
+# Since the new dataset returns dict with 'data' key, we can manually filter
+filtered_indices = []
+for i in range(len(large_dataset)):
+    sample = large_dataset[i]
+    data = sample["data"]
+    if sum(data) >= 3:  # Keep only samples with sum >= 3
+        filtered_indices.append(i)
+
+print(f"Filtered dataset size: {len(filtered_indices)}")
 
 
-filtered_dataset = large_dataset.filter(filter_by_sum)
+# Create a custom filtered view of the dataset
+class FilteredDataset:
+    """A custom dataset class that provides a filtered view of another dataset.
 
-print(f"Original dataset size: {len(large_dataset)}")
-print(f"Filtered dataset size: {len(filtered_dataset)}")
+    This class wraps an existing dataset and provides access to only a subset of samples based on
+    provided indices.
+    """
+
+    def __init__(self, original_dataset, indices):
+        """Initialize the filtered dataset.
+
+        Args:
+            original_dataset: The original dataset to filter
+            indices: List of indices to include in the filtered view
+        """
+        self.original_dataset = original_dataset
+        self.indices = indices
+
+    def __len__(self):
+        """Return the number of samples in the filtered dataset.
+
+        Returns:
+            Integer number of samples available in the filtered view
+        """
+        return len(self.indices)
+
+    def __getitem__(self, idx):
+        """Get a sample from the filtered dataset.
+
+        Args:
+            idx: Index of the sample to retrieve from the filtered view
+
+        Returns:
+            Dictionary containing the enhanced sample with computed features
+        """
+        original_idx = self.indices[idx]
+        sample = self.original_dataset[original_idx]
+        # Add computed features
+        data = sample["data"]
+        enhanced_sample = {"data": data, "sum": sum(data), "mean": sum(data) / len(data)}
+        return enhanced_sample
 
 
-# Map function to calculate features
-def add_features(example):
-    """Add sum and mean as features."""
-    data = example["data"]
-    example["sum"] = sum(data)
-    example["mean"] = sum(data) / len(data)
-    return example
-
-
-enhanced_dataset = filtered_dataset.map(add_features)
+enhanced_dataset = FilteredDataset(large_dataset, filtered_indices)
 
 # Show some examples
 print("\\nSample enhanced data:")
@@ -273,8 +334,8 @@ for i in range(min(5, len(enhanced_dataset))):
     print(f"Sample {i}: sum={sample['sum']}, mean={sample['mean']:.3f}")
 
 print("\\nData generation examples completed!")
-print("The new HuggingFace-based datasets provide:")
-print("- Native streaming support")
-print("- Advanced filtering and mapping operations")
-print("- Better integration with modern ML frameworks")
-print("- Efficient data processing for large datasets")
+print("The Kaira datasets provide:")
+print("- Flexible PyTorch Dataset interface")
+print("- Efficient data generation for communication systems")
+print("- Consistent API across different data types")
+print("- Easy integration with PyTorch DataLoader")
