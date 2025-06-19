@@ -189,9 +189,11 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
         # Get all attributes from TrainingArguments
         args_dict = {}
         for key in dir(hf_args):
-            if not key.startswith("_") and not callable(getattr(hf_args, key)):
+            if not key.startswith("_"):
                 try:
-                    args_dict[key] = getattr(hf_args, key)
+                    value = getattr(hf_args, key)
+                    if not callable(value):
+                        args_dict[key] = value
                 except (AttributeError, TypeError):
                     continue
 

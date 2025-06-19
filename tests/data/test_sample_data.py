@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from kaira.data.sample_data import SampleImagesDataset, TorchVisionDataset
+from kaira.data.sample_data import SampleImagesDataset, TorchVisionDataset, download_image
 
 # Define expected shapes for different datasets
 EXPECTED_SHAPES = {
@@ -238,12 +238,17 @@ class TestSampleImagesDataset:
         # Mock that files don't exist initially
         mock_exists.return_value = False
 
-        # Mock first attempt fails, second succeeds
+        # Mock first attempt fails, second succeeds for each image
         import urllib.error
 
+        # Need enough responses for all 4 test images (coins, astronaut, coffee, camera)
+        # First image: fail then succeed, remaining images: succeed immediately
         mock_urlretrieve.side_effect = [
             urllib.error.HTTPError(url="test", code=503, msg="Service Unavailable", hdrs=None, fp=None),
-            None,  # Success on second attempt
+            None,  # Success on retry for first image
+            None,  # Success for second image
+            None,  # Success for third image
+            None,  # Success for fourth image
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -251,7 +256,7 @@ class TestSampleImagesDataset:
             with pytest.raises(RuntimeError, match="No test images could be loaded"):
                 SampleImagesDataset(n_samples=1, cache_dir=tmpdir)
 
-            # Verify retry was attempted (urlretrieve called twice)
+            # Verify retry was attempted (urlretrieve called at least twice)
             assert mock_urlretrieve.call_count >= 2
 
     def test_seed_sets_numpy_random_state(self):
@@ -261,3 +266,95 @@ class TestSampleImagesDataset:
         dataset = SampleImagesDataset(n_samples=1, seed=seed)
         assert len(dataset) == 1
         # The seed is set, which affects any subsequent numpy random operations
+
+
+class TestDownloadImage:
+    """Test class for download_image function."""
+
+    def test_download_image_valid_https_url(self):
+        """Test downloading from a valid HTTPS URL from trusted domain."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            url = "https://raw.githubusercontent.com/test/repo/test.png"
+
+            with patch("kaira.data.sample_data.urllib.request.urlretrieve") as mock_retrieve:
+                with patch("kaira.data.sample_data.os.path.exists", return_value=False):
+                    result = download_image(url, tmpdir)
+
+                    expected_path = str(Path(tmpdir) / "test.png")
+                    assert result == expected_path
+                    mock_retrieve.assert_called_once_with(url, expected_path)
+
+    def test_download_image_file_already_exists(self):
+        """Test behavior when file already exists."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            url = "https://raw.githubusercontent.com/test/repo/existing.png"
+            expected_path = str(Path(tmpdir) / "existing.png")
+
+            # Create the file to simulate it already exists
+            Path(expected_path).touch()
+
+            with patch("kaira.data.sample_data.urllib.request.urlretrieve") as mock_retrieve:
+                result = download_image(url, tmpdir)
+
+                assert result == expected_path
+                # Should not download if file exists
+                mock_retrieve.assert_not_called()
+
+    def test_download_image_non_https_url(self):
+        """Test that non-HTTPS URLs raise ValueError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            http_url = "http://raw.githubusercontent.com/test/repo/test.png"
+
+            with pytest.raises(ValueError, match="Only HTTPS URLs are allowed for security reasons"):
+                download_image(http_url, tmpdir)
+
+    def test_download_image_untrusted_domain(self):
+        """Test that untrusted domains raise ValueError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            untrusted_url = "https://malicious.com/test.png"
+
+            with pytest.raises(ValueError, match="URL domain malicious.com is not in the list of trusted domains"):
+                download_image(untrusted_url, tmpdir)
+
+    def test_download_image_trusted_domains(self):
+        """Test that all trusted domains are accepted."""
+        trusted_domains = [
+            "raw.githubusercontent.com",
+            "github.com",
+            "cdn.example.com",
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for domain in trusted_domains:
+                url = f"https://{domain}/test.png"
+
+                with patch("kaira.data.sample_data.urllib.request.urlretrieve"):
+                    with patch("kaira.data.sample_data.os.path.exists", return_value=False):
+                        # Should not raise an exception
+                        result = download_image(url, tmpdir)
+                        assert result.endswith("test.png")
+
+    def test_download_image_creates_directory(self):
+        """Test that download_image creates the save directory if it doesn't exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            nonexistent_dir = str(Path(tmpdir) / "new_dir")
+            url = "https://raw.githubusercontent.com/test/repo/test.png"
+
+            with patch("kaira.data.sample_data.urllib.request.urlretrieve"):
+                with patch("kaira.data.sample_data.os.path.exists", return_value=False):
+                    download_image(url, nonexistent_dir)
+
+                    # Directory should be created
+                    assert Path(nonexistent_dir).exists()
+
+    def test_download_image_filename_extraction(self):
+        """Test that filename is correctly extracted from URL."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            url = "https://raw.githubusercontent.com/test/repo/path/to/myfile.jpg"
+
+            with patch("kaira.data.sample_data.urllib.request.urlretrieve"):
+                with patch("kaira.data.sample_data.os.path.exists", return_value=False):
+                    result = download_image(url, tmpdir)
+
+                    expected_path = str(Path(tmpdir) / "myfile.jpg")
+                    assert result == expected_path
