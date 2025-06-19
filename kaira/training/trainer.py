@@ -33,7 +33,7 @@ Examples:
     >>> trainer = Trainer(model, training_config)
 """
 
-from typing import Union
+from typing import Optional, Union
 
 from omegaconf import DictConfig
 from transformers import Trainer as HFTrainer
@@ -82,6 +82,48 @@ class Trainer(HFTrainer):
             training_args = TrainingArguments._convert_to_training_arguments(args)
 
         super().__init__(model=model, args=training_args, **kwargs)
+
+    def save_model(self, output_dir: Optional[str] = None, _internal_call: bool = False):
+        """Save model and optionally upload to Hub.
+
+        Args:
+            output_dir: Optional output directory
+            _internal_call: Internal call flag
+        """
+        # Call parent save_model
+        super().save_model(output_dir, _internal_call)
+
+        # Check if we should upload to Hub on checkpoints
+        if hasattr(self.args, "push_to_hub") and self.args.push_to_hub and hasattr(self.args, "hub_strategy") and self.args.hub_strategy == "checkpoint":
+            try:
+                self._upload_checkpoint_to_hub(output_dir)
+            except Exception as e:
+                print(f"Warning: Failed to upload checkpoint to Hub: {e}")
+
+    def _upload_checkpoint_to_hub(self, output_dir: Optional[str] = None):
+        """Upload checkpoint to Hugging Face Hub."""
+        if not hasattr(self.args, "hub_model_id") or not self.args.hub_model_id:
+            return
+
+        try:
+            from pathlib import Path
+
+            from huggingface_hub import HfApi
+
+            # Use provided output_dir or default to args.output_dir
+            model_dir = Path(output_dir) if output_dir else Path(self.args.output_dir)
+
+            api = HfApi(token=getattr(self.args, "hub_token", None))
+
+            # Upload the checkpoint directory
+            api.upload_folder(folder_path=str(model_dir), repo_id=self.args.hub_model_id, repo_type="model", commit_message=f"Upload checkpoint at step {self.state.global_step if hasattr(self, 'state') else 'unknown'}")
+
+            print(f"✅ Uploaded checkpoint to Hub: {self.args.hub_model_id}")
+
+        except ImportError:
+            print("Warning: huggingface_hub not available for checkpoint upload")
+        except Exception as e:
+            print(f"Error uploading checkpoint to Hub: {e}")
 
     @classmethod
     def from_hydra_config(cls, hydra_cfg: DictConfig, model, **kwargs):

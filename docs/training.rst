@@ -12,6 +12,7 @@ The ``kaira-train`` command provides:
 - **Model Training**: Train any registered communication model
 - **Flexible Configuration**: Support for YAML, JSON, and command-line parameters
 - **Communication-Specific Features**: SNR ranges, channel types, and noise modeling
+- **Hugging Face Hub Integration**: Upload trained models for sharing and distribution
 - **Integration**: Works with Hydra configuration management
 - **Monitoring**: Built-in logging, evaluation, and checkpointing
 
@@ -74,6 +75,10 @@ Advanced Training
     # Resume from checkpoint
     kaira-train --model deepjscc \\
       --resume-from-checkpoint ./results/checkpoint-1000
+
+    # Train and upload to Hugging Face Hub
+    kaira-train --model deepjscc \\
+      --push-to-hub --hub-model-id username/my-model
 
 Command-Line Reference
 ======================
@@ -210,6 +215,38 @@ Performance Options
      - 42
      - Random seed
 
+Hugging Face Hub Options
+------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 10 15 55
+
+   * - Argument
+     - Type
+     - Default
+     - Description
+   * - ``--push-to-hub``
+     - flag
+     - False
+     - Upload trained model to Hugging Face Hub
+   * - ``--hub-model-id``
+     - str
+     - \-
+     - Model ID for Hugging Face Hub (e.g., 'username/model-name')
+   * - ``--hub-token``
+     - str
+     - \-
+     - Hugging Face Hub authentication token (or set HF_TOKEN env var)
+   * - ``--hub-private``
+     - flag
+     - False
+     - Make the Hub repository private
+   * - ``--hub-strategy``
+     - str
+     - ``end``
+     - When to upload to Hub: 'end' (after training) or 'checkpoint' (during training)
+
 Configuration Files
 ===================
 
@@ -313,6 +350,26 @@ Configuration-Based Training
 
     kaira-train --model deepjscc --config-file ./configs/training_example.yaml
 
+Training with Hub Upload
+------------------------
+
+.. code-block:: bash
+
+    # Train and upload to Hugging Face Hub
+    kaira-train --model deepjscc \\
+      --output-dir ./deepjscc_results \\
+      --epochs 15 \\
+      --push-to-hub \\
+      --hub-model-id username/deepjscc-model
+
+    # Train and upload to private repository
+    kaira-train --model deepjscc \\
+      --output-dir ./deepjscc_results \\
+      --epochs 20 \\
+      --push-to-hub \\
+      --hub-model-id username/private-deepjscc \\
+      --hub-private
+
 Checkpoint Resume
 -----------------
 
@@ -397,6 +454,259 @@ Configure monitoring in YAML:
       logging_dir: ${training.output_dir}/logs
       report_to: ["wandb", "tensorboard"]
       run_name: my_experiment
+
+Hugging Face Hub Integration
+============================
+
+Kaira supports uploading trained models to the Hugging Face Hub, making it easy to share and distribute your communication system models.
+
+Features
+--------
+
+- **Automatic Upload**: Upload models to Hugging Face Hub after training
+- **Flexible Strategies**: Upload at the end of training or during checkpointing
+- **Private Repositories**: Support for private model repositories
+- **Rich Model Cards**: Automatically generated model cards with training details
+- **Authentication**: Multiple authentication methods (token, environment variable)
+
+Hub Arguments
+-------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 10 15 55
+
+   * - Argument
+     - Type
+     - Default
+     - Description
+   * - ``--push-to-hub``
+     - flag
+     - False
+     - Enable Hub upload
+   * - ``--hub-model-id``
+     - str
+     - \-
+     - Model ID (username/model-name)
+   * - ``--hub-token``
+     - str
+     - \-
+     - Authentication token
+   * - ``--hub-private``
+     - flag
+     - False
+     - Make repository private
+   * - ``--hub-strategy``
+     - str
+     - ``end``
+     - Upload strategy: ``end`` or ``checkpoint``
+
+Quick Start
+-----------
+
+Basic upload:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model
+
+Private repository:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub \\
+      --hub-model-id username/my-model --hub-private
+
+With authentication token:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub \\
+      --hub-model-id username/my-model --hub-token your_token_here
+
+Upload Strategies
+-----------------
+
+**End Strategy (default)**
+
+Uploads the model only after training is completed:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub \\
+      --hub-model-id username/my-model --hub-strategy end
+
+**Checkpoint Strategy**
+
+Uploads the model during training at each checkpoint:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub \\
+      --hub-model-id username/my-model --hub-strategy checkpoint
+
+Authentication
+--------------
+
+**Method 1: Environment Variable (Recommended)**
+
+.. code-block:: bash
+
+    export HF_TOKEN=your_huggingface_token
+    kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model
+
+**Method 2: Command Line Argument**
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub \\
+      --hub-model-id username/my-model --hub-token your_token_here
+
+**Method 3: Hugging Face CLI**
+
+.. code-block:: bash
+
+    huggingface-cli login
+    kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model
+
+Configuration File Integration
+------------------------------
+
+You can also specify Hub upload options in Hydra configuration files:
+
+.. code-block:: yaml
+
+    # training_config.yaml
+    training:
+      output_dir: "./results"
+      num_train_epochs: 10
+      push_to_hub: true
+      hub_model_id: "username/my-model"
+      hub_private: false
+      hub_strategy: "end"
+
+Then run:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --config-file training_config.yaml
+
+Generated Content
+-----------------
+
+For each uploaded model, the system automatically creates:
+
+1. **pytorch_model.bin** - Model weights (state_dict)
+2. **README.md** - Auto-generated model card with training details
+3. **config.json** - Model configuration and metadata
+
+Example model card content:
+
+.. code-block:: markdown
+
+    # my-model
+
+    This model was trained using the Kaira framework for communication systems.
+
+    ## Model Information
+
+    - Framework: Kaira
+    - Model Type: deepjscc
+    - Training Configuration: ./results
+
+    ## Usage
+
+    ```python
+    import torch
+    from kaira.models import ModelRegistry
+
+    # Load the model
+    model_class = ModelRegistry.get_model_cls('deepjscc')
+    model = model_class()
+
+    # Load the trained weights
+    state_dict = torch.load('pytorch_model.bin')
+    model.load_state_dict(state_dict)
+    ```
+
+    ## Training Details
+
+    - Epochs: 10.0
+    - Batch Size: 32
+    - Learning Rate: 0.0001
+    - SNR Range: 0.0 to 20.0 dB
+
+Hub Examples
+------------
+
+**Research Model Sharing**
+
+.. code-block:: bash
+
+    kaira-train \\
+      --model channel_code \\
+      --snr-min -5 \\
+      --snr-max 25 \\
+      --epochs 50 \\
+      --push-to-hub \\
+      --hub-model-id research-lab/channel-code-5g \\
+      --verbose
+
+**Private Development**
+
+.. code-block:: bash
+
+    kaira-train \\
+      --model deepjscc \\
+      --epochs 100 \\
+      --batch-size 64 \\
+      --push-to-hub \\
+      --hub-model-id company/internal-deepjscc-v2 \\
+      --hub-private
+
+**Checkpoint Monitoring**
+
+.. code-block:: bash
+
+    kaira-train \\
+      --model feedback_channel \\
+      --epochs 200 \\
+      --save-steps 1000 \\
+      --push-to-hub \\
+      --hub-model-id username/feedback-channel-experiment \\
+      --hub-strategy checkpoint
+
+Requirements
+------------
+
+The Hub upload functionality requires the ``huggingface_hub`` package:
+
+.. code-block:: bash
+
+    pip install huggingface_hub>=0.16.0
+
+This dependency is automatically included in the updated ``requirements.txt``.
+
+Hub Troubleshooting
+-------------------
+
+**"Hub model ID required"**
+   Ensure you provide ``--hub-model-id`` when using ``--push-to-hub``
+
+**"Authentication failed"**
+   Check your token with ``huggingface-cli whoami`` and ensure token has write permissions
+
+**"Repository not found"**
+   The repository will be created automatically; check your username spelling
+
+**"Network timeout"**
+   Large models may take time to upload; check your internet connection
+
+Use ``--verbose`` flag for detailed upload information:
+
+.. code-block:: bash
+
+    kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model --verbose
 
 Advanced Features
 =================

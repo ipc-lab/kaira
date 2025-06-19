@@ -40,6 +40,12 @@ Examples:
 
   # Resume training from checkpoint
   kaira-train --model deepjscc --resume-from-checkpoint ./results/checkpoint-1000
+
+  # Train and upload to Hugging Face Hub
+  kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model
+
+  # Train and upload to private Hub repository
+  kaira-train --model deepjscc --push-to-hub --hub-model-id username/my-model --hub-private --hub-token your_token
         """,
     )
 
@@ -97,6 +103,14 @@ Examples:
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--quiet", action="store_true", help="Suppress output except errors")
+
+    # Hugging Face Hub upload options
+    hub_group = parser.add_argument_group("Hugging Face Hub Upload")
+    hub_group.add_argument("--push-to-hub", action="store_true", help="Upload trained model to Hugging Face Hub")
+    hub_group.add_argument("--hub-model-id", type=str, help="Model ID for Hugging Face Hub (e.g., 'username/model-name')")
+    hub_group.add_argument("--hub-token", type=str, help="Hugging Face Hub authentication token (or set HF_TOKEN env var)")
+    hub_group.add_argument("--hub-private", action="store_true", help="Make the Hub repository private")
+    hub_group.add_argument("--hub-strategy", choices=["end", "checkpoint"], default="end", help="When to upload to Hub: 'end' (after training) or 'checkpoint' (during training) (default: end)")
 
     # Evaluation and testing
     parser.add_argument("--do-eval", action="store_true", help="Run evaluation during training")
@@ -201,6 +215,160 @@ def setup_device(args):
     return device
 
 
+def setup_hub_upload(args):
+    """Setup Hugging Face Hub upload configuration."""
+    if not args.push_to_hub:
+        return None
+
+    try:
+        import os
+
+        from huggingface_hub import login
+
+        # Handle authentication
+        token = args.hub_token or os.getenv("HF_TOKEN")
+        if not token:
+            print("Warning: No Hugging Face token provided. You may need to login manually.", file=sys.stderr)
+            print("Set HF_TOKEN environment variable or use --hub-token argument", file=sys.stderr)
+        else:
+            try:
+                login(token=token)
+                if not args.quiet:
+                    print("Successfully authenticated with Hugging Face Hub")
+            except Exception as e:
+                print(f"Warning: Failed to authenticate with Hugging Face Hub: {e}", file=sys.stderr)
+
+        # Validate model ID
+        if not args.hub_model_id:
+            raise ValueError("--hub-model-id is required when using --push-to-hub")
+
+        if "/" not in args.hub_model_id:
+            raise ValueError("Hub model ID must be in format 'username/model-name'")
+
+        return {
+            "model_id": args.hub_model_id,
+            "token": token,
+            "private": args.hub_private,
+            "strategy": args.hub_strategy,
+        }
+
+    except ImportError:
+        print("Error: huggingface_hub is required for Hub upload. Install with: pip install huggingface_hub", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error setting up Hub upload: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def upload_to_hub(model, trainer, hub_config, args):
+    """Upload model to Hugging Face Hub."""
+    if not hub_config:
+        return
+
+    try:
+        import tempfile
+
+        import torch
+        from huggingface_hub import HfApi
+
+        if not args.quiet:
+            print(f"Uploading model to Hugging Face Hub: {hub_config['model_id']}")
+
+        api = HfApi(token=hub_config["token"])
+
+        # Create repository if it doesn't exist
+        try:
+            api.create_repo(repo_id=hub_config["model_id"], exist_ok=True, private=hub_config["private"])
+        except Exception as e:
+            if not args.quiet:
+                print(f"Repository may already exist: {e}")
+
+        # Create a temporary directory for the model files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_model_dir = Path(temp_dir) / "model"
+            temp_model_dir.mkdir()
+
+            # Save model to temporary directory
+            model_save_path = temp_model_dir / "pytorch_model.bin"
+            torch.save(model.state_dict(), model_save_path)
+
+            # Create model card
+            model_card_content = f"""---
+tags:
+- kaira
+- communication-systems
+- deep-learning
+library_name: kaira
+license: mit
+---
+
+# {hub_config['model_id'].split('/')[-1]}
+
+This model was trained using the Kaira framework for communication systems.
+
+## Model Information
+
+- Framework: Kaira
+- Model Type: {args.model}
+- Training Configuration: {args.output_dir}
+
+## Usage
+
+```python
+import torch
+from kaira.models import ModelRegistry
+
+# Load the model
+model_class = ModelRegistry.get_model_cls('{args.model}')
+model = model_class()
+
+# Load the trained weights
+state_dict = torch.load('pytorch_model.bin')
+model.load_state_dict(state_dict)
+```
+
+## Training Details
+
+- Epochs: {getattr(args, 'num_train_epochs', 'N/A')}
+- Batch Size: {getattr(args, 'per_device_train_batch_size', 'N/A')}
+- Learning Rate: {getattr(args, 'learning_rate', 'N/A')}
+- SNR Range: {getattr(args, 'snr_min', 'N/A')} to {getattr(args, 'snr_max', 'N/A')} dB
+
+"""
+
+            model_card_path = temp_model_dir / "README.md"
+            with open(model_card_path, "w") as f:
+                f.write(model_card_content)
+
+            # Create config file with model information
+            config_content = {
+                "model_type": args.model,
+                "framework": "kaira",
+                "snr_min": getattr(args, "snr_min", None),
+                "snr_max": getattr(args, "snr_max", None),
+                "channel_type": getattr(args, "channel_type", None),
+            }
+
+            import json
+
+            config_path = temp_model_dir / "config.json"
+            with open(config_path, "w") as f:
+                json.dump(config_content, f, indent=2)
+
+            # Upload all files
+            api.upload_folder(folder_path=str(temp_model_dir), repo_id=hub_config["model_id"], repo_type="model", commit_message=f"Upload {args.model} model trained with Kaira")
+
+        if not args.quiet:
+            print(f"✅ Successfully uploaded model to: https://huggingface.co/{hub_config['model_id']}")
+
+    except Exception as e:
+        print(f"Error uploading to Hub: {e}", file=sys.stderr)
+        if args.verbose:
+            import traceback
+
+            traceback.print_exc()
+
+
 def train_model(model: BaseModel, training_args: TrainingArguments, train_dataset=None, eval_dataset=None, resume_from_checkpoint: Optional[Path] = None):
     """Train the model."""
     # Create trainer
@@ -242,10 +410,15 @@ def main():
     # Setup device
     setup_device(args)
 
+    # Setup Hub upload if requested
+    hub_config = setup_hub_upload(args)
+
     if not args.quiet:
         print(f"Training model: {args.model}")
         print(f"Output directory: {args.output_dir}")
         print(f"Random seed: {args.seed}")
+        if hub_config:
+            print(f"Will upload to Hub: {hub_config['model_id']}")
 
     try:
         # Load model
@@ -289,6 +462,10 @@ def main():
             print("Saving final model...")
         trainer.save_model()
 
+        # Upload to Hub if requested
+        if hub_config and hub_config["strategy"] == "end":
+            upload_to_hub(model, trainer, hub_config, args)
+
         # Run final evaluation if requested
         if args.do_eval and eval_dataset:
             if not args.quiet:
@@ -302,6 +479,13 @@ def main():
                 print("Running prediction...")
             predict_results = trainer.predict(eval_dataset)
             print(f"Prediction completed. Results shape: {predict_results.predictions.shape}")
+
+        # Setup Hugging Face Hub upload if requested
+        hub_config = setup_hub_upload(args)
+
+        # Upload to Hugging Face Hub if configured
+        if hub_config and hub_config["strategy"] == "end":
+            upload_to_hub(model, trainer, hub_config, args)
 
         if not args.quiet:
             print("\nTraining completed successfully!")

@@ -45,6 +45,12 @@ class TrainingArguments(HFTrainingArguments):
         code_length: Optional[int] = None,
         info_length: Optional[int] = None,
         channel_type: str = "awgn",
+        # Hugging Face Hub parameters
+        push_to_hub: bool = False,
+        hub_model_id: Optional[str] = None,
+        hub_token: Optional[str] = None,
+        hub_private: bool = False,
+        hub_strategy: str = "end",
         # Training parameters with defaults that work well for communication models
         output_dir: str = "./results",
         num_train_epochs: float = 10.0,
@@ -71,6 +77,11 @@ class TrainingArguments(HFTrainingArguments):
             code_length: Length of the code
             info_length: Length of information bits
             channel_type: Type of channel simulation
+            push_to_hub: Whether to upload model to Hugging Face Hub
+            hub_model_id: Model ID for Hugging Face Hub (e.g., 'username/model-name')
+            hub_token: Hugging Face Hub authentication token
+            hub_private: Make the Hub repository private
+            hub_strategy: When to upload to Hub ('end' or 'checkpoint')
             output_dir: Output directory for results
             num_train_epochs: Number of training epochs
             per_device_train_batch_size: Training batch size per device
@@ -111,6 +122,13 @@ class TrainingArguments(HFTrainingArguments):
         self.code_length = code_length
         self.info_length = info_length
         self.channel_type = channel_type
+
+        # Store Hub-related parameters
+        self.push_to_hub = push_to_hub
+        self.hub_model_id = hub_model_id
+        self.hub_token = hub_token
+        self.hub_private = hub_private
+        self.hub_strategy = hub_strategy
 
     @classmethod
     def from_hydra_config(cls, hydra_cfg: DictConfig, **override_kwargs) -> "TrainingArguments":
@@ -182,6 +200,12 @@ class TrainingArguments(HFTrainingArguments):
             "code_length": int,
             "info_length": int,
             "channel_type": str,
+            # Hub parameters
+            "push_to_hub": bool,
+            "hub_model_id": str,
+            "hub_token": str,
+            "hub_private": bool,
+            "hub_strategy": str,
         }
 
         # Extract and convert arguments
@@ -211,6 +235,13 @@ class TrainingArguments(HFTrainingArguments):
         comm_params = ["snr_min", "snr_max", "noise_variance_min", "noise_variance_max", "channel_uses", "code_length", "info_length", "channel_type"]
 
         for param in comm_params:
+            if hasattr(self, param):
+                result[param] = getattr(self, param)
+
+        # Add Hub-related parameters
+        hub_params = ["push_to_hub", "hub_model_id", "hub_token", "hub_private", "hub_strategy"]
+
+        for param in hub_params:
             if hasattr(self, param):
                 result[param] = getattr(self, param)
 
