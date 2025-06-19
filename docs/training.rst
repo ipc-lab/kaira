@@ -815,9 +815,9 @@ API Reference
 
 For programmatic usage, see:
 
-- :ref:`kaira.training.TrainingArguments <api_reference>`: Training configuration
-- :ref:`kaira.training.Trainer <api_reference>`: Training implementation
-- :ref:`kaira.models.ModelRegistry <api_reference>`: Model management
+- :class:`kaira.training.TrainingArguments`: Training configuration
+- :class:`kaira.training.Trainer`: Training implementation
+- :class:`kaira.models.ModelRegistry`: Model management
 
 See Also
 ========
