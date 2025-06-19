@@ -254,28 +254,6 @@ Models module for Kaira.
    WynerZivModel
 
 
-Base
-^^^^
-
-Base model definitions for deep learning architectures.
-
-This module provides the foundation for all model implementations in the Kaira framework. The
-BaseModel class implements common functionality and enforces a consistent interface across
-different model types.
-
-.. currentmodule:: kaira.models.base
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BaseModel
-   ChannelAwareBaseModel
-   ConfigurableModel
-   ModelConfig
-
-
 Soft Bit Thresholding
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -865,25 +843,20 @@ and loss function parameters.
 Trainingarguments
 -----------------
 
-Flexible training arguments that support both Hydra configs and TrainingArguments.
+Training arguments that support Hydra configuration management.
 
 This class extends transformers.TrainingArguments to provide seamless integration
 with Hydra configuration management while maintaining full compatibility with
 Hugging Face ecosystem. It supports:
 
-- Direct instantiation from Hydra DictConfig
-- Conversion from/to standard TrainingArguments
+- Direct instantiation from Hydra DictConfig via from_hydra_config
 - Communication-specific parameters
 - Automatic parameter filtering and validation
 
 Examples:
     >>> # From Hydra config
-    >>> hydra_config = OmegaConf.create({"output_dir": "./results", "num_train_epochs": 10})
-    >>> args = TrainingArguments.from_hydra(hydra_config)
-
-    >>> # From TrainingArguments
-    >>> training_args = TrainingArguments(output_dir="./results")
-    >>> args = TrainingArguments.from_training_arguments(training_args)
+    >>> hydra_config = OmegaConf.create({"training": {"output_dir": "./results", "num_train_epochs": 10}})
+    >>> args = TrainingArguments.from_hydra_config(hydra_config)
 
     >>> # With communication parameters
     >>> args = TrainingArguments(

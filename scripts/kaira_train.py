@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from omegaconf import OmegaConf
+
 from kaira.models import BaseModel, ModelRegistry
 from kaira.training import Trainer, TrainingArguments
 from kaira.utils import seed_everything
@@ -33,7 +35,7 @@ Examples:
   # Train with custom SNR range
   kaira-train --model channel_code --snr-min 0 --snr-max 15 --learning-rate 1e-3
 
-  # Train with configuration file
+  # Train with Hydra configuration file
   kaira-train --model deepjscc --config-file ./configs/training_example.yaml
 
   # Resume training from checkpoint
@@ -46,9 +48,8 @@ Examples:
     action_group.add_argument("--list-models", action="store_true", help="List available models")
     action_group.add_argument("--model", type=str, help="Model to train")
 
-    # Model configuration
-    parser.add_argument("--config-file", type=Path, help="Load model/training configuration from YAML or JSON file")
-    parser.add_argument("--model-config", type=str, help="Model configuration as JSON string")
+    # Configuration
+    parser.add_argument("--config-file", type=Path, help="Load training configuration from Hydra YAML file")
 
     # Training configuration
     parser.add_argument("--output-dir", type=Path, default="./training_results", help="Output directory for training results (default: ./training_results)")
@@ -121,7 +122,7 @@ def list_available_models():
         print("  Make sure you have registered models in the ModelRegistry")
 
 
-def load_model_from_config(model_name: str, config_file: Optional[Path] = None, model_config: Optional[str] = None) -> BaseModel:
+def load_model_from_config(model_name: str) -> BaseModel:
     """Load model from configuration."""
     # Get model class from registry
     model_class = ModelRegistry.get_model_cls(model_name)
@@ -129,50 +130,9 @@ def load_model_from_config(model_name: str, config_file: Optional[Path] = None, 
         available_models = ModelRegistry.list_models()
         raise ValueError(f"Unknown model '{model_name}'. Available models: {', '.join(available_models)}")
 
-    # Load configuration
-    if config_file:
-        file_ext = config_file.suffix.lower()
-        if file_ext == ".yaml" or file_ext == ".yml":
-            # Load YAML configuration (Hydra format)
-            try:
-                from omegaconf import OmegaConf
-
-                config = OmegaConf.load(config_file)
-                # Extract model config if nested
-                if "model" in config:
-                    model_config_dict = OmegaConf.to_container(config.model, resolve=True)
-                else:
-                    model_config_dict = OmegaConf.to_container(config, resolve=True)
-            except ImportError:
-                raise ImportError("OmegaConf is required for YAML configuration files. Install with: pip install omegaconf")
-        elif file_ext == ".json":
-            # Load JSON configuration
-            import json
-
-            with open(config_file) as f:
-                config = json.load(f)
-            # Extract model config if nested
-            model_config_dict = config.get("model", config)
-        else:
-            raise ValueError(f"Unsupported configuration file format: {file_ext}. Supported formats: .yaml, .yml, .json")
-    elif model_config:
-        import json
-
-        model_config_dict = json.loads(model_config)
-    else:
-        # Use default configuration
-        model_config_dict = {}
-
-    # Create model instance
+    # Create model instance with default configuration
     try:
-        if hasattr(model_class, "from_config") and model_config_dict:
-            model = model_class.from_config(model_config_dict)
-        elif model_config_dict:
-            # Try to pass the config directly as kwargs
-            model = model_class(**model_config_dict)
-        else:
-            # No config provided, use default constructor
-            model = model_class()
+        model = model_class()
     except Exception as e:
         print(f"Error creating model '{model_name}': {e}", file=sys.stderr)
         if hasattr(model_class, "__init__"):
@@ -186,65 +146,14 @@ def load_model_from_config(model_name: str, config_file: Optional[Path] = None, 
 
 
 def create_training_arguments_from_args(args) -> TrainingArguments:
-    """Create training arguments from command-line arguments."""
+    """Create training arguments from command-line arguments or config file."""
     if args.config_file:
-        file_ext = args.config_file.suffix.lower()
-        if file_ext == ".yaml" or file_ext == ".yml":
-            # Load YAML configuration (Hydra format)
-            try:
-                from omegaconf import OmegaConf
-
-                config = OmegaConf.load(args.config_file)
-                # Extract training config if nested
-                if "training" in config:
-                    training_config = OmegaConf.to_container(config.training, resolve=True)
-                else:
-                    training_config = OmegaConf.to_container(config, resolve=True)
-                training_args = TrainingArguments.from_dict(training_config)
-            except ImportError:
-                raise ImportError("OmegaConf is required for YAML configuration files. Install with: pip install omegaconf")
-        elif file_ext == ".json":
-            # Load JSON configuration
-            import json
-
-            with open(args.config_file) as f:
-                config = json.load(f)
-            # Extract training config if nested
-            training_config = config.get("training", config)
-            training_args = TrainingArguments.from_dict(training_config)
-        else:
-            raise ValueError(f"Unsupported configuration file format: {file_ext}. Supported formats: .yaml, .yml, .json")
+        # Load Hydra configuration from file
+        config = OmegaConf.load(args.config_file)
+        training_args = TrainingArguments.from_hydra_config(config)
     else:
-        training_args = TrainingArguments(
-            output_dir=str(args.output_dir),
-            num_train_epochs=args.num_train_epochs,
-            per_device_train_batch_size=args.per_device_train_batch_size,
-            per_device_eval_batch_size=args.per_device_eval_batch_size,
-            learning_rate=args.learning_rate,
-            warmup_steps=args.warmup_steps,
-            logging_steps=args.logging_steps,
-            eval_steps=args.eval_steps,
-            save_steps=args.save_steps,
-            eval_strategy=args.eval_strategy,
-            save_strategy=args.save_strategy,
-            save_total_limit=args.save_total_limit,
-            fp16=args.fp16,
-            dataloader_num_workers=args.dataloader_num_workers,
-            # Communication-specific parameters
-            snr_min=args.snr_min,
-            snr_max=args.snr_max,
-            noise_variance_min=args.noise_variance_min,
-            noise_variance_max=args.noise_variance_max,
-            channel_uses=args.channel_uses,
-            code_length=args.code_length,
-            info_length=args.info_length,
-            channel_type=args.channel_type,
-            # Evaluation and prediction
-            do_eval=args.do_eval,
-            do_predict=args.do_predict,
-            # Overwrite output dir
-            overwrite_output_dir=args.overwrite_output_dir,
-        )
+        # Create from CLI arguments using TrainingArguments method
+        training_args = TrainingArguments.from_cli_args(args)
 
     return training_args
 
@@ -342,7 +251,7 @@ def main():
         # Load model
         if not args.quiet:
             print("Loading model...")
-        model = load_model_from_config(args.model, args.config_file, args.model_config)
+        model = load_model_from_config(args.model)
 
         # Create training arguments
         if not args.quiet:

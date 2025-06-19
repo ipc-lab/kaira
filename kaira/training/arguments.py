@@ -1,92 +1,29 @@
 """Training arguments for Kaira communication models.
 
-This module provides flexible training arguments that support multiple configuration systems
-including Hugging Face TrainingArguments, Hydra configurations, and plain dictionaries.
+This module provides training arguments that support Hydra configuration systems.
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from omegaconf import DictConfig, OmegaConf
 from transformers import TrainingArguments as HFTrainingArguments
 
 
-def _extract_config_value(config: Any, key: str, default: Any = None) -> Any:
-    """Extract value from various config types (PretrainedConfig, TrainingArguments, DictConfig,
-    dict)."""
-    if hasattr(config, key):
-        return getattr(config, key)
-    elif isinstance(config, dict):
-        return config.get(key, default)
-    elif isinstance(config, DictConfig):
-        return OmegaConf.select(config, key, default=default)
-    else:
-        return default
-
-
-class TrainingArgumentsMixin:
-    """Mixin providing Hydra and dict-based constructors for TrainingArguments subclasses."""
-
-    @classmethod
-    def from_hydra(cls, hydra_config: Union[Any, dict], **override_kwargs):
-        """Create instance from Hydra configuration (DictConfig or dict)."""
-        if isinstance(hydra_config, DictConfig):
-            config_dict = OmegaConf.to_container(hydra_config, resolve=True)
-        elif isinstance(hydra_config, dict):
-            config_dict = hydra_config.copy()
-        else:
-            raise ValueError(f"Expected DictConfig or dict, got {type(hydra_config)}")
-
-        # If nested, extract training segment
-        if "training" in config_dict:
-            config_segment = config_dict["training"]
-        else:
-            config_segment = config_dict
-
-        config_segment.update(override_kwargs)
-        # Filter parameters
-        valid = cls._get_valid_parameters()
-        filtered = {k: v for k, v in config_segment.items() if k in valid}
-        return cls(**filtered)
-
-    @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any], **override_kwargs):
-        """Create instance from plain dict."""
-        merged = config_dict.copy()
-        merged.update(override_kwargs)
-        valid = cls._get_valid_parameters()
-        filtered = {k: v for k, v in merged.items() if k in valid}
-        return cls(**filtered)
-
-    @classmethod
-    def _get_valid_parameters(cls) -> set:
-        """Get set of valid parameter names for this class."""
-        # Get parameters from the class __init__ method
-        import inspect
-
-        init_signature = inspect.signature(cls.__init__)
-        return set(init_signature.parameters.keys())
-
-
-class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
-    """Flexible training arguments that support both Hydra configs and TrainingArguments.
+class TrainingArguments(HFTrainingArguments):
+    """Training arguments that support Hydra configuration management.
 
     This class extends transformers.TrainingArguments to provide seamless integration
     with Hydra configuration management while maintaining full compatibility with
     Hugging Face ecosystem. It supports:
 
-    - Direct instantiation from Hydra DictConfig
-    - Conversion from/to standard TrainingArguments
+    - Direct instantiation from Hydra DictConfig via from_hydra_config
     - Communication-specific parameters
     - Automatic parameter filtering and validation
 
     Examples:
         >>> # From Hydra config
-        >>> hydra_config = OmegaConf.create({"output_dir": "./results", "num_train_epochs": 10})
-        >>> args = TrainingArguments.from_hydra(hydra_config)
-
-        >>> # From TrainingArguments
-        >>> training_args = TrainingArguments(output_dir="./results")
-        >>> args = TrainingArguments.from_training_arguments(training_args)
+        >>> hydra_config = OmegaConf.create({"training": {"output_dir": "./results", "num_train_epochs": 10}})
+        >>> args = TrainingArguments.from_hydra_config(hydra_config)
 
         >>> # With communication parameters
         >>> args = TrainingArguments(
@@ -176,35 +113,86 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
         self.channel_type = channel_type
 
     @classmethod
-    def from_training_arguments(cls, hf_args: HFTrainingArguments, **override_kwargs) -> "TrainingArguments":
-        """Create TrainingArguments from standard TrainingArguments.
+    def from_hydra_config(cls, hydra_cfg: DictConfig, **override_kwargs) -> "TrainingArguments":
+        """Create TrainingArguments from Hydra configuration.
 
         Args:
-            hf_args: Standard TrainingArguments instance
+            hydra_cfg: Hydra DictConfig containing training configuration
             **override_kwargs: Additional arguments to override or add
 
         Returns:
             TrainingArguments instance
         """
-        # Get all attributes from TrainingArguments
-        args_dict = {}
-        for key in dir(hf_args):
-            if not key.startswith("_"):
-                try:
-                    value = getattr(hf_args, key)
-                    if not callable(value):
-                        args_dict[key] = value
-                except (AttributeError, TypeError):
-                    continue
+        # Extract training-specific parameters from hydra config
+        # If the config has a "training" key, use that, otherwise use the whole config
+        if "training" in hydra_cfg:
+            training_config = hydra_cfg.training
+        else:
+            training_config = hydra_cfg
+
+        # Convert DictConfig to dict if needed
+        if isinstance(training_config, DictConfig):
+            training_config = OmegaConf.to_container(training_config, resolve=True)
 
         # Override with any additional kwargs
-        args_dict.update(override_kwargs)
+        training_config.update(override_kwargs)
 
         # Filter valid parameters
         valid_params = cls._get_valid_parameters()
-        filtered_args = {k: v for k, v in args_dict.items() if k in valid_params}
+        filtered_args = {k: v for k, v in training_config.items() if k in valid_params}
 
         return cls(**filtered_args)
+
+    @classmethod
+    def from_cli_args(cls, args) -> "TrainingArguments":
+        """Create TrainingArguments from command-line arguments.
+
+        Args:
+            args: Parsed command-line arguments (from argparse)
+
+        Returns:
+            TrainingArguments instance
+        """
+        # Define parameter mappings with their expected types
+        param_mappings = {
+            # Standard training arguments
+            "output_dir": str,
+            "num_train_epochs": float,
+            "per_device_train_batch_size": int,
+            "per_device_eval_batch_size": int,
+            "learning_rate": float,
+            "warmup_steps": int,
+            "logging_steps": int,
+            "eval_steps": int,
+            "save_steps": int,
+            "eval_strategy": str,
+            "save_strategy": str,
+            "save_total_limit": int,
+            "fp16": bool,
+            "dataloader_num_workers": int,
+            "do_eval": bool,
+            "do_predict": bool,
+            "overwrite_output_dir": bool,
+            # Communication-specific parameters
+            "snr_min": float,
+            "snr_max": float,
+            "noise_variance_min": float,
+            "noise_variance_max": float,
+            "channel_uses": int,
+            "code_length": int,
+            "info_length": int,
+            "channel_type": str,
+        }
+
+        # Extract and convert arguments
+        cli_args: Dict[str, Any] = {}
+        for param_name, type_converter in param_mappings.items():
+            if hasattr(args, param_name):
+                value = getattr(args, param_name)
+                if value is not None:
+                    cli_args[param_name] = type_converter(value)
+
+        return cls(**cli_args)
 
     @classmethod
     def _get_valid_parameters(cls) -> set:
@@ -246,76 +234,3 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
     def get_noise_variance_range(self) -> tuple:
         """Get noise variance range as tuple."""
         return (self.noise_variance_min, self.noise_variance_max)
-
-    def update_from_hydra(self, hydra_config: Union[Any, dict]) -> None:
-        """Update current configuration from Hydra config.
-
-        Args:
-            hydra_config: Hydra DictConfig or dict to update from
-        """
-        if isinstance(hydra_config, DictConfig):
-            config_dict = OmegaConf.to_container(hydra_config, resolve=True)
-        else:
-            config_dict = hydra_config
-
-        # Extract training config if nested
-        if "training" in config_dict:
-            config_dict = config_dict["training"]
-
-        # Update attributes
-        valid_params = self._get_valid_parameters()
-        for key, value in config_dict.items():
-            if key in valid_params and hasattr(self, key):
-                setattr(self, key, value)
-
-    @classmethod
-    def from_hydra_config(cls, hydra_cfg: DictConfig, **override_kwargs) -> "TrainingArguments":
-        """Create TrainingArguments from Hydra configuration.
-
-        Args:
-            hydra_cfg: Hydra DictConfig containing training configuration
-            **override_kwargs: Additional arguments to override or add
-
-        Returns:
-            TrainingArguments instance
-        """
-        # Extract training-specific parameters from hydra config
-        training_config = _extract_config_value(hydra_cfg, "training", {})
-
-        # Override with any additional kwargs
-        training_config.update(override_kwargs)
-
-        return cls.from_dict(training_config)
-
-    @classmethod
-    def _convert_to_training_arguments(cls, args: Union[DictConfig, dict]) -> "TrainingArguments":
-        """Convert various config types to TrainingArguments.
-
-        Args:
-            args: Configuration in various formats
-
-        Returns:
-            TrainingArguments instance
-        """
-        if isinstance(args, TrainingArguments):
-            return args
-
-        # Extract arguments as dict
-        if isinstance(args, DictConfig):
-            args_dict = OmegaConf.to_container(args, resolve=True)
-        elif isinstance(args, dict):
-            args_dict = args.copy()
-        else:
-            # Try to convert object to dict
-            try:
-                args_dict = vars(args)
-            except TypeError:
-                raise ValueError(f"Cannot convert args of type {type(args)} to TrainingArguments")
-
-        # Filter out args that TrainingArguments doesn't accept
-        from transformers import TrainingArguments as HFTrainingArguments
-
-        training_args_keys = set(HFTrainingArguments.__init__.__code__.co_varnames)
-        filtered_args = {k: v for k, v in args_dict.items() if k in training_args_keys}
-
-        return cls(**filtered_args)
