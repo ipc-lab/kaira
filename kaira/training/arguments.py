@@ -1,46 +1,13 @@
-"""Unified trainer for communication models using Transformers framework.
+"""Training arguments for Kaira communication models.
 
-This module provides a flexible trainer that supports multiple configuration systems
-for training arguments, while models handle their own configuration separately.
-
-The trainer works with BaseModel instances and lets the models handle their own
-channel simulation and constraints internally.
-
-Examples:
-    Using models with Hugging Face configurations:
-    >>> from kaira import KairaTrainer
-    >>> from kaira.models import BaseModel, ModelConfig
-    >>> from transformers import TrainingArguments
-    >>>
-    >>> # Configure the model
-    >>> model_config = ModelConfig(input_dim=512, channel_uses=64)
-    >>> model = BaseModel.from_pretrained_config(model_config)
-    >>>
-    >>> # Configure training
-    >>> training_args = TrainingArguments(output_dir="./results", num_train_epochs=10)
-    >>> trainer = KairaTrainer(model, training_args)
-
-    Using Hydra configurations:
-    >>> # Model handles its own configuration
-    >>> model = BaseModel.from_hydra_config(hydra_cfg.model)
-    >>> trainer = KairaTrainer.from_hydra_config(hydra_cfg, model)
-
-    Using plain dictionaries:
-    >>> # Model handles configuration internally
-    >>> model = BaseModel.from_config({"input_dim": 512, "channel_uses": 64})
-    >>> # Training config
-    >>> training_config = {"output_dir": "./results", "num_train_epochs": 10}
-    >>> trainer = KairaTrainer(model, training_config)
+This module provides flexible training arguments that support multiple configuration systems
+including Hugging Face TrainingArguments, Hydra configurations, and plain dictionaries.
 """
 
 from typing import Any, Dict, Optional, Union
 
-import torch
 from omegaconf import DictConfig, OmegaConf
-from transformers import Trainer
 from transformers import TrainingArguments as HFTrainingArguments
-
-from kaira.losses import LossRegistry
 
 
 def _extract_config_value(config: Any, key: str, default: Any = None) -> Any:
@@ -151,7 +118,7 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
         logging_steps: int = 100,
         eval_steps: int = 500,
         save_steps: int = 1000,
-        evaluation_strategy: str = "steps",
+        eval_strategy: str = "steps",
         logging_strategy: str = "steps",
         save_strategy: str = "steps",
         **kwargs,
@@ -176,7 +143,7 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
             logging_steps: Log every X steps
             eval_steps: Evaluate every X steps
             save_steps: Save every X steps
-            evaluation_strategy: Evaluation strategy
+            eval_strategy: Evaluation strategy
             logging_strategy: Logging strategy
             save_strategy: Save strategy
             **kwargs: Additional arguments passed to TrainingArguments
@@ -192,7 +159,7 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
             logging_steps=logging_steps,
             eval_steps=eval_steps,
             save_steps=save_steps,
-            evaluation_strategy=evaluation_strategy,
+            eval_strategy=eval_strategy,
             logging_strategy=logging_strategy,
             save_strategy=save_strategy,
             **kwargs,
@@ -213,7 +180,7 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
         """Create TrainingArguments from standard TrainingArguments.
 
         Args:
-            training_args: Standard TrainingArguments instance
+            hf_args: Standard TrainingArguments instance
             **override_kwargs: Additional arguments to override or add
 
         Returns:
@@ -299,115 +266,35 @@ class TrainingArguments(TrainingArgumentsMixin, HFTrainingArguments):
             if key in valid_params and hasattr(self, key):
                 setattr(self, key, value)
 
-
-class KairaTrainer(Trainer):
-    """Unified trainer for all communication models.
-
-    This trainer automatically adapts to different model types and supports multiple
-    configuration systems for training arguments:
-    - Hugging Face TrainingArguments
-    - Hydra DictConfig
-    - Plain Python dictionaries
-
-    Models are responsible for their own configuration, channel simulation,
-    constraints, and domain-specific logic via their config systems.
-
-    The trainer focuses on training mechanics and automatically detects model
-    types to apply appropriate loss functions. All domain-specific metrics
-    should be handled by models or provided via compute_metrics parameter.
-    """
-
-    def __init__(self, model, args: Union[TrainingArguments, HFTrainingArguments, DictConfig, dict], loss_fn: Optional[str] = None, hydra_config: Optional[DictConfig] = None, **kwargs):
-        """Initialize trainer.
+    @classmethod
+    def from_hydra_config(cls, hydra_cfg: DictConfig, **override_kwargs) -> "TrainingArguments":
+        """Create TrainingArguments from Hydra configuration.
 
         Args:
-            model: BaseModel instance to train (handles domain-specific logic internally)
-            args: Training arguments (TrainingArguments, HFTrainingArguments, DictConfig, or dict)
-            loss_fn: Name of loss function from kaira.losses registry (auto-detected if None)
-            hydra_config: Hydra configuration for training parameters only
-            **kwargs: Additional arguments for base Trainer
+            hydra_cfg: Hydra DictConfig containing training configuration
+            **override_kwargs: Additional arguments to override or add
+
+        Returns:
+            TrainingArguments instance
         """
-        # Convert args to custom TrainingArguments if needed
-        if isinstance(args, TrainingArguments):
-            training_args = args
-        elif isinstance(args, HFTrainingArguments):
-            training_args = TrainingArguments.from_training_arguments(args)
-        elif isinstance(args, DictConfig):
-            training_args = TrainingArguments.from_hydra(args)
-        elif isinstance(args, dict):
-            training_args = TrainingArguments.from_dict(args)
-        else:
-            training_args = self._convert_to_training_arguments(args)
+        # Extract training-specific parameters from hydra config
+        training_config = _extract_config_value(hydra_cfg, "training", {})
 
-        super().__init__(model=model, args=training_args, **kwargs)
+        # Override with any additional kwargs
+        training_config.update(override_kwargs)
 
-        # Extract training-specific parameters from hydra config if provided
-        training_config = {}
-        if hydra_config is not None:
-            training_config = _extract_config_value(hydra_config, "training", {})
+        return cls.from_dict(training_config)
 
-        # Store training config for reference
-        self.training_config = training_config
-        self.hydra_config = hydra_config
+    @classmethod
+    def _convert_to_training_arguments(cls, args: Union[DictConfig, dict]) -> "TrainingArguments":
+        """Convert various config types to TrainingArguments.
 
-        # Setup loss function
-        self.loss_fn = self._setup_loss_function(loss_fn)
+        Args:
+            args: Configuration in various formats
 
-    def _setup_loss_function(self, loss_fn_name: Optional[str]):
-        """Setup loss function from kaira.losses registry."""
-        if loss_fn_name is not None:
-            # Use specified loss function
-            return LossRegistry.create(loss_fn_name)
-
-        # Auto-detect based on model type
-        model_name = self.model.__class__.__name__.lower()
-        if "deepjscc" in model_name or "jscc" in model_name:
-            return LossRegistry.create("mseloss")
-        elif "fec" in model_name:
-            return LossRegistry.create("crossentropyloss")
-        else:
-            # Default to MSE for reconstruction tasks
-            return LossRegistry.create("mseloss")
-
-    def compute_loss(self, model, inputs, return_outputs=False):
-        """Compute loss with automatic adaptation to model type."""
-        # Extract labels/targets from inputs
-        if "labels" in inputs:
-            labels = inputs.pop("labels")
-        else:
-            # Try different possible label keys
-            labels = inputs.get("info_bits") or inputs.get("source") or inputs.get("input_data")
-            if labels is None:
-                raise ValueError("No labels found in inputs. Expected 'labels', 'info_bits', 'source', or 'input_data'")
-
-        # Forward pass through model
-        outputs = model(**inputs)
-
-        # Compute appropriate loss based on output type
-        loss = self._compute_appropriate_loss(outputs, labels)
-
-        return (loss, outputs) if return_outputs else loss
-
-    def _compute_appropriate_loss(self, outputs, labels):
-        """Compute loss using kaira.losses."""
-        # Extract predictions from different output formats
-        if hasattr(outputs, "logits"):
-            predictions = outputs.logits
-            # For classification tasks, flatten if needed
-            if isinstance(self.loss_fn, LossRegistry.get("crossentropyloss")):
-                predictions = predictions.view(-1, predictions.size(-1))
-                labels = labels.view(-1).long()
-        elif hasattr(outputs, "last_hidden_state"):
-            predictions = outputs.last_hidden_state
-        elif isinstance(outputs, torch.Tensor):
-            predictions = outputs
-        else:
-            raise ValueError(f"Unknown output type: {type(outputs)}. Expected tensor or object with 'logits' or 'last_hidden_state'")
-
-        return self.loss_fn(predictions, labels)
-
-    def _convert_to_training_arguments(self, args: Union[DictConfig, dict]) -> TrainingArguments:
-        """Convert various config types to TrainingArguments."""
+        Returns:
+            TrainingArguments instance
+        """
         if isinstance(args, TrainingArguments):
             return args
 
@@ -424,41 +311,9 @@ class KairaTrainer(Trainer):
                 raise ValueError(f"Cannot convert args of type {type(args)} to TrainingArguments")
 
         # Filter out args that TrainingArguments doesn't accept
+        from transformers import TrainingArguments as HFTrainingArguments
+
         training_args_keys = set(HFTrainingArguments.__init__.__code__.co_varnames)
         filtered_args = {k: v for k, v in args_dict.items() if k in training_args_keys}
 
-        return TrainingArguments(**filtered_args)
-
-    @classmethod
-    def from_hydra_config(cls, hydra_cfg: DictConfig, model, **kwargs):
-        """Create trainer from Hydra configuration."""
-        # Extract training arguments from hydra config
-        training_args = OmegaConf.select(hydra_cfg, "training", default={})
-
-        # Extract loss function if specified
-        loss_fn = OmegaConf.select(hydra_cfg, "loss.name", default=None)
-        if loss_fn:
-            kwargs["loss_fn"] = loss_fn
-
-        return cls(model=model, args=training_args, hydra_config=hydra_cfg, **kwargs)
-
-    @classmethod
-    def from_training_args(cls, training_args: HFTrainingArguments, model, **kwargs):
-        """Create trainer from Hugging Face TrainingArguments."""
-        return cls(model=model, args=training_args, **kwargs)
-
-    @classmethod
-    def from_hydra_with_kaira_args(cls, hydra_cfg: DictConfig, model, **kwargs):
-        """Create trainer from Hydra config using TrainingArguments."""
-        # Create TrainingArguments from hydra config
-        training_args = TrainingArguments.from_hydra(hydra_cfg)
-
-        # Extract loss function if specified
-        loss_fn = OmegaConf.select(hydra_cfg, "loss.name", default=None)
-        if loss_fn:
-            kwargs["loss_fn"] = loss_fn
-
-        return cls(model=model, args=training_args, hydra_config=hydra_cfg, **kwargs)
-
-
-__all__ = ["KairaTrainer", "TrainingArguments"]
+        return cls(**filtered_args)

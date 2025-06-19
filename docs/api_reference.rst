@@ -843,45 +843,24 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_to_noise_power
 
 
-Communicationtrainingarguments
-------------------------------
-
-Training arguments for communication models.
-
-Fecconfig
----------
-
-Configuration for Forward Error Correction models.
-
-Kairabaseconfig
----------------
-
-Base configuration class for all Kaira training configurations.
-
-This class provides common configuration parameters that can be inherited by specific model
-configurations. It establishes a consistent interface for all configuration classes in the
-Kaira framework.
-
-Inherits from transformers.PretrainedConfig for compatibility with Hugging Face ecosystem and
-provides serialization/deserialization capabilities.
-
-Kairatrainer
-------------
+Trainer
+-------
 
 Unified trainer for all communication models.
 
 This trainer automatically adapts to different model types and supports multiple
 configuration systems for training arguments:
 - Hugging Face TrainingArguments
+- Kaira TrainingArguments
 - Hydra DictConfig
 - Plain Python dictionaries
 
 Models are responsible for their own configuration, channel simulation,
 constraints, and domain-specific logic via their config systems.
 
-The trainer focuses on training mechanics and automatically detects model
-types to apply appropriate loss functions. All domain-specific metrics
-should be handled by models or provided via compute_metrics parameter.
+The trainer focuses on training mechanics. All domain-specific metrics
+and loss functions should be provided by the user via the compute_metrics
+and loss function parameters.
 
 Trainingarguments
 -----------------
@@ -958,7 +937,35 @@ deep learning models in Kaira.
    register_benchmark
 
 
-Create_fec_training_args
-------------------------
+Training
+--------
 
-Create training arguments for FEC.
+Kaira training module.
+
+This module provides training infrastructure for communication models, including:
+- TrainingArguments: Flexible training arguments supporting multiple config systems
+- Trainer: Unified trainer for all communication models
+
+Examples:
+    Basic usage with TrainingArguments:
+    >>> from kaira.training import TrainingArguments, Trainer
+    >>> args = TrainingArguments(output_dir="./results", num_train_epochs=10)
+    >>> trainer = Trainer(model, args)
+
+    Using Hydra configurations:
+    >>> args = TrainingArguments.from_hydra(hydra_config)
+    >>> trainer = Trainer.from_hydra_config(hydra_config, model)
+
+    Direct dict configurations:
+    >>> args = TrainingArguments.from_dict({"output_dir": "./results"})
+    >>> trainer = Trainer(model, args)
+
+.. currentmodule:: kaira.training
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   Trainer
+   TrainingArguments

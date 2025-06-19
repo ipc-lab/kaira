@@ -12,16 +12,21 @@ import os
 # Import configs from top-level configs directory
 import sys
 
-from . import benchmarks, channels, constraints, data, losses, metrics, models, modulations, utils
-from .trainer import KairaTrainer, TrainingArguments
+from . import (
+    benchmarks,
+    channels,
+    constraints,
+    data,
+    losses,
+    metrics,
+    models,
+    modulations,
+    training,
+    utils,
+)
+from .training import Trainer, TrainingArguments
 from .version import __version__
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from configs import (
-    CommunicationTrainingArguments,
-    FECConfig,
-    KairaBaseConfig,
-    create_fec_training_args,
-)
 
-__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils", "KairaTrainer", "TrainingArguments", "KairaBaseConfig", "CommunicationTrainingArguments", "FECConfig", "create_fec_training_args"]
+__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils", "training", "Trainer", "TrainingArguments"]

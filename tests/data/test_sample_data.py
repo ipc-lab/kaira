@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -6,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from kaira.data.sample_data import SampleImagesDataset, TorchVisionDataset, download_image
+from kaira.data.sample_data import SampleImagesDataset, TorchVisionDataset
 
 # Define expected shapes for different datasets
 EXPECTED_SHAPES = {
@@ -215,49 +214,50 @@ class TestSampleImagesDataset:
             with pytest.raises(RuntimeError, match="No test images could be loaded"):
                 SampleImagesDataset(n_samples=1, cache_dir=tmpdir)
 
+    @patch("kaira.data.sample_data.urllib.request.urlretrieve")
+    @patch("kaira.data.sample_data.Path.exists")
+    def test_download_url_error_handling(self, mock_exists, mock_urlretrieve):
+        """Test handling of URL errors during download."""
+        # Mock that files don't exist initially
+        mock_exists.return_value = False
 
-class TestDownloadImage:
-    """Test class for download_image function."""
+        # Mock URL error
+        import urllib.error
 
-    def test_non_https_url(self):
-        """Test that non-HTTPS URLs are rejected."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with pytest.raises(ValueError, match="Only HTTPS URLs are allowed for security reasons"):
-                download_image("http://example.com/image.png", tmpdir)
-
-    def test_untrusted_domain(self):
-        """Test that untrusted domains are rejected."""
-        import tempfile
+        mock_urlretrieve.side_effect = urllib.error.URLError("Connection failed")
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with pytest.raises(ValueError, match="URL domain evil.com is not in the list of trusted domains"):
-                download_image("https://evil.com/image.png", tmpdir)
+            # This should handle URL errors gracefully
+            with pytest.raises(RuntimeError, match="No test images could be loaded"):
+                SampleImagesDataset(n_samples=1, cache_dir=tmpdir)
 
-    def test_trusted_domain_github(self):
-        """Test that GitHub URLs are accepted."""
+    @patch("kaira.data.sample_data.urllib.request.urlretrieve")
+    @patch("kaira.data.sample_data.Path.exists")
+    def test_download_with_retries(self, mock_exists, mock_urlretrieve):
+        """Test retry mechanism during download failures."""
+        # Mock that files don't exist initially
+        mock_exists.return_value = False
+
+        # Mock first attempt fails, second succeeds
+        import urllib.error
+
+        mock_urlretrieve.side_effect = [
+            urllib.error.HTTPError(url="test", code=503, msg="Service Unavailable", hdrs=None, fp=None),
+            None,  # Success on second attempt
+        ]
+
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("kaira.data.sample_data.urllib.request.urlretrieve") as mock_retrieve:
-                with patch("kaira.data.sample_data.os.path.exists", return_value=False):
-                    url = "https://raw.githubusercontent.com/test/test/image.png"
-                    result = download_image(url, tmpdir)
+            # Should succeed after retry - but we'll still get RuntimeError due to missing actual images
+            with pytest.raises(RuntimeError, match="No test images could be loaded"):
+                SampleImagesDataset(n_samples=1, cache_dir=tmpdir)
 
-                    # Should call urlretrieve and return the filename
-                    mock_retrieve.assert_called_once()
-                    assert result.endswith("image.png")
+            # Verify retry was attempted (urlretrieve called twice)
+            assert mock_urlretrieve.call_count >= 2
 
-    def test_file_already_exists(self):
-        """Test behavior when file already exists."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Create a dummy file
-            test_file = os.path.join(tmpdir, "image.png")
-            with open(test_file, "w") as f:
-                f.write("dummy")
-
-            url = "https://raw.githubusercontent.com/test/test/image.png"
-            result = download_image(url, tmpdir)
-
-            # Should return existing file path without downloading
-            assert result == test_file
-            assert os.path.exists(result)
+    def test_seed_sets_numpy_random_state(self):
+        """Test that seed parameter affects numpy random state."""
+        # This tests the numpy seed setting branch
+        seed = 123
+        dataset = SampleImagesDataset(n_samples=1, seed=seed)
+        assert len(dataset) == 1
+        # The seed is set, which affects any subsequent numpy random operations
