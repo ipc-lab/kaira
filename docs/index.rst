@@ -46,6 +46,7 @@ Kaira Documentation
    research_storyline
    installation
    getting_started
+   training
    examples_index
 
 .. toctree::
