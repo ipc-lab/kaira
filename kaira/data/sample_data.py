@@ -1,59 +1,79 @@
-"""Utilities for loading sample data, such as standard test images."""
+"""HuggingFace-compatible sample dataset implementations for Kaira.
+
+This module provides sample dataset classes that are compatible with HuggingFace datasets and
+PyTorch DataLoader for standard test images and popular ML datasets.
+"""
 
 import os
 import time
 import urllib.request
 from pathlib import Path
-from typing import Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
+import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
+from torch.utils.data import Dataset
 
 
-class SampleDataLoader:
-    """A unified class for loading both dataset and standard test images.
+class SampleImagesDataset(Dataset):
+    """Dataset for sample test images compatible with PyTorch and HuggingFace.
 
-    This class provides a unified interface for loading images from popular datasets (CIFAR-10,
-    CIFAR-100, MNIST) as well as standard test images commonly used in image processing and
-    computer vision research.
+    This dataset provides access to commonly used test images in image processing research such as
+    coins, astronaut, coffee, and camera images from scikit-image.
     """
 
     # Standard test images often used in image processing
     TEST_IMAGES = {
-        "coins.png": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.21.0/skimage/data/coins.png",
-        "astronaut.png": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.21.0/skimage/data/astronaut.png",
-        "coffee.png": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.21.0/skimage/data/coffee.png",
-        "camera.png": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.21.0/skimage/data/camera.png",
+        "coins.png": ("https://raw.githubusercontent.com/scikit-image/scikit-image/" "v0.21.0/skimage/data/coins.png"),
+        "astronaut.png": ("https://raw.githubusercontent.com/scikit-image/scikit-image/" "v0.21.0/skimage/data/astronaut.png"),
+        "coffee.png": ("https://raw.githubusercontent.com/scikit-image/scikit-image/" "v0.21.0/skimage/data/coffee.png"),
+        "camera.png": ("https://raw.githubusercontent.com/scikit-image/scikit-image/" "v0.21.0/skimage/data/camera.png"),
     }
 
-    def __init__(self):
-        """Initialize the SampleDataLoader."""
-        self._cache_dir = self._get_cache_directory()
-
-    def _get_cache_directory(self) -> Path:
-        """Get the cache directory for storing downloaded data."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        root_library_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
-        return Path(root_library_dir) / ".cache"
-
-    def _download_test_images(self, max_retries: int = 3, delay: int = 1) -> Path:
-        """Download standard test images used in examples.
+    def __init__(
+        self,
+        n_samples: int = 4,
+        target_size: Optional[tuple] = (128, 128),
+        seed: Optional[int] = None,
+        cache_dir: Optional[str] = None,
+    ):
+        """Initialize the sample image dataset.
 
         Args:
-            max_retries: Maximum number of download attempts per image
-            delay: Delay in seconds between retry attempts
-
-        Returns:
-            Path to the directory containing downloaded images
+            n_samples: Number of samples to include in dataset (max 4)
+            target_size: Target size (H, W) for images
+            seed: Random seed for reproducibility
+            cache_dir: Directory to cache downloaded images
         """
-        images_cache = self._cache_dir / "sample_images"
-        images_cache.mkdir(parents=True, exist_ok=True)
+        self.n_samples = min(n_samples, len(self.TEST_IMAGES))
+        self.target_size = target_size
+        self.seed = seed
+
+        if seed is not None:
+            np.random.seed(seed)
+
+        # Set up cache directory
+        if cache_dir is None:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            root_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+            self.cache_dir = Path(root_dir) / ".cache" / "sample_images"
+        else:
+            self.cache_dir = Path(cache_dir)
+
+        # Download and prepare images
+        self._download_images()
+        self.data = self._load_images()
+
+    def _download_images(self, max_retries: int = 3, delay: int = 1) -> None:
+        """Download sample test images if they don't exist."""
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         for filename, url in self.TEST_IMAGES.items():
-            output_path = images_cache / filename
+            output_path = self.cache_dir / filename
             if not output_path.exists():
                 print(f"Downloading {filename}...")
                 success = False
@@ -65,9 +85,9 @@ class SampleDataLoader:
                         success = True
                         break
                     except urllib.error.HTTPError as e:
-                        print(f"Attempt {attempt+1}/{max_retries} failed: HTTP Error {e.code}: {e.reason}")
+                        print(f"Attempt {attempt+1}/{max_retries} failed: " f"HTTP Error {e.code}: {e.reason}")
                     except urllib.error.URLError as e:
-                        print(f"Attempt {attempt+1}/{max_retries} failed: URL Error: {e.reason}")
+                        print(f"Attempt {attempt+1}/{max_retries} failed: " f"URL Error: {e.reason}")
 
                     if attempt < max_retries - 1:
                         print(f"Retrying in {delay} seconds...")
@@ -76,114 +96,175 @@ class SampleDataLoader:
                 if not success:
                     print(f"Failed to download {filename} after {max_retries} attempts.")
 
-        return images_cache
+    def _load_images(self) -> List[Dict[str, Any]]:
+        """Load and preprocess images."""
+        data = []
+        transform = transforms.Compose(
+            [
+                transforms.Resize(self.target_size),
+                transforms.ToTensor(),
+            ]
+        )
 
-    def load_images(
-        self, source: Union[Literal["dataset", "test"], str] = "test", dataset: Literal["cifar10", "cifar100", "mnist"] = "cifar10", num_samples: int = 4, seed: Optional[int] = None, target_size: Optional[Tuple[int, int]] = None, normalize: bool = False
-    ) -> Tuple[torch.Tensor, Union[torch.Tensor, list]]:
-        """Unified interface for loading images from either datasets or test images.
-
-        Args:
-            source: Image source - "dataset" for CIFAR/MNIST, "test" for standard test images
-            dataset: Dataset name (only used when source="dataset")
-            num_samples: Number of sample images to return
-            seed: Random seed for reproducibility
-            target_size: Target size (H, W) to resize images. If None, uses default for each source.
-            normalize: Whether to normalize images (only used for dataset images)
-
-        Returns:
-            Tuple containing:
-                - Tensor of images with shape (num_samples, C, H, W)
-                - For datasets: tensor of labels with shape (num_samples,)
-                - For test images: list of image names
-        """
-        if source == "dataset":
-            return self._load_dataset_images(dataset, num_samples, seed, normalize, target_size)
-        elif source == "test":
-            return self._load_test_images(num_samples, seed, target_size)
-        else:
-            raise ValueError(f"Invalid source: {source}. Choose 'dataset' or 'test'")
-
-    def _load_dataset_images(self, dataset: Literal["cifar10", "cifar100", "mnist"] = "cifar10", num_samples: int = 4, seed: Optional[int] = None, normalize: bool = False, target_size: Optional[Tuple[int, int]] = None) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Load sample images from popular datasets for demonstrations."""
-        # Set random seed if provided
-        if seed is not None:
-            torch.manual_seed(seed)
-
-        # Define transforms
-        transform = transforms.Compose([transforms.ToTensor()])
-
-        # Load the appropriate dataset
-        dataset_cache = self._cache_dir / "data"
-        dataset_cache.mkdir(parents=True, exist_ok=True)
-
-        if dataset.lower() == "cifar10":
-            data = torchvision.datasets.CIFAR10(root=str(dataset_cache), train=True, download=True, transform=transform)
-        elif dataset.lower() == "cifar100":
-            data = torchvision.datasets.CIFAR100(root=str(dataset_cache), train=True, download=True, transform=transform)
-        elif dataset.lower() == "mnist":
-            data = torchvision.datasets.MNIST(root=str(dataset_cache), train=True, download=True, transform=transform)
-        else:
-            raise ValueError(f"Unsupported dataset: {dataset}. Choose from 'cifar10', 'cifar100', or 'mnist'")
-
-        # Create a subset of the data
-        indices = torch.randperm(len(data))[:num_samples]
-        images = []
-        labels = []
-
-        for idx in indices:
-            img, label = data[idx]
-            images.append(img)
-            labels.append(label)
-
-        # Stack into batches
-        images = torch.stack(images)
-        labels = torch.tensor(labels)
-
-        # Apply target_size if specified
-        if target_size is not None:
-            resize_transform = transforms.Resize(target_size)
-            images = torch.stack([resize_transform(img) for img in images])
-
-        return images, labels
-
-    def _load_test_images(self, num_samples: int = 4, seed: Optional[int] = None, target_size: Optional[Tuple[int, int]] = None) -> Tuple[torch.Tensor, list]:
-        """Load standard test images for demonstrations."""
-        # Use smaller default size for better PNG compression
-        if target_size is None:
-            target_size = (128, 128)
-
-        # Download images if needed
-        image_dir = self._download_test_images()
-
-        # Get available image files
-        available_images = list(self.TEST_IMAGES.keys())[:num_samples]
-
-        images = []
-        names = []
-
-        # Create transform pipeline with resize
-        transform = transforms.Compose([transforms.Resize(target_size), transforms.ToTensor()])
+        available_images = list(self.TEST_IMAGES.keys())[: self.n_samples]
 
         for filename in available_images:
-            image_path = image_dir / filename
+            image_path = self.cache_dir / filename
             if image_path.exists():
                 try:
                     # Load image and convert to tensor
                     pil_image = Image.open(image_path).convert("RGB")
                     tensor_image = transform(pil_image)
-                    images.append(tensor_image)
-                    names.append(filename.split(".")[0])  # Remove extension
+
+                    # Convert to numpy for HuggingFace compatibility
+                    image_array = tensor_image.numpy()
+
+                    data.append(
+                        {
+                            "image": image_array,
+                            "filename": filename.split(".")[0],  # Remove extension
+                            "shape": image_array.shape,
+                        }
+                    )
                 except Exception as e:
                     print(f"Warning: Could not load {filename}: {e}")
 
-        if not images:
+        if not data:
             raise RuntimeError("No test images could be loaded. Check internet connection.")
 
-        # Stack into batch tensor
-        images_tensor = torch.stack(images[:num_samples])
+        return data
 
-        return images_tensor, names[:num_samples]
+    def __len__(self) -> int:
+        """Return the size of the dataset."""
+        return len(self.data)
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        """Get a single sample from the dataset.
+
+        Args:
+            idx: Index of the sample to retrieve
+
+        Returns:
+            Dictionary with 'image', 'filename', and 'shape' keys
+        """
+        if idx >= len(self.data):
+            raise IndexError(f"Index {idx} out of range for dataset of size {len(self.data)}")
+        return self.data[idx]
+
+
+class TorchVisionDataset(Dataset):
+    """Dataset wrapper for popular ML datasets compatible with PyTorch and HuggingFace.
+
+    This dataset provides access to common datasets like CIFAR-10, CIFAR-100, and MNIST with
+    HuggingFace-style interface.
+    """
+
+    def __init__(
+        self,
+        dataset_name: str = "cifar10",
+        n_samples: int = 100,
+        train: bool = True,
+        target_size: Optional[tuple] = None,
+        normalize: bool = False,
+        seed: Optional[int] = None,
+        cache_dir: Optional[str] = None,
+    ):
+        """Initialize the TorchVision dataset.
+
+        Args:
+            dataset_name: Name of dataset ("cifar10", "cifar100", "mnist")
+            n_samples: Number of samples to include in dataset
+            train: Whether to use training or test split
+            target_size: Target size (H, W) for images
+            normalize: Whether to normalize images
+            seed: Random seed for reproducibility
+            cache_dir: Directory to cache downloaded data
+        """
+        self.dataset_name = dataset_name.lower()
+        self.n_samples = n_samples
+        self.train = train
+        self.target_size = target_size
+        self.normalize = normalize
+        self.seed = seed
+
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+
+        # Set up cache directory
+        if cache_dir is None:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            root_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+            self.cache_dir = Path(root_dir) / ".cache" / "data"
+        else:
+            self.cache_dir = Path(cache_dir)
+
+        # Load and prepare data
+        self.data = self._load_dataset()
+
+    def _load_dataset(self) -> List[Dict[str, Any]]:
+        """Load dataset and prepare samples."""
+        # Define transforms
+        transform_list = [transforms.ToTensor()]
+        if self.target_size is not None:
+            transform_list.insert(0, transforms.Resize(self.target_size))
+        if self.normalize:
+            # Add standard normalization for common datasets
+            if self.dataset_name in ["cifar10", "cifar100"]:
+                transform_list.append(transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)))
+            elif self.dataset_name == "mnist":
+                transform_list.append(transforms.Normalize((0.1307,), (0.3081,)))
+
+        transform = transforms.Compose(transform_list)
+
+        # Load the appropriate dataset
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        if self.dataset_name == "cifar10":
+            dataset = torchvision.datasets.CIFAR10(root=str(self.cache_dir), train=self.train, download=True, transform=transform)
+        elif self.dataset_name == "cifar100":
+            dataset = torchvision.datasets.CIFAR100(root=str(self.cache_dir), train=self.train, download=True, transform=transform)
+        elif self.dataset_name == "mnist":
+            dataset = torchvision.datasets.MNIST(root=str(self.cache_dir), train=self.train, download=True, transform=transform)
+        else:
+            raise ValueError(f"Unsupported dataset: {self.dataset_name}. " f"Choose from 'cifar10', 'cifar100', or 'mnist'")
+
+        # Create subset of data
+        indices = torch.randperm(len(dataset))[: self.n_samples]
+        data = []
+
+        for idx in indices:
+            img, label = dataset[idx]
+            # Convert to numpy for HuggingFace compatibility
+            image_array = img.numpy()
+
+            data.append(
+                {
+                    "image": image_array,
+                    "label": int(label),
+                    "dataset": self.dataset_name,
+                    "shape": image_array.shape,
+                }
+            )
+
+        return data
+
+    def __len__(self) -> int:
+        """Return the size of the dataset."""
+        return len(self.data)
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        """Get a single sample from the dataset.
+
+        Args:
+            idx: Index of the sample to retrieve
+
+        Returns:
+            Dictionary with 'image', 'label', 'dataset', and 'shape' keys
+        """
+        if idx >= len(self.data):
+            raise IndexError(f"Index {idx} out of range for dataset of size {len(self.data)}")
+        return self.data[idx]
 
 
 def download_image(url: str, save_dir: str) -> str:
@@ -205,7 +286,11 @@ def download_image(url: str, save_dir: str) -> str:
         raise ValueError("Only HTTPS URLs are allowed for security reasons")
 
     # Allow only trusted domains for additional security
-    trusted_domains = {"raw.githubusercontent.com", "github.com", "cdn.example.com"}  # Add other trusted domains as needed
+    trusted_domains = {
+        "raw.githubusercontent.com",
+        "github.com",
+        "cdn.example.com",
+    }
 
     if parsed_url.netloc not in trusted_domains:
         raise ValueError(f"URL domain {parsed_url.netloc} is not in the list of trusted domains")
@@ -216,11 +301,14 @@ def download_image(url: str, save_dir: str) -> str:
     # Download the image if it doesn't exist
     if not os.path.exists(filename):
         print(f"Downloading {filename}...")
-        urllib.request.urlretrieve(url, filename)  # nosec B310 - URL is validated for HTTPS and trusted domains
+        urllib.request.urlretrieve(url, filename)  # nosec B310 - URL validated
         print("Download complete.")
 
     return filename
 
 
-# Standard test images dictionary for reference
-TEST_IMAGES = SampleDataLoader.TEST_IMAGES
+__all__ = [
+    "SampleImagesDataset",
+    "TorchVisionDataset",
+    "download_image",
+]

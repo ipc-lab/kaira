@@ -27,7 +27,7 @@ Data handling utilities, dataset management, and preprocessing tools for machine
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the data generation utilities in Kaira, including binary and uniform tensor creation, as well as dataset classes for batch processing. These utilities are particularly useful for creating synthetic data for information theory and communication systems experiments.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the new HuggingFace-based data generation utilities in Kaira, including binary and uniform datasets creation. These utilities are particularly useful for creating synthetic data for information theory and communication systems experiments.">
 
 .. only:: html
 

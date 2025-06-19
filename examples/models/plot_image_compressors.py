@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from kaira.data.sample_data import SampleDataLoader
+from kaira.data.sample_data import SampleImagesDataset
 from kaira.models.image.compressors import (
     BPGCompressor,
     JPEG2000Compressor,
@@ -53,9 +53,21 @@ warnings.filterwarnings("ignore")
 # Using 128x128 size for better PNG compression results
 
 print("Loading sample images...")
-data_loader = SampleDataLoader()
-images, image_names = data_loader.load_images(source="test", num_samples=4, target_size=(128, 128))
-print(f"Loaded {len(images)} images with shape: {images.shape}")
+dataset = SampleImagesDataset(n_samples=4, target_size=(128, 128))
+print(f"Loaded {len(dataset)} images")
+
+# Extract images and names from dataset
+images = []
+image_names = []
+for i in range(len(dataset)):
+    sample = dataset[i]
+    # Convert from numpy (C, H, W) to torch tensor
+    image_tensor = torch.from_numpy(sample["image"])
+    images.append(image_tensor)
+    image_names.append(sample["filename"])
+
+images = torch.stack(images)
+print(f"Images shape: {images.shape}")
 print(f"Image names: {image_names}")
 
 # Display sample images

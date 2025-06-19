@@ -1,12 +1,21 @@
-"""Data utilities for Kaira, including data generation and correlation models."""
+"""Data utilities for Kaira using HuggingFace datasets.
 
-from .correlation import WynerZivCorrelationDataset
-from .generation import (
+This module provides simplified HuggingFace datasets for generating data commonly used in
+communication systems and information theory experiments.
+"""
+
+from .datasets import (
     BinaryTensorDataset,
     UniformTensorDataset,
-    create_binary_tensor,
-    create_uniform_tensor,
+    WynerZivCorrelationDataset,
 )
-from .sample_data import SampleDataLoader
+from .sample_data import SampleImagesDataset, TorchVisionDataset, download_image
 
-__all__ = ["create_binary_tensor", "create_uniform_tensor", "BinaryTensorDataset", "UniformTensorDataset", "WynerZivCorrelationDataset", "SampleDataLoader"]
+__all__ = [
+    "BinaryTensorDataset",
+    "UniformTensorDataset",
+    "WynerZivCorrelationDataset",
+    "SampleImagesDataset",
+    "TorchVisionDataset",
+    "download_image",
+]

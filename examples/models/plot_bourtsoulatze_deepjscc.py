@@ -18,7 +18,7 @@ import torch
 
 from kaira.channels import AWGNChannel, FlatFadingChannel
 from kaira.constraints import TotalPowerConstraint
-from kaira.data.sample_data import SampleDataLoader
+from kaira.data.sample_data import TorchVisionDataset
 from kaira.metrics.image import PSNR, SSIM
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image.bourtsoulatze2019_deepjscc import (
@@ -34,13 +34,20 @@ np.random.seed(42)
 # Loading Sample Images
 # ---------------------------------
 # Load sample images from the CIFAR-10 dataset for our demonstration
-# Using the new class-based approach for better flexibility
+# Using the new HuggingFace-compatible dataset approach
 
-# Create a data loader instance
-data_loader = SampleDataLoader()
+# Create a TorchVision dataset instance for CIFAR-10
+dataset = TorchVisionDataset(dataset_name="cifar10", n_samples=4)
 
-# Load CIFAR-10 images using the class method
-images, _ = data_loader.load_images(source="dataset", dataset="cifar10", num_samples=4)
+# Extract images from dataset
+images = []
+for i in range(len(dataset)):
+    sample = dataset[i]
+    # Convert from numpy (C, H, W) to torch tensor
+    image_tensor = torch.from_numpy(sample["image"])
+    images.append(image_tensor)
+
+images = torch.stack(images)
 image_size = images.shape[2]  # Should be 32 for CIFAR-10
 
 print(f"Loaded {len(images)} CIFAR-10 images with shape: {images.shape}")

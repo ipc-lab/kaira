@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from kaira.data import WynerZivCorrelationDataset, create_binary_tensor, create_uniform_tensor
+from kaira.data import WynerZivCorrelationDataset
 from kaira.models.wyner_ziv import WynerZivCorrelationModel
 
 # Plotting imports
@@ -42,7 +42,7 @@ np.random.seed(42)
 # First, let's create a source signal
 n_samples = 1
 n_features = 1000
-source = create_uniform_tensor(size=[n_samples, n_features], low=0.0, high=1.0)
+source = np.random.uniform(0.0, 1.0, size=[n_samples, n_features]).astype(np.float32)
 
 # We'll create different correlation models to demonstrate the relationships
 # between the source and side information
@@ -83,7 +83,7 @@ segment_start = 0
 segment_end = segment_start + segment_size
 
 # Plot original source
-axes[0].plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
+axes[0].plot(source[0, segment_start:segment_end], "b-", label="Source X")
 axes[0].set_title("Original Source Signal")
 axes[0].set_ylabel("Amplitude")
 axes[0].grid(True, alpha=0.3)
@@ -92,8 +92,8 @@ axes[0].legend()
 # Plot side information for each sigma value
 colors = ["g", "r", "m"]
 for i, (sigma, side_info) in enumerate(zip(sigma_values, gaussian_side_info)):
-    axes[i + 1].plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
-    axes[i + 1].plot(side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", label=f"Side Info Y (σ={sigma})")
+    axes[i + 1].plot(source[0, segment_start:segment_end], "b-", label="Source X")
+    axes[i + 1].plot(side_info[0, segment_start:segment_end], colors[i] + "-", label=f"Side Info Y (σ={sigma})")
     axes[i + 1].set_title(f"Gaussian Correlation (σ={sigma})")
     axes[i + 1].set_ylabel("Amplitude")
     axes[i + 1].grid(True, alpha=0.3)
@@ -115,18 +115,18 @@ plt.show()
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
 for i, (sigma, side_info) in enumerate(zip(sigma_values, gaussian_side_info)):
-    axes[i].scatter(source.numpy().flatten(), side_info.numpy().flatten(), alpha=0.3, s=10)
+    axes[i].scatter(source.flatten(), side_info.flatten(), alpha=0.3, s=10)
     axes[i].set_title(f"Joint Distribution (σ={sigma})")
     axes[i].set_xlabel("Source X")
     axes[i].set_ylabel("Side Information Y")
 
     # Add regression line to visualize correlation
-    z = np.polyfit(source.numpy().flatten(), side_info.numpy().flatten(), 1)
+    z = np.polyfit(source.flatten(), side_info.flatten(), 1)
     p = np.poly1d(z)
     axes[i].plot([0, 1], [p(0), p(1)], "r--", alpha=0.8)
 
     # Calculate and display correlation coefficient
-    corr_coef = np.corrcoef(source.numpy().flatten(), side_info.numpy().flatten())[0, 1]
+    corr_coef = np.corrcoef(source.flatten(), side_info.flatten())[0, 1]
     axes[i].text(0.05, 0.95, f"Correlation: {corr_coef:.4f}", transform=axes[i].transAxes, fontsize=12, verticalalignment="top", bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
 
     axes[i].grid(True, alpha=0.3)
@@ -141,7 +141,7 @@ plt.show()
 # where bits are flipped with probability p.
 
 # Create a binary source
-binary_source = create_binary_tensor(size=[1, n_features], prob=0.5)
+binary_source = np.random.binomial(1, 0.5, size=[1, n_features]).astype(np.float32)
 
 # Create correlation models with different crossover probabilities
 crossover_probs = [0.05, 0.1, 0.3]
@@ -171,7 +171,7 @@ segment_end = segment_start + segment_size
 
 # Plot original binary source
 ax1 = plt.subplot(4, 1, 1)
-plt.step(np.arange(segment_size), binary_source[0, segment_start:segment_end].numpy(), "b-", where="mid", label="Source X")
+plt.step(np.arange(segment_size), binary_source[0, segment_start:segment_end], "b-", where="mid", label="Source X")
 plt.title("Original Binary Source")
 plt.ylabel("Value")
 plt.ylim(-0.1, 1.1)
@@ -182,14 +182,14 @@ plt.legend()
 colors = ["g", "r", "m"]
 for i, (crossover_prob, side_info) in enumerate(zip(crossover_probs, binary_side_info)):
     ax = plt.subplot(4, 1, i + 2, sharex=ax1)
-    plt.step(np.arange(segment_size), binary_source[0, segment_start:segment_end].numpy(), "b-", where="mid", label="Source X")
-    plt.step(np.arange(segment_size), side_info[0, segment_start:segment_end].numpy(), colors[i] + "-", where="mid", label=f"Side Info Y (p={crossover_prob})")
+    plt.step(np.arange(segment_size), binary_source[0, segment_start:segment_end], "b-", where="mid", label="Source X")
+    plt.step(np.arange(segment_size), side_info[0, segment_start:segment_end], colors[i] + "-", where="mid", label=f"Side Info Y (p={crossover_prob})")
 
     # Highlight the flipped bits
     flipped = binary_source[0, segment_start:segment_end] != side_info[0, segment_start:segment_end]
-    flipped_indices = np.where(flipped.numpy())[0]
+    flipped_indices = np.where(flipped)[0]
     if len(flipped_indices) > 0:
-        plt.scatter(flipped_indices, side_info[0, segment_start:segment_end][flipped].numpy(), s=100, facecolors="none", edgecolors="black")
+        plt.scatter(flipped_indices, side_info[0, segment_start:segment_end][flipped], s=100, facecolors="none", edgecolors="black")
 
     plt.title(f"Binary Symmetric Channel Correlation (p={crossover_prob})")
     plt.ylabel("Value")
@@ -219,7 +219,7 @@ def custom_transform(x):
 custom_model = WynerZivCorrelationModel(correlation_type="custom", correlation_params={"transform_fn": custom_transform})
 
 # Generate source and correlated side information
-source = create_uniform_tensor(size=[1, n_features], low=0.0, high=1.0)
+source = np.random.uniform(0.0, 1.0, size=[1, n_features]).astype(np.float32)
 with torch.no_grad():
     custom_side_info = custom_model(source)
 
@@ -232,8 +232,8 @@ plt.figure(figsize=(12, 10))
 
 # Plot the signals
 plt.subplot(2, 1, 1)
-plt.plot(source[0, segment_start:segment_end].numpy(), "b-", label="Source X")
-plt.plot(custom_side_info[0, segment_start:segment_end].numpy(), "g-", label="Side Info Y (Custom)")
+plt.plot(source[0, segment_start:segment_end], "b-", label="Source X")
+plt.plot(custom_side_info[0, segment_start:segment_end], "g-", label="Side Info Y (Custom)")
 plt.title("Custom Correlation Model")
 plt.ylabel("Amplitude")
 plt.grid(True, alpha=0.3)
@@ -241,7 +241,7 @@ plt.legend()
 
 # Plot the joint distribution
 plt.subplot(2, 1, 2)
-plt.scatter(source.numpy().flatten(), custom_side_info.numpy().flatten(), alpha=0.3, s=10)
+plt.scatter(source.flatten(), custom_side_info.flatten(), alpha=0.3, s=10)
 plt.title("Joint Distribution (Custom Model)")
 plt.xlabel("Source X")
 plt.ylabel("Side Information Y")
@@ -265,18 +265,20 @@ plt.show()
 # Generate source data
 n_samples = 1000
 feature_dim = 8
-source_data = create_uniform_tensor(size=[n_samples, feature_dim], low=0.0, high=1.0)
+source_data = np.random.uniform(0.0, 1.0, size=[n_samples, feature_dim]).astype(np.float32)
 
 # Create datasets with different correlation types
-gaussian_dataset = WynerZivCorrelationDataset(source=source_data, correlation_type="gaussian", correlation_params={"sigma": 0.2})
+gaussian_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="gaussian", correlation_params={"sigma": 0.2})
 
-binary_source = create_binary_tensor(size=[n_samples, feature_dim], prob=0.5)
-binary_dataset = WynerZivCorrelationDataset(source=binary_source, correlation_type="binary", correlation_params={"crossover_prob": 0.1})
+binary_source = np.random.binomial(1, 0.5, size=[n_samples, feature_dim]).astype(np.float32)
+binary_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="binary", correlation_params={"crossover_prob": 0.1})
 
-custom_dataset = WynerZivCorrelationDataset(source=source_data, correlation_type="custom", correlation_params={"transform_fn": custom_transform})
+custom_dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_dim, correlation_type="custom", correlation_params={"transform_fn": custom_transform})
 
 print(f"Dataset size: {len(gaussian_dataset)}")
-print(f"Sample shape: {gaussian_dataset[0][0].shape}")
+print(f"Sample keys: {list(gaussian_dataset[0].keys())}")
+print(f"Source shape: {gaussian_dataset[0]['source'].shape}")
+print(f"Side info shape: {gaussian_dataset[0]['side_info'].shape}")
 print(f"Sample type: {type(gaussian_dataset[0])}")
 
 # %%
@@ -292,9 +294,10 @@ sample_indices = [0, 1, 2]
 # Plot Gaussian correlation dataset samples
 plt.subplot(3, 1, 1)
 for i, idx in enumerate(sample_indices):
-    x, y = gaussian_dataset[idx]
-    plt.plot(x.numpy(), "b-", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
-    plt.plot(y.numpy(), "g-", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
+    sample = gaussian_dataset[idx]
+    x, y = sample["source"], sample["side_info"]
+    plt.plot(x, "b-", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
+    plt.plot(y, "g-", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
 plt.title("Gaussian Correlation Dataset Samples")
 plt.xlabel("Feature Index")
 plt.ylabel("Value")
@@ -304,9 +307,10 @@ plt.legend()
 # Plot Binary correlation dataset samples
 plt.subplot(3, 1, 2)
 for i, idx in enumerate(sample_indices):
-    x, y = binary_dataset[idx]
-    plt.step(np.arange(feature_dim), x.numpy(), "b-", where="mid", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
-    plt.step(np.arange(feature_dim), y.numpy(), "g-", where="mid", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
+    sample = binary_dataset[idx]
+    x, y = sample["source"], sample["side_info"]
+    plt.step(np.arange(feature_dim), x, "b-", where="mid", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
+    plt.step(np.arange(feature_dim), y, "g-", where="mid", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
 plt.title("Binary Correlation Dataset Samples")
 plt.xlabel("Feature Index")
 plt.ylabel("Value")
@@ -317,9 +321,10 @@ plt.legend()
 # Plot Custom correlation dataset samples
 plt.subplot(3, 1, 3)
 for i, idx in enumerate(sample_indices):
-    x, y = custom_dataset[idx]
-    plt.plot(x.numpy(), "b-", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
-    plt.plot(y.numpy(), "g-", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
+    sample = custom_dataset[idx]
+    x, y = sample["source"], sample["side_info"]
+    plt.plot(x, "b-", alpha=0.7, label=f"Source X {i+1}" if i == 0 else "_")
+    plt.plot(y, "g-", alpha=0.7, label=f"Side Info Y {i+1}" if i == 0 else "_")
 plt.title("Custom Correlation Dataset Samples")
 plt.xlabel("Feature Index")
 plt.ylabel("Value")
@@ -338,31 +343,31 @@ plt.show()
 # Generate a larger binary source
 n_samples = 1
 n_bits = 1000
-source_bits = create_binary_tensor(size=[n_samples, n_bits], prob=0.5)
+source_bits = np.random.binomial(1, 0.5, size=[n_samples, n_bits]).astype(np.float32)
 
 # Create correlated side information (BSC with p=0.1)
 correlation_model = WynerZivCorrelationModel(correlation_type="binary", correlation_params={"crossover_prob": 0.1})
 side_info = correlation_model(source_bits)
 
 # Calculate the empirical joint distribution
-joint_counts = torch.zeros(2, 2)
+joint_counts = np.zeros((2, 2))
 for i in range(n_bits):
-    x = int(source_bits[0, i].item())
-    y = int(side_info[0, i].item())
-    joint_counts[x, y] += 1
+    x_val = int(source_bits[0, i])
+    y_val = int(side_info[0, i])
+    joint_counts[x_val, y_val] += 1
 
-joint_probs = joint_counts / n_bits
+joint_probs = torch.from_numpy(joint_counts / n_bits)
 marginal_x = joint_probs.sum(dim=1)
 marginal_y = joint_probs.sum(dim=0)
 
 # Calculate conditional entropies
 H_X_given_Y = 0
-for x in range(2):
-    for y in range(2):
-        if joint_probs[x, y] > 0:
-            p_x_given_y = joint_probs[x, y] / marginal_y[y]
+for x_idx in range(2):
+    for y_idx in range(2):
+        if joint_probs[x_idx, y_idx] > 0:
+            p_x_given_y = joint_probs[x_idx, y_idx] / marginal_y[y_idx]
             if p_x_given_y > 0:
-                H_X_given_Y -= marginal_y[y] * p_x_given_y * np.log2(p_x_given_y)
+                H_X_given_Y -= marginal_y[y_idx] * p_x_given_y * np.log2(p_x_given_y)
 
 H_X = -sum(p * np.log2(p) if p > 0 else 0 for p in marginal_x)
 H_Y = -sum(p * np.log2(p) if p > 0 else 0 for p in marginal_y)
@@ -383,7 +388,7 @@ plt.figure(figsize=(10, 8))
 
 # Plot joint distribution as a heatmap
 plt.subplot(2, 2, 1)
-plt.imshow(joint_probs.numpy(), cmap="Blues", interpolation="nearest")
+plt.imshow(joint_probs, cmap="Blues", interpolation="nearest")
 plt.colorbar(label="Joint Probability P(X,Y)")
 plt.title("Joint Distribution P(X,Y)")
 plt.xlabel("Side Information Y")
@@ -398,7 +403,7 @@ for i in range(2):
 # Plot conditional distribution P(X|Y) as a heatmap
 plt.subplot(2, 2, 2)
 cond_probs = joint_probs / marginal_y.unsqueeze(0)
-plt.imshow(cond_probs.numpy(), cmap="Greens", interpolation="nearest")
+plt.imshow(cond_probs, cmap="Greens", interpolation="nearest")
 plt.colorbar(label="Conditional Probability P(X|Y)")
 plt.title("Conditional Distribution P(X|Y)")
 plt.xlabel("Side Information Y")

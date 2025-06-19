@@ -248,9 +248,32 @@ Models module for Kaira.
    ConfigurableModel
    DeepJSCCModel
    FeedbackChannelModel
+   ModelConfig
    ModelRegistry
    MultipleAccessChannelModel
    WynerZivModel
+
+
+Base
+^^^^
+
+Base model definitions for deep learning architectures.
+
+This module provides the foundation for all model implementations in the Kaira framework. The
+BaseModel class implements common functionality and enforces a consistent interface across
+different model types.
+
+.. currentmodule:: kaira.models.base
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseModel
+   ChannelAwareBaseModel
+   ConfigurableModel
+   ModelConfig
 
 
 Soft Bit Thresholding
@@ -688,7 +711,10 @@ This module contains various loss functions for training text-based systems.
 Data
 ----
 
-Data utilities for Kaira, including data generation and correlation models.
+Data utilities for Kaira using HuggingFace datasets.
+
+This module provides simplified HuggingFace datasets for generating data commonly used in
+communication systems and information theory experiments.
 
 .. currentmodule:: kaira.data
 
@@ -698,7 +724,8 @@ Data utilities for Kaira, including data generation and correlation models.
    :nosignatures:
 
    BinaryTensorDataset
-   SampleDataLoader
+   SampleImagesDataset
+   TorchVisionDataset
    UniformTensorDataset
    WynerZivCorrelationDataset
 
@@ -710,8 +737,56 @@ Data utilities for Kaira, including data generation and correlation models.
    :template: function.rst
    :nosignatures:
 
-   create_binary_tensor
-   create_uniform_tensor
+   download_image
+
+
+Datasets
+^^^^^^^^
+
+HuggingFace-compatible dataset implementations for Kaira.
+
+This module provides dataset classes that are compatible with HuggingFace datasets and PyTorch
+DataLoader for communication systems.
+
+.. currentmodule:: kaira.data.datasets
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BinaryTensorDataset
+   UniformTensorDataset
+   WynerZivCorrelationDataset
+
+
+Sample Data
+^^^^^^^^^^^
+
+HuggingFace-compatible sample dataset implementations for Kaira.
+
+This module provides sample dataset classes that are compatible with HuggingFace datasets and
+PyTorch DataLoader for standard test images and popular ML datasets.
+
+.. currentmodule:: kaira.data.sample_data
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   SampleImagesDataset
+   TorchVisionDataset
+
+
+.. currentmodule:: kaira.data.sample_data
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+   :nosignatures:
+
+   download_image
 
 
 Utils
@@ -768,6 +843,77 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_to_noise_power
 
 
+Communicationtrainingarguments
+------------------------------
+
+Training arguments for communication models.
+
+Fecconfig
+---------
+
+Configuration for Forward Error Correction models.
+
+Kairabaseconfig
+---------------
+
+Base configuration class for all Kaira training configurations.
+
+This class provides common configuration parameters that can be inherited by specific model
+configurations. It establishes a consistent interface for all configuration classes in the
+Kaira framework.
+
+Inherits from transformers.PretrainedConfig for compatibility with Hugging Face ecosystem and
+provides serialization/deserialization capabilities.
+
+Kairatrainer
+------------
+
+Unified trainer for all communication models.
+
+This trainer automatically adapts to different model types and supports multiple
+configuration systems for training arguments:
+- Hugging Face TrainingArguments
+- Hydra DictConfig
+- Plain Python dictionaries
+
+Models are responsible for their own configuration, channel simulation,
+constraints, and domain-specific logic via their config systems.
+
+The trainer focuses on training mechanics and automatically detects model
+types to apply appropriate loss functions. All domain-specific metrics
+should be handled by models or provided via compute_metrics parameter.
+
+Trainingarguments
+-----------------
+
+Flexible training arguments that support both Hydra configs and TrainingArguments.
+
+This class extends transformers.TrainingArguments to provide seamless integration
+with Hydra configuration management while maintaining full compatibility with
+Hugging Face ecosystem. It supports:
+
+- Direct instantiation from Hydra DictConfig
+- Conversion from/to standard TrainingArguments
+- Communication-specific parameters
+- Automatic parameter filtering and validation
+
+Examples:
+    >>> # From Hydra config
+    >>> hydra_config = OmegaConf.create({"output_dir": "./results", "num_train_epochs": 10})
+    >>> args = TrainingArguments.from_hydra(hydra_config)
+
+    >>> # From TrainingArguments
+    >>> training_args = TrainingArguments(output_dir="./results")
+    >>> args = TrainingArguments.from_training_arguments(training_args)
+
+    >>> # With communication parameters
+    >>> args = TrainingArguments(
+    ...     output_dir="./results",
+    ...     snr_min=0.0,
+    ...     snr_max=20.0,
+    ...     channel_uses=64
+    ... )
+
 Benchmarks
 ----------
 
@@ -810,3 +956,9 @@ deep learning models in Kaira.
    list_benchmarks
    list_configs
    register_benchmark
+
+
+Create_fec_training_args
+------------------------
+
+Create training arguments for FEC.

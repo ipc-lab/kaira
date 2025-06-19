@@ -6,10 +6,12 @@ different model types.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional  # Added imports
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
+from omegaconf import DictConfig, OmegaConf
 from torch import nn
+from transformers import PretrainedConfig
 
 
 class BaseModel(nn.Module, ABC):
@@ -21,16 +23,90 @@ class BaseModel(nn.Module, ABC):
 
     The class provides a consistent interface for model implementation while allowing flexibility
     in architecture design. It enforces proper initialization and forward pass implementation.
+
+    Models can optionally use configuration classes (PretrainedConfig or Hydra) for better
+    parameter management and reproducibility.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, config=None, *args: Any, **kwargs: Any):
         """Initialize the model.
 
         Args:
+            config: Optional configuration object (PretrainedConfig, DictConfig, or dict)
             *args: Variable positional arguments.
             **kwargs: Variable keyword arguments.
         """
         super().__init__()
+
+        # Store configuration if provided
+        self.config = config
+
+        # Extract parameters from config if provided
+        if config is not None:
+            self._load_config_params(config, kwargs)
+
+    def _load_config_params(self, config, override_kwargs):
+        """Load parameters from configuration object.
+
+        Args:
+            config: Configuration object
+            override_kwargs: Parameters that override config values
+        """
+        if hasattr(config, "__dict__"):
+            # PretrainedConfig or similar object
+            for key, value in config.__dict__.items():
+                if key not in override_kwargs and not key.startswith("_"):
+                    setattr(self, key, value)
+        elif isinstance(config, dict):
+            # Plain dictionary
+            for key, value in config.items():
+                if key not in override_kwargs:
+                    setattr(self, key, value)
+        elif isinstance(config, DictConfig):
+            # Hydra DictConfig
+            config_dict = OmegaConf.to_container(config, resolve=True)
+            for key, value in config_dict.items():
+                if key not in override_kwargs:
+                    setattr(self, key, value)
+
+    @classmethod
+    def from_config(cls, config, **kwargs):
+        """Create model instance from configuration.
+
+        Args:
+            config: Configuration object (PretrainedConfig, DictConfig, or dict)
+            **kwargs: Additional parameters to override config
+
+        Returns:
+            Model instance
+        """
+        return cls(config=config, **kwargs)
+
+    @classmethod
+    def from_pretrained_config(cls, config: PretrainedConfig, **kwargs):
+        """Create model from Hugging Face PretrainedConfig.
+
+        Args:
+            config: PretrainedConfig instance
+            **kwargs: Additional parameters
+
+        Returns:
+            Model instance
+        """
+        return cls.from_config(config, **kwargs)
+
+    @classmethod
+    def from_hydra_config(cls, config: DictConfig, **kwargs):
+        """Create model from Hydra DictConfig.
+
+        Args:
+            config: Hydra configuration
+            **kwargs: Additional parameters
+
+        Returns:
+            Model instance
+        """
+        return cls.from_config(config, **kwargs)
 
     @abstractmethod
     def forward(self, *args: Any, **kwargs: Any) -> Any:
@@ -69,14 +145,15 @@ class ChannelAwareBaseModel(BaseModel):
     All subclasses must implement the forward method with explicit CSI parameter.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, config=None, *args: Any, **kwargs: Any):
         """Initialize the channel-aware model.
 
         Args:
+            config: Optional configuration object
             *args: Variable positional arguments passed to BaseModel.
             **kwargs: Variable keyword arguments passed to BaseModel.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(config, *args, **kwargs)
 
         # CSI configuration
         self._csi_shape_cache: Optional[torch.Size] = None
@@ -404,9 +481,9 @@ class ConfigurableModel(BaseModel):
     steps during runtime.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, config=None, *args: Any, **kwargs: Any):
         """Initialize the configurable model."""
-        super().__init__(*args, **kwargs)
+        super().__init__(config, *args, **kwargs)
         self.steps: List[Callable] = []  # Added initialization here, changed type to List[Callable]
 
     def add_step(self, step: Callable) -> "ConfigurableModel":  # Changed step type to Callable
@@ -456,3 +533,46 @@ class ConfigurableModel(BaseModel):
         for step in self.steps:
             result = step(result, *args, **kwargs)
         return result
+
+
+class ConfigMixin:
+    """Mixin providing Hydra and dict-based constructors for PretrainedConfig subclasses."""
+
+    @classmethod
+    def from_hydra_config(cls, hydra_config: DictConfig, **kwargs):
+        """Create config from Hydra DictConfig."""
+        config_dict = OmegaConf.to_container(hydra_config, resolve=True)
+        config_dict.update(kwargs)
+        return cls(**config_dict)
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict[str, Any], **kwargs):
+        """Create config from plain dictionary."""
+        merged = config_dict.copy()
+        merged.update(kwargs)
+        return cls(**merged)
+
+
+class ModelConfig(ConfigMixin, PretrainedConfig):
+    """Base configuration class for Kaira models.
+
+    Provides a unified configuration interface that works with:
+    - Hugging Face ecosystem (PretrainedConfig)
+    - Hydra configuration management
+    - Plain Python dictionaries
+    """
+
+    model_type = "kaira_base"
+
+    def __init__(self, hidden_dim: int = 256, **kwargs):
+        """Initialize KairaModelConfig.
+
+        Args:
+            hidden_dim: Hidden dimension size
+            **kwargs: Additional configuration parameters
+        """
+        super().__init__(**kwargs)
+        self.hidden_dim = hidden_dim
+
+
+__all__ = ["BaseModel", "ChannelAwareBaseModel", "ConfigurableModel", "ModelConfig"]

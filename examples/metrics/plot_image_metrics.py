@@ -23,14 +23,25 @@ import torch
 import torchvision.transforms as T
 from PIL import Image
 
-from kaira.data.sample_data import SampleDataLoader
+from kaira.data.sample_data import SampleImagesDataset
 from kaira.metrics.image.lpips import LearnedPerceptualImagePatchSimilarity
 from kaira.metrics.image.psnr import PeakSignalNoiseRatio
 from kaira.metrics.image.ssim import MultiScaleSSIM, StructuralSimilarityIndexMeasure
 
-# Load sample images using the class-based interface
-data_loader = SampleDataLoader()
-images, image_names = data_loader.load_images(source="test", num_samples=4, target_size=(256, 256))
+# Load sample images using the HuggingFace-compatible dataset interface
+dataset = SampleImagesDataset(n_samples=4, target_size=(256, 256))
+
+# Extract images and names from dataset
+images = []
+image_names = []
+for i in range(len(dataset)):
+    sample = dataset[i]
+    # Convert from numpy (C, H, W) to torch tensor
+    image_tensor = torch.from_numpy(sample["image"])
+    images.append(image_tensor)
+    image_names.append(sample["filename"])
+
+images = torch.stack(images)
 print(f"Loaded {len(images)} test images: {image_names}")
 
 # %%
