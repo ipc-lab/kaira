@@ -27,18 +27,18 @@ Neural network models and architectures for communications, including deep learn
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the original DeepJSCC model from Bourtsoulatze et al. (2019), which pioneered deep learning-based joint source-channel coding for image transmission over wireless channels.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use and train the original DeepJSCC model from Bourtsoulatze et al. (2019), which pioneered deep learning-based joint source-channel coding for image transmission over wireless channels. The example includes: 1. Loading and visualizing sample images 2. Creating the DeepJSCC model architecture 3. Training the model on CIFAR-10 images 4. Evaluating performance across different SNR values 5. Comparing with traditional separate source-channel coding approaches Training Process: - End-to-end optimization of encoder and decoder - Multi-SNR training for channel adaptation - MSE + perceptual loss for better visual quality">
 
 .. only:: html
 
     .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_bourtsoulatze_deepjscc_thumb.png
-      :alt: Original DeepJSCC Model (Bourtsoulatze 2019)
+      :alt: Original DeepJSCC Model (Bourtsoulatze 2019) with Training
 
     :ref:`sphx_glr_auto_examples_models_plot_bourtsoulatze_deepjscc.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Original DeepJSCC Model (Bourtsoulatze 2019)</div>
+      <div class="sphx-glr-thumbnail-title">Original DeepJSCC Model (Bourtsoulatze 2019) with Training</div>
     </div>
 
 .. raw:: html

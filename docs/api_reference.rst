@@ -794,6 +794,7 @@ General utility functions for the Kaira library.
    calculate_snr
    estimate_signal_power
    noise_power_to_snr
+   seed_everything
    snr_db_to_linear
    snr_linear_to_db
    snr_to_noise_power
