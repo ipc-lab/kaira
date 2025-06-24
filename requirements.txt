@@ -8,7 +8,7 @@ seaborn
 numpy
 pillow
 pillow-jxl-plugin
-transformers>=4.20.0
+transformers[torch]>=4.20.0
 datasets>=2.0.0
 hydra-core>=1.3.0
 omegaconf>=2.1.0
