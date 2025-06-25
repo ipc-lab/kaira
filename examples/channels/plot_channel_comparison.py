@@ -29,7 +29,6 @@ from kaira.channels import (
     FlatFadingChannel,
     RayleighFadingChannel,
 )
-from kaira.data import create_binary_tensor, create_uniform_tensor
 from kaira.utils import seed_everything
 
 # Set seeds for reproducibility
@@ -50,12 +49,12 @@ cmap = LinearSegmentedColormap.from_list("kaira_cmap", colors)
 # We'll create both binary and continuous input data to test with our channels.
 
 # Create binary data
-binary_data = create_binary_tensor(size=(1000, 1))
-binary_data_torch = binary_data.clone().detach()  # Properly clone the tensor
+binary_data = np.random.binomial(1, 0.5, size=(1000, 1)).astype(np.float32)
+binary_data_torch = torch.from_numpy(binary_data).clone().detach()  # Convert to tensor and clone
 
 # Create continuous data (uniform distribution between -1 and 1)
-continuous_data = create_uniform_tensor(size=(1000, 1), low=-1, high=1)
-continuous_data_torch = continuous_data.clone().detach()  # Properly clone the tensor
+continuous_data = np.random.uniform(-1, 1, size=(1000, 1)).astype(np.float32)
+continuous_data_torch = torch.from_numpy(continuous_data).clone().detach()  # Convert to tensor and clone
 
 # %%
 # Channel Setup
@@ -245,8 +244,8 @@ bsc_channels = [BinarySymmetricChannel(crossover_prob=0.5 * np.exp(-snr / 10)) f
 bec_channels = [BinaryErasureChannel(erasure_prob=0.5 * np.exp(-snr / 10)) for snr in snr_values]
 
 # Create test data
-test_data = create_binary_tensor(size=(10000, 1))
-test_data_torch = test_data.clone().detach()  # Properly clone the tensor
+test_data = np.random.binomial(1, 0.5, size=(10000, 1)).astype(np.float32)
+test_data_torch = torch.from_numpy(test_data).clone().detach()  # Convert to tensor and clone
 
 
 # Calculate error rates

@@ -1,0 +1,26 @@
+# @package _global_
+
+# Simple Hydra configuration for Kaira training
+defaults:
+  - _self_
+
+# Model configuration
+model:
+  _target_: kaira.models.DeepJSCCModel
+  type: deepjscc
+  input_dim: 256
+  channel_uses: 32
+  hidden_dim: 128
+
+# Training configuration
+training:
+  output_dir: ./simple_training
+  num_train_epochs: 5
+  per_device_train_batch_size: 16
+  learning_rate: 1e-3
+  snr_min: 0.0
+  snr_max: 10.0
+  channel_type: awgn
+  eval_strategy: no
+  save_strategy: epoch
+  logging_steps: 50

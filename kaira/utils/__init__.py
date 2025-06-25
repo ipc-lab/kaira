@@ -4,6 +4,7 @@ import os
 import random
 from typing import Any, Union
 
+import numpy as np
 import torch
 
 from .plotting import (  # Core plotting class
@@ -86,6 +87,7 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
     """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = cudnn_deterministic
@@ -95,6 +97,7 @@ def seed_everything(seed: int, cudnn_benchmark: bool = False, cudnn_deterministi
 __all__ = [
     "to_tensor",
     "calculate_num_filters_factor_image",
+    "seed_everything",
     "snr_db_to_linear",
     "snr_linear_to_db",
     "snr_to_noise_power",

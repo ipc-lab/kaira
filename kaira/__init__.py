@@ -7,7 +7,26 @@ seamlessly with existing PyTorch projects, supporting rapid prototyping of novel
 strategies.
 """
 
-from . import benchmarks, channels, constraints, data, losses, metrics, models, modulations, utils
+import os
+
+# Import configs from top-level configs directory
+import sys
+
+from . import (
+    benchmarks,
+    channels,
+    constraints,
+    data,
+    losses,
+    metrics,
+    models,
+    modulations,
+    training,
+    utils,
+)
+from .training import Trainer, TrainingArguments
 from .version import __version__
 
-__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils"]
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+__all__ = ["__version__", "benchmarks", "channels", "constraints", "metrics", "models", "losses", "modulations", "data", "utils", "training", "Trainer", "TrainingArguments"]

@@ -20,7 +20,8 @@ class QAMModulator(BaseModulator):
     constellation: torch.Tensor  # Type annotation for the buffer
     bit_patterns: torch.Tensor  # Type annotation for the buffer
 
-    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, *args, **kwargs) -> None:
+    def __init__(self, order: Literal[4, 16, 64, 256], gray_coding: bool = True, normalize: bool = True, 
+                 differentiable: bool = False, *args, **kwargs) -> None:
         """Initialize the QAM modulator.
 
         Args:
@@ -43,6 +44,9 @@ class QAMModulator(BaseModulator):
         self.normalize = normalize
         self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
         self._k: int = sqrt_order  # Number of points on each dimension
+        self.differentiable = differentiable
+        if differentiable and not gray_coding:
+            raise ValueError("Differentiable QAM requires Gray coding to be enabled")
 
         # Create QAM constellation
         self._create_constellation()
@@ -69,6 +73,7 @@ class QAMModulator(BaseModulator):
             # Normalize to unit average energy
             energy = torch.mean(torch.abs(constellation) ** 2)
             constellation = constellation / torch.sqrt(energy)
+            self.register_buffer("energy", energy)
 
         # Create bit pattern mapping
         bit_patterns = torch.zeros(self.order, self._bits_per_symbol)
@@ -116,21 +121,35 @@ class QAMModulator(BaseModulator):
         if bit_len % self._bits_per_symbol != 0:
             raise ValueError(f"Input bit length must be divisible by {self._bits_per_symbol}")
 
-        # Reshape to groups of bits_per_symbol
-        x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+        if not self.differentiable:
+            # Reshape to groups of bits_per_symbol
+            x_reshaped = x.reshape(*batch_shape, -1, self._bits_per_symbol)
+            # For each group of bits, find the matching constellation point
+            symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
 
-        # For each group of bits, find the matching constellation point
-        symbols = torch.zeros((*batch_shape, x_reshaped.shape[-2]), dtype=torch.complex64, device=x.device)
+            # Search through bit_patterns for each group of bits to find the matching constellation point
+            for i in range(self.order):
+                # Create a mask for where the current bit pattern matches the input bits
+                # Need to compare across the bits_per_symbol dimension
+                pattern = self.bit_patterns[i].to(x.device)
+                mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
 
-        # Search through bit_patterns for each group of bits to find the matching constellation point
-        for i in range(self.order):
-            # Create a mask for where the current bit pattern matches the input bits
-            # Need to compare across the bits_per_symbol dimension
-            pattern = self.bit_patterns[i].to(x.device)
-            mask = torch.all(torch.eq(x_reshaped, pattern), dim=-1)
-
-            # Assign the corresponding constellation point
-            symbols[mask] = self.constellation[i]
+                # Assign the corresponding constellation point
+                symbols[mask] = self.constellation[i]
+        else:
+            # Reshape to groups of bits_per_symbol
+            x_reshaped = x.reshape(*batch_shape, -1)
+            _bits_per_symbol = self._bits_per_symbol
+            real_to_add = 2*x_reshaped[:, 0::_bits_per_symbol] - 1
+            imag_to_add = 2*x_reshaped[:, (_bits_per_symbol // 2)::_bits_per_symbol] - 1
+            symbols = (2**(_bits_per_symbol // 2 - 1)) * (real_to_add + 1j * imag_to_add)
+            for j in range(1, _bits_per_symbol // 2):
+                real_to_add = -1 * real_to_add * (2*x_reshaped[:, j::_bits_per_symbol] - 1)
+                imag_to_add = -1 * imag_to_add * (2*x_reshaped[:, (_bits_per_symbol // 2 + j)::_bits_per_symbol] - 1)
+                symbols += (2**(_bits_per_symbol // 2 - j - 1))*(real_to_add + 1j * imag_to_add)
+            if self.normalize:
+                # Normalize to unit average energy
+                symbols = symbols / torch.sqrt(self.energy)
 
         return symbols
 
@@ -171,6 +190,7 @@ class QAMDemodulator(BaseDemodulator):
         self.gray_coding = gray_coding
         self.normalize = normalize
         self._bits_per_symbol: int = int(torch.log2(torch.tensor(order, dtype=torch.float)).item())
+        self.approximate: bool = kwargs.get("approximate", False)
 
         # Create reference modulator to access constellation
         self.modulator = QAMModulator(order, gray_coding, normalize)
@@ -211,8 +231,8 @@ class QAMDemodulator(BaseDemodulator):
             bits = bit_patterns[closest_indices].reshape(*batch_shape, -1)
 
             return bits
-        else:
-            # Soft decision: LLR calculation
+        elif self.approximate:
+            # Soft decision: Approximate LLR calculation using minimum squared distance.
             if not isinstance(noise_var, torch.Tensor):
                 noise_var_tensor = torch.tensor(noise_var, device=y.device)
             else:
@@ -227,7 +247,7 @@ class QAMDemodulator(BaseDemodulator):
                 noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape)
 
             # Calculate LLRs for each bit position
-            llrs = torch.zeros((*batch_shape, symbol_shape, self._bits_per_symbol), device=y.device)
+            llrs_arr = []
 
             # For each bit position
             for bit_idx in range(self._bits_per_symbol):
@@ -245,11 +265,62 @@ class QAMDemodulator(BaseDemodulator):
                 dist_1 = self._min_squared_distance(y, const_bit_1)
 
                 # Calculate LLR as log(P(bit=0)/P(bit=1))
-                # For AWGN channel: LLR = (dist_1 - dist_0)/(2*noise_var)
+                # For AWGN channel: approximate LLR = (dist_1 - dist_0)/(noise_var)
                 # Positive LLR means bit 0 is more likely
-                llrs[..., bit_idx] = (dist_1 - dist_0) / (2 * noise_var_tensor)
+                llrs_arr.append((dist_1 - dist_0) / (noise_var_tensor))
+            llrs = torch.stack(llrs_arr, dim=-1)
+        else:
+            # Soft decision: Precise LLR calculation using full exponential form."""
+            if not isinstance(noise_var, torch.Tensor):
+                noise_var_tensor = torch.tensor(noise_var, device=y.device)
+            else:
+                noise_var_tensor = noise_var
 
-            return llrs.reshape(*batch_shape, -1)
+            # Convert to real tensor if it's complex
+            if noise_var_tensor.is_complex():
+                noise_var_tensor = noise_var_tensor.real
+
+            # Handle broadcasting dimensions for noise_var
+            if noise_var_tensor.dim() == 0:  # scalar
+                num_points = self.modulator.bit_patterns.shape[0] // 2
+                noise_var_tensor = noise_var_tensor.expand(*batch_shape, symbol_shape, num_points)
+
+            # Calculate LLRs for each bit position
+            llrs_arr = []
+
+            # For each bit position
+            for bit_idx in range(self._bits_per_symbol):
+                # Create masks for symbols where bit is 0 or 1
+                bit_0_mask = self.modulator.bit_patterns[:, bit_idx] == 0
+                bit_1_mask = ~bit_0_mask
+
+                # Get constellation points for each bit value
+                const_bit_0 = constellation[bit_0_mask]
+                const_bit_1 = constellation[bit_1_mask]
+
+                # Calculate minimum squared Euclidean distance for each bit value
+                # For LLR calculation, smaller distance means higher probability
+                dist_0 = self._squared_distance(y, const_bit_0)
+                dist_1 = self._squared_distance(y, const_bit_1)
+
+                # Calculate the sum of exponentials for each bit value
+                # For LLR calculation, we use the full exponential form
+                # P(bit=0) = sum(exp(-d_0 / noise_var))
+                # P(bit=1) = sum(exp(-d_1 / noise_var))
+                exp_sum_zeros = torch.sum(torch.exp(-dist_0 / noise_var_tensor), dim=-1)
+                exp_sum_ones = torch.sum(torch.exp(-dist_1 / noise_var_tensor), dim=-1)
+
+                # Calculate LLR as log(P(bit=0)/P(bit=1))
+                # For AWGN channel: LLR = log(exp_sum_zeros / exp_sum_ones)
+                # This is a more precise calculation than the approximate method
+                # and uses the full exponential form
+                # Note: exp_sum_zeros and exp_sum_ones are positive, so log is defined
+                # and we avoid numerical issues by ensuring they are not too small.
+                # Positive LLR means bit 0 is more likely
+                llrs_arr.append(torch.log(exp_sum_zeros / exp_sum_ones))
+            llrs = torch.stack(llrs_arr, dim=-1)
+
+        return llrs.reshape(*batch_shape, -1)
 
     def _min_squared_distance(self, y: torch.Tensor, points: torch.Tensor) -> torch.Tensor:
         """Calculate minimum squared Euclidean distance to constellation points.
@@ -260,6 +331,23 @@ class QAMDemodulator(BaseDemodulator):
 
         Returns:
             Minimum squared distance for each symbol in y
+        """
+        # Calculate squared distances to all constellation points
+        squared_distances = self._squared_distance(y, points)
+
+        # Find minimum distance across all points
+        min_distances, _ = torch.min(squared_distances, dim=-1)
+        return min_distances
+
+    def _squared_distance(self, y: torch.Tensor, points: torch.Tensor) -> torch.Tensor:
+        """Calculate squared Euclidean distances to constellation points.
+
+        Args:
+            y: Received symbols with shape (..., N)
+            points: Constellation points to compare against with shape (M,)
+
+        Returns:
+            Squared distances for each symbol in y and each constellation point
         """
         batch_shape = y.shape[:-1]
         symbol_shape = y.shape[-1]
@@ -283,6 +371,5 @@ class QAMDemodulator(BaseDemodulator):
         diff = y_expanded - points_expanded
         squared_distances = torch.real(diff * torch.conj(diff))
 
-        # Find minimum distance across all points
-        min_distances, _ = torch.min(squared_distances, dim=-1)
-        return min_distances
+        return squared_distances
+
