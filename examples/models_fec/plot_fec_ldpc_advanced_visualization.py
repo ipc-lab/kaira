@@ -466,7 +466,15 @@ for max_iters, ber_values in perf_results.items():
     labels.append(f"{max_iters} iterations")
 
 # Plot BER performance using utility function
-PlottingUtils.plot_ber_performance(snr_range, ber_curves, labels, "LDPC Performance Analysis: Iteration Benefits", "Bit Error Rate")
+PlottingUtils.plot_performance_vs_snr(
+    snr_range=snr_range, 
+    performance_values=ber_curves, 
+    labels=labels, 
+    title="LDPC Performance Analysis: Iteration Benefits", 
+    ylabel="Bit Error Rate",
+    use_log_scale=True,
+    xlabel="SNR (dB)"
+)
 plt.show()
 
 # Additional performance insights plot
