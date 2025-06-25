@@ -27,18 +27,18 @@ Neural network models and architectures for communications, including deep learn
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the original DeepJSCC model from Bourtsoulatze et al. (2019), which pioneered deep learning-based joint source-channel coding for image transmission over wireless channels.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use and train the original DeepJSCC model from Bourtsoulatze et al. (2019), which pioneered deep learning-based joint source-channel coding for image transmission over wireless channels. The example includes: 1. Loading and visualizing sample images 2. Creating the DeepJSCC model architecture 3. Training the model on CIFAR-10 images 4. Evaluating performance across different SNR values 5. Comparing with traditional separate source-channel coding approaches Training Process: - End-to-end optimization of encoder and decoder - Multi-SNR training for channel adaptation - MSE + perceptual loss for better visual quality">
 
 .. only:: html
 
     .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_bourtsoulatze_deepjscc_thumb.png
-      :alt: Original DeepJSCC Model (Bourtsoulatze 2019)
+      :alt: Original DeepJSCC Model (Bourtsoulatze 2019) with Training
 
     :ref:`sphx_glr_auto_examples_models_plot_bourtsoulatze_deepjscc.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Original DeepJSCC Model (Bourtsoulatze 2019)</div>
+      <div class="sphx-glr-thumbnail-title">Original DeepJSCC Model (Bourtsoulatze 2019) with Training</div>
     </div>
 
 .. raw:: html
@@ -87,6 +87,22 @@ Neural network models and architectures for communications, including deep learn
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Deep Joint Source-Channel Coding (DeepJSCC) Model</div>
+    </div>
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use all available image compressors in Kaira, including traditional image compression formats (JPEG, PNG, WebP, etc.) and neural compression models. We'll compare their performance in terms of compression ratio and image quality. This example covers: * Traditional image compressors (JPEG, PNG, WebP, JPEG 2000) * Advanced compressors (BPG, JPEG XL) * Neural network-based compressors (optional) * Performance comparison and visualization * Quality vs compression trade-off analysis">
+
+.. only:: html
+
+    .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_image_compressors_thumb.png
+      :alt: Image Compressors Comparison
+
+    :ref:`sphx_glr_auto_examples_models_plot_image_compressors.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Image Compressors Comparison</div>
     </div>
 
 .. raw:: html
@@ -150,6 +166,7 @@ Neural network models and architectures for communications, including deep learn
    /auto_examples/models/plot_channel_aware_base_model
    /auto_examples/models/plot_complex_projections
    /auto_examples/models/plot_deepjscc_model
+   /auto_examples/models/plot_image_compressors
    /auto_examples/models/plot_multiple_access_channel
    /auto_examples/models/plot_projections_and_cover_tests
    /auto_examples/models/plot_uplink_mac_integration

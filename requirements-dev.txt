@@ -21,3 +21,4 @@ seaborn
 ipython
 scikit-learn
 requests
+pillow-jxl-plugin
