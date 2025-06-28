@@ -1,411 +1,252 @@
-"""Tests for the datasets module."""
+"""Tests for the simplified datasets module."""
 
 import numpy as np
 import pytest
+import torch
 
 from kaira.data.datasets import (
-    BinaryTensorDataset,
-    UniformTensorDataset,
-    WynerZivCorrelationDataset,
+    BinaryDataset,
+    UniformDataset,
+    GaussianDataset,
+    CorrelatedDataset,
+    FunctionDataset,
 )
 
 
-class TestBinaryTensorDataset:
-    """Test class for BinaryTensorDataset."""
+class TestBinaryDataset:
+    """Test class for BinaryDataset."""
 
     def test_basic_initialization(self):
         """Test basic initialization and properties."""
-        n_samples = 10
-        feature_shape = (64,)
+        length = 10
+        shape = (64,)
         prob = 0.3
 
-        dataset = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape, prob=prob)
+        dataset = BinaryDataset(length=length, shape=shape, prob=prob, seed=42)
 
-        assert len(dataset) == n_samples
+        assert len(dataset) == length
 
         # Test getting a sample
         sample = dataset[0]
-        assert isinstance(sample, dict)
-        assert "data" in sample
-        assert isinstance(sample["data"], np.ndarray)
-        assert sample["data"].shape == feature_shape
-        assert sample["data"].dtype == np.float32
+        assert isinstance(sample, torch.Tensor)
+        assert sample.shape == shape
+        assert sample.dtype == torch.float32
 
         # Check that values are binary (0 or 1)
-        data = sample["data"]
-        assert np.all((data == 0) | (data == 1))
+        assert torch.all((sample == 0) | (sample == 1))
 
-    def test_multidimensional_feature_shape(self):
-        """Test with multidimensional feature shapes."""
-        n_samples = 5
-        feature_shape = (3, 32, 32)
+    def test_multidimensional_shape(self):
+        """Test with multidimensional shapes."""
+        length = 5
+        shape = (3, 32, 32)
 
-        dataset = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
-
-        sample = dataset[0]
-        assert sample["data"].shape == feature_shape
-
-    def test_feature_shape_as_int(self):
-        """Test with feature_shape as single integer."""
-        n_samples = 5
-        feature_shape = 128
-
-        dataset = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
+        dataset = BinaryDataset(length=length, shape=shape, seed=42)
 
         sample = dataset[0]
-        assert sample["data"].shape == (128,)
+        assert sample.shape == shape
 
-    def test_feature_shape_as_list(self):
-        """Test with feature_shape as list."""
-        n_samples = 5
-        feature_shape = [10, 20]
+    def test_shape_as_int(self):
+        """Test with shape as single integer."""
+        length = 5
+        shape = 128
 
-        dataset = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
+        dataset = BinaryDataset(length=length, shape=shape, seed=42)
 
         sample = dataset[0]
-        assert sample["data"].shape == (10, 20)
+        assert sample.shape == (128,)
 
-    def test_probability_values(self):
-        """Test different probability values."""
-        n_samples = 1000
-        feature_shape = (100,)
+    def test_probability_control(self):
+        """Test that the probability parameter controls the frequency of 1s."""
+        length = 1000
+        shape = (100,)
+        prob = 0.3
 
-        # Test prob = 0 (all zeros)
-        dataset_zeros = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape, prob=0.0, seed=42)
+        dataset = BinaryDataset(length=length, shape=shape, prob=prob, seed=42)
 
-        sample = dataset_zeros[0]
-        assert np.all(sample["data"] == 0)
+        # Get multiple samples and check overall frequency
+        samples = torch.stack([dataset[i] for i in range(100)])
+        actual_freq = samples.mean().item()
 
-        # Test prob = 1 (all ones)
-        dataset_ones = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape, prob=1.0, seed=42)
+        # Should be approximately equal to prob (within some tolerance)
+        assert abs(actual_freq - prob) < 0.1
 
-        sample = dataset_ones[0]
-        assert np.all(sample["data"] == 1)
-
-    def test_seed_reproducibility(self):
-        """Test that same seed produces reproducible results."""
-        n_samples = 10
-        feature_shape = (50,)
+    def test_reproducibility(self):
+        """Test that same seed produces same results."""
+        length = 10
+        shape = (5,)
         seed = 42
 
-        dataset1 = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape, seed=seed)
+        dataset1 = BinaryDataset(length=length, shape=shape, seed=seed)
+        dataset2 = BinaryDataset(length=length, shape=shape, seed=seed)
 
-        dataset2 = BinaryTensorDataset(n_samples=n_samples, feature_shape=feature_shape, seed=seed)
+        sample1 = dataset1[0]
+        sample2 = dataset2[0]
 
-        # Should get the same data with same seed
-        for i in range(n_samples):
-            np.testing.assert_array_equal(dataset1[i]["data"], dataset2[i]["data"])
-
-    def test_index_out_of_range(self):
-        """Test IndexError for out of range access."""
-        dataset = BinaryTensorDataset(n_samples=3, feature_shape=(10,))
-
-        with pytest.raises(IndexError, match="Index 3 out of range for dataset of size 3"):
-            dataset[3]
-
-        with pytest.raises(IndexError, match="Index 10 out of range for dataset of size 3"):
-            dataset[10]
-
-    def test_data_pregeneration(self):
-        """Test that data is pre-generated and consistent."""
-        dataset = BinaryTensorDataset(n_samples=5, feature_shape=(10,), seed=42)
-
-        # Getting the same sample multiple times should return the same data
-        sample1 = dataset[0]
-        sample2 = dataset[0]
-
-        np.testing.assert_array_equal(sample1["data"], sample2["data"])
+        assert torch.equal(sample1, sample2)
 
 
-class TestUniformTensorDataset:
-    """Test class for UniformTensorDataset."""
+class TestUniformDataset:
+    """Test class for UniformDataset."""
 
     def test_basic_initialization(self):
         """Test basic initialization and properties."""
-        n_samples = 10
-        feature_shape = (64,)
-        low = 0.0
-        high = 1.0
+        length = 10
+        shape = (64,)
+        low = -2.0
+        high = 2.0
 
-        dataset = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape, low=low, high=high)
+        dataset = UniformDataset(length=length, shape=shape, low=low, high=high, seed=42)
 
-        assert len(dataset) == n_samples
+        assert len(dataset) == length
 
         # Test getting a sample
         sample = dataset[0]
-        assert isinstance(sample, dict)
-        assert "data" in sample
-        assert isinstance(sample["data"], np.ndarray)
-        assert sample["data"].shape == feature_shape
-        assert sample["data"].dtype == np.float32
+        assert isinstance(sample, torch.Tensor)
+        assert sample.shape == shape
+        assert sample.dtype == torch.float32
 
-        # Check that values are within bounds
-        data = sample["data"]
-        assert np.all(data >= low)
-        assert np.all(data <= high)
+        # Check that values are in the correct range
+        assert torch.all(sample >= low)
+        assert torch.all(sample <= high)
 
-    def test_multidimensional_feature_shape(self):
-        """Test with multidimensional feature shapes."""
-        n_samples = 5
-        feature_shape = (3, 32, 32)
-
-        dataset = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
-
-        sample = dataset[0]
-        assert sample["data"].shape == feature_shape
-
-    def test_feature_shape_as_int(self):
-        """Test with feature_shape as single integer."""
-        n_samples = 5
-        feature_shape = 128
-
-        dataset = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
-
-        sample = dataset[0]
-        assert sample["data"].shape == (128,)
-
-    def test_feature_shape_as_list(self):
-        """Test with feature_shape as list."""
-        n_samples = 5
-        feature_shape = [10, 20]
-
-        dataset = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape)
-
-        sample = dataset[0]
-        assert sample["data"].shape == (10, 20)
-
-    def test_custom_bounds(self):
-        """Test different low and high bounds."""
-        n_samples = 10
-        feature_shape = (100,)
+    def test_range_control(self):
+        """Test that low and high parameters control the range."""
+        length = 1000
+        shape = (100,)
         low = -5.0
-        high = 10.0
+        high = 3.0
 
-        dataset = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape, low=low, high=high)
+        dataset = UniformDataset(length=length, shape=shape, low=low, high=high, seed=42)
 
-        sample = dataset[0]
-        data = sample["data"]
-        assert np.all(data >= low)
-        assert np.all(data <= high)
-
-    def test_seed_reproducibility(self):
-        """Test that same seed produces reproducible results."""
-        n_samples = 10
-        feature_shape = (50,)
-        seed = 42
-
-        dataset1 = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape, seed=seed)
-
-        dataset2 = UniformTensorDataset(n_samples=n_samples, feature_shape=feature_shape, seed=seed)
-
-        # Should get the same data with same seed
-        for i in range(n_samples):
-            np.testing.assert_array_equal(dataset1[i]["data"], dataset2[i]["data"])
-
-    def test_index_out_of_range(self):
-        """Test IndexError for out of range access."""
-        dataset = UniformTensorDataset(n_samples=3, feature_shape=(10,))
-
-        with pytest.raises(IndexError, match="Index 3 out of range for dataset of size 3"):
-            dataset[3]
-
-        with pytest.raises(IndexError, match="Index 10 out of range for dataset of size 3"):
-            dataset[10]
-
-    def test_data_pregeneration(self):
-        """Test that data is pre-generated and consistent."""
-        dataset = UniformTensorDataset(n_samples=5, feature_shape=(10,), seed=42)
-
-        # Getting the same sample multiple times should return the same data
-        sample1 = dataset[0]
-        sample2 = dataset[0]
-
-        np.testing.assert_array_equal(sample1["data"], sample2["data"])
+        # Get multiple samples and check range
+        samples = torch.stack([dataset[i] for i in range(100)])
+        
+        assert torch.all(samples >= low)
+        assert torch.all(samples <= high)
+        
+        # Check that we get values near both extremes
+        assert samples.min().item() < low + 0.5
+        assert samples.max().item() > high - 0.5
 
 
-class TestWynerZivCorrelationDataset:
-    """Test class for WynerZivCorrelationDataset."""
+class TestGaussianDataset:
+    """Test class for GaussianDataset."""
 
-    def test_basic_initialization_binary(self):
-        """Test basic initialization with binary correlation."""
-        n_samples = 10
-        feature_shape = (64,)
+    def test_basic_initialization(self):
+        """Test basic initialization and properties."""
+        length = 10
+        shape = (64,)
+        mean = 1.0
+        std = 2.0
 
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary")
+        dataset = GaussianDataset(length=length, shape=shape, mean=mean, std=std, seed=42)
 
-        assert len(dataset) == n_samples
+        assert len(dataset) == length
 
         # Test getting a sample
         sample = dataset[0]
-        assert isinstance(sample, dict)
-        assert "source" in sample
-        assert "side_info" in sample
+        assert isinstance(sample, torch.Tensor)
+        assert sample.shape == shape
+        assert sample.dtype == torch.float32
 
-        source = sample["source"]
-        side_info = sample["side_info"]
+    def test_statistical_properties(self):
+        """Test that mean and std parameters are respected."""
+        length = 10000
+        shape = (100,)
+        mean = 2.0
+        std = 1.5
 
-        assert isinstance(source, np.ndarray)
-        assert isinstance(side_info, np.ndarray)
-        assert source.shape == feature_shape
-        assert side_info.shape == feature_shape
-        assert source.dtype == np.float32
-        assert side_info.dtype == np.float32
+        dataset = GaussianDataset(length=length, shape=shape, mean=mean, std=std, seed=42)
 
-        # Check that values are binary (0 or 1)
-        assert np.all((source == 0) | (source == 1))
-        assert np.all((side_info == 0) | (side_info == 1))
+        # Get many samples and check statistics
+        samples = torch.stack([dataset[i] for i in range(100)])
+        
+        actual_mean = samples.mean().item()
+        actual_std = samples.std().item()
+        
+        # Should be approximately equal (within some tolerance)
+        assert abs(actual_mean - mean) < 0.2
+        assert abs(actual_std - std) < 0.2
 
-    def test_binary_correlation_with_crossover_prob(self):
-        """Test binary correlation with custom crossover probability."""
-        n_samples = 5
-        feature_shape = (100,)
-        crossover_prob = 0.2
 
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary", correlation_params={"crossover_prob": crossover_prob}, seed=42)
+class TestCorrelatedDataset:
+    """Test class for CorrelatedDataset."""
 
-        sample = dataset[0]
-        source = sample["source"]
-        side_info = sample["side_info"]
+    def test_basic_initialization(self):
+        """Test basic initialization and properties."""
+        length = 10
+        shape = (64,)
+        correlation = 0.8
 
-        # Check that values are binary
-        assert np.all((source == 0) | (source == 1))
-        assert np.all((side_info == 0) | (side_info == 1))
+        dataset = CorrelatedDataset(length=length, shape=shape, correlation=correlation, seed=42)
 
-    def test_gaussian_correlation(self):
-        """Test Gaussian correlation type."""
-        n_samples = 10
-        feature_shape = (64,)
+        assert len(dataset) == length
 
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="gaussian")
+        # Test getting a sample
+        source, side_info = dataset[0]
+        assert isinstance(source, torch.Tensor)
+        assert isinstance(side_info, torch.Tensor)
+        assert source.shape == shape
+        assert side_info.shape == shape
+        assert source.dtype == torch.float32
+        assert side_info.dtype == torch.float32
 
-        sample = dataset[0]
-        source = sample["source"]
-        side_info = sample["side_info"]
+    def test_correlation_control(self):
+        """Test that correlation parameter controls the correlation."""
+        length = 1000
+        shape = (1000,)  # Larger shape for better correlation estimation
+        target_correlation = 0.7
 
-        assert source.shape == feature_shape
-        assert side_info.shape == feature_shape
+        dataset = CorrelatedDataset(length=length, shape=shape, correlation=target_correlation, seed=42)
 
-        # For Gaussian, source should be in [0,1] range
-        assert np.all(source >= 0.0)
-        assert np.all(source <= 1.0)
+        # Get a sample and check correlation
+        source, side_info = dataset[0]
+        
+        # Calculate correlation coefficient
+        correlation_matrix = torch.corrcoef(torch.stack([source.flatten(), side_info.flatten()]))
+        actual_correlation = correlation_matrix[0, 1].item()
+        
+        # Should be approximately equal to target correlation (more relaxed tolerance)
+        assert abs(actual_correlation - target_correlation) < 0.2
 
-    def test_gaussian_correlation_with_sigma(self):
-        """Test Gaussian correlation with custom sigma."""
-        n_samples = 5
-        feature_shape = (50,)
-        sigma = 0.05
 
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="gaussian", correlation_params={"sigma": sigma}, seed=42)
+class TestFunctionDataset:
+    """Test class for FunctionDataset."""
 
-        sample = dataset[0]
-        source = sample["source"]
-        side_info = sample["side_info"]
+    def test_basic_initialization(self):
+        """Test basic initialization and properties."""
+        length = 10
+        
+        def generator_fn(idx):
+            return torch.randn(5) * idx
+        
+        dataset = FunctionDataset(length=length, generator_fn=generator_fn, seed=42)
 
-        assert source.shape == feature_shape
-        assert side_info.shape == feature_shape
+        assert len(dataset) == length
 
-    def test_custom_correlation_with_transform(self):
-        """Test custom correlation type with transform function."""
-        n_samples = 5
-        feature_shape = (20,)
+        # Test getting samples
+        sample0 = dataset[0]
+        sample1 = dataset[1]
+        
+        assert isinstance(sample0, torch.Tensor)
+        assert isinstance(sample1, torch.Tensor)
+        assert sample0.shape == (5,)
+        assert sample1.shape == (5,)
 
-        def custom_transform(x):
-            """Simple transform: add 0.1 and clip."""
-            return np.clip(x + 0.1, 0, 1).astype(np.float32)
-
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="custom", correlation_params={"transform_fn": custom_transform})
-
-        sample = dataset[0]
-        source = sample["source"]
-        side_info = sample["side_info"]
-
-        assert source.shape == feature_shape
-        assert side_info.shape == feature_shape
-
-    def test_custom_correlation_missing_transform(self):
-        """Test custom correlation type without transform function raises error."""
-        with pytest.raises(ValueError, match="Custom correlation type requires 'transform_fn'"):
-            WynerZivCorrelationDataset(n_samples=5, feature_shape=(10,), correlation_type="custom")
-
-    def test_invalid_correlation_type(self):
-        """Test that invalid correlation type raises ValueError."""
-        with pytest.raises(ValueError, match="Unknown correlation type: invalid"):
-            WynerZivCorrelationDataset(n_samples=5, feature_shape=(10,), correlation_type="invalid")
-
-    def test_multidimensional_feature_shape(self):
-        """Test with multidimensional feature shapes."""
-        n_samples = 3
-        feature_shape = (2, 4, 4)
-
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary")
+    def test_custom_function(self):
+        """Test with a custom generation function."""
+        length = 5
+        
+        def sine_generator(idx):
+            x = torch.linspace(0, 2*torch.pi, 100)
+            return torch.sin(x + idx)
+        
+        dataset = FunctionDataset(length=length, generator_fn=sine_generator, seed=42)
 
         sample = dataset[0]
-        assert sample["source"].shape == feature_shape
-        assert sample["side_info"].shape == feature_shape
-
-    def test_feature_shape_as_int(self):
-        """Test with feature_shape as single integer."""
-        n_samples = 3
-        feature_shape = 128
-
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="gaussian")
-
-        sample = dataset[0]
-        assert sample["source"].shape == (128,)
-        assert sample["side_info"].shape == (128,)
-
-    def test_feature_shape_as_list(self):
-        """Test with feature_shape as list."""
-        n_samples = 3
-        feature_shape = [8, 16]
-
-        dataset = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary")
-
-        sample = dataset[0]
-        assert sample["source"].shape == (8, 16)
-        assert sample["side_info"].shape == (8, 16)
-
-    def test_seed_reproducibility(self):
-        """Test that same seed produces reproducible results."""
-        n_samples = 5
-        feature_shape = (20,)
-        seed = 42
-
-        dataset1 = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary", seed=seed)
-
-        dataset2 = WynerZivCorrelationDataset(n_samples=n_samples, feature_shape=feature_shape, correlation_type="binary", seed=seed)
-
-        # Should get the same data with same seed
-        for i in range(n_samples):
-            np.testing.assert_array_equal(dataset1[i]["source"], dataset2[i]["source"])
-            np.testing.assert_array_equal(dataset1[i]["side_info"], dataset2[i]["side_info"])
-
-    def test_index_out_of_range(self):
-        """Test IndexError for out of range access."""
-        dataset = WynerZivCorrelationDataset(n_samples=3, feature_shape=(10,), correlation_type="gaussian")
-
-        with pytest.raises(IndexError, match="Index 3 out of range for dataset of size 3"):
-            dataset[3]
-
-        with pytest.raises(IndexError, match="Index 10 out of range for dataset of size 3"):
-            dataset[10]
-
-    def test_data_pregeneration(self):
-        """Test that data is pre-generated and consistent."""
-        dataset = WynerZivCorrelationDataset(n_samples=3, feature_shape=(10,), correlation_type="binary", seed=42)
-
-        # Getting the same sample multiple times should return the same data
-        sample1 = dataset[0]
-        sample2 = dataset[0]
-
-        np.testing.assert_array_equal(sample1["source"], sample2["source"])
-        np.testing.assert_array_equal(sample1["side_info"], sample2["side_info"])
-
-    def test_default_correlation_params(self):
-        """Test default correlation parameters are handled correctly."""
-        dataset = WynerZivCorrelationDataset(n_samples=2, feature_shape=(10,), correlation_type="binary")
-
-        # Should work with default correlation_params (None -> {})
-        sample = dataset[0]
-        assert "source" in sample
-        assert "side_info" in sample
+        assert sample.shape == (100,)
+        
+        # Check that different indices give different results
+        sample0 = dataset[0]
+        sample1 = dataset[1]
+        assert not torch.equal(sample0, sample1)

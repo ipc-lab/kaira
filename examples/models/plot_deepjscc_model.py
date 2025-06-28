@@ -23,7 +23,7 @@ from torch.utils.data import TensorDataset
 
 from kaira.channels import AWGNChannel
 from kaira.constraints import AveragePowerConstraint
-from kaira.data.sample_data import TorchVisionDataset
+from kaira.data import ImageDataset
 from kaira.metrics.image import PSNR
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image import Bourtsoulatze2019DeepJSCCDecoder, Bourtsoulatze2019DeepJSCCEncoder
@@ -55,12 +55,10 @@ torch.cuda.is_available = lambda: False
 # Load real CIFAR-10 images from kaira.data for training and evaluation.
 
 # Load CIFAR-10 dataset
-cifar10_dataset = TorchVisionDataset(
-    dataset_name="cifar10",
-    n_samples=100,  # Use more samples for actual training
+cifar10_dataset = ImageDataset(
+    name="cifar10",
     train=True,
-    normalize=True,
-    seed=42
+    normalize=True
 )
 
 # Convert to PyTorch tensors for training
@@ -72,11 +70,10 @@ n_channels = 3
 images_list = []
 labels_list = []
 for i in range(min(batch_size, len(cifar10_dataset))):
-    sample = cifar10_dataset[i]
-    # Convert numpy array back to tensor
-    img_tensor = torch.from_numpy(sample['image']).float()
+    img_tensor, label = cifar10_dataset[i]  # ImageDataset returns (image, label)
+    # img_tensor is already a torch tensor
     images_list.append(img_tensor)
-    labels_list.append(sample['label'])
+    labels_list.append(label)
 
 x = torch.stack(images_list)
 labels = torch.tensor(labels_list)
@@ -166,19 +163,16 @@ plt.show()  # Show the plot instead of saving
 # Now let's set up and run actual training using Kaira's simplified Trainer.
 
 # Create a simple dataset for training using CIFAR-10
-train_cifar10_dataset = TorchVisionDataset(
-    dataset_name="cifar10",
-    n_samples=200,  # Use samples for training
+train_cifar10_dataset = ImageDataset(
+    name="cifar10",
     train=True,
-    normalize=True,
-    seed=42
+    normalize=True
 )
 
 # Convert to PyTorch tensors
 train_images = []
-for i in range(len(train_cifar10_dataset)):
-    sample = train_cifar10_dataset[i]
-    img_tensor = torch.from_numpy(sample['image']).float()
+for i in range(min(200, len(train_cifar10_dataset))):  # Use up to 200 samples for training
+    img_tensor, label = train_cifar10_dataset[i]  # ImageDataset returns (image, label)
     train_images.append(img_tensor)
 
 train_x = torch.stack(train_images).float()
@@ -269,7 +263,7 @@ print("✅ PSNR performance analysis completed!")
 # coding in image transmission with real CIFAR-10 data, utilizing Kaira's streamlined training 
 # and visualization tools:
 #
-# 1. **Real Data Loading**: We used TorchVisionDataset from kaira.data to load actual CIFAR-10
+# 1. **Real Data Loading**: We used ImageDataset from kaira.data to load actual CIFAR-10
 #    images, providing realistic training data instead of synthetic examples.
 #
 # 2. **Simplified Training**: We used Kaira's native Trainer class which automatically handles

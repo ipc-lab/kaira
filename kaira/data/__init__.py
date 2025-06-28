@@ -1,21 +1,24 @@
-"""Data utilities for Kaira using HuggingFace datasets.
+"""Data utilities for Kaira.
 
-This module provides simplified HuggingFace datasets for generating data commonly used in
-communication systems and information theory experiments.
+This module provides simple and efficient dataset classes for communication systems
+and information theory experiments. All datasets are memory-efficient and generate
+data on-demand.
 """
 
 from .datasets import (
-    BinaryTensorDataset,
-    UniformTensorDataset,
-    WynerZivCorrelationDataset,
+    BinaryDataset,
+    CorrelatedDataset,
+    FunctionDataset,
+    GaussianDataset,
+    UniformDataset,
 )
-from .sample_data import SampleImagesDataset, TorchVisionDataset, download_image
+from .sample_data import ImageDataset
 
 __all__ = [
-    "BinaryTensorDataset",
-    "UniformTensorDataset",
-    "WynerZivCorrelationDataset",
-    "SampleImagesDataset",
-    "TorchVisionDataset",
-    "download_image",
+    "BinaryDataset",
+    "UniformDataset",
+    "GaussianDataset",
+    "CorrelatedDataset",
+    "FunctionDataset",
+    "ImageDataset",
 ]

@@ -1,341 +1,236 @@
 """
-==========================================
-Data Generation Utilities
-==========================================
+Data Generation with Modern Datasets
+====================================
 
-This example demonstrates the data generation utilities in Kaira,
-including binary and uniform tensor creation, as well as dataset
-classes for batch processing. These utilities are particularly
-useful for creating synthetic data for information theory and
-communication systems experiments.
+This example demonstrates how to use the new Kaira data generation classes
+for creating various types of synthetic data useful in communication
+systems research.
+
+We'll explore binary, uniform, Gaussian, and function-based datasets.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import torch
+from kaira.data import BinaryDataset, UniformDataset, GaussianDataset, FunctionDataset
 
-from kaira.data import (
-    BinaryTensorDataset,
-    UniformTensorDataset,
+# Set random seed for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
+
+###############################################################################
+# Binary Data Generation
+# ======================
+#
+# Generate binary data for digital communication experiments
+
+# Create a binary dataset with different probabilities
+n_samples = 1000
+seq_length = 100
+
+# Different bias levels
+probabilities = [0.3, 0.5, 0.7]
+fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+for i, prob in enumerate(probabilities):
+    binary_dataset = BinaryDataset(
+        length=n_samples,
+        shape=(seq_length,),
+        prob=prob,
+        seed=42
+    )
+    
+    # Get a sample sequence
+    sample = binary_dataset[0].numpy()
+    
+    # Plot the binary sequence
+    axes[i].plot(sample[:50], 'o-', linewidth=1, markersize=4)
+    axes[i].set_title(f'Binary Sequence (p = {prob})')
+    axes[i].set_xlabel('Sample Index')
+    axes[i].set_ylabel('Bit Value')
+    axes[i].set_ylim(-0.1, 1.1)
+    axes[i].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.suptitle('Binary Data with Different Probabilities', y=1.02)
+plt.show()
+
+###############################################################################
+# Uniform and Gaussian Distributions
+# ==================================
+#
+# Compare uniform and Gaussian noise generation
+
+# Create datasets
+uniform_dataset = UniformDataset(
+    length=1000,
+    shape=(256,),
+    low=-1.0,
+    high=1.0,
+    seed=42
 )
 
-# Plotting imports
-from kaira.utils.plotting import PlottingUtils
+gaussian_dataset = GaussianDataset(
+    length=1000,
+    shape=(256,),
+    mean=0.0,
+    std=0.5,
+    seed=42
+)
 
-PlottingUtils.setup_plotting_style()
+# Generate samples and create histograms
+uniform_samples = []
+gaussian_samples = []
 
-# %%
-# 1. Basic Dataset Generation
-# ---------------------------------------------------------
-# Binary and Uniform Dataset Creation
-# ===================================
-#
-# Let's start with the basic dataset generation functions using HuggingFace datasets.
-# These functions create datasets with specific distributions.
+for i in range(100):
+    uniform_samples.append(uniform_dataset[i].numpy())
+    gaussian_samples.append(gaussian_dataset[i].numpy())
 
-# Create a binary dataset (values are 0 or 1)
-binary_dataset = BinaryTensorDataset(n_samples=1000, feature_shape=(10,), prob=0.3)  # Each sample has shape (10,)
+# Combine all samples
+all_uniform = np.concatenate(uniform_samples)
+all_gaussian = np.concatenate(gaussian_samples)
 
-# Create a uniform dataset (values are uniformly distributed)
-uniform_dataset = UniformTensorDataset(n_samples=1000, feature_shape=(10,), low=-2.0, high=2.0)  # Each sample has shape (10,)
+# Plot distributions
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-print(f"Binary dataset size: {len(binary_dataset)}")
-print(f"Uniform dataset size: {len(uniform_dataset)}")
-print(f"Binary sample shape: {np.array(binary_dataset[0]['data']).shape}")
-print(f"Uniform sample shape: {np.array(uniform_dataset[0]['data']).shape}")
+ax1.hist(all_uniform, bins=50, density=True, alpha=0.7, color='blue', edgecolor='black')
+ax1.set_title('Uniform Distribution')
+ax1.set_xlabel('Value')
+ax1.set_ylabel('Density')
+ax1.grid(True, alpha=0.3)
 
-# Get first few samples for analysis
-binary_samples = [binary_dataset[i]["data"] for i in range(100)]
-binary_data = np.array(binary_samples).flatten()
-
-uniform_samples = [uniform_dataset[i]["data"] for i in range(100)]
-uniform_data = np.array(uniform_samples).flatten()
-
-print(f"Average value in binary data: {binary_data.mean():.4f} (expected: 0.3)")
-print(f"Uniform data range: [{uniform_data.min():.4f}, {uniform_data.max():.4f}]")
-
-# %%
-# Visualizing the generated data
-# ---------------------------------------------------------
-# Data Distribution Visualization
-# =================================
-#
-# Let's visualize the generated data to understand their distributions.
-
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-# Plot binary data
-axes[0].stem(binary_data[:100])
-axes[0].set_title("Binary Data (first 100 values)")
-axes[0].set_xlabel("Index")
-axes[0].set_ylabel("Value")
-axes[0].grid(True, alpha=0.3)
-
-# Plot uniform data
-axes[1].hist(uniform_data, bins=30, alpha=0.7)
-axes[1].set_title("Uniform Data Distribution")
-axes[1].set_xlabel("Value")
-axes[1].set_ylabel("Frequency")
-axes[1].grid(True, alpha=0.3)
+ax2.hist(all_gaussian, bins=50, density=True, alpha=0.7, color='red', edgecolor='black')
+ax2.set_title('Gaussian Distribution')
+ax2.set_xlabel('Value')
+ax2.set_ylabel('Density')
+ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 
-# %%
-# 2. Controlling the Probability in Binary Datasets
-# ---------------------------------------------------------
-# Binary Probability Control Demonstration
-# ========================================
+###############################################################################
+# Custom Function-Based Generation
+# ================================
 #
-# We can control the probability of 1s in the binary dataset.
-# This is useful for simulating different types of sources.
+# Use FunctionDataset for complex signal generation
 
-# Create binary datasets with different probabilities
-probs = [0.1, 0.3, 0.5, 0.7, 0.9]
-binary_datasets = [BinaryTensorDataset(n_samples=1000, feature_shape=(50,), prob=p) for p in probs]
+def generate_sine_wave(idx):
+    """Generate a sine wave with varying frequency."""
+    t = np.linspace(0, 1, 128)
+    frequency = 1 + idx * 0.1  # Frequency increases with index
+    signal = np.sin(2 * np.pi * frequency * t)
+    return torch.from_numpy(signal.astype(np.float32))
 
-# Calculate the actual frequencies of 1s
-actual_freqs = []
-for dataset in binary_datasets:
-    # Get all data from the dataset
-    all_data: list[float] = []
-    for i in range(len(dataset)):
-        all_data.extend(dataset[i]["data"])
-    actual_freqs.append(np.mean(all_data))
+def generate_chirp(idx):
+    """Generate a linear frequency chirp."""
+    t = np.linspace(0, 1, 128)
+    # Frequency sweep from 1 Hz to 10 Hz
+    signal = np.sin(2 * np.pi * (1 + 9 * t) * t)
+    # Add some noise based on index
+    noise_level = idx * 0.01
+    noise = np.random.normal(0, noise_level, len(signal))
+    return torch.from_numpy((signal + noise).astype(np.float32))
 
-# Visualize the results
-fig, ax = plt.subplots(figsize=(10, 6))
-bars = ax.bar(probs, actual_freqs, width=0.05, alpha=0.7)
-ax.plot([0, 1], [0, 1], "r--", label="Expected")
-ax.scatter(probs, actual_freqs, s=100, c="red", zorder=3)
+# Create function-based datasets
+sine_dataset = FunctionDataset(length=50, generator_fn=generate_sine_wave, seed=42)
+chirp_dataset = FunctionDataset(length=50, generator_fn=generate_chirp, seed=42)
 
-for p, f in zip(probs, actual_freqs):
-    ax.annotate(f"{f:.3f}", (p, float(f)), xytext=(0, 10), textcoords="offset points", ha="center")
+# Visualize generated signals
+fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 
-ax.set_xlabel("Target Probability (p)")
-ax.set_ylabel("Actual Frequency of 1s")
-ax.set_title("Controlling Binary Dataset Distribution")
-ax.grid(True, alpha=0.3)
-ax.legend()
-ax.set_xlim(0, 1)
-ax.set_ylim(0, 1)
-plt.show()
+# Sine waves with different frequencies
+for i in range(2):
+    signal = sine_dataset[i * 10].numpy()  # Every 10th sample
+    axes[0, i].plot(signal)
+    axes[0, i].set_title(f'Sine Wave (Sample {i * 10})')
+    axes[0, i].set_xlabel('Time Sample')
+    axes[0, i].set_ylabel('Amplitude')
+    axes[0, i].grid(True, alpha=0.3)
 
-# %%
-# 3. Using Dataset Classes for Streaming Data
-# ---------------------------------------------------------
-# HuggingFace Dataset Usage
-# =========================
-#
-# The new HuggingFace-based datasets support streaming and
-# efficient data processing.
-
-# Create datasets using the dataset classes directly
-binary_hf_dataset = BinaryTensorDataset(n_samples=500, feature_shape=(20,), prob=0.4)
-
-uniform_hf_dataset = UniformTensorDataset(n_samples=500, feature_shape=(20,), low=0.0, high=1.0)
-
-print(f"Binary HF dataset length: {len(binary_hf_dataset)}")
-print(f"Uniform HF dataset length: {len(uniform_hf_dataset)}")
-
-
-# Demonstrate batch processing with HF datasets
-def process_batch(dataset, batch_size=10):
-    """Process dataset in batches for efficient data loading.
-
-    Args:
-        dataset: The dataset to process
-        batch_size: Size of each batch (default: 10)
-
-    Returns:
-        List of numpy arrays, each containing a batch of data
-    """
-    batched_data = []
-    for i in range(0, len(dataset), batch_size):
-        batch = []
-        for j in range(i, min(i + batch_size, len(dataset))):
-            batch.append(dataset[j]["data"])
-        batched_data.append(np.array(batch))
-    return batched_data
-
-
-# Process data in batches
-binary_batches = process_batch(binary_hf_dataset, batch_size=50)
-uniform_batches = process_batch(uniform_hf_dataset, batch_size=50)
-
-print(f"Number of binary batches: {len(binary_batches)}")
-print(f"Binary batch shape: {binary_batches[0].shape}")
-print(f"Number of uniform batches: {len(uniform_batches)}")
-print(f"Uniform batch shape: {uniform_batches[0].shape}")
-
-# %%
-# 4. Communication Channel Simulation
-# ---------------------------------------------------------
-# Binary Symmetric Channel Example
-# =================================
-#
-# Let's simulate a simple binary symmetric channel using
-# the generated binary data.
-
-# Parameters for the channel simulation
-message_length = 100
-batch_size = 20
-flip_prob = 0.1  # Channel error probability
-
-# Generate random binary messages using HF datasets
-message_dataset = BinaryTensorDataset(n_samples=batch_size, feature_shape=(message_length,), prob=0.5)
-
-
-# Function to simulate channel noise
-def add_channel_noise(messages, flip_prob):
-    """Add binary symmetric channel noise to messages.
-
-    Args:
-        messages: List of binary messages to add noise to
-        flip_prob: Probability of flipping each bit
-
-    Returns:
-        List of noisy messages with channel errors applied
-    """
-    noisy_messages = []
-    for msg in messages:
-        msg_array = np.array(msg)
-        # Generate noise mask
-        noise_mask = np.random.binomial(1, flip_prob, size=msg_array.shape)
-        # Apply XOR operation (flip bits where noise is 1)
-        noisy_msg = (msg_array + noise_mask) % 2
-        noisy_messages.append(noisy_msg.tolist())
-    return noisy_messages
-
-
-# Get messages and add noise
-messages = [message_dataset[i]["data"] for i in range(batch_size)]
-noisy_messages = add_channel_noise(messages, flip_prob)
-
-
-# Calculate bit error rate
-def calculate_ber(original, noisy):
-    """Calculate bit error rate between original and noisy messages.
-
-    Args:
-        original: List of original binary messages
-        noisy: List of noisy binary messages
-
-    Returns:
-        Float representing the bit error rate (0.0 to 1.0)
-    """
-    total_bits = 0
-    error_bits = 0
-    for orig, noise in zip(original, noisy):
-        orig_array = np.array(orig)
-        noise_array = np.array(noise)
-        total_bits += len(orig_array)
-        error_bits += np.sum(orig_array != noise_array)
-    return error_bits / total_bits
-
-
-ber = calculate_ber(messages, noisy_messages)
-print(f"Channel flip probability: {flip_prob}")
-print(f"Measured bit error rate: {ber:.4f}")
-print(f"Expected bit error rate: {flip_prob:.4f}")
-
-# Visualize the first message and its noisy version
-fig, axes = plt.subplots(2, 1, figsize=(12, 6))
-
-# Original message
-axes[0].stem(range(len(messages[0])), messages[0])
-axes[0].set_title("Original Binary Message")
-axes[0].set_ylabel("Bit Value")
-axes[0].grid(True, alpha=0.3)
-
-# Noisy message
-axes[1].stem(range(len(noisy_messages[0])), noisy_messages[0])
-axes[1].set_title(f"Noisy Message (flip prob = {flip_prob})")
-axes[1].set_xlabel("Bit Index")
-axes[1].set_ylabel("Bit Value")
-axes[1].grid(True, alpha=0.3)
+# Chirp signals with increasing noise
+for i in range(2):
+    signal = chirp_dataset[i * 20].numpy()  # Every 20th sample
+    axes[1, i].plot(signal)
+    axes[1, i].set_title(f'Chirp Signal (Sample {i * 20})')
+    axes[1, i].set_xlabel('Time Sample')
+    axes[1, i].set_ylabel('Amplitude')
+    axes[1, i].grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 
-# %%
-# 5. Advanced Dataset Features
-# ---------------------------------------------------------
-# Dataset Filtering and Mapping
+###############################################################################
+# Performance and Memory Efficiency
+# =================================
+#
+# Demonstrate on-demand generation efficiency
+
+print("Dataset Performance Comparison:")
+print("==============================")
+
+# Test dataset sizes
+sizes = [1000, 10000, 100000]
+
+for size in sizes:
+    # Create a large Gaussian dataset
+    dataset = GaussianDataset(length=size, shape=(512,), seed=42)
+    
+    # Measure time to access random samples
+    import time
+    start_time = time.time()
+    
+    # Access 100 random samples
+    indices = np.random.choice(size, 100, replace=False)
+    samples = [dataset[idx] for idx in indices]
+    
+    end_time = time.time()
+    
+    print(f"Size {size:6d}: {(end_time - start_time)*1000:.2f} ms for 100 samples")
+
+print("\nMemory Usage:")
+print("Dataset objects are lightweight - data is generated on-demand!")
+print("No large arrays stored in memory until accessed.")
+
+###############################################################################
+# Combining Multiple Data Types
 # =============================
 #
-# Dataset analysis and filtering operations.
+# Show how to combine different data sources
 
-# Create a larger dataset for demonstration
-large_dataset = BinaryTensorDataset(n_samples=1000, feature_shape=(10,), prob=0.3)
+# Create mixed signal: binary modulation + Gaussian noise
+def generate_mixed_signal(idx):
+    """Generate BPSK signal with noise."""
+    # Generate random binary sequence
+    np.random.seed(idx + 42)  # Deterministic per index
+    bits = np.random.randint(0, 2, 64)
+    
+    # BPSK modulation: 0 -> -1, 1 -> +1
+    bpsk_signal = 2 * bits - 1
+    
+    # Add Gaussian noise
+    noise = np.random.normal(0, 0.2, len(bpsk_signal))
+    
+    return torch.from_numpy((bpsk_signal + noise).astype(np.float32))
 
-print(f"Original dataset size: {len(large_dataset)}")
+# Create the mixed dataset
+mixed_dataset = FunctionDataset(length=100, generator_fn=generate_mixed_signal, seed=42)
 
-# Filter samples based on sum (number of 1s)
-# Since the new dataset returns dict with 'data' key, we can manually filter
-filtered_indices = []
-for i in range(len(large_dataset)):
-    sample = large_dataset[i]
-    data = sample["data"]
-    if sum(data) >= 3:  # Keep only samples with sum >= 3
-        filtered_indices.append(i)
+# Visualize a few samples
+fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+axes = axes.ravel()
 
-print(f"Filtered dataset size: {len(filtered_indices)}")
+for i in range(4):
+    signal = mixed_dataset[i * 10].numpy()
+    axes[i].plot(signal, 'o-', markersize=3, linewidth=1)
+    axes[i].set_title(f'BPSK + Noise (Sample {i * 10})')
+    axes[i].set_xlabel('Symbol Index')
+    axes[i].set_ylabel('Amplitude')
+    axes[i].grid(True, alpha=0.3)
+    axes[i].axhline(y=1, color='r', linestyle='--', alpha=0.5, label='+1')
+    axes[i].axhline(y=-1, color='r', linestyle='--', alpha=0.5, label='-1')
+    if i == 0:
+        axes[i].legend()
 
-
-# Create a custom filtered view of the dataset
-class FilteredDataset:
-    """A custom dataset class that provides a filtered view of another dataset.
-
-    This class wraps an existing dataset and provides access to only a subset of samples based on
-    provided indices.
-    """
-
-    def __init__(self, original_dataset, indices):
-        """Initialize the filtered dataset.
-
-        Args:
-            original_dataset: The original dataset to filter
-            indices: List of indices to include in the filtered view
-        """
-        self.original_dataset = original_dataset
-        self.indices = indices
-
-    def __len__(self):
-        """Return the number of samples in the filtered dataset.
-
-        Returns:
-            Integer number of samples available in the filtered view
-        """
-        return len(self.indices)
-
-    def __getitem__(self, idx):
-        """Get a sample from the filtered dataset.
-
-        Args:
-            idx: Index of the sample to retrieve from the filtered view
-
-        Returns:
-            Dictionary containing the enhanced sample with computed features
-        """
-        original_idx = self.indices[idx]
-        sample = self.original_dataset[original_idx]
-        # Add computed features
-        data = sample["data"]
-        enhanced_sample = {"data": data, "sum": sum(data), "mean": sum(data) / len(data)}
-        return enhanced_sample
-
-
-enhanced_dataset = FilteredDataset(large_dataset, filtered_indices)
-
-# Show some examples
-print("\\nSample enhanced data:")
-for i in range(min(5, len(enhanced_dataset))):
-    sample = enhanced_dataset[i]
-    print(f"Sample {i}: sum={sample['sum']}, mean={sample['mean']:.3f}")
-
-print("\\nData generation examples completed!")
-print("The Kaira datasets provide:")
-print("- Flexible PyTorch Dataset interface")
-print("- Efficient data generation for communication systems")
-print("- Consistent API across different data types")
-print("- Easy integration with PyTorch DataLoader")
+plt.tight_layout()
+plt.suptitle('Combined Binary Modulation and Gaussian Noise', y=1.02)
+plt.show()

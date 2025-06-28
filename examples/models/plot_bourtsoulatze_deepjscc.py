@@ -33,7 +33,7 @@ import torch
 
 from kaira.channels import AWGNChannel
 from kaira.constraints import AveragePowerConstraint
-from kaira.data.sample_data import TorchVisionDataset
+from kaira.data import ImageDataset
 from kaira.metrics.image import PSNR, SSIM
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.fec.decoders.syndrome_lookup import SyndromeLookupDecoder
@@ -82,24 +82,23 @@ def save_and_show(filename):
 # Using the HuggingFace-compatible dataset approach
 
 # Create datasets for training and testing - use smaller subset like working script
-train_dataset = TorchVisionDataset(dataset_name="cifar10", train=True, n_samples=100)
-test_dataset = TorchVisionDataset(dataset_name="cifar10", train=False, n_samples=20)
+train_dataset = ImageDataset(name="cifar10", train=True)
+test_dataset = ImageDataset(name="cifar10", train=False)
 
 # Extract training images
 train_images = []
-for i in range(len(train_dataset)):
-    sample = train_dataset[i]
-    # Convert from numpy (C, H, W) to torch tensor with explicit dtype
-    image_tensor = torch.from_numpy(sample["image"]).float()
+for i in range(min(100, len(train_dataset))):  # Limit to 100 samples
+    image_tensor, label = train_dataset[i]  # ImageDataset returns (image, label)
+    # image_tensor is already a torch tensor
     train_images.append(image_tensor)
 
 train_images = torch.stack(train_images)
 
 # Extract test images
 test_images = []
-for i in range(len(test_dataset)):
-    sample = test_dataset[i]
-    image_tensor = torch.from_numpy(sample["image"]).float()
+for i in range(min(20, len(test_dataset))):  # Limit to 20 samples
+    image_tensor, label = test_dataset[i]  # ImageDataset returns (image, label) 
+    # image_tensor is already a torch tensor
     test_images.append(image_tensor)
 
 test_images = torch.stack(test_images)

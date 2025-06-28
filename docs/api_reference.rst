@@ -584,10 +584,11 @@ computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
 Data
 ----
 
-Data utilities for Kaira using HuggingFace datasets.
+Data utilities for Kaira.
 
-This module provides simplified HuggingFace datasets for generating data commonly used in
-communication systems and information theory experiments.
+This module provides simple and efficient dataset classes for communication systems
+and information theory experiments. All datasets are memory-efficient and generate
+data on-demand.
 
 .. currentmodule:: kaira.data
 
@@ -596,30 +597,21 @@ communication systems and information theory experiments.
    :template: class.rst
    :nosignatures:
 
-   BinaryTensorDataset
-   SampleImagesDataset
-   TorchVisionDataset
-   UniformTensorDataset
-   WynerZivCorrelationDataset
-
-
-.. currentmodule:: kaira.data
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   download_image
+   BinaryDataset
+   CorrelatedDataset
+   FunctionDataset
+   GaussianDataset
+   ImageDataset
+   UniformDataset
 
 
 Datasets
 ^^^^^^^^
 
-HuggingFace-compatible dataset implementations for Kaira.
+Simple and efficient dataset implementations for Kaira.
 
-This module provides dataset classes that are compatible with HuggingFace datasets and PyTorch
-DataLoader for communication systems.
+This module provides dataset classes for communication systems and information theory experiments.
+All datasets generate data on-demand for memory efficiency and support PyTorch DataLoader.
 
 .. currentmodule:: kaira.data.datasets
 
@@ -628,18 +620,19 @@ DataLoader for communication systems.
    :template: class.rst
    :nosignatures:
 
-   BinaryTensorDataset
-   UniformTensorDataset
-   WynerZivCorrelationDataset
+   BinaryDataset
+   CorrelatedDataset
+   FunctionDataset
+   GaussianDataset
+   UniformDataset
 
 
 Sample Data
 ^^^^^^^^^^^
 
-HuggingFace-compatible sample dataset implementations for Kaira.
+Simple image dataset utilities for Kaira.
 
-This module provides sample dataset classes that are compatible with HuggingFace datasets and
-PyTorch DataLoader for standard test images and popular ML datasets.
+This module provides basic image dataset functionality for testing and examples.
 
 .. currentmodule:: kaira.data.sample_data
 
@@ -648,18 +641,7 @@ PyTorch DataLoader for standard test images and popular ML datasets.
    :template: class.rst
    :nosignatures:
 
-   SampleImagesDataset
-   TorchVisionDataset
-
-
-.. currentmodule:: kaira.data.sample_data
-
-.. autosummary::
-   :toctree: generated
-   :template: function.rst
-   :nosignatures:
-
-   download_image
+   ImageDataset
 
 
 Utils
