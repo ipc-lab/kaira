@@ -13,6 +13,7 @@ examples/benchmarks/benchmark_results
 examples/benchmarks/visualization_results
 .gradio
 wandb
+presentation
 
 # Distribution / packaging
 .Python

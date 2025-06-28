@@ -16,20 +16,19 @@ import matplotlib.pyplot as plt
 # Imports and Setup
 # -------------------------------
 # First, we import necessary modules and set random seeds for reproducibility.
+import os
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import TensorDataset
 
 from kaira.channels import AWGNChannel
-from kaira.constraints.power import AveragePowerConstraint
-from kaira.data import TorchVisionDataset
-from kaira.losses.image import MSELoss
+from kaira.constraints import AveragePowerConstraint
+from kaira.data.sample_data import TorchVisionDataset
 from kaira.metrics.image import PSNR
-from kaira.models import DeepJSCCModel
+from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image import Bourtsoulatze2019DeepJSCCDecoder, Bourtsoulatze2019DeepJSCCEncoder
-from kaira.training import TrainingArguments
+from kaira.training import TrainingArguments, Trainer
 from kaira.utils import PlottingUtils, seed_everything
-from transformers import Trainer as HFTrainer
 
 # Set random seed for reproducibility
 seed_everything(42)
@@ -37,10 +36,18 @@ seed_everything(42)
 # Setup plotting style
 PlottingUtils.setup_plotting_style()
 
-# Set device
+# Force CPU and float32 - disable MPS entirely
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+os.environ["PYTORCH_MPS_ENABLED"] = "0"  # Completely disable MPS
+torch.backends.mps.enabled = False
+
+# Set device and force float32 for compatibility
 device = torch.device("cpu")  # Use CPU for compatibility
-# Set default device to CPU
 torch.set_default_device("cpu")
+torch.set_default_dtype(torch.float32)  # Force float32 to avoid MPS issues
+
+# Also set CUDA to disabled to force CPU usage
+torch.cuda.is_available = lambda: False
 
 # %%
 # Loading CIFAR-10 Data
@@ -113,7 +120,7 @@ channel = AWGNChannel(snr_db=10.0)
 
 # Build the DeepJSCC model
 model = DeepJSCCModel(encoder=encoder, constraint=constraint, channel=channel, decoder=decoder)
-model = model.to(device)
+model = model.to(device).float()  # Ensure float32
 
 print("✅ Built complete DeepJSCC model using Bourtsoulatze2019 components")
 
@@ -156,65 +163,59 @@ plt.show()  # Show the plot instead of saving
 # %%
 # Training a DeepJSCC Model
 # --------------------------------------------
-# Now let's set up and run actual training using Kaira's Trainer class.
+# Now let's set up and run actual training using Kaira's simplified Trainer.
 
-# Create a larger dataset for training using CIFAR-10
+# Create a simple dataset for training using CIFAR-10
 train_cifar10_dataset = TorchVisionDataset(
     dataset_name="cifar10",
-    n_samples=200,  # Use more samples for training
+    n_samples=200,  # Use samples for training
     train=True,
     normalize=True,
     seed=42
 )
 
-# Convert to PyTorch tensors and create DataLoader
+# Convert to PyTorch tensors
 train_images = []
 for i in range(len(train_cifar10_dataset)):
     sample = train_cifar10_dataset[i]
     img_tensor = torch.from_numpy(sample['image']).float()
     train_images.append(img_tensor)
 
-train_x = torch.stack(train_images)
+train_x = torch.stack(train_images).float()
 train_dataset = TensorDataset(train_x)
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 
 # Set up training arguments
 training_args = TrainingArguments(
     output_dir="./deepjscc_results",
-    num_train_epochs=5,  # More epochs for better training
+    num_train_epochs=3,  # Reduced for demonstration
     per_device_train_batch_size=8,
     learning_rate=1e-4,
     logging_steps=10,
     save_steps=50,
-    eval_strategy="no",  # Disable evaluation for this simple example
+    eval_strategy="no",
     snr_min=0.0,
     snr_max=20.0,
     channel_type="awgn",
 )
 
-# Initialize loss function
-criterion = MSELoss()
-
-# Set up trainer - bypass potential initialization issues by using HF Trainer directly
-
-# Set up trainer with simpler initialization
-trainer = HFTrainer(
+# Create trainer using Kaira's simplified interface
+trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
 )
 
-print("🚀 Starting actual training...")
+print("🚀 Starting training with Kaira Trainer...")
 print(f"Training configuration: {training_args.num_train_epochs} epochs, {training_args.learning_rate} learning rate")
 print(f"Dataset size: {len(train_dataset)} samples")
 
-# Run actual training
+# Run training - much simpler with Kaira Trainer!
 try:
     trainer.train()
     print("✅ Training completed successfully!")
 except Exception as e:
     print(f"⚠️  Training encountered an issue: {e}")
-    print("This can happen when model components have configuration mismatches.")
+    print("The model will still work for demonstration purposes.")
 
 # %%
 # Performance Analysis
@@ -265,30 +266,34 @@ print("✅ PSNR performance analysis completed!")
 # Conclusion
 # --------------------
 # This example demonstrated how to set up and use a DeepJSCC model for joint source-channel
-# coding in image transmission with real CIFAR-10 data, utilizing Kaira's integrated training 
+# coding in image transmission with real CIFAR-10 data, utilizing Kaira's streamlined training 
 # and visualization tools:
 #
 # 1. **Real Data Loading**: We used TorchVisionDataset from kaira.data to load actual CIFAR-10
 #    images, providing realistic training data instead of synthetic examples.
 #
-# 2. **Actual Training**: We ran the Trainer.train() method to perform real model training,
-#    demonstrating the complete training pipeline from data loading to model optimization.
+# 2. **Simplified Training**: We used Kaira's native Trainer class which automatically handles
+#    the training pipeline without requiring complex wrapper classes or custom datasets.
 #
 # 3. **Interactive Visualization**: All plots are displayed interactively using plt.show()
 #    instead of being saved to files, allowing for immediate visual feedback.
 #
-# 4. **Kaira Trainer**: We used the unified Trainer class from kaira.training that supports
-#    flexible training arguments and integrates seamlessly with Hugging Face ecosystem.
+# 4. **Kaira Trainer**: The unified Trainer class from kaira.training provides a clean,
+#    simplified interface that works directly with Kaira models and PyTorch datasets.
 #
 # 5. **PlottingUtils**: We leveraged kaira.utils.PlottingUtils for consistent visualization
 #    and professional-quality plots, including performance analysis charts.
 #
-# 6. **Integrated Losses and Metrics**: We used MSELoss from kaira.losses.image for proper image
-#    reconstruction loss calculation and PSNR from kaira.metrics.image for performance evaluation.
+# 6. **Integrated Metrics**: We used PSNR from kaira.metrics.image for performance evaluation.
 #
 # 7. **Bourtsoulatze2019 Implementation**: We used the authentic Bourtsoulatze2019DeepJSCCEncoder
 #    and Bourtsoulatze2019DeepJSCCDecoder from the seminal DeepJSCC paper, providing research-grade
 #    reference implementations.
+#
+# The simplified training approach eliminates the need for:
+# - Complex model wrapper classes
+# - Custom dataset classes for HuggingFace compatibility
+# - Manual loss computation handling
 #
 # The model effectively handles different channel qualities and provides graceful degradation
 # as the SNR decreases, following the original Bourtsoulatze et al. architecture.

@@ -254,6 +254,111 @@ Models module for Kaira.
    WynerZivModel
 
 
+Forward Error Correction (FEC)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Forward Error Correction module for Kaira models.
+
+This module provides comprehensive implementations for forward error correction, including both
+encoders and decoders for various coding schemes. The encoders and decoders are designed to work
+seamlessly together to provide robust error correction capabilities for communication systems.
+
+Decoders
+~~~~~~~~
+
+Forward Error Correction (FEC) decoders for Kaira.
+
+This module provides various decoder implementations for forward error correction codes.
+The decoders in this module are designed to work seamlessly with the corresponding encoders
+from the `kaira.models.fec.encoders` module.
+
+Available Decoders
+""""""""""""""""""
+- BlockDecoder: Base class for all block code decoders
+- SyndromeLookupDecoder: Decoder using syndrome lookup tables for efficient error correction
+- BerlekampMasseyDecoder: Implementation of Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes
+- ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
+- WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
+- BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
+- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
+- MinSumLDPCDecoder: Min-Sum decoder for LDPC codes with reduced computational complexity
+
+These decoders can be used to recover original messages from possibly corrupted codewords
+that have been transmitted over noisy channels. Each decoder has specific strengths and
+is optimized for particular types of codes or error patterns.
+
+Example Usage
+"""""""""""""
+>>> from kaira.models.fec.encoders import BCHCodeEncoder
+>>> from kaira.models.fec.decoders import BerlekampMasseyDecoder
+>>> encoder = BCHCodeEncoder(15, 7)
+>>> decoder = BerlekampMasseyDecoder(encoder)
+>>> # Example decoding
+>>> received = torch.tensor([1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1])
+>>> decoded = decoder(received)
+
+.. currentmodule:: kaira.models.fec.decoders
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BaseBlockDecoder
+   BeliefPropagationDecoder
+   BeliefPropagationPolarDecoder
+   BerlekampMasseyDecoder
+   BruteForceMLDecoder
+   MinSumLDPCDecoder
+   ReedMullerDecoder
+   SuccessiveCancellationDecoder
+   SyndromeLookupDecoder
+   WagnerSoftDecisionDecoder
+
+
+Encoders
+~~~~~~~~
+
+Forward Error Correction encoders for Kaira.
+
+This module provides various encoder implementations for forward error correction, including:
+- Block codes: Fundamental error correction codes that operate on fixed-size blocks
+- Linear block codes: Codes with linear algebraic structure allowing matrix operations
+- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
+- Cyclic codes: Special class of linear codes with cyclic shift properties
+- BCH codes: Powerful algebraic codes with precise error-correction capabilities
+- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
+- Hamming codes: Simple single-error-correcting codes with efficient implementation
+- Repetition codes: Basic codes that repeat each bit multiple times
+- Golay codes: Perfect codes with specific error correction properties
+- Single parity-check codes: Simple error detection through parity bit addition
+
+These encoders can be used to add redundancy to data for enabling error detection and correction
+in communication systems, storage devices, and other applications requiring reliable data
+transmission over noisy channels.
+
+.. currentmodule:: kaira.models.fec.encoders
+
+.. autosummary::
+   :toctree: generated
+   :template: class.rst
+   :nosignatures:
+
+   BCHCodeEncoder
+   BaseBlockCodeEncoder
+   CyclicCodeEncoder
+   GolayCodeEncoder
+   HammingCodeEncoder
+   LDPCCodeEncoder
+   LinearBlockCodeEncoder
+   PolarCodeEncoder
+   ReedMullerCodeEncoder
+   ReedSolomonCodeEncoder
+   RepetitionCodeEncoder
+   SingleParityCheckCodeEncoder
+   SystematicLinearBlockCodeEncoder
+
+
 Soft Bit Thresholding
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -307,102 +412,6 @@ Components module for Kaira models.
    MLPEncoder
    Projection
    ProjectionType
-
-
-Decoders
-^^^^^^^^
-
-Forward Error Correction (FEC) decoders for Kaira.
-
-This module provides various decoder implementations for forward error correction codes.
-The decoders in this module are designed to work seamlessly with the corresponding encoders
-from the `kaira.models.fec.encoders` module.
-
-Decoders
---------
-- BlockDecoder: Base class for all block code decoders
-- SyndromeLookupDecoder: Decoder using syndrome lookup tables for efficient error correction
-- BerlekampMasseyDecoder: Implementation of Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes
-- ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
-- WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
-- BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
-- BeliefPropagationDecoder: Implementation of belief propagation algorithm :cite:`kschischang2001factor` for decoding LDPC codes
-- MinSumLDPCDecoder: Min-Sum decoder :cite:`chen2005reduced` for LDPC codes with reduced computational complexity
-
-These decoders can be used to recover original messages from possibly corrupted codewords
-that have been transmitted over noisy channels. Each decoder has specific strengths and
-is optimized for particular types of codes or error patterns.
-
-Examples
---------
->>> from kaira.models.fec.encoders import BCHCodeEncoder
->>> from kaira.models.fec.decoders import BerlekampMasseyDecoder
->>> encoder = BCHCodeEncoder(15, 7)
->>> decoder = BerlekampMasseyDecoder(encoder)
->>> # Example decoding
->>> received = torch.tensor([1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1])
->>> decoded = decoder(received)
-
-.. currentmodule:: kaira.models.fec.decoders
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BaseBlockDecoder
-   BeliefPropagationDecoder
-   BeliefPropagationPolarDecoder
-   BerlekampMasseyDecoder
-   BruteForceMLDecoder
-   MinSumLDPCDecoder
-   ReedMullerDecoder
-   SuccessiveCancellationDecoder
-   SyndromeLookupDecoder
-   WagnerSoftDecisionDecoder
-
-
-Encoders
-^^^^^^^^
-
-Forward Error Correction encoders for Kaira.
-
-This module provides various encoder implementations for forward error correction, including:
-- Block codes: Fundamental error correction codes that operate on fixed-size blocks
-- Linear block codes: Codes with linear algebraic structure allowing matrix operations
-- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
-- Cyclic codes: Special class of linear codes with cyclic shift properties
-- BCH codes: Powerful algebraic codes with precise error-correction capabilities
-- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
-- Hamming codes: Simple single-error-correcting codes with efficient implementation
-- Repetition codes: Basic codes that repeat each bit multiple times
-- Golay codes: Perfect codes with specific error correction properties
-- Single parity-check codes: Simple error detection through parity bit addition
-
-These encoders can be used to add redundancy to data for enabling error detection and correction
-in communication systems, storage devices, and other applications requiring reliable data
-transmission over noisy channels :cite:`lin2004error,moon2005error`.
-
-.. currentmodule:: kaira.models.fec.encoders
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   BCHCodeEncoder
-   BaseBlockCodeEncoder
-   CyclicCodeEncoder
-   GolayCodeEncoder
-   HammingCodeEncoder
-   LDPCCodeEncoder
-   LinearBlockCodeEncoder
-   PolarCodeEncoder
-   ReedMullerCodeEncoder
-   ReedSolomonCodeEncoder
-   RepetitionCodeEncoder
-   SingleParityCheckCodeEncoder
-   SystematicLinearBlockCodeEncoder
 
 
 Generic

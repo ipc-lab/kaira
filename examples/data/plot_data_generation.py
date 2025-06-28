@@ -27,7 +27,7 @@ PlottingUtils.setup_plotting_style()
 # 1. Basic Dataset Generation
 # ---------------------------------------------------------
 # Binary and Uniform Dataset Creation
-# ==================================
+# ===================================
 #
 # Let's start with the basic dataset generation functions using HuggingFace datasets.
 # These functions create datasets with specific distributions.
@@ -171,7 +171,7 @@ print(f"Uniform batch shape: {uniform_batches[0].shape}")
 # 4. Communication Channel Simulation
 # ---------------------------------------------------------
 # Binary Symmetric Channel Example
-# ===============================
+# =================================
 #
 # Let's simulate a simple binary symmetric channel using
 # the generated binary data.
