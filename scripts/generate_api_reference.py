@@ -235,21 +235,6 @@ seamlessly together to provide robust error correction capabilities for communic
                 "The decoders in this module are designed to work seamlessly with the corresponding encoders",
                 "from the `kaira.models.fec.encoders` module.",
                 "",
-                "Available Decoders",
-                '"' * 18,  # 18 quotes for "Available Decoders"
-                "- BlockDecoder: Base class for all block code decoders",
-                "- SyndromeLookupDecoder: Decoder using syndrome lookup tables for efficient error correction",
-                "- BerlekampMasseyDecoder: Implementation of Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes",
-                "- ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes",
-                "- WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes",
-                "- BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords",
-                "- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes",
-                "- MinSumLDPCDecoder: Min-Sum decoder for LDPC codes with reduced computational complexity",
-                "",
-                "These decoders can be used to recover original messages from possibly corrupted codewords",
-                "that have been transmitted over noisy channels. Each decoder has specific strengths and",
-                "is optimized for particular types of codes or error patterns.",
-                "",
                 "Example Usage",
                 '"' * 13,  # 13 quotes for "Example Usage"
                 ">>> from kaira.models.fec.encoders import BCHCodeEncoder",
@@ -279,19 +264,7 @@ seamlessly together to provide robust error correction capabilities for communic
             
             encoder_description = """Forward Error Correction encoders for Kaira.
 
-This module provides various encoder implementations for forward error correction, including:
-- Block codes: Fundamental error correction codes that operate on fixed-size blocks
-- Linear block codes: Codes with linear algebraic structure allowing matrix operations
-- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
-- Cyclic codes: Special class of linear codes with cyclic shift properties
-- BCH codes: Powerful algebraic codes with precise error-correction capabilities
-- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
-- Hamming codes: Simple single-error-correcting codes with efficient implementation
-- Repetition codes: Basic codes that repeat each bit multiple times
-- Golay codes: Perfect codes with specific error correction properties
-- Single parity-check codes: Simple error detection through parity bit addition
-
-These encoders can be used to add redundancy to data for enabling error detection and correction
+This module provides various encoder implementations for forward error correction.These encoders can be used to add redundancy to data for enabling error detection and correction
 in communication systems, storage devices, and other applications requiring reliable data
 transmission over noisy channels."""
             

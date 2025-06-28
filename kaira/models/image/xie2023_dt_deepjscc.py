@@ -163,7 +163,7 @@ class MaskAttentionSampler(nn.Module):
 
 @ModelRegistry.register_model()
 class Xie2023DTDeepJSCCEncoder(BaseModel):
-    """Discrete Task-Oriented Deep JSCC encoder.
+    """Discrete Task-Oriented Deep JSCC encoder :cite:`xie2023robust`.
 
     This implements the encoder part of the DT-DeepJSCC architecture as described
     in :cite:`xie2023robust`. It maps input images to discrete latent representations
@@ -271,7 +271,7 @@ class Xie2023DTDeepJSCCEncoder(BaseModel):
 
 @ModelRegistry.register_model()
 class Xie2023DTDeepJSCCDecoder(BaseModel):
-    """Discrete Task-Oriented Deep JSCC decoder.
+    """Discrete Task-Oriented Deep JSCC decoder :cite:`xie2023robust`.
 
     This implements the decoder part of the DT-DeepJSCC architecture as described
     in :cite:`xie2023robust`. It maps discrete latent representations back to

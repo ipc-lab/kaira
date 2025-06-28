@@ -272,21 +272,6 @@ This module provides various decoder implementations for forward error correctio
 The decoders in this module are designed to work seamlessly with the corresponding encoders
 from the `kaira.models.fec.encoders` module.
 
-Available Decoders
-""""""""""""""""""
-- BlockDecoder: Base class for all block code decoders
-- SyndromeLookupDecoder: Decoder using syndrome lookup tables for efficient error correction
-- BerlekampMasseyDecoder: Implementation of Berlekamp-Massey algorithm for decoding BCH and Reed-Solomon codes
-- ReedMullerDecoder: Implementation of Reed-Muller decoding algorithm for Reed-Muller codes
-- WagnerSoftDecisionDecoder: Implementation of Wagner's soft-decision decoder for single-parity check codes
-- BruteForceMLDecoder: Maximum likelihood decoder that searches through all possible codewords
-- BeliefPropagationDecoder: Implementation of belief propagation algorithm for decoding LDPC codes
-- MinSumLDPCDecoder: Min-Sum decoder for LDPC codes with reduced computational complexity
-
-These decoders can be used to recover original messages from possibly corrupted codewords
-that have been transmitted over noisy channels. Each decoder has specific strengths and
-is optimized for particular types of codes or error patterns.
-
 Example Usage
 """""""""""""
 >>> from kaira.models.fec.encoders import BCHCodeEncoder
@@ -321,19 +306,7 @@ Encoders
 
 Forward Error Correction encoders for Kaira.
 
-This module provides various encoder implementations for forward error correction, including:
-- Block codes: Fundamental error correction codes that operate on fixed-size blocks
-- Linear block codes: Codes with linear algebraic structure allowing matrix operations
-- LDPC codes: Low-Density Parity-Check codes with sparse parity-check matrices
-- Cyclic codes: Special class of linear codes with cyclic shift properties
-- BCH codes: Powerful algebraic codes with precise error-correction capabilities
-- Reed-Solomon codes: Widely-used subset of BCH codes for burst error correction
-- Hamming codes: Simple single-error-correcting codes with efficient implementation
-- Repetition codes: Basic codes that repeat each bit multiple times
-- Golay codes: Perfect codes with specific error correction properties
-- Single parity-check codes: Simple error detection through parity bit addition
-
-These encoders can be used to add redundancy to data for enabling error detection and correction
+This module provides various encoder implementations for forward error correction.These encoders can be used to add redundancy to data for enabling error detection and correction
 in communication systems, storage devices, and other applications requiring reliable data
 transmission over noisy channels.
 
@@ -830,51 +803,6 @@ Utility functions for Signal-to-Noise Ratio (SNR) calculations and conversions.
    snr_linear_to_db
    snr_to_noise_power
 
-
-Trainer
--------
-
-Unified trainer for all communication models.
-
-This trainer automatically adapts to different model types and supports multiple
-configuration systems for training arguments:
-- Hugging Face TrainingArguments
-- Kaira TrainingArguments
-- Hydra DictConfig
-- Plain Python dictionaries
-
-Models are responsible for their own configuration, channel simulation,
-constraints, and domain-specific logic via their config systems.
-
-The trainer focuses on training mechanics. All domain-specific metrics
-and loss functions should be provided by the user via the compute_metrics
-and loss function parameters.
-
-Trainingarguments
------------------
-
-Training arguments that support Hydra configuration management.
-
-This class extends transformers.TrainingArguments to provide seamless integration
-with Hydra configuration management while maintaining full compatibility with
-Hugging Face ecosystem. It supports:
-
-- Direct instantiation from Hydra DictConfig via from_hydra_config
-- Communication-specific parameters
-- Automatic parameter filtering and validation
-
-Examples:
-    >>> # From Hydra config
-    >>> hydra_config = OmegaConf.create({"training": {"output_dir": "./results", "num_train_epochs": 10}})
-    >>> args = TrainingArguments.from_hydra_config(hydra_config)
-
-    >>> # With communication parameters
-    >>> args = TrainingArguments(
-    ...     output_dir="./results",
-    ...     snr_min=0.0,
-    ...     snr_max=20.0,
-    ...     channel_uses=64
-    ... )
 
 Benchmarks
 ----------
