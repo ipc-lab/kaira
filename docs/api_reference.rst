@@ -550,52 +550,6 @@ This package provides various loss functions for different modalities.
    LossRegistry
 
 
-Adversarial
-^^^^^^^^^^^
-
-Adversarial Losses module for Kaira.
-
-This module contains various adversarial loss functions for GAN-based training.
-
-.. currentmodule:: kaira.losses.adversarial
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   FeatureMatchingLoss
-   HingeLoss
-   LSGANLoss
-   R1GradientPenalty
-   VanillaGANLoss
-   WassersteinGANLoss
-
-
-Audio
-^^^^^
-
-Audio Losses module for Kaira.
-
-This module contains various loss functions for training audio-based communication systems.
-
-.. currentmodule:: kaira.losses.audio
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   AudioContrastiveLoss
-   FeatureMatchingLoss
-   L1AudioLoss
-   LogSTFTMagnitudeLoss
-   MelSpectrogramLoss
-   MultiResolutionSTFTLoss
-   STFTLoss
-   SpectralConvergenceLoss
-
-
 Image
 ^^^^^
 
@@ -625,47 +579,6 @@ computer vision tasks :cite:`wang2009mean` :cite:`zhang2018unreasonable`.
    StyleLoss
    TotalVariationLoss
    VGGLoss
-
-
-Multimodal
-^^^^^^^^^^
-
-Multimodal Losses module for Kaira.
-
-This module contains various loss functions for training multimodal systems.
-
-.. currentmodule:: kaira.losses.multimodal
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   AlignmentLoss
-   CMCLoss
-   ContrastiveLoss
-   InfoNCELoss
-   TripletLoss
-
-
-Text
-^^^^
-
-Text Losses module for Kaira.
-
-This module contains various loss functions for training text-based systems.
-
-.. currentmodule:: kaira.losses.text
-
-.. autosummary::
-   :toctree: generated
-   :template: class.rst
-   :nosignatures:
-
-   CosineSimilarityLoss
-   CrossEntropyLoss
-   LabelSmoothingLoss
-   Word2VecLoss
 
 
 Data
