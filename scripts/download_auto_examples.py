@@ -551,7 +551,6 @@ def generate_placeholder_examples(target_dir: Path) -> None:
         "losses": "Loss functions and optimization objectives for neural networks in communications, including custom losses for specific tasks.",
         "models": "Neural network models and architectures for communications, including deep learning approaches to channel coding, modulation, and signal processing.",
         "models_fec": "Forward Error Correction (FEC) models and coding techniques, including modern deep learning approaches to error correction and classical coding schemes.",
-        "benchmarks": "Benchmarking tools and performance comparisons for different algorithms, models, and system configurations.",
         "utils": "Utility functions and helper tools for signal processing, visualization, and system analysis.",
     }
 

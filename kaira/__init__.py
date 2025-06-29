@@ -13,7 +13,6 @@ import os
 import sys
 
 from . import (
-    benchmarks,
     channels,
     constraints,
     data,
@@ -30,7 +29,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 __all__ = [
     "__version__",
-    "benchmarks",
     "channels",
     "constraints",
     "data",

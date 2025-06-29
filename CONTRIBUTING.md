@@ -183,7 +183,6 @@ Examples are organized into categories:
 - `metrics` - Performance metrics and evaluation tools
 - `models` - Neural network models and architectures
 - `models_fec` - Forward Error Correction models
-- `benchmarks` - Benchmarking tools and comparisons
 - And more...
 
 For detailed information, see `docs/automated_example_gallery.md`.

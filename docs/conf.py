@@ -108,7 +108,6 @@ sphinx_gallery_conf = {
         "../examples/losses",
         "../examples/models",
         "../examples/models_fec",
-        "../examples/benchmarks",
     ],
     "gallery_dirs": [
         "auto_examples/channels",
@@ -119,7 +118,6 @@ sphinx_gallery_conf = {
         "auto_examples/losses",
         "auto_examples/models",
         "auto_examples/models_fec",
-        "auto_examples/benchmarks",
     ],
     # File patterns and organization
     "filename_pattern": r"\.py$",

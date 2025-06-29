@@ -54,7 +54,6 @@ Kaira Documentation
    :caption: API Documentation
 
    api_reference
-   benchmarks
 
 .. toctree::
    :maxdepth: 2

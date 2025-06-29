@@ -823,5 +823,4 @@ See Also
 ========
 
 - :doc:`api_reference`: API documentation
-- :doc:`benchmarks`: Performance evaluation
 - :doc:`best_practices`: Development best practices
