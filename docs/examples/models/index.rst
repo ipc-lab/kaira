@@ -75,18 +75,18 @@ Neural network models and architectures for communications, including deep learn
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the DeepJSCC model for image transmission over a noisy channel. DeepJSCC is an end-to-end approach that jointly optimizes source compression and channel coding using deep neural networks, providing robust performance in varying channel conditions.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the DeepJSCC model for image transmission over a noisy channel using the authentic Bourtsoulatze2019 encoder and decoder from the seminal paper :cite:`bourtsoulatze2019deep`. DeepJSCC is an end-to-end approach that jointly optimizes source compression and channel coding using deep neural networks, providing robust performance in varying channel conditions.">
 
 .. only:: html
 
     .. image:: /auto_examples/models/images/thumb/sphx_glr_plot_deepjscc_model_thumb.png
-      :alt: Deep Joint Source-Channel Coding (DeepJSCC) Model
+      :alt: Deep Joint Source-Channel Coding (DeepJSCC) Model - Bourtsoulatze2019 Implementation
 
     :ref:`sphx_glr_auto_examples_models_plot_deepjscc_model.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Deep Joint Source-Channel Coding (DeepJSCC) Model</div>
+      <div class="sphx-glr-thumbnail-title">Deep Joint Source-Channel Coding (DeepJSCC) Model - Bourtsoulatze2019 Implementation</div>
     </div>
 
 .. raw:: html

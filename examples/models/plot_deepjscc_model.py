@@ -5,18 +5,18 @@ Deep Joint Source-Channel Coding (DeepJSCC) Model - Bourtsoulatze2019 Implementa
 
 This example demonstrates how to use the DeepJSCC model for image transmission
 over a noisy channel using the authentic Bourtsoulatze2019 encoder and decoder
-from the seminal paper :cite:`bourtsoulatze2019deep`. DeepJSCC is an end-to-end 
-approach that jointly optimizes source compression and channel coding using deep 
+from the seminal paper :cite:`bourtsoulatze2019deep`. DeepJSCC is an end-to-end
+approach that jointly optimizes source compression and channel coding using deep
 neural networks, providing robust performance in varying channel conditions.
 """
-
-import matplotlib.pyplot as plt
 
 # %%
 # Imports and Setup
 # -------------------------------
 # First, we import necessary modules and set random seeds for reproducibility.
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset
@@ -27,7 +27,7 @@ from kaira.data import ImageDataset
 from kaira.metrics.image import PSNR
 from kaira.models.deepjscc import DeepJSCCModel
 from kaira.models.image import Bourtsoulatze2019DeepJSCCDecoder, Bourtsoulatze2019DeepJSCCEncoder
-from kaira.training import TrainingArguments, Trainer
+from kaira.training import Trainer, TrainingArguments
 from kaira.utils import PlottingUtils, seed_everything
 
 # Set random seed for reproducibility
@@ -55,11 +55,7 @@ torch.cuda.is_available = lambda: False
 # Load real CIFAR-10 images from kaira.data for training and evaluation.
 
 # Load CIFAR-10 dataset
-cifar10_dataset = ImageDataset(
-    name="cifar10",
-    train=True,
-    normalize=True
-)
+cifar10_dataset = ImageDataset(name="cifar10", train=True, normalize=True)
 
 # Convert to PyTorch tensors for training
 batch_size = 4
@@ -92,7 +88,7 @@ plt.show()  # Show the plot instead of saving
 # %%
 # Building the DeepJSCC Model
 # ---------------------------------------------------
-# Now we'll create the components needed for our DeepJSCC model using the 
+# Now we'll create the components needed for our DeepJSCC model using the
 # Bourtsoulatze2019 implementation from the seminal DeepJSCC paper.
 
 # Define model parameters
@@ -139,10 +135,10 @@ print("🔄 Simulating transmission at different SNR levels...")
 for snr in snr_values:
     # Simulate transmission effects (this demonstrates the concept)
     # In practice, this would be: received = model(test_image, snr=snr)
-    noise_power = 10**(-snr/10)
+    noise_power = 10 ** (-snr / 10)
     noise = torch.randn_like(test_image) * np.sqrt(noise_power * 0.1)
     simulated_received = torch.clip(test_image + noise, 0, 1)
-    
+
     # Store the result
     results[snr] = simulated_received[0].detach().cpu()
     print(f"  ✅ Simulated transmission at {snr} dB SNR")
@@ -163,11 +159,7 @@ plt.show()  # Show the plot instead of saving
 # Now let's set up and run actual training using Kaira's simplified Trainer.
 
 # Create a simple dataset for training using CIFAR-10
-train_cifar10_dataset = ImageDataset(
-    name="cifar10",
-    train=True,
-    normalize=True
-)
+train_cifar10_dataset = ImageDataset(name="cifar10", train=True, normalize=True)
 
 # Convert to PyTorch tensors
 train_images = []
@@ -230,10 +222,10 @@ test_img = test_image[0:1]
 
 for snr in snr_range:
     # Simulate channel noise effect (this demonstrates the concept)
-    noise_power = 10**(-snr/10)  # Convert SNR dB to linear scale
+    noise_power = 10 ** (-snr / 10)  # Convert SNR dB to linear scale
     noise = torch.randn_like(test_img) * np.sqrt(noise_power * 0.1)  # Scale noise appropriately
     noisy_image = torch.clip(test_img + noise, 0, 1)
-    
+
     # Calculate PSNR between original and noisy image
     psnr = psnr_metric(noisy_image, test_img).item()
     psnr_values.append(psnr)
@@ -243,15 +235,7 @@ for snr in snr_range:
 psnr_values = [np.array(psnr_values)]
 labels = ["DeepJSCC Model (simulated)"]
 
-fig = PlottingUtils.plot_performance_vs_snr(
-    snr_range=snr_range,
-    performance_values=psnr_values,
-    labels=labels,
-    title="DeepJSCC Model Performance",
-    ylabel="PSNR (dB)",
-    use_log_scale=False,  # PSNR doesn't need log scale
-    xlabel="Channel SNR (dB)"
-)
+fig = PlottingUtils.plot_performance_vs_snr(snr_range=snr_range, performance_values=psnr_values, labels=labels, title="DeepJSCC Model Performance", ylabel="PSNR (dB)", use_log_scale=False, xlabel="Channel SNR (dB)")  # PSNR doesn't need log scale
 plt.show()  # Show the plot instead of saving
 
 print("✅ PSNR performance analysis completed!")
@@ -260,7 +244,7 @@ print("✅ PSNR performance analysis completed!")
 # Conclusion
 # --------------------
 # This example demonstrated how to set up and use a DeepJSCC model for joint source-channel
-# coding in image transmission with real CIFAR-10 data, utilizing Kaira's streamlined training 
+# coding in image transmission with real CIFAR-10 data, utilizing Kaira's streamlined training
 # and visualization tools:
 #
 # 1. **Real Data Loading**: We used ImageDataset from kaira.data to load actual CIFAR-10
@@ -298,4 +282,3 @@ print("✅ PSNR performance analysis completed!")
 # 3. Implement comprehensive evaluation metrics using kaira.metrics
 # 4. Compare with traditional separate source and channel coding approaches
 # 5. Use the comprehensive plotting utilities for analysis and publication-ready figures
-

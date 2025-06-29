@@ -14,8 +14,8 @@ from torch.utils.data import Dataset
 class BinaryDataset(Dataset):
     """Dataset for binary tensor data with configurable probability.
 
-    Generates binary tensors on-demand with specified probability of 1s.
-    Useful for digital communication and coding theory experiments.
+    Generates binary tensors on-demand with specified probability of 1s. Useful for digital
+    communication and coding theory experiments.
     """
 
     def __init__(
@@ -56,11 +56,12 @@ class BinaryDataset(Dataset):
         data = local_rng.binomial(1, self.prob, size=self.shape).astype(np.float32)
         return torch.from_numpy(data)
 
+
 class UniformDataset(Dataset):
     """Dataset for uniformly distributed tensor data.
 
-    Generates tensors with uniformly distributed random values on-demand.
-    Useful for noise generation and random signal experiments.
+    Generates tensors with uniformly distributed random values on-demand. Useful for noise
+    generation and random signal experiments.
     """
 
     def __init__(
@@ -108,8 +109,8 @@ class UniformDataset(Dataset):
 class GaussianDataset(Dataset):
     """Dataset for Gaussian distributed tensor data.
 
-    Generates tensors with Gaussian distributed random values on-demand.
-    Useful for noise modeling and channel simulation.
+    Generates tensors with Gaussian distributed random values on-demand. Useful for noise modeling
+    and channel simulation.
     """
 
     def __init__(
@@ -157,8 +158,8 @@ class GaussianDataset(Dataset):
 class CorrelatedDataset(Dataset):
     """Dataset for correlated data pairs.
 
-    Generates pairs of correlated tensors useful for Wyner-Ziv coding,
-    side information experiments, and correlation modeling.
+    Generates pairs of correlated tensors useful for Wyner-Ziv coding, side information
+    experiments, and correlation modeling.
     """
 
     def __init__(
@@ -199,24 +200,24 @@ class CorrelatedDataset(Dataset):
         """
         # Use index as additional seed for deterministic generation
         local_rng = np.random.RandomState(self.rng.randint(0, 2**31) + idx)
-        
+
         # Generate source signal
         source = local_rng.normal(0, 1, size=self.shape).astype(np.float32)
-        
+
         # Generate independent noise for side information
         noise = local_rng.normal(0, 1, size=self.shape).astype(np.float32)
-        
+
         # Create correlated side information using the standard formula
         side_info = (self.correlation * source + np.sqrt(1 - self.correlation**2) * noise).astype(np.float32)
-        
+
         return torch.from_numpy(source), torch.from_numpy(side_info)
 
 
 class FunctionDataset(Dataset):
     """Dataset that applies a custom function to generate data.
 
-    Flexible dataset for custom data generation using user-provided functions.
-    Useful for complex signal generation and custom experiments.
+    Flexible dataset for custom data generation using user-provided functions. Useful for complex
+    signal generation and custom experiments.
     """
 
     def __init__(
@@ -256,7 +257,7 @@ class FunctionDataset(Dataset):
 
 __all__ = [
     "BinaryDataset",
-    "UniformDataset", 
+    "UniformDataset",
     "GaussianDataset",
     "CorrelatedDataset",
     "FunctionDataset",

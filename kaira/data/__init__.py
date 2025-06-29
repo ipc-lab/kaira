@@ -1,8 +1,7 @@
 """Data utilities for Kaira.
 
-This module provides simple and efficient dataset classes for communication systems
-and information theory experiments. All datasets are memory-efficient and generate
-data on-demand.
+This module provides simple and efficient dataset classes for communication systems and information
+theory experiments. All datasets are memory-efficient and generate data on-demand.
 """
 
 from .datasets import (

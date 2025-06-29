@@ -100,15 +100,7 @@ for snr_db in snr_db_range:
 # Comment: Compare BER performance across different QAM orders
 ber_values = [np.array(ber_results[order]) for order in qam_orders]
 labels = [f"{order}-QAM" for order in qam_orders]
-fig = PlottingUtils.plot_performance_vs_snr(
-    snr_range=snr_db_range, 
-    performance_values=ber_values, 
-    labels=labels, 
-    title="BER Performance of Different QAM Orders",
-    ylabel="Bit Error Rate",
-    use_log_scale=True,
-    xlabel="SNR (dB)"
-)
+fig = PlottingUtils.plot_performance_vs_snr(snr_range=snr_db_range, performance_values=ber_values, labels=labels, title="BER Performance of Different QAM Orders", ylabel="Bit Error Rate", use_log_scale=True, xlabel="SNR (dB)")
 fig.show()
 
 # %%

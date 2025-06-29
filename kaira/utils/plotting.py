@@ -24,7 +24,7 @@ class PlottingUtils:
     All methods are static to allow easy access without instantiation:
 
     Example:
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, 
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
                                                     ylabel="Bit Error Rate", use_log_scale=True)
     """
 
@@ -99,8 +99,6 @@ class PlottingUtils:
             plt.colorbar(im, ax=ax, shrink=0.8)
 
         return fig
-
-
 
     @staticmethod
     def plot_complexity_comparison(code_types: List[str], metrics: Dict[str, List[float]], title: str = "Complexity Comparison") -> plt.Figure:
@@ -1292,10 +1290,10 @@ class PlottingUtils:
     @staticmethod
     def plot_image_comparison(original: torch.Tensor, results_dict: Dict[Any, torch.Tensor], title: str = "Image Transmission Results") -> plt.Figure:
         """Plot original image alongside results at different conditions (e.g., SNRs).
-        
+
         This function is useful for visualizing image transmission or reconstruction results
         across different channel conditions or processing parameters.
-        
+
         Parameters
         ----------
         original : torch.Tensor
@@ -1304,7 +1302,7 @@ class PlottingUtils:
             Dictionary mapping condition labels (e.g., SNR values) to reconstructed images
         title : str
             Plot title
-            
+
         Returns
         -------
         plt.Figure
@@ -1312,33 +1310,31 @@ class PlottingUtils:
         """
         n_images = len(results_dict) + 1
         fig, axes = plt.subplots(1, n_images, figsize=(3 * n_images, 3))
-        
+
         # Handle single subplot case
         if n_images == 1:
             axes = [axes]
-        
+
         # Original image
         axes[0].imshow(original.permute(1, 2, 0).numpy())
         axes[0].set_title("Original", fontweight="bold")
         axes[0].axis("off")
-        
+
         # Results at different conditions
         for i, (condition, result) in enumerate(results_dict.items()):
             axes[i + 1].imshow(result.permute(1, 2, 0).numpy().clip(0, 1))
             axes[i + 1].set_title(f"{condition} dB" if isinstance(condition, (int, float)) else str(condition), fontweight="bold")
             axes[i + 1].axis("off")
-        
+
         fig.suptitle(title, fontsize=14, fontweight="bold")
         plt.tight_layout()
         return fig
 
     @staticmethod
-    def plot_performance_vs_snr(snr_range: np.ndarray, performance_values: List[np.ndarray], labels: List[str], 
-                                title: str = "Performance vs SNR", ylabel: str = "Performance", 
-                                use_log_scale: bool = True, xlabel: str = "SNR (dB)") -> plt.Figure:
+    def plot_performance_vs_snr(snr_range: np.ndarray, performance_values: List[np.ndarray], labels: List[str], title: str = "Performance vs SNR", ylabel: str = "Performance", use_log_scale: bool = True, xlabel: str = "SNR (dB)") -> plt.Figure:
         """Plot performance metrics vs SNR curves.
 
-        A generic plotting function for any performance metric vs SNR, suitable for BER, PSNR, 
+        A generic plotting function for any performance metric vs SNR, suitable for BER, PSNR,
         MSE, accuracy, or any other performance measures.
 
         Parameters
@@ -1369,7 +1365,7 @@ class PlottingUtils:
             # Convert to numpy array if it's a list
             values_array = np.array(values) if isinstance(values, list) else values
             color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
-            
+
             if use_log_scale:
                 ax.semilogy(snr_range, values_array, "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
             else:

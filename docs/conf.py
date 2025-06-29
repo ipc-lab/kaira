@@ -387,20 +387,8 @@ def skip_member(app, what, name, obj, skip, options):
         return True
 
     # Skip problematic inherited methods from Transformers library that have malformed docstrings
-    transformers_methods_to_skip = [
-        "from_pretrained",
-        "push_to_hub", 
-        "set_dataloader",
-        "set_evaluate", 
-        "set_logging",
-        "set_lr_scheduler",
-        "set_optimizer", 
-        "set_push_to_hub",
-        "set_save",
-        "set_testing", 
-        "set_training"
-    ]
-    
+    transformers_methods_to_skip = ["from_pretrained", "push_to_hub", "set_dataloader", "set_evaluate", "set_logging", "set_lr_scheduler", "set_optimizer", "set_push_to_hub", "set_save", "set_testing", "set_training"]
+
     if name in transformers_methods_to_skip:
         # Check if this is coming from a Transformers class
         if hasattr(obj, "__module__") and "transformers" in getattr(obj, "__module__", ""):

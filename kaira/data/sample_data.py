@@ -14,8 +14,8 @@ from torch.utils.data import Dataset, Subset
 class ImageDataset(Dataset):
     """Simple wrapper for common image datasets.
 
-    Provides easy access to CIFAR-10, CIFAR-100, and MNIST datasets
-    with consistent interface and optional preprocessing.
+    Provides easy access to CIFAR-10, CIFAR-100, and MNIST datasets with consistent interface and
+    optional preprocessing.
     """
 
     def __init__(
@@ -36,7 +36,7 @@ class ImageDataset(Dataset):
             root: Root directory for dataset storage
         """
         self.name = name.lower()
-        
+
         # Build transforms
         transform_list = []
         if size is not None:
@@ -45,22 +45,16 @@ class ImageDataset(Dataset):
         if not normalize:
             # Convert back to [0, 255] range if normalization is disabled
             transform_list.append(transforms.Lambda(lambda x: x * 255))
-        
+
         transform = transforms.Compose(transform_list)
-        
+
         # Load dataset
         if self.name == "cifar10":
-            self.dataset = torchvision.datasets.CIFAR10(
-                root=root, train=train, download=True, transform=transform
-            )
+            self.dataset = torchvision.datasets.CIFAR10(root=root, train=train, download=True, transform=transform)
         elif self.name == "cifar100":
-            self.dataset = torchvision.datasets.CIFAR100(
-                root=root, train=train, download=True, transform=transform
-            )
+            self.dataset = torchvision.datasets.CIFAR100(root=root, train=train, download=True, transform=transform)
         elif self.name == "mnist":
-            self.dataset = torchvision.datasets.MNIST(
-                root=root, train=train, download=True, transform=transform
-            )
+            self.dataset = torchvision.datasets.MNIST(root=root, train=train, download=True, transform=transform)
         else:
             raise ValueError(f"Unsupported dataset: {self.name}")
 
@@ -91,7 +85,7 @@ class ImageDataset(Dataset):
         """
         if seed is not None:
             torch.manual_seed(seed)
-        
+
         indices = torch.randperm(len(self))[:size]
         return Subset(self, indices)
 

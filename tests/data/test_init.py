@@ -1,7 +1,5 @@
 """Tests for the data module initialization."""
 
-import pytest
-
 
 class TestKairaDataInit:
     """Test class for kaira.data module initialization."""
@@ -10,11 +8,11 @@ class TestKairaDataInit:
         """Test that all expected classes and functions are importable."""
         from kaira.data import (
             BinaryDataset,
-            UniformDataset,
-            GaussianDataset,
             CorrelatedDataset,
             FunctionDataset,
+            GaussianDataset,
             ImageDataset,
+            UniformDataset,
         )
 
         # Test that they're all classes/functions
@@ -51,7 +49,7 @@ class TestKairaDataInit:
 
     def test_direct_class_instantiation(self):
         """Test that classes can be instantiated directly from the module."""
-        from kaira.data import BinaryDataset, UniformDataset, GaussianDataset
+        from kaira.data import BinaryDataset, GaussianDataset, UniformDataset
 
         # Test basic instantiation
         binary_dataset = BinaryDataset(length=10, shape=(5,), seed=42)
@@ -67,8 +65,8 @@ class TestKairaDataInit:
         import kaira.data
 
         # Check that submodules are accessible
-        assert hasattr(kaira.data, 'datasets')
-        assert hasattr(kaira.data, 'sample_data')
+        assert hasattr(kaira.data, "datasets")
+        assert hasattr(kaira.data, "sample_data")
 
     def test_no_old_classes(self):
         """Test that old classes are no longer available."""
@@ -76,11 +74,11 @@ class TestKairaDataInit:
 
         # These should not be available anymore
         old_classes = [
-            'BinaryTensorDataset',
-            'UniformTensorDataset', 
-            'WynerZivCorrelationDataset',
-            'SampleImagesDataset',
-            'TorchVisionDataset',
+            "BinaryTensorDataset",
+            "UniformTensorDataset",
+            "WynerZivCorrelationDataset",
+            "SampleImagesDataset",
+            "TorchVisionDataset",
         ]
 
         for old_class in old_classes:

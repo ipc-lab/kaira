@@ -179,27 +179,11 @@ for bp_iters, data in results.items():
     labels.append(f"BP Iterations = {bp_iters}")
 
 # Plot BER performance
-PlottingUtils.plot_performance_vs_snr(
-    snr_range=np.array(snr_db_values), 
-    performance_values=[np.array(curve) for curve in ber_curves], 
-    labels=labels, 
-    title="BER Performance of LDPC Code", 
-    ylabel="Bit Error Rate (BER)",
-    use_log_scale=True,
-    xlabel="SNR (dB)"
-)
+PlottingUtils.plot_performance_vs_snr(snr_range=np.array(snr_db_values), performance_values=[np.array(curve) for curve in ber_curves], labels=labels, title="BER Performance of LDPC Code", ylabel="Bit Error Rate (BER)", use_log_scale=True, xlabel="SNR (dB)")
 plt.show()
 
 # Plot BLER performance
-PlottingUtils.plot_performance_vs_snr(
-    snr_range=np.array(snr_db_values), 
-    performance_values=[np.array(curve) for curve in bler_curves], 
-    labels=labels, 
-    title="BLER Performance of LDPC Code", 
-    ylabel="Block Error Rate (BLER)",
-    use_log_scale=True,
-    xlabel="SNR (dB)"
-)
+PlottingUtils.plot_performance_vs_snr(snr_range=np.array(snr_db_values), performance_values=[np.array(curve) for curve in bler_curves], labels=labels, title="BLER Performance of LDPC Code", ylabel="Block Error Rate (BLER)", use_log_scale=True, xlabel="SNR (dB)")
 plt.show()
 
 # %%

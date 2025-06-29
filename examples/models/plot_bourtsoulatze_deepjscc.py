@@ -97,7 +97,7 @@ train_images = torch.stack(train_images)
 # Extract test images
 test_images = []
 for i in range(min(20, len(test_dataset))):  # Limit to 20 samples
-    image_tensor, label = test_dataset[i]  # ImageDataset returns (image, label) 
+    image_tensor, label = test_dataset[i]  # ImageDataset returns (image, label)
     # image_tensor is already a torch tensor
     test_images.append(image_tensor)
 

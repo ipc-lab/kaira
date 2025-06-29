@@ -103,10 +103,7 @@ class TestPlottingUtils:
         ber_values = [np.array([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6])]
         labels = ["Test Code"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, 
-                                                   title="BER Performance", 
-                                                   ylabel="Bit Error Rate", 
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -128,10 +125,7 @@ class TestPlottingUtils:
         ber_values = [[1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]]  # List instead of numpy array
         labels = ["Test Code"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -141,10 +135,7 @@ class TestPlottingUtils:
         ber_values = [np.array([0.1, 0.01, 0, 0, 0, 0])]  # Contains zeros
         labels = ["Test Code"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -154,10 +145,7 @@ class TestPlottingUtils:
         ber_values = [np.array([0, 0, 0, 0, 0, 0])]  # All zeros
         labels = ["Test Code"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -811,10 +799,7 @@ class TestPlottingUtils:
         ber_values = [np.array([1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]) * (i + 1) for i in range(8)]
         labels = [f"Code {i+1}" for i in range(8)]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -825,10 +810,7 @@ class TestPlottingUtils:
         ber_values = [np.array([1e-3])]
         labels = ["Single Point"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
 
         assert isinstance(fig, Figure)
 
@@ -882,10 +864,7 @@ class TestPlottingUtilsErrorCases:
         ber_values = [np.array([1e-1, 1e-2, 1e-3])]  # 3 points to match
         labels = ["Matched"]
 
-        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
-                                                   title="BER Performance",
-                                                   ylabel="Bit Error Rate",
-                                                   use_log_scale=True)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels, title="BER Performance", ylabel="Bit Error Rate", use_log_scale=True)
         assert isinstance(fig, Figure)
 
     def test_additional_edge_cases(self):

@@ -1,15 +1,13 @@
 """Tests for the simplified datasets module."""
 
-import numpy as np
-import pytest
 import torch
 
 from kaira.data.datasets import (
     BinaryDataset,
-    UniformDataset,
-    GaussianDataset,
     CorrelatedDataset,
     FunctionDataset,
+    GaussianDataset,
+    UniformDataset,
 )
 
 
@@ -120,10 +118,10 @@ class TestUniformDataset:
 
         # Get multiple samples and check range
         samples = torch.stack([dataset[i] for i in range(100)])
-        
+
         assert torch.all(samples >= low)
         assert torch.all(samples <= high)
-        
+
         # Check that we get values near both extremes
         assert samples.min().item() < low + 0.5
         assert samples.max().item() > high - 0.5
@@ -160,10 +158,10 @@ class TestGaussianDataset:
 
         # Get many samples and check statistics
         samples = torch.stack([dataset[i] for i in range(100)])
-        
+
         actual_mean = samples.mean().item()
         actual_std = samples.std().item()
-        
+
         # Should be approximately equal (within some tolerance)
         assert abs(actual_mean - mean) < 0.2
         assert abs(actual_std - std) < 0.2
@@ -201,11 +199,11 @@ class TestCorrelatedDataset:
 
         # Get a sample and check correlation
         source, side_info = dataset[0]
-        
+
         # Calculate correlation coefficient
         correlation_matrix = torch.corrcoef(torch.stack([source.flatten(), side_info.flatten()]))
         actual_correlation = correlation_matrix[0, 1].item()
-        
+
         # Should be approximately equal to target correlation (more relaxed tolerance)
         assert abs(actual_correlation - target_correlation) < 0.2
 
@@ -216,10 +214,10 @@ class TestFunctionDataset:
     def test_basic_initialization(self):
         """Test basic initialization and properties."""
         length = 10
-        
+
         def generator_fn(idx):
             return torch.randn(5) * idx
-        
+
         dataset = FunctionDataset(length=length, generator_fn=generator_fn, seed=42)
 
         assert len(dataset) == length
@@ -227,7 +225,7 @@ class TestFunctionDataset:
         # Test getting samples
         sample0 = dataset[0]
         sample1 = dataset[1]
-        
+
         assert isinstance(sample0, torch.Tensor)
         assert isinstance(sample1, torch.Tensor)
         assert sample0.shape == (5,)
@@ -236,16 +234,16 @@ class TestFunctionDataset:
     def test_custom_function(self):
         """Test with a custom generation function."""
         length = 5
-        
+
         def sine_generator(idx):
-            x = torch.linspace(0, 2*torch.pi, 100)
+            x = torch.linspace(0, 2 * torch.pi, 100)
             return torch.sin(x + idx)
-        
+
         dataset = FunctionDataset(length=length, generator_fn=sine_generator, seed=42)
 
         sample = dataset[0]
         assert sample.shape == (100,)
-        
+
         # Check that different indices give different results
         sample0 = dataset[0]
         sample1 = dataset[1]

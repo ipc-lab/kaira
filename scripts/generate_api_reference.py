@@ -194,39 +194,39 @@ def scan_submodules(base_module: ModuleType, base_path: str) -> Dict[str, Dict[s
 
 def handle_special_organization(all_blocks: Dict[str, Dict[str, str]], module_path: str) -> List[str]:
     """Handle special organizational cases for certain modules.
-    
+
     Args:
         all_blocks: Dictionary of all documentation blocks.
         module_path: The base module path being processed.
-        
+
     Returns:
         List of reStructuredText content for the special organization.
     """
     special_content = []
-    
+
     # Special handling for models.fec - group encoders and decoders together
     if module_path == "kaira.models":
         fec_encoder_path = "kaira.models.fec.encoders"
         fec_decoder_path = "kaira.models.fec.decoders"
-        
+
         if fec_encoder_path in all_blocks and fec_decoder_path in all_blocks:
             # Create unified FEC section
             fec_title = "Forward Error Correction (FEC)"
             fec_underline = "^" * len(fec_title)
-            
+
             fec_description = """Forward Error Correction module for Kaira models.
 
 This module provides comprehensive implementations for forward error correction, including both
 encoders and decoders for various coding schemes. The encoders and decoders are designed to work
 seamlessly together to provide robust error correction capabilities for communication systems."""
-            
+
             special_content.append(f"{fec_title}\n{fec_underline}\n\n{fec_description}\n")
-            
+
             # Add Decoders subsection
             decoder_blocks = all_blocks.pop(fec_decoder_path)
             decoder_title = "Decoders"
             decoder_underline = "~" * len(decoder_title)
-            
+
             # Build decoder description programmatically to avoid quote issues
             decoder_description_lines = [
                 "Forward Error Correction (FEC) decoders for Kaira.",
@@ -243,41 +243,41 @@ seamlessly together to provide robust error correction capabilities for communic
                 ">>> decoder = BerlekampMasseyDecoder(encoder)",
                 ">>> # Example decoding",
                 ">>> received = torch.tensor([1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1])",
-                ">>> decoded = decoder(received)"
+                ">>> decoded = decoder(received)",
             ]
             decoder_description = "\n".join(decoder_description_lines)
-            
+
             special_content.append(f"{decoder_title}\n{decoder_underline}\n\n{decoder_description}\n")
-            
+
             if "classes" in decoder_blocks:
                 special_content.append(decoder_blocks["classes"])
                 special_content.append("\n")
-            
+
             if "functions" in decoder_blocks:
                 special_content.append(decoder_blocks["functions"])
                 special_content.append("\n")
-            
+
             # Add Encoders subsection
             encoder_blocks = all_blocks.pop(fec_encoder_path)
             encoder_title = "Encoders"
             encoder_underline = "~" * len(encoder_title)
-            
+
             encoder_description = """Forward Error Correction encoders for Kaira.
 
 This module provides various encoder implementations for forward error correction.These encoders can be used to add redundancy to data for enabling error detection and correction
 in communication systems, storage devices, and other applications requiring reliable data
 transmission over noisy channels."""
-            
+
             special_content.append(f"{encoder_title}\n{encoder_underline}\n\n{encoder_description}\n")
-            
+
             if "classes" in encoder_blocks:
                 special_content.append(encoder_blocks["classes"])
                 special_content.append("\n")
-            
+
             if "functions" in encoder_blocks:
                 special_content.append(encoder_blocks["functions"])
                 special_content.append("\n")
-    
+
     return special_content
 
 
@@ -412,15 +412,14 @@ These abstract classes establish the contract that derived classes must fulfill.
 
         # Add submodule sections for this module
         submodule_paths = [p for p in all_blocks.keys() if p.startswith(f"{module_path}.")]
-        
+
         # Handle special organizational cases
         special_content = handle_special_organization(all_blocks, module_path)
         if special_content:
             output.extend(special_content)
             # Remove the paths that were handled by special organization
-            submodule_paths = [p for p in submodule_paths if p not in 
-                             ["kaira.models.fec.encoders", "kaira.models.fec.decoders"]]
-        
+            submodule_paths = [p for p in submodule_paths if p not in ["kaira.models.fec.encoders", "kaira.models.fec.decoders"]]
+
         for submodule_path in sorted(submodule_paths):
             if submodule_path not in all_blocks:
                 continue
