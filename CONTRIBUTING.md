@@ -192,7 +192,7 @@ Examples are organized into categories:
 - `models_fec` - Forward Error Correction models
 - And more...
 
-For detailed information, see the examples documentation.
+For detailed information, see the existing examples in each category directory.
 
 ## Testing
 
