@@ -39,11 +39,14 @@ There are many ways to contribute to Kaira:
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-   # Install development dependencies
-   pip install -e ".[dev]"
-   # Or alternatively:
+   # Install the package in development mode
    pip install -e .
+
+   # Install development dependencies
    pip install -r requirements-dev.txt
+
+   # Set up pre-commit hooks (recommended)
+   pre-commit install
    ```
 
 ### Making Changes
@@ -66,10 +69,14 @@ There are many ways to contribute to Kaira:
    pytest
    ```
 
-4. **Check code style**:
+4. **Check code style and formatting**:
 
    ```bash
-   bash scripts/lint.sh
+   # Run all pre-commit hooks (formatting, linting, etc.)
+   pre-commit run -a
+
+   # Or use the Makefile shortcut
+   make format
    ```
 
 ### Submitting a Pull Request
@@ -185,7 +192,7 @@ Examples are organized into categories:
 - `models_fec` - Forward Error Correction models
 - And more...
 
-For detailed information, see `docs/automated_example_gallery.md`.
+For detailed information, see the examples documentation.
 
 ## Testing
 

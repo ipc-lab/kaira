@@ -38,7 +38,7 @@ PlottingUtils.setup_plotting_style()
 # Force CPU and float32 - disable MPS entirely
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_ENABLED"] = "0"  # Completely disable MPS
-if hasattr(torch.backends, 'mps'):
+if hasattr(torch.backends, "mps"):
     torch.backends.mps.enabled = False
 
 # Set device and force float32 for compatibility
@@ -47,7 +47,7 @@ device = torch.device("cpu")  # Use CPU for compatibility
 torch.set_default_device("cpu")
 torch.set_default_dtype(torch.float32)  # Force float32 to avoid MPS issues
 
-# Also set CUDA to disabled to force CPU usage  
+# Also set CUDA to disabled to force CPU usage
 torch.cuda.is_available = lambda: False
 
 # %%
@@ -122,23 +122,25 @@ for param in model.parameters():
 
 print("✅ Built complete DeepJSCC model using Bourtsoulatze2019 components")
 
+
 # Custom model wrapper to handle the training interface
 class DeepJSCCModelWrapper(torch.nn.Module):
     def __init__(self, deepjscc_model):
         super().__init__()
         self.deepjscc_model = deepjscc_model
-        
+
     def forward(self, input_ids, labels=None, **kwargs):
         # During training, we get both input_ids and labels
         # During inference, we only get input_ids
         outputs = self.deepjscc_model(input_ids)
-        
+
         if labels is not None:
             # Compute MSE loss for training
             loss = torch.nn.functional.mse_loss(outputs, labels)
             return {"loss": loss, "logits": outputs}
         else:
             return {"logits": outputs}
+
 
 # Wrap the model for compatibility with Hugging Face trainer
 wrapped_model = DeepJSCCModelWrapper(model).to(device).float()
@@ -168,7 +170,7 @@ for snr in snr_values:
     with torch.no_grad():
         # Use the wrapped model to get just the output (without loss computation)
         output = wrapped_model(test_image)["logits"]
-        
+
         # Store the result
         results[snr] = output[0].detach().cpu()
         print(f"  ✅ Tested transmission at {snr} dB SNR")
@@ -199,18 +201,20 @@ for i in range(min(200, len(train_cifar10_dataset))):  # Use up to 200 samples f
 
 train_x = torch.stack(train_images).float().to(device)
 
+
 # Create a custom dataset that returns proper format for the trainer
 class DeepJSCCDataset(torch.utils.data.Dataset):
     def __init__(self, images):
         self.images = images
-    
+
     def __len__(self):
         return len(self.images)
-    
+
     def __getitem__(self, idx):
         # Return in Hugging Face format - single image acts as both input and target
         image = self.images[idx]
         return {"input_ids": image, "labels": image}
+
 
 train_dataset = DeepJSCCDataset(train_x)
 
@@ -258,26 +262,26 @@ except Exception as e:
 
 if training_successful:
     print("🔄 Calculating PSNR using actual DeepJSCC model...")
-    
+
     # Initialize PSNR metric
     psnr_metric = PSNR(data_range=1.0)
-    
+
     snr_range = np.array([0, 5, 10, 15, 20])
     psnr_values = []
-    
+
     # Use a single test image
     test_img = test_image[0:1].to(device)
-    
+
     # Ensure model is in evaluation mode
     wrapped_model.eval()
-    
+
     for snr in snr_range:
         try:
             # Test the actual model at different SNRs
             with torch.no_grad():
                 # Get reconstructed image from the model
                 reconstructed = wrapped_model(test_img)["logits"]
-                
+
                 # Calculate PSNR between original and reconstructed image
                 psnr = psnr_metric(reconstructed, test_img).item()
                 psnr_values.append(psnr)
@@ -286,14 +290,14 @@ if training_successful:
             print(f"  Error at SNR {snr} dB: {e}")
             # Use a fallback PSNR value for demonstration
             psnr_values.append(20.0 + snr * 0.5)
-    
+
     # Plot PSNR vs SNR using PlottingUtils
     psnr_values = [np.array(psnr_values)]
     labels = ["DeepJSCC Model (trained)"]
-    
+
     fig = PlottingUtils.plot_performance_vs_snr(snr_range=snr_range, performance_values=psnr_values, labels=labels, title="DeepJSCC Model Performance", ylabel="PSNR (dB)", use_log_scale=False, xlabel="Channel SNR (dB)")
     plt.show()
-    
+
     print("✅ PSNR performance analysis completed!")
 else:
     print("⚠️  Skipping performance analysis due to training issues.")
