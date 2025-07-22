@@ -8,10 +8,9 @@ paper*
 # C extensions
 *.so
 results
-examples/benchmarks/example_results
-examples/benchmarks/benchmark_results
-examples/benchmarks/visualization_results
 .gradio
+wandb
+presentation
 
 # Distribution / packaging
 .Python

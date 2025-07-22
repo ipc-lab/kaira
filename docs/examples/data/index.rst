@@ -11,34 +11,34 @@ Data handling utilities, dataset management, and preprocessing tools for machine
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the correlation models in Kaira, which are useful for simulating statistical correlations between data sources in distributed source coding scenarios like Wyner-Ziv coding.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates various correlation models used in distributed source coding and Wyner-Ziv compression using the new CorrelatedDataset. We explore different correlation coefficients and visualize the relationship between source and side information signals.">
 
 .. only:: html
 
     .. image:: /auto_examples/data/images/thumb/sphx_glr_plot_correlation_models_thumb.png
-      :alt: Correlation Models for Data Generation
+      :alt: Correlation Models for Wyner-Ziv Coding
 
     :ref:`sphx_glr_auto_examples_data_plot_correlation_models.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Correlation Models for Data Generation</div>
+      <div class="sphx-glr-thumbnail-title">Correlation Models for Wyner-Ziv Coding</div>
     </div>
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the data generation utilities in Kaira, including binary and uniform tensor creation, as well as dataset classes for batch processing. These utilities are particularly useful for creating synthetic data for information theory and communication systems experiments.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to use the new Kaira data generation classes for creating various types of synthetic data useful in communication systems research. We'll explore binary, uniform, Gaussian, and function-based datasets.">
 
 .. only:: html
 
     .. image:: /auto_examples/data/images/thumb/sphx_glr_plot_data_generation_thumb.png
-      :alt: Data Generation Utilities
+      :alt: Data Generation with Modern Datasets
 
     :ref:`sphx_glr_auto_examples_data_plot_data_generation.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Data Generation Utilities</div>
+      <div class="sphx-glr-thumbnail-title">Data Generation with Modern Datasets</div>
     </div>
 
 .. raw:: html

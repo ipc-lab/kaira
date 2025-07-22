@@ -24,7 +24,8 @@ class PlottingUtils:
     All methods are static to allow easy access without instantiation:
 
     Example:
-        fig = PlottingUtils.plot_ber_performance(snr_range, ber_values, labels)
+        fig = PlottingUtils.plot_performance_vs_snr(snr_range, ber_values, labels,
+                                                    ylabel="Bit Error Rate", use_log_scale=True)
     """
 
     # Color schemes and palettes as static attributes
@@ -96,55 +97,6 @@ class PlottingUtils:
 
             # Add colorbar
             plt.colorbar(im, ax=ax, shrink=0.8)
-
-        return fig
-
-    @staticmethod
-    def plot_ber_performance(snr_range: np.ndarray, ber_values: List[np.ndarray], labels: List[str], title: str = "BER vs SNR Performance", ylabel: str = "Bit Error Rate") -> plt.Figure:
-        """Plot BER vs SNR performance curves.
-
-        Parameters
-        ----------
-        snr_range : np.ndarray
-            SNR values in dB
-        ber_values : List[np.ndarray]
-            BER values for each configuration
-        labels : List[str]
-            Labels for each curve
-        title : str
-            Plot title
-        ylabel : str
-            Y-axis label
-
-        Returns
-        -------
-        plt.Figure
-            The created figure
-        """
-        fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
-
-        for i, (ber, label) in enumerate(zip(ber_values, labels)):
-            # Convert to numpy array if it's a list
-            ber_array = np.array(ber) if isinstance(ber, list) else ber
-            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
-            ax.semilogy(snr_range, ber_array, "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
-
-        ax.set_xlabel("SNR (dB)", fontsize=12)
-        ax.set_ylabel(ylabel, fontsize=12)
-        ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=11)
-
-        # Set reasonable y-axis limits
-        all_ber_arrays = [np.array(ber) if isinstance(ber, list) else ber for ber in ber_values]
-        non_zero_bers = [ber_arr[ber_arr > 0] for ber_arr in all_ber_arrays if len(ber_arr[ber_arr > 0]) > 0]
-        if non_zero_bers:
-            min_ber = min([np.min(ber_subset) for ber_subset in non_zero_bers])
-            ax.set_ylim(min_ber / 10, 1)
-        else:
-            # When all values are zero, use linear scale instead of log scale
-            ax.set_yscale("linear")
-            ax.set_ylim(0, 0.1)
 
         return fig
 
@@ -1332,5 +1284,110 @@ class PlottingUtils:
         ax.set_title(title, fontsize=14, fontweight="bold")
         ax.grid(True, alpha=0.3)
         ax.legend()
+
+        return fig
+
+    @staticmethod
+    def plot_image_comparison(original: torch.Tensor, results_dict: Dict[Any, torch.Tensor], title: str = "Image Transmission Results") -> plt.Figure:
+        """Plot original image alongside results at different conditions (e.g., SNRs).
+
+        This function is useful for visualizing image transmission or reconstruction results
+        across different channel conditions or processing parameters.
+
+        Parameters
+        ----------
+        original : torch.Tensor
+            Original image tensor with shape [C, H, W]
+        results_dict : Dict[Any, torch.Tensor]
+            Dictionary mapping condition labels (e.g., SNR values) to reconstructed images
+        title : str
+            Plot title
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        n_images = len(results_dict) + 1
+        fig, axes = plt.subplots(1, n_images, figsize=(3 * n_images, 3))
+
+        # Handle single subplot case
+        if n_images == 1:
+            axes = [axes]
+
+        # Original image
+        axes[0].imshow(original.permute(1, 2, 0).numpy())
+        axes[0].set_title("Original", fontweight="bold")
+        axes[0].axis("off")
+
+        # Results at different conditions
+        for i, (condition, result) in enumerate(results_dict.items()):
+            axes[i + 1].imshow(result.permute(1, 2, 0).numpy().clip(0, 1))
+            axes[i + 1].set_title(f"{condition} dB" if isinstance(condition, (int, float)) else str(condition), fontweight="bold")
+            axes[i + 1].axis("off")
+
+        fig.suptitle(title, fontsize=14, fontweight="bold")
+        plt.tight_layout()
+        return fig
+
+    @staticmethod
+    def plot_performance_vs_snr(snr_range: np.ndarray, performance_values: List[np.ndarray], labels: List[str], title: str = "Performance vs SNR", ylabel: str = "Performance", use_log_scale: bool = True, xlabel: str = "SNR (dB)") -> plt.Figure:
+        """Plot performance metrics vs SNR curves.
+
+        A generic plotting function for any performance metric vs SNR, suitable for BER, PSNR,
+        MSE, accuracy, or any other performance measures.
+
+        Parameters
+        ----------
+        snr_range : np.ndarray
+            SNR values (typically in dB)
+        performance_values : List[np.ndarray]
+            Performance metric values for each configuration/method
+        labels : List[str]
+            Labels for each curve
+        title : str
+            Plot title
+        ylabel : str
+            Y-axis label for the performance metric
+        use_log_scale : bool
+            Whether to use logarithmic scale for y-axis (useful for BER, MSE)
+        xlabel : str
+            X-axis label
+
+        Returns
+        -------
+        plt.Figure
+            The created figure
+        """
+        fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+
+        for i, (values, label) in enumerate(zip(performance_values, labels)):
+            # Convert to numpy array if it's a list
+            values_array = np.array(values) if isinstance(values, list) else values
+            color = PlottingUtils.MODERN_PALETTE[i % len(PlottingUtils.MODERN_PALETTE)]
+
+            if use_log_scale:
+                ax.semilogy(snr_range, values_array, "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
+            else:
+                ax.plot(snr_range, values_array, "o-", color=color, linewidth=2, markersize=6, label=label, alpha=0.8)
+
+        ax.set_xlabel(xlabel, fontsize=12)
+        ax.set_ylabel(ylabel, fontsize=12)
+        ax.set_title(title, fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=11)
+
+        # Set reasonable y-axis limits
+        if use_log_scale:
+            all_value_arrays = [np.array(values) if isinstance(values, list) else values for values in performance_values]
+            non_zero_values = [val_arr[val_arr > 0] for val_arr in all_value_arrays if len(val_arr[val_arr > 0]) > 0]
+            if non_zero_values:
+                min_val = min([np.min(val_subset) for val_subset in non_zero_values])
+                max_val = max([np.max(val_arr) for val_arr in all_value_arrays])
+                ax.set_ylim(min_val / 10, max_val * 2)
+            else:
+                # When all values are zero, use linear scale instead
+                ax.set_yscale("linear")
+                ax.set_ylim(0, 0.1)
 
         return fig

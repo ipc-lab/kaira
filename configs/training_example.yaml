@@ -1,0 +1,101 @@
+# @package _global_
+
+# Hydra configuration for Kaira training
+# This configuration demonstrates how to set up training parameters
+# for communication system models using Hydra
+
+defaults:
+  - _self_
+
+# Model configuration
+model:
+  _target_: kaira.models.DeepJSCCModel
+  type: deepjscc
+  input_dim: 512
+  channel_uses: 64
+  hidden_dim: 256
+  encoder_layers: 3
+  decoder_layers: 3
+  activation: relu
+
+# Training configuration
+training:
+  output_dir: ./training_results
+  num_train_epochs: 10
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 32
+  learning_rate: 1e-4
+  weight_decay: 0.01
+  warmup_steps: 1000
+  logging_steps: 100
+  eval_steps: 500
+  save_steps: 1000
+  eval_strategy: steps
+  save_strategy: steps
+  save_total_limit: 3
+
+  # Communication-specific parameters
+  snr_min: 0.0
+  snr_max: 20.0
+  noise_variance_min: 0.1
+  noise_variance_max: 2.0
+  channel_uses: 64
+  channel_type: awgn
+
+  # Training flags
+  do_eval: true
+  do_predict: false
+  fp16: false
+  dataloader_num_workers: 0
+
+  # Optimization
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  lr_scheduler_type: linear
+
+  # Logging and monitoring
+  logging_dir: ${training.output_dir}/logs
+  run_name: deepjscc_training
+  report_to: [] # Can be set to ["wandb", "tensorboard"] for monitoring
+
+# Data configuration
+data:
+  dataset_name: null # Most communication models generate synthetic data
+  train_batch_size: ${training.per_device_train_batch_size}
+  eval_batch_size: ${training.per_device_eval_batch_size}
+  max_train_samples: null
+  max_eval_samples: null
+  preprocessing_num_workers: 4
+
+# Channel simulation configuration
+channel:
+  type: ${training.channel_type}
+  snr_range:
+    - ${training.snr_min}
+    - ${training.snr_max}
+  noise_type: gaussian
+  fading: false
+
+# Optimizer configuration
+optimizer:
+  type: adamw
+  lr: ${training.learning_rate}
+  weight_decay: ${training.weight_decay}
+  betas:
+    - 0.9
+    - 0.999
+  eps: 1e-8
+
+# Scheduler configuration
+scheduler:
+  type: ${training.lr_scheduler_type}
+  warmup_steps: ${training.warmup_steps}
+  num_training_steps: null # Will be calculated automatically
+
+# Hydra configuration
+hydra:
+  run:
+    dir: ${training.output_dir}/hydra_outputs/${now:%Y-%m-%d_%H-%M-%S}
+  job:
+    name: kaira_training
+    chdir: true

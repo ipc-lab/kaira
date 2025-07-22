@@ -108,7 +108,6 @@ sphinx_gallery_conf = {
         "../examples/losses",
         "../examples/models",
         "../examples/models_fec",
-        "../examples/benchmarks",
     ],
     "gallery_dirs": [
         "auto_examples/channels",
@@ -119,7 +118,6 @@ sphinx_gallery_conf = {
         "auto_examples/losses",
         "auto_examples/models",
         "auto_examples/models_fec",
-        "auto_examples/benchmarks",
     ],
     # File patterns and organization
     "filename_pattern": r"\.py$",
@@ -340,6 +338,9 @@ hoverxref_role_types = {
 suppress_warnings = [
     "autodoc.duplicate_object",
     "config.cache",  # Suppress warnings about unpicklable configuration values like sphinx_gallery_conf
+    # Suppress docutils warnings from inherited Transformers library docstrings
+    "docutils.parsers.rst",
+    "docutils",
 ]
 # Commented out # Add setting to prevent duplicate documentation of enum members
 # "app.add_directive", "app.add_role", "app.add_generic_role", "app.add_transform",
@@ -382,6 +383,17 @@ def skip_member(app, what, name, obj, skip, options):
     # Skip specific problematic methods
     if what == "method" and name == "plot" and hasattr(obj, "__module__") and "torchmetrics.image.ssim" in getattr(obj, "__module__", ""):
         return True
+
+    # Skip problematic inherited methods from Transformers library that have malformed docstrings
+    transformers_methods_to_skip = ["from_pretrained", "push_to_hub", "set_dataloader", "set_evaluate", "set_logging", "set_lr_scheduler", "set_optimizer", "set_push_to_hub", "set_save", "set_testing", "set_training"]
+
+    if name in transformers_methods_to_skip:
+        # Check if this is coming from a Transformers class
+        if hasattr(obj, "__module__") and "transformers" in getattr(obj, "__module__", ""):
+            return True
+        # Also skip if the object's class is from transformers
+        if hasattr(obj, "__qualname__") and any(cls in str(type(obj)) for cls in ["TrainingArguments", "PretrainedConfig"]):
+            return True
 
     return False
 

@@ -46,6 +46,7 @@ Kaira Documentation
    research_storyline
    installation
    getting_started
+   training
    examples_index
 
 .. toctree::
@@ -53,7 +54,6 @@ Kaira Documentation
    :caption: API Documentation
 
    api_reference
-   benchmarks
 
 .. toctree::
    :maxdepth: 2

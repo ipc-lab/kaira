@@ -57,7 +57,7 @@ setup(
     setup_requires=["setuptools>=38.6.0"],
     entry_points={
         "console_scripts": [
-            "kaira-benchmark=scripts.kaira_benchmark:main",
+            "kaira-train=scripts.kaira_train:main",
         ],
     },
     keywords=[

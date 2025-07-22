@@ -1,8 +1,7 @@
-"""DeepJSCC-NOMA module for Kaira.
+"""DeepJSCC-NOMA module for Kaira :cite:`yilmaz2023distributed`.
 
 This module contains the Yilmaz2023DeepJSCCNOMA model, which implements Distributed Deep Joint
-Source-Channel Coding over a Multiple Access Channel as described in the paper by Yilmaz et al.
-(2023).
+Source-Channel Coding over a Multiple Access Channel as described in  :cite:`yilmaz2023distributed`.
 """
 
 from typing import Any, List, Optional, Tuple, Type, Union
@@ -41,8 +40,6 @@ class Yilmaz2023DeepJSCCNOMAEncoder(Tung2022DeepJSCCQ2Encoder):
             **kwargs: Variable keyword arguments passed to the base class.
         """
         super().__init__(N=N, M=M, in_ch=in_ch, csi_length=csi_length)
-
-    # Forward method is inherited from Tung2022DeepJSCCQ2Encoder, which already handles *args, **kwargs
 
 
 @ModelRegistry.register_model()

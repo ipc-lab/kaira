@@ -1,69 +1,93 @@
-"""Utilities for loading sample data, such as standard test images."""
+"""Simple image dataset utilities for Kaira.
 
-import os
-from typing import Literal, Optional, Tuple
+This module provides basic image dataset functionality for testing and examples.
+"""
+
+from typing import Optional, Tuple
 
 import torch
 import torchvision
 import torchvision.transforms as transforms
+from torch.utils.data import Dataset, Subset
 
 
-def load_sample_images(dataset: Literal["cifar10", "cifar100", "mnist"] = "cifar10", num_samples: int = 4, seed: Optional[int] = None, normalize: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Load sample images from popular datasets for demonstrations.
+class ImageDataset(Dataset):
+    """Simple wrapper for common image datasets.
 
-    This function provides easy access to sample images from standard datasets like
-    CIFAR-10, CIFAR-100, and MNIST for demonstration purposes.
-
-    Args:
-        dataset: Name of the dataset to sample from ('cifar10', 'cifar100', 'mnist')
-        num_samples: Number of sample images to return
-        seed: Random seed for reproducibility
-        normalize: Whether to normalize the images to [0,1] range
-
-    Returns:
-        Tuple containing:
-            - Tensor of images with shape (num_samples, C, H, W)
-            - Tensor of labels with shape (num_samples,)
+    Provides easy access to CIFAR-10, CIFAR-100, and MNIST datasets with consistent interface and
+    optional preprocessing.
     """
-    # Set random seed if provided
-    if seed is not None:
-        torch.manual_seed(seed)
 
-    # Define transforms
-    if normalize:
-        transform = transforms.Compose([transforms.ToTensor()])
-    else:
-        transform = transforms.Compose([transforms.ToTensor()])
+    def __init__(
+        self,
+        name: str = "cifar10",
+        train: bool = True,
+        size: Optional[Tuple[int, int]] = None,
+        normalize: bool = True,
+        root: str = "~/.cache/kaira",
+    ):
+        """Initialize the image dataset.
 
-    # Load the appropriate dataset
-    # Get the root library directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # Navigate to the root library directory (two levels up)
-    root_library_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
-    root_path = os.path.join(root_library_dir, ".cache", "data")
-    os.makedirs(root_path, exist_ok=True)
+        Args:
+            name: Dataset name ("cifar10", "cifar100", "mnist")
+            train: Whether to use training split
+            size: Target image size (H, W). If None, uses original size
+            normalize: Whether to normalize images to [0, 1]
+            root: Root directory for dataset storage
+        """
+        self.name = name.lower()
 
-    if dataset.lower() == "cifar10":
-        data = torchvision.datasets.CIFAR10(root=root_path, train=True, download=True, transform=transform)
-    elif dataset.lower() == "cifar100":
-        data = torchvision.datasets.CIFAR100(root=root_path, train=True, download=True, transform=transform)
-    elif dataset.lower() == "mnist":
-        data = torchvision.datasets.MNIST(root=root_path, train=True, download=True, transform=transform)
-    else:
-        raise ValueError(f"Unsupported dataset: {dataset}. Choose from 'cifar10', 'cifar100', or 'mnist'")
+        # Build transforms
+        transform_list = []
+        if size is not None:
+            transform_list.append(transforms.Resize(size))
+        transform_list.append(transforms.ToTensor())
+        if not normalize:
+            # Convert back to [0, 255] range if normalization is disabled
+            transform_list.append(transforms.Lambda(lambda x: x * 255))
 
-    # Create a subset of the data
-    indices = torch.randperm(len(data))[:num_samples]
-    images = []
-    labels = []
+        transform = transforms.Compose(transform_list)
 
-    for idx in indices:
-        img, label = data[idx]
-        images.append(img)
-        labels.append(label)
+        # Load dataset
+        if self.name == "cifar10":
+            self.dataset = torchvision.datasets.CIFAR10(root=root, train=train, download=True, transform=transform)
+        elif self.name == "cifar100":
+            self.dataset = torchvision.datasets.CIFAR100(root=root, train=train, download=True, transform=transform)
+        elif self.name == "mnist":
+            self.dataset = torchvision.datasets.MNIST(root=root, train=train, download=True, transform=transform)
+        else:
+            raise ValueError(f"Unsupported dataset: {self.name}")
 
-    # Stack into batches
-    images = torch.stack(images)
-    labels = torch.tensor(labels)
+    def __len__(self) -> int:
+        """Return the size of the dataset."""
+        return len(self.dataset)
 
-    return images, labels
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        """Get a sample from the dataset.
+
+        Args:
+            idx: Index of the sample
+
+        Returns:
+            Tuple of (image, label)
+        """
+        return self.dataset[idx]
+
+    def subset(self, size: int, seed: Optional[int] = None) -> "Subset":
+        """Create a random subset of the dataset.
+
+        Args:
+            size: Number of samples in the subset
+            seed: Random seed for reproducibility
+
+        Returns:
+            Subset of the dataset
+        """
+        if seed is not None:
+            torch.manual_seed(seed)
+
+        indices = torch.randperm(len(self))[:size]
+        return Subset(self, indices)
+
+
+__all__ = ["ImageDataset"]

@@ -1,7 +1,4 @@
-"""Implementation of the DeepJSCC model from Bourtsoulatze et al.
-
-(2019).
-"""
+"""Implementation of the DeepJSCC model from :cite:`bourtsoulatze2019deep`."""
 
 from typing import Any, Optional
 
