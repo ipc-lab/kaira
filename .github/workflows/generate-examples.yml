@@ -42,7 +42,7 @@ jobs:
       examples-changed: ${{ steps.changes.outputs.examples }}
       force-build: ${{ steps.check-force.outputs.force }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Need full history for proper change detection
 
@@ -143,7 +143,7 @@ jobs:
         python-version: ["3.13.2"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Fetch full history to ensure we have all commits for comparison
 
