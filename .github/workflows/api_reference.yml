@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0 # Need full history for proper git operations
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13.2" # Use same as main CI
           cache: "pip"
