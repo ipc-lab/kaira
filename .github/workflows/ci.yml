@@ -290,7 +290,7 @@ jobs:
           fi
 
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: code-coverage-report-${{ matrix.python-version }}
           path: coverage.xml
@@ -298,7 +298,7 @@ jobs:
 
       - name: Archive documentation
         if: matrix.python-version == '3.11' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: documentation-html
           path: docs/_build/html/

@@ -348,7 +348,7 @@ jobs:
 
       - name: Upload auto_examples as artifact (backup)
         if: steps.changed-examples.outputs.examples_changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: auto_examples-${{ github.sha }}
           path: docs/auto_examples.zip
