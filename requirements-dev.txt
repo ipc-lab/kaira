@@ -1,6 +1,6 @@
 sphinx>=8.0.0
 myst-parser>=4.0.0
-sphinxcontrib-bibtex>=2.6.0
+sphinxcontrib-bibtex>=2.6.5
 pybtex>=0.24.0
 pydata-sphinx-theme
 sphinx-gallery>=0.11.1
