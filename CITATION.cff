@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "Kaira: A PyTorch-based toolkit for simulating communication systems"
+authors:
+  - family-names: "Yilmaz"
+    given-names: "Selim Firat"
+    orcid: "https://orcid.org/0000-0002-0486-7731"
+  - family-names: "Kurmukova"
+    given-names: "Anastasiia"
+    orcid: "https://orcid.org/0000-0001-8263-7387"
+    affiliation: "Imperial College London"
+version: "0.2.1"
+date-released: "2025-06-15"
+url: "https://github.com/ipc-lab/kaira"
+repository-code: "https://github.com/ipc-lab/kaira"
+license: "MIT"
+keywords:
+  - "communication-systems"
+  - "deep-learning"
+  - "deep-joint-source-channel-coding"
+  - "deepjscc"
+  - "pytorch"
+  - "simulation"
+  - "telecommunications"
+  - "error-correction-code"
+  - "wireless-communications"
+abstract: "Kaira is an open-source simulation toolkit for communications research built on PyTorch. It provides a modular, user-friendly platform for developing, testing, and benchmarking advanced communications algorithms—including deep learning-based approaches such as deep joint source-channel coding (DeepJSCC) and classical forward error correction."

@@ -4,7 +4,7 @@
 
 # Kaira - A PyTorch-based toolkit for simulating communication systems
 
-[![Python CI](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml) [![Tests](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) [![Supported Platforms](https://img.shields.io/badge/platforms-linux--64%2Cosx--64%2Cwin--64-green)](https://github.com/ipc-lab/kaira/) [![ReadTheDocs Status](https://readthedocs.org/projects/kaira/badge/?version=latest)](https://kaira.readthedocs.io/en/latest/?badge=latest) [![PyPI Version](https://img.shields.io/pypi/v/pykaira)](https://pypi.org/project/pykaira/) [![GitHub Release (Latest)](https://img.shields.io/github/v/release/ipc-lab/kaira)](https://github.com/ipc-lab/kaira/releases) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykaira)](https://github.com/ipc-lab/kaira/) [![License](https://img.shields.io/github/license/ipc-lab/kaira.svg)](https://github.com/ipc-lab/kaira/blob/master/LICENSE) [![Coverage Status](https://codecov.io/gh/ipc-lab/kaira/graph/badge.svg?token=6Z2IYG0E6P)](https://codecov.io/gh/ipc-lab/kaira) [![Dependabot Updates](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates)
+[![Python CI](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/ci.yml) [![Tests](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/tests.yml) [![DOI](https://zenodo.org/badge/635244828.svg)](https://zenodo.org/badge/latestdoi/635244828) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) [![Supported Platforms](https://img.shields.io/badge/platforms-linux--64%2Cosx--64%2Cwin--64-green)](https://github.com/ipc-lab/kaira/) [![ReadTheDocs Status](https://readthedocs.org/projects/kaira/badge/?version=latest)](https://kaira.readthedocs.io/en/latest/?badge=latest) [![PyPI Version](https://img.shields.io/pypi/v/pykaira)](https://pypi.org/project/pykaira/) [![GitHub Release (Latest)](https://img.shields.io/github/v/release/ipc-lab/kaira)](https://github.com/ipc-lab/kaira/releases) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykaira)](https://github.com/ipc-lab/kaira/) [![License](https://img.shields.io/github/license/ipc-lab/kaira.svg)](https://github.com/ipc-lab/kaira/blob/master/LICENSE) [![Coverage Status](https://codecov.io/gh/ipc-lab/kaira/graph/badge.svg?token=6Z2IYG0E6P)](https://codecov.io/gh/ipc-lab/kaira) [![Dependabot Updates](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/ipc-lab/kaira/actions/workflows/dependabot/dependabot-updates)
 
 **Build Better Communication Systems with Kaira.** Kaira is an open-source toolkit for PyTorch designed to help you simulate and innovate in communication systems. Its name is inspired by **Kayra** (from Turkic mythology, meaning 'creator') and **Kairos** (a Greek concept for the 'opportune moment'). This reflects Kaira's core purpose: to empower engineers and researchers to **architect** (*Kayra*) advanced communication models and to ensure messages are transmitted effectively and at the **right moment** (*Kairos*). Kaira provides the tools to design, analyze, and optimize complex communication scenarios, making it an essential asset for research and development.
 
@@ -83,15 +83,16 @@ License](https://github.com/ipc-lab/kaira/blob/master/LICENSE).
 
 # Citing Kaira
 
-If you use Kaira in your research, please cite it using the following
-format:
+If you use Kaira in your research, please cite it using the following format:
 
 ```bibtex
 @software{kaira2025,
   title = {Kaira: A {PyTorch}-based toolkit for simulating communication systems},
-  author = {{Kaira Contributors}},
+  author = {Yilmaz, Selim Firat and Kurmukova, Anastasiia},
   year = {2025},
   url = {https://github.com/ipc-lab/kaira},
-  version = {0.1.0}
+  version = {0.2.1}
 }
 ```
+
+You can also use the citation metadata provided in [`CITATION.cff`](CITATION.cff) or click **Cite this repository** on GitHub.
