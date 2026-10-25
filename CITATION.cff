@@ -10,6 +10,7 @@ authors:
     given-names: "Anastasiia"
     orcid: "https://orcid.org/0000-0001-8263-7387"
     affiliation: "Imperial College London"
+doi: "10.5281/zenodo.23651260"
 version: "0.2.1"
 date-released: "2025-06-15"
 url: "https://github.com/ipc-lab/kaira"
